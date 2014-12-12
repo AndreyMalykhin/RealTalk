@@ -18,6 +18,10 @@ class CharNode: public ExprNode {
     return token_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitChar(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const CharNode &char_node = static_cast<const CharNode&>(node);

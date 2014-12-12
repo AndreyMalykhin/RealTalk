@@ -15,11 +15,24 @@ namespace parser {
 
 class IfElseIfNode: public StmtNode {
  public:
-  IfElseIfNode(std::unique_ptr<IfNode> if_node,
-               std::vector< std::unique_ptr<ElseIfNode> > else_if_nodes)
+  IfElseIfNode(
+      std::unique_ptr<IfNode> if_node,
+      std::vector< std::unique_ptr<ElseIfNode> > else_if_nodes)
       : if_(move(if_node)),
         else_ifs_(move(else_if_nodes)) {
     assert(if_);
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitIfElseIf(*this);
+  }
+
+  const std::unique_ptr<IfNode> &GetIf() const {
+    return if_;
+  }
+
+  const std::vector< std::unique_ptr<ElseIfNode> > &GetElseIfs() const {
+    return else_ifs_;
   }
 
  private:

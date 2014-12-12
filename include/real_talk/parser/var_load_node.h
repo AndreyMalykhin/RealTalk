@@ -11,25 +11,29 @@ namespace parser {
 
 class VarLoadNode: public ExprNode {
  public:
-  explicit VarLoadNode(const real_talk::lexer::TokenInfo &var_name_token)
-      : var_name_token_(var_name_token) {
+  explicit VarLoadNode(const real_talk::lexer::TokenInfo &name_token)
+      : name_token_(name_token) {
   }
 
-  const real_talk::lexer::TokenInfo &GetVarNameToken() const {
-    return var_name_token_;
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitVarLoad(*this);
+  }
+
+  const real_talk::lexer::TokenInfo &GetNameToken() const {
+    return name_token_;
   }
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    const VarLoadNode &var_load_node = static_cast<const VarLoadNode&>(node);
-    return var_name_token_ == var_load_node.var_name_token_;
+    const VarLoadNode &rhs = static_cast<const VarLoadNode&>(node);
+    return name_token_ == rhs.name_token_;
   }
 
   virtual void Print(std::ostream &stream) const override {
-    stream << var_name_token_.GetValue();
+    stream << name_token_.GetValue();
   }
 
-  real_talk::lexer::TokenInfo var_name_token_;
+  real_talk::lexer::TokenInfo name_token_;
 };
 }
 }

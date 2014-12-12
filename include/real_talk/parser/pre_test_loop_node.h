@@ -12,11 +12,12 @@ namespace parser {
 
 class PreTestLoopNode: public StmtNode {
  public:
-  PreTestLoopNode(const real_talk::lexer::TokenInfo &start_token,
-                  const real_talk::lexer::TokenInfo &cond_start_token,
-                  std::unique_ptr<ExprNode> cond,
-                  const real_talk::lexer::TokenInfo &cond_end_token,
-                  std::unique_ptr<ScopeNode> body)
+  PreTestLoopNode(
+      const real_talk::lexer::TokenInfo &start_token,
+      const real_talk::lexer::TokenInfo &cond_start_token,
+      std::unique_ptr<ExprNode> cond,
+      const real_talk::lexer::TokenInfo &cond_end_token,
+      std::unique_ptr<ScopeNode> body)
       : start_token_(start_token),
         cond_start_token_(cond_start_token),
         cond_(move(cond)),
@@ -24,6 +25,10 @@ class PreTestLoopNode: public StmtNode {
         body_(move(body)) {
     assert(cond_);
     assert(body_);
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitPreTestLoop(*this);
   }
 
  private:

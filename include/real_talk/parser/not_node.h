@@ -27,6 +27,10 @@ class NotNode: public ExprNode {
     return operand_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitNot(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const NotNode &not_node = static_cast<const NotNode&>(node);

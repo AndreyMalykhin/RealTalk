@@ -27,6 +27,10 @@ class NegativeNode: public ExprNode {
     return operand_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitNegative(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const NegativeNode &rhs = static_cast<const NegativeNode&>(node);

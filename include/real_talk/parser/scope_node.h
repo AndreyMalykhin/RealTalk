@@ -13,12 +13,17 @@ namespace parser {
 
 class ScopeNode: public Node {
  public:
-  ScopeNode(const real_talk::lexer::TokenInfo &start_token,
-            std::vector< std::unique_ptr<StmtNode> > stmts,
-            const real_talk::lexer::TokenInfo &end_token)
+  ScopeNode(
+      const real_talk::lexer::TokenInfo &start_token,
+      std::vector< std::unique_ptr<StmtNode> > stmts,
+      const real_talk::lexer::TokenInfo &end_token)
       : start_token_(start_token),
         stmts_(move(stmts)),
         end_token_(end_token) {
+  }
+
+  virtual void Accept(NodeVisitor&) const override {
+    assert(false);
   }
 
  private:

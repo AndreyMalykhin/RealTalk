@@ -7,17 +7,17 @@
 namespace real_talk {
 namespace parser {
 
+class NodeVisitor;
+
 class Node {
  public:
   Node() = default;
   Node(const Node&) = default;
+  virtual ~Node() {}
+  virtual void Accept(NodeVisitor &visitor) const = 0;
 
   friend bool operator==(const Node &lhs, const Node &rhs) {
-    if (typeid(lhs) != typeid(rhs)) {
-      return false;
-    }
-
-    return lhs.IsEqual(rhs);
+    return typeid(lhs) == typeid(rhs) && lhs.IsEqual(rhs);
   }
 
   friend std::ostream &operator<<(std::ostream &stream,
@@ -26,7 +26,6 @@ class Node {
     return stream;
   }
 
-  virtual ~Node() {}
  private:
   virtual bool IsEqual(const Node &node) const = 0;
   virtual void Print(std::ostream &stream) const = 0;

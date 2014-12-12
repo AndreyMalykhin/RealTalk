@@ -17,6 +17,10 @@ class BreakNode: public StmtNode {
         end_token_(end_token) {
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitBreak(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const BreakNode &rhs = static_cast<const BreakNode&>(node);

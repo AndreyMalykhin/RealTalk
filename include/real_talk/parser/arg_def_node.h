@@ -34,6 +34,10 @@ class ArgDefNode: public Node {
     return arg_name_token_;
   }
 
+  virtual void Accept(NodeVisitor&) const override {
+    assert(false);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const ArgDefNode &arg_def_node = static_cast<const ArgDefNode&>(node);

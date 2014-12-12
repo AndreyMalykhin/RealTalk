@@ -50,6 +50,8 @@
 #include "real_talk/parser/break_node.h"
 #include "real_talk/parser/continue_node.h"
 #include "real_talk/parser/negative_node.h"
+#include "real_talk/parser/return_value_node.h"
+#include "real_talk/parser/return_node.h"
 
 using std::pair;
 using std::string;
@@ -123,12 +125,33 @@ unique_ptr<StmtNode> SimpleParser::ParseStmt() {
       return ParseBreak();
     case Token::kContinue:
       return ParseContinue();
+    case Token::kReturn:
+      return ParseReturn();
     default:
       return ParseExprStmt();
   }
 
   assert(false);
   return unique_ptr<StmtNode>();
+}
+
+unique_ptr<StmtNode> SimpleParser::ParseReturn() {
+  const TokenInfo start_token = next_token_;
+  ConsumeNextToken();
+
+  if (next_token_.GetId() == Token::kStmtEnd) {
+    const TokenInfo end_token = next_token_;
+    ConsumeNextToken();
+    return unique_ptr<StmtNode>(
+      new ReturnNode(start_token, end_token));
+  }
+
+  unique_ptr<ExprNode> value = ParseExpr();
+  AssertNextToken(Token::kStmtEnd);
+  const TokenInfo end_token = next_token_;
+  ConsumeNextToken();
+  return unique_ptr<StmtNode>(
+      new ReturnValueNode(start_token, move(value), end_token));
 }
 
 unique_ptr<StmtNode> SimpleParser::ParseContinue() {
@@ -851,18 +874,19 @@ unique_ptr<ExprNode> SimpleParser::ParseArrayAlloc() {
 unique_ptr<DataTypeNode> SimpleParser::ParseDataType() {
   const TokenInfo name_token = next_token_;
   ConsumeNextToken();
+  unique_ptr<DataTypeNode> data_type(new SimpleDataTypeNode(name_token));
 
-  if (next_token_.GetId() == Token::kSubscriptStart) {
+  while (next_token_.GetId() == Token::kSubscriptStart) {
     const TokenInfo subscript_start_token = next_token_;
     ConsumeNextToken();
     AssertNextToken(Token::kSubscriptEnd);
     const TokenInfo subscript_end_token = next_token_;
     ConsumeNextToken();
-    return unique_ptr<DataTypeNode>(new ArrayDataTypeNode(
-        name_token, subscript_start_token, subscript_end_token));
+    data_type.reset(new ArrayDataTypeNode(
+        move(data_type), subscript_start_token, subscript_end_token));
   }
 
-  return unique_ptr<DataTypeNode>(new SimpleDataTypeNode(name_token));
+  return data_type;
 }
 
 TokenInfo SimpleParser::ParseName() {

@@ -83,6 +83,7 @@ class SimpleParser {
   std::unique_ptr<StmtNode> ParseImport();
   std::unique_ptr<StmtNode> ParseBreak();
   std::unique_ptr<StmtNode> ParseContinue();
+  std::unique_ptr<StmtNode> ParseReturn();
   std::unique_ptr<ExprNode> ParseExpr();
   std::unique_ptr<ExprNode> ParseArrayAlloc();
   std::unique_ptr<ExprNode> ParseVarLoad();

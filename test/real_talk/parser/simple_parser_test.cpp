@@ -33,7 +33,6 @@
 #include "real_talk/parser/var_def_without_init_node.h"
 #include "real_talk/parser/func_def_node.h"
 #include "real_talk/parser/arg_def_node.h"
-#include "real_talk/parser/default_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/array_alloc_without_init_node.h"
 #include "real_talk/parser/var_load_node.h"
@@ -55,6 +54,8 @@
 #include "real_talk/parser/break_node.h"
 #include "real_talk/parser/continue_node.h"
 #include "real_talk/parser/negative_node.h"
+#include "real_talk/parser/return_value_node.h"
+#include "real_talk/parser/return_node.h"
 #include "real_talk/parser/simple_parser.h"
 
 using std::string;
@@ -94,7 +95,6 @@ using real_talk::parser::SumNode;
 using real_talk::parser::SubNode;
 using real_talk::parser::MulNode;
 using real_talk::parser::DivNode;
-using real_talk::parser::DefaultNode;
 using real_talk::parser::ProgramNode;
 using real_talk::parser::VarDefWithInitNode;
 using real_talk::parser::VarDefWithoutInitNode;
@@ -120,6 +120,8 @@ using real_talk::parser::ImportNode;
 using real_talk::parser::BreakNode;
 using real_talk::parser::ContinueNode;
 using real_talk::parser::NegativeNode;
+using real_talk::parser::ReturnValueNode;
+using real_talk::parser::ReturnNode;
 using real_talk::parser::SimpleParser;
 using real_talk::parser::UnexpectedTokenError;
 
@@ -2197,6 +2199,42 @@ TEST_F(SimpleParserTest, VarDefWithInit) {
   }
 }
 
+TEST_F(SimpleParserTest, ReturnValue) {
+  vector< TestNode<StmtNode> > test_stmt_nodes;
+  vector<TokenInfo> tokens = {
+    TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(0)),
+    TokenInfo(Token::kIntLit, "1", UINT32_C(1), UINT32_C(1)),
+    TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))
+  };
+  const TokenInfo &start_token = tokens[0];
+  unique_ptr<ExprNode> value(new IntNode(tokens[1]));
+  const TokenInfo &end_token = tokens[2];
+  unique_ptr<StmtNode> return1(
+      new ReturnValueNode(start_token, move(value), end_token));
+  test_stmt_nodes.push_back({tokens, move(return1)});
+
+  for (TestNode<StmtNode> &test_stmt_node: test_stmt_nodes) {
+    TestParse(StmtToProgram(test_stmt_node));
+  }
+}
+
+TEST_F(SimpleParserTest, Return) {
+  vector< TestNode<StmtNode> > test_stmt_nodes;
+  vector<TokenInfo> tokens = {
+    TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(0)),
+    TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))
+  };
+  const TokenInfo &start_token = tokens[0];
+  const TokenInfo &end_token = tokens[1];
+  unique_ptr<StmtNode> return1(
+      new ReturnNode(start_token, end_token));
+  test_stmt_nodes.push_back({tokens, move(return1)});
+
+  for (TestNode<StmtNode> &test_stmt_node: test_stmt_nodes) {
+    TestParse(StmtToProgram(test_stmt_node));
+  }
+}
+
 TEST_F(SimpleParserTest, Break) {
   vector< TestNode<StmtNode> > test_stmt_nodes;
   vector<TokenInfo> tokens = {
@@ -2780,17 +2818,47 @@ TEST_F(SimpleParserTest, ArrayDataType) {
   for (const TokenInfo &data_type_token: GetDataTypeTokens()) {
     vector<TokenInfo> tokens = {
       data_type_token,
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(3), UINT32_C(4)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(5), UINT32_C(6)),
-      TokenInfo(Token::kName, "myVar", UINT32_C(7), UINT32_C(8)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(10))
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kName, "myVar", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4))
     };
-    unique_ptr<DataTypeNode> data_type(
-        new ArrayDataTypeNode(tokens[0], tokens[1], tokens[2]));
-    const TokenInfo name_token = tokens[3];
-    const TokenInfo end_token = tokens[4];
-    unique_ptr<StmtNode> var_def(
-        new VarDefWithoutInitNode(move(data_type), name_token, end_token));
+    unique_ptr<DataTypeNode> simple_data_type(
+        new SimpleDataTypeNode(tokens[0]));
+    unique_ptr<DataTypeNode> array_data_type(
+        new ArrayDataTypeNode(move(simple_data_type), tokens[1], tokens[2]));
+    unique_ptr<StmtNode> var_def(new VarDefWithoutInitNode(
+        move(array_data_type), tokens[3], tokens[4]));
+    TestNode<StmtNode> test_stmt_node = {tokens, move(var_def)};
+    test_stmt_nodes.push_back(move(test_stmt_node));
+  }
+
+  for (TestNode<StmtNode> &test_stmt_node: test_stmt_nodes) {
+    TestParse(StmtToProgram(test_stmt_node));
+  }
+}
+
+TEST_F(SimpleParserTest, ArrayOfArraysDataType) {
+  vector< TestNode<StmtNode> > test_stmt_nodes;
+
+  for (const TokenInfo &data_type_token: GetDataTypeTokens()) {
+    vector<TokenInfo> tokens = {
+      data_type_token,
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kName, "myVar", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))
+    };
+    unique_ptr<DataTypeNode> simple_data_type(
+        new SimpleDataTypeNode(tokens[0]));
+    unique_ptr<DataTypeNode> array_data_type1(
+        new ArrayDataTypeNode(move(simple_data_type), tokens[1], tokens[2]));
+    unique_ptr<DataTypeNode> array_data_type2(
+        new ArrayDataTypeNode(move(array_data_type1), tokens[3], tokens[4]));
+    unique_ptr<StmtNode> var_def(new VarDefWithoutInitNode(
+        move(array_data_type2), tokens[5], tokens[6]));
     TestNode<StmtNode> test_stmt_node = {tokens, move(var_def)};
     test_stmt_nodes.push_back(move(test_stmt_node));
   }
@@ -3610,6 +3678,43 @@ TEST_F(SimpleParserTest, ElseWithoutBodyIsInvalid) {
       TokenInfo(Token::kFileEnd, "", UINT32_C(8), UINT32_C(8))
     };
     const TokenInfo &unexpected_token = tokens[8];
+    const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
+    mailformed_token_suits.push_back(mailformed_tokens);
+  }
+
+  for (const MailformedTestTokens &mailformed_tokens: mailformed_token_suits) {
+    TestFailingParse(mailformed_tokens);
+  }
+}
+
+TEST_F(SimpleParserTest, ReturnWithoutEndIsInvalid) {
+  vector<MailformedTestTokens> mailformed_token_suits;
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kFileEnd, "", UINT32_C(1), UINT32_C(1))
+    };
+    const TokenInfo &unexpected_token = tokens[1];
+    const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
+    mailformed_token_suits.push_back(mailformed_tokens);
+  }
+
+  for (const MailformedTestTokens &mailformed_tokens: mailformed_token_suits) {
+    TestFailingParse(mailformed_tokens);
+  }
+}
+
+TEST_F(SimpleParserTest, ReturnValueWithoutEndIsInvalid) {
+  vector<MailformedTestTokens> mailformed_token_suits;
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kIntLit, "1", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kFileEnd, "", UINT32_C(2), UINT32_C(2))
+    };
+    const TokenInfo &unexpected_token = tokens[2];
     const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
     mailformed_token_suits.push_back(mailformed_tokens);
   }

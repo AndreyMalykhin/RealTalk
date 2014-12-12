@@ -22,6 +22,10 @@ class ImportNode: public StmtNode {
     assert(file_path_);
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitImport(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const ImportNode &rhs = static_cast<const ImportNode&>(node);

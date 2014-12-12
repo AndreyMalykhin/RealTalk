@@ -3,6 +3,7 @@
 #define _REAL_TALK_PARSER_INT_NODE_H_
 
 #include "real_talk/parser/expr_node.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
@@ -15,6 +16,10 @@ class IntNode: public ExprNode {
 
   const real_talk::lexer::TokenInfo &GetToken() const {
     return token_;
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitInt(*this);
   }
 
  private:

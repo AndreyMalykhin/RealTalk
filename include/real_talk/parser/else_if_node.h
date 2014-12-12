@@ -11,11 +11,16 @@ namespace parser {
 
 class ElseIfNode: public Node {
  public:
-  ElseIfNode(const real_talk::lexer::TokenInfo &start_token,
-             std::unique_ptr<IfNode> if_node)
+  ElseIfNode(
+      const real_talk::lexer::TokenInfo &start_token,
+      std::unique_ptr<IfNode> if_node)
       : start_token_(start_token),
         if_(move(if_node)) {
     assert(if_);
+  }
+
+  virtual void Accept(NodeVisitor&) const override {
+    assert(false);
   }
 
  private:

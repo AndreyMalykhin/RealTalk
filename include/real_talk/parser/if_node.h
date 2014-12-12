@@ -12,11 +12,12 @@ namespace parser {
 
 class IfNode: public Node {
  public:
-  IfNode(const real_talk::lexer::TokenInfo &start_token,
-         const real_talk::lexer::TokenInfo &cond_start_token,
-         std::unique_ptr<ExprNode> cond,
-         const real_talk::lexer::TokenInfo &cond_end_token,
-         std::unique_ptr<ScopeNode> body)
+  IfNode(
+      const real_talk::lexer::TokenInfo &start_token,
+      const real_talk::lexer::TokenInfo &cond_start_token,
+      std::unique_ptr<ExprNode> cond,
+      const real_talk::lexer::TokenInfo &cond_end_token,
+      std::unique_ptr<ScopeNode> body)
       : start_token_(start_token),
         cond_start_token_(cond_start_token),
         cond_(move(cond)),
@@ -24,6 +25,10 @@ class IfNode: public Node {
         body_(move(body)) {
     assert(cond_);
     assert(body_);
+  }
+
+  virtual void Accept(NodeVisitor&) const override {
+    assert(false);
   }
 
  private:

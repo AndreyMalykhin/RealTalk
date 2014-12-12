@@ -28,6 +28,10 @@ class ArrayAllocNode final: public ExprNode {
         assert(size_);
   }
 
+  virtual void Accept(NodeVisitor&) const override {
+    assert(false);
+  }
+
   virtual bool IsEqual(const Node &node) const override {
     const ArrayAllocNode &alloc_node =
         static_cast<const ArrayAllocNode&>(node);

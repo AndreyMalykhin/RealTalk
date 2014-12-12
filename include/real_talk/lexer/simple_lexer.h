@@ -31,6 +31,16 @@ class UnexpectedCharError: public std::runtime_error {
 
 class SimpleLexer: public Lexer {
  public:
+  static const char *kStringKeyword;
+  static const char *kDoubleKeyword;
+  static const char *kIntKeyword;
+  static const char *kLongKeyword;
+  static const char *kCharKeyword;
+  static const char *kVoidKeyword;
+  static const char *kBoolKeyword;
+  static const char kSubscriptStartChar;
+  static const char kSubscriptEndChar;
+
   explicit SimpleLexer(std::istream &stream);
   virtual TokenInfo GetNextToken() override;
 

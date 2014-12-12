@@ -14,20 +14,31 @@ using boost::format;
 namespace real_talk {
 namespace lexer {
 
+const char *SimpleLexer::kStringKeyword = "string";
+const char *SimpleLexer::kDoubleKeyword = "double";
+const char *SimpleLexer::kIntKeyword = "int";
+const char *SimpleLexer::kLongKeyword = "long";
+const char *SimpleLexer::kCharKeyword = "char";
+const char *SimpleLexer::kVoidKeyword = "void";
+const char *SimpleLexer::kBoolKeyword = "bool";
+const char SimpleLexer::kSubscriptStartChar = '[';
+const char SimpleLexer::kSubscriptEndChar = ']';
+
 const unordered_map<string, Token> &SimpleLexer::kKeywordTokens =
     *new unordered_map<string, Token>({
-        {"int", Token::kIntType},
-        {"long", Token::kLongType},
-        {"char", Token::kCharType},
-        {"double", Token::kDoubleType},
-        {"string", Token::kStringType},
-        {"void", Token::kVoidType},
-        {"bool", Token::kBoolType},
+        {SimpleLexer::kIntKeyword, Token::kIntType},
+        {SimpleLexer::kLongKeyword, Token::kLongType},
+        {SimpleLexer::kCharKeyword, Token::kCharType},
+        {SimpleLexer::kDoubleKeyword, Token::kDoubleType},
+        {SimpleLexer::kStringKeyword, Token::kStringType},
+        {SimpleLexer::kVoidKeyword, Token::kVoidType},
+        {SimpleLexer::kBoolKeyword, Token::kBoolType},
         {"yeah", Token::kBoolTrueLit},
         {"nah", Token::kBoolFalseLit},
         {"fresh", Token::kNew},
         {"homie", Token::kImport},
-        {"fukdat", Token::kBreak},
+        {"holdon", Token::kBreak},
+        {"bringitback", Token::kReturn},
         {"keeprollin", Token::kContinue},
         {"roll", Token::kWhile},
         {"if", Token::kIf},
@@ -92,10 +103,10 @@ TokenInfo SimpleLexer::GetNextToken() {
       case '|': {
         return ParseTwoCharToken(Token::kOrOp, '|');
       }
-      case '[': {
+      case kSubscriptStartChar: {
         return ParseOneCharToken(Token::kSubscriptStart);
       }
-      case ']': {
+      case kSubscriptEndChar: {
         return ParseOneCharToken(Token::kSubscriptEnd);
       }
       case '(': {

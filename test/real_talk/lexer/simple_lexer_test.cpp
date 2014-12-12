@@ -1430,19 +1430,46 @@ TEST_F(SimpleLexerTest, BreakToken) {
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kBreak, "fukdat", UINT32_C(0), UINT32_C(0))
+      TokenInfo(Token::kBreak, "holdon", UINT32_C(0), UINT32_C(0))
     };
-    string code = "fukdat";
+    string code = "holdon";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kBreak, "fukdat", UINT32_C(0), UINT32_C(0)),
-      TokenInfo(Token::kBreak, "fukdat", UINT32_C(0), UINT32_C(7))
+      TokenInfo(Token::kBreak, "holdon", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kBreak, "holdon", UINT32_C(0), UINT32_C(7))
     };
-    string code = "fukdat fukdat";
+    string code = "holdon holdon";
+    TestTokens test_tokens = {code, tokens};
+    test_token_suites.push_back(test_tokens);
+  }
+
+  for (const TestTokens &test_tokens: test_token_suites) {
+    TestGetNextToken(test_tokens);
+  }
+}
+
+TEST_F(SimpleLexerTest, ReturnToken) {
+  vector<TestTokens> test_token_suites;
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kReturn, "bringitback", UINT32_C(0), UINT32_C(0))
+    };
+    string code = "bringitback";
+    TestTokens test_tokens = {code, tokens};
+    test_token_suites.push_back(test_tokens);
+  }
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kReturn, "bringitback", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kReturn, "bringitback", UINT32_C(0), UINT32_C(12))
+    };
+    string code = "bringitback bringitback";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }

@@ -25,13 +25,13 @@ class FuncDefNode: public StmtNode {
       const std::vector<real_talk::lexer::TokenInfo> &arg_separator_tokens,
       const real_talk::lexer::TokenInfo &args_end_token,
       std::unique_ptr<ScopeNode> body)
-  : return_data_type_(move(return_data_type)),
-    func_name_token_(func_name_token),
-    args_start_token_(args_start_token),
-    args_(move(args)),
-    arg_separator_tokens_(arg_separator_tokens),
-    args_end_token_(args_end_token),
-    body_(move(body)) {
+      : return_data_type_(move(return_data_type)),
+        func_name_token_(func_name_token),
+        args_start_token_(args_start_token),
+        args_(move(args)),
+        arg_separator_tokens_(arg_separator_tokens),
+        args_end_token_(args_end_token),
+        body_(move(body)) {
     assert(return_data_type_);
     assert(body_);
     assert((args_.empty() && arg_separator_tokens_.empty())
@@ -48,6 +48,10 @@ class FuncDefNode: public StmtNode {
 
   const std::unique_ptr<DataTypeNode> &GetReturnDataType() const {
     return return_data_type_;
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitFuncDef(*this);
   }
 
  private:

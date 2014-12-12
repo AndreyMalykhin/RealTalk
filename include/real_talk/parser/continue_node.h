@@ -17,6 +17,10 @@ class ContinueNode: public StmtNode {
         end_token_(end_token) {
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitContinue(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const ContinueNode &rhs = static_cast<const ContinueNode&>(node);

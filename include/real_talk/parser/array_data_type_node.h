@@ -3,6 +3,7 @@
 #define _REAL_TALK_PARSER_ARRAY_DATA_TYPE_NODE_H_
 
 #include <string>
+#include <sstream>
 #include "real_talk/parser/data_type_node.h"
 #include "real_talk/lexer/token_info.h"
 
@@ -11,38 +12,39 @@ namespace parser {
 
 class ArrayDataTypeNode: public DataTypeNode {
  public:
-  ArrayDataTypeNode(const real_talk::lexer::TokenInfo &name_token,
-                    const real_talk::lexer::TokenInfo &subscript_start_token,
-                    const real_talk::lexer::TokenInfo &subscript_end_token)
-      : name_token_(name_token),
+  ArrayDataTypeNode(
+      std::unique_ptr<DataTypeNode> element_data_type,
+      const real_talk::lexer::TokenInfo &subscript_start_token,
+      const real_talk::lexer::TokenInfo &subscript_end_token)
+      : element_data_type_(move(element_data_type)),
         subscript_start_token_(subscript_start_token),
         subscript_end_token_(subscript_end_token) {
+    assert(element_data_type_);
   }
 
-  const std::string &GetName() const {
-    return name_token_.GetValue();
+  const std::unique_ptr<DataTypeNode> &GetElementDataType() const {
+    return element_data_type_;
   }
 
-  const real_talk::lexer::TokenInfo &GetNameToken() const {
-    return name_token_;
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitArrayDataType(*this);
   }
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    const ArrayDataTypeNode &data_type_node =
-        static_cast<const ArrayDataTypeNode&>(node);
-    return name_token_ == data_type_node.name_token_
-        && subscript_start_token_ == data_type_node.subscript_start_token_
-        && subscript_end_token_ == data_type_node.subscript_end_token_;
+    const ArrayDataTypeNode &rhs = static_cast<const ArrayDataTypeNode&>(node);
+    return subscript_start_token_ == rhs.subscript_start_token_
+        && subscript_end_token_ == rhs.subscript_end_token_
+        && *element_data_type_ == *(rhs.element_data_type_);
   }
 
   virtual void Print(std::ostream &stream) const override {
-    stream << name_token_.GetValue() << subscript_start_token_.GetValue()
+    stream << *element_data_type_ << subscript_start_token_.GetValue()
            << subscript_end_token_.GetValue();
   }
 
  private:
-  real_talk::lexer::TokenInfo name_token_;
+  std::unique_ptr<DataTypeNode> element_data_type_;
   real_talk::lexer::TokenInfo subscript_start_token_;
   real_talk::lexer::TokenInfo subscript_end_token_;
 };

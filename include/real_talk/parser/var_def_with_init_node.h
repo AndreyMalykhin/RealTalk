@@ -5,12 +5,11 @@
 #include <string>
 #include <memory>
 #include "real_talk/parser/stmt_node.h"
+#include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/data_type_node.h"
 
 namespace real_talk {
 namespace parser {
-
-class ExprNode;
 
 class VarDefWithInitNode: public StmtNode {
  public:
@@ -43,6 +42,10 @@ class VarDefWithInitNode: public StmtNode {
 
   const std::unique_ptr<DataTypeNode> &GetVarDataType() const {
     return var_data_type_;
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitVarDefWithInit(*this);
   }
 
  private:

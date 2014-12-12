@@ -27,6 +27,10 @@ class PreDecNode: public ExprNode {
     return operand_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitPreDec(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const PreDecNode &rhs = static_cast<const PreDecNode&>(node);

@@ -18,6 +18,10 @@ class BoolNode: public ExprNode {
     return token_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitBool(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const BoolNode &bool_node = static_cast<const BoolNode&>(node);

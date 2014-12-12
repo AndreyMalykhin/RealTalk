@@ -18,6 +18,10 @@ class DoubleNode: public ExprNode {
     return token_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitDouble(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const DoubleNode &double_node = static_cast<const DoubleNode&>(node);

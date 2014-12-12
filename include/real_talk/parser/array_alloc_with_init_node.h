@@ -33,6 +33,10 @@ class ArrayAllocWithInitNode: public ExprNode {
     assert(value_separator_tokens_.size() == values_.size() - 1);
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitArrayAllocWithInit(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const ArrayAllocWithInitNode &rhs =

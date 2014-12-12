@@ -22,6 +22,10 @@ class ArrayAllocWithoutInitNode: public ExprNode {
                          subscript_end_token) {
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitArrayAllocWithoutInit(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const ArrayAllocWithoutInitNode &rhs =

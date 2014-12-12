@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_PARSER_DATA_TYPE_NODE_H_
 #define _REAL_TALK_PARSER_DATA_TYPE_NODE_H_
 
+#include <string>
 #include "real_talk/parser/node.h"
 
 namespace real_talk {

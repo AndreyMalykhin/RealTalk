@@ -12,14 +12,19 @@ namespace parser {
 
 class IfElseIfElseNode: public StmtNode {
  public:
-  IfElseIfElseNode(std::unique_ptr<IfNode> if_node,
-                   std::vector< std::unique_ptr<ElseIfNode> > else_if_nodes,
-                   const real_talk::lexer::TokenInfo &else_token,
-                   std::unique_ptr<ScopeNode> else_body)
+  IfElseIfElseNode(
+      std::unique_ptr<IfNode> if_node,
+      std::vector< std::unique_ptr<ElseIfNode> > else_if_nodes,
+      const real_talk::lexer::TokenInfo &else_token,
+      std::unique_ptr<ScopeNode> else_body)
       : if_else_if_(move(if_node), move(else_if_nodes)),
         else_token_(else_token),
         else_body_(move(else_body)) {
     assert(else_body_);
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitIfElseIfElse(*this);
   }
 
  private:

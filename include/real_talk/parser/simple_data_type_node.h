@@ -15,12 +15,12 @@ class SimpleDataTypeNode: public DataTypeNode {
       : name_token_(name_token) {
   }
 
-  const std::string &GetName() const {
-    return name_token_.GetValue();
-  }
-
   const real_talk::lexer::TokenInfo &GetNameToken() const {
     return name_token_;
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitSimpleDataType(*this);
   }
 
  private:

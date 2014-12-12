@@ -32,6 +32,10 @@ class VarDefWithoutInitNode: public StmtNode {
     return var_data_type_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitVarDefWithoutInit(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const VarDefWithoutInitNode &var_def_node =

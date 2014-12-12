@@ -29,6 +29,7 @@ enum class Token: std::uint8_t {
   kNew,
   kImport,
   kBreak,
+  kReturn,
   kContinue,
   kWhile,
   kIf,

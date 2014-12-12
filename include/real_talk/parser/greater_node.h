@@ -29,6 +29,10 @@ class GreaterNode: public ExprNode {
     return binary_expr_.GetRightOperand();
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitGreater(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     return binary_expr_.IsEqual(

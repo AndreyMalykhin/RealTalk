@@ -18,6 +18,10 @@ class LongNode: public ExprNode {
     return token_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitLong(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const LongNode &long_node = static_cast<const LongNode&>(node);

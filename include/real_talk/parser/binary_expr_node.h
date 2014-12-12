@@ -34,6 +34,10 @@ class BinaryExprNode final: public Node {
     return right_operand_;
   }
 
+  virtual void Accept(NodeVisitor&) const override {
+    assert(false);
+  }
+
   virtual void Print(std::ostream &stream) const override {
     stream << '(' << *left_operand_ << ' ' << token_.GetValue() << ' '
            << *right_operand_ << ')';

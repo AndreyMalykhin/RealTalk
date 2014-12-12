@@ -27,6 +27,10 @@ class PreIncNode: public ExprNode {
     return operand_;
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitPreInc(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const PreIncNode &pre_inc_node = static_cast<const PreIncNode&>(node);

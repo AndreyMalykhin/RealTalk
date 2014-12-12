@@ -17,6 +17,10 @@ class SubNode: public ExprNode {
       : binary_expr_(token, move(left_operand), move(right_operand)) {
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitSub(*this);
+  }
+
   const real_talk::lexer::TokenInfo &GetToken() const {
     return binary_expr_.GetToken();
   }

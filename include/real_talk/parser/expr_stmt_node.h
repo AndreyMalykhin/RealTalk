@@ -4,11 +4,10 @@
 
 #include <memory>
 #include "real_talk/parser/stmt_node.h"
+#include "real_talk/parser/expr_node.h"
 
 namespace real_talk {
 namespace parser {
-
-class ExprNode;
 
 class ExprStmtNode: public StmtNode {
  public:
@@ -18,6 +17,14 @@ class ExprStmtNode: public StmtNode {
       : expr_(move(expr)),
         end_token_(end_token) {
     assert(expr_);
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitExprStmt(*this);
+  }
+
+  const std::unique_ptr<ExprNode> &GetExpr() const {
+    return expr_;
   }
 
  private:

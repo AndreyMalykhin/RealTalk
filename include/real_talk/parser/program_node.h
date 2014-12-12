@@ -6,11 +6,11 @@
 #include <vector>
 #include <memory>
 #include "real_talk/parser/node.h"
+#include "real_talk/parser/stmt_node.h"
+#include "real_talk/parser/node_visitor.h"
 
 namespace real_talk {
 namespace parser {
-
-class StmtNode;
 
 class ProgramNode: public Node {
  public:
@@ -20,6 +20,10 @@ class ProgramNode: public Node {
 
   const std::vector< std::unique_ptr<StmtNode> > &GetStmts() const {
     return stmts_;
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitProgram(*this);
   }
 
  private:

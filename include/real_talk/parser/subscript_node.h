@@ -23,6 +23,10 @@ class SubscriptNode: public ExprNode {
     assert(index_);
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitSubscript(*this);
+  }
+
   const real_talk::lexer::TokenInfo &GetStartToken() const {
     return start_token_;
   }

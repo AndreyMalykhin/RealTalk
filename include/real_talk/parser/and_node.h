@@ -4,6 +4,7 @@
 
 #include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/binary_expr_node.h"
+#include "real_talk/parser/node_visitor.h"
 
 namespace real_talk {
 namespace parser {
@@ -27,6 +28,10 @@ class AndNode: public ExprNode {
 
   const std::unique_ptr<ExprNode> &GetRightOperand() const {
     return binary_expr_.GetRightOperand();
+  }
+
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitAnd(*this);
   }
 
  private:

@@ -29,6 +29,10 @@ class CallNode: public ExprNode {
            || (arg_separator_tokens_.size() == args_.size() - 1));
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitCall(*this);
+  }
+
  private:
   virtual bool IsEqual(const Node &node) const override {
     const CallNode &call_node = static_cast<const CallNode&>(node);
