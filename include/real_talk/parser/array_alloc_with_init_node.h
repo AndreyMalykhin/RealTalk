@@ -12,23 +12,16 @@ class ArrayAllocWithInitNode: public ExprNode {
  public:
   ArrayAllocWithInitNode(
       const real_talk::lexer::TokenInfo &op_token,
-      std::unique_ptr<SimpleDataTypeNode> data_type,
-      const real_talk::lexer::TokenInfo &subscript_start_token,
-      std::unique_ptr<ExprNode> size,
-      const real_talk::lexer::TokenInfo &subscript_end_token,
+      std::unique_ptr<BoundedArrayDataTypeNode> data_type,
       const real_talk::lexer::TokenInfo &values_start_token,
       std::vector< std::unique_ptr<ExprNode> > values,
       const std::vector< real_talk::lexer::TokenInfo > &value_separator_tokens,
       const real_talk::lexer::TokenInfo &values_end_token)
-  : array_alloc_node(op_token,
-                     move(data_type),
-                     subscript_start_token,
-                     move(size),
-                     subscript_end_token),
-    values_start_token_(values_start_token),
-    values_(move(values)),
-    value_separator_tokens_(value_separator_tokens),
-    values_end_token_(values_end_token) {
+      : array_alloc_node(op_token, move(data_type)),
+        values_start_token_(values_start_token),
+        values_(move(values)),
+        value_separator_tokens_(value_separator_tokens),
+        values_end_token_(values_end_token) {
     assert(!values_.empty());
     assert(value_separator_tokens_.size() == values_.size() - 1);
   }

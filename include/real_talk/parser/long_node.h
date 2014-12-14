@@ -3,13 +3,13 @@
 #define _REAL_TALK_PARSER_LONG_NODE_H_
 
 #include <string>
-#include "real_talk/parser/expr_node.h"
+#include "real_talk/parser/lit_node.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
 namespace parser {
 
-class LongNode: public ExprNode {
+class LongNode: public LitNode {
  public:
   explicit LongNode(const real_talk::lexer::TokenInfo &token): token_(token) {
   }

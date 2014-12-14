@@ -11,15 +11,8 @@ class ArrayAllocWithoutInitNode: public ExprNode {
  public:
   ArrayAllocWithoutInitNode(
       const real_talk::lexer::TokenInfo &op_token,
-      std::unique_ptr<SimpleDataTypeNode> data_type,
-      const real_talk::lexer::TokenInfo &subscript_start_token,
-      std::unique_ptr<ExprNode> size,
-      const real_talk::lexer::TokenInfo &subscript_end_token)
-      : array_alloc_node(op_token,
-                         move(data_type),
-                         subscript_start_token,
-                         move(size),
-                         subscript_end_token) {
+      std::unique_ptr<BoundedArrayDataTypeNode> data_type)
+      : array_alloc_node(op_token, move(data_type)) {
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {

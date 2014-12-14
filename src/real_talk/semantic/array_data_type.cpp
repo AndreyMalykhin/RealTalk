@@ -1,4 +1,5 @@
 
+#include <cassert>
 #include <string>
 #include "real_talk/lexer/simple_lexer.h"
 #include "real_talk/semantic/array_data_type.h"
@@ -13,6 +14,7 @@ namespace semantic {
 
 ArrayDataType::ArrayDataType(unique_ptr<DataType> element_data_type)
     : element_data_type_(move(element_data_type)) {
+  assert(element_data_type_);
 }
 
 string ArrayDataType::GetName() const {

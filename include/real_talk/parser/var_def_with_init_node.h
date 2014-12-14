@@ -6,42 +6,39 @@
 #include <memory>
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/expr_node.h"
+#include "real_talk/parser/def_node.h"
 #include "real_talk/parser/data_type_node.h"
 
 namespace real_talk {
 namespace parser {
 
-class VarDefWithInitNode: public StmtNode {
+class VarDefWithInitNode: public StmtNode, public DefNode {
  public:
   VarDefWithInitNode(
-      std::unique_ptr<DataTypeNode> var_data_type,
-      const real_talk::lexer::TokenInfo &var_name_token,
+      std::unique_ptr<DataTypeNode> data_type,
+      const real_talk::lexer::TokenInfo &name_token,
       const real_talk::lexer::TokenInfo &assign_token,
-      std::unique_ptr<ExprNode> var_value,
+      std::unique_ptr<ExprNode> value,
       const real_talk::lexer::TokenInfo &end_token)
-      : var_data_type_(move(var_data_type)),
-        var_name_token_(var_name_token),
+      : data_type_(move(data_type)),
+        name_token_(name_token),
         assign_token_(assign_token),
-        var_value_(move(var_value)),
+        value_(move(value)),
         end_token_(end_token) {
-    assert(var_data_type_);
-    assert(var_value_);
+    assert(data_type_);
+    assert(value_);
   }
 
-  const real_talk::lexer::TokenInfo &GetVarNameToken() const {
-    return var_name_token_;
+  const std::unique_ptr<ExprNode> &GetValue() const {
+    return value_;
   }
 
-  const std::unique_ptr<ExprNode> &GetVarValue() const {
-    return var_value_;
+  const real_talk::lexer::TokenInfo &GetNameToken() const override {
+    return name_token_;
   }
 
-  const std::string &GetVarName() const {
-    return var_name_token_.GetValue();
-  }
-
-  const std::unique_ptr<DataTypeNode> &GetVarDataType() const {
-    return var_data_type_;
+  const std::unique_ptr<DataTypeNode> &GetDataType() const override {
+    return data_type_;
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {
@@ -50,25 +47,31 @@ class VarDefWithInitNode: public StmtNode {
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    const VarDefWithInitNode &var_def_node =
-        static_cast<const VarDefWithInitNode&>(node);
-    return *var_data_type_ == *(var_def_node.var_data_type_)
-        && var_name_token_ == var_def_node.var_name_token_
-        && assign_token_ == var_def_node.assign_token_
-        && end_token_ == var_def_node.end_token_
-        && *var_value_ == *(var_def_node.var_value_);
+    return DoIsEqual(static_cast<const VarDefWithInitNode&>(node));
+  }
+
+  virtual bool IsEqual(const DefNode &node) const override {
+    return DoIsEqual(static_cast<const VarDefWithInitNode&>(node));
+  }
+
+  bool DoIsEqual(const VarDefWithInitNode &rhs) const {
+    return *data_type_ == *(rhs.data_type_)
+        && name_token_ == rhs.name_token_
+        && assign_token_ == rhs.assign_token_
+        && end_token_ == rhs.end_token_
+        && *value_ == *(rhs.value_);
   }
 
   virtual void Print(std::ostream &stream) const override {
-    stream << *var_data_type_ << ' ' << var_name_token_.GetValue() << ' '
-           << assign_token_.GetValue() << ' ' << *var_value_
+    stream << *data_type_ << ' ' << name_token_.GetValue() << ' '
+           << assign_token_.GetValue() << ' ' << *value_
            << end_token_.GetValue();
   }
 
-  std::unique_ptr<DataTypeNode> var_data_type_;
-  real_talk::lexer::TokenInfo var_name_token_;
+  std::unique_ptr<DataTypeNode> data_type_;
+  real_talk::lexer::TokenInfo name_token_;
   real_talk::lexer::TokenInfo assign_token_;
-  std::unique_ptr<ExprNode> var_value_;
+  std::unique_ptr<ExprNode> value_;
   real_talk::lexer::TokenInfo end_token_;
 };
 }

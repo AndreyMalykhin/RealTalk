@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 #include "real_talk/parser/stmt_node.h"
-#include "real_talk/parser/expr_node.h"
+#include "real_talk/parser/string_node.h"
 
 namespace real_talk {
 namespace parser {
@@ -14,7 +14,7 @@ class ImportNode: public StmtNode {
  public:
   ImportNode(
       const real_talk::lexer::TokenInfo &start_token,
-      std::unique_ptr<ExprNode> file_path,
+      std::unique_ptr<StringNode> file_path,
       const real_talk::lexer::TokenInfo &end_token)
       : start_token_(start_token),
         file_path_(move(file_path)),
@@ -40,7 +40,7 @@ class ImportNode: public StmtNode {
   }
 
   real_talk::lexer::TokenInfo start_token_;
-  std::unique_ptr<ExprNode> file_path_;
+  std::unique_ptr<StringNode> file_path_;
   real_talk::lexer::TokenInfo end_token_;
 };
 }

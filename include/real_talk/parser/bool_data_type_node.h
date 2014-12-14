@@ -1,6 +1,6 @@
 
-#ifndef _REAL_TALK_PARSER_SIMPLE_DATA_TYPE_NODE_H_
-#define _REAL_TALK_PARSER_SIMPLE_DATA_TYPE_NODE_H_
+#ifndef _REAL_TALK_PARSER_BOOL_DATA_TYPE_NODE_H_
+#define _REAL_TALK_PARSER_BOOL_DATA_TYPE_NODE_H_
 
 #include <string>
 #include "real_talk/parser/data_type_node.h"
@@ -9,9 +9,9 @@
 namespace real_talk {
 namespace parser {
 
-class SimpleDataTypeNode: public DataTypeNode {
+class BoolDataTypeNode: public DataTypeNode {
  public:
-  explicit SimpleDataTypeNode(const real_talk::lexer::TokenInfo &name_token)
+  explicit BoolDataTypeNode(const real_talk::lexer::TokenInfo &name_token)
       : name_token_(name_token) {
   }
 
@@ -20,14 +20,18 @@ class SimpleDataTypeNode: public DataTypeNode {
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {
-    visitor.VisitSimpleDataType(*this);
+    visitor.VisitBoolDataType(*this);
+  }
+
+  virtual std::unique_ptr<DataTypeNode> Clone() const override {
+    return std::unique_ptr<DataTypeNode>(new BoolDataTypeNode(name_token_));
   }
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    const SimpleDataTypeNode &data_type_node =
-        static_cast<const SimpleDataTypeNode&>(node);
-    return name_token_ == data_type_node.name_token_;
+    const BoolDataTypeNode &rhs =
+        static_cast<const BoolDataTypeNode&>(node);
+    return name_token_ == rhs.name_token_;
   }
 
   virtual void Print(std::ostream &stream) const override {

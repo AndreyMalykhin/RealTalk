@@ -91,10 +91,24 @@ class SimpleSemanticAnalyzer: public real_talk::parser::NodeVisitor {
       const real_talk::parser::VarDefWithInitNode &node) override;
   virtual void VisitVarLoad(
       const real_talk::parser::VarLoadNode &node) override;
-  virtual void VisitSimpleDataType(
-      const real_talk::parser::SimpleDataTypeNode &node) override;
+  virtual void VisitIntDataType(
+      const real_talk::parser::IntDataTypeNode &node) override;
+  virtual void VisitLongDataType(
+      const real_talk::parser::LongDataTypeNode &node) override;
+  virtual void VisitDoubleDataType(
+      const real_talk::parser::DoubleDataTypeNode &node) override;
+  virtual void VisitCharDataType(
+      const real_talk::parser::CharDataTypeNode &node) override;
+  virtual void VisitStringDataType(
+      const real_talk::parser::StringDataTypeNode &node) override;
+  virtual void VisitBoolDataType(
+      const real_talk::parser::BoolDataTypeNode &node) override;
+  virtual void VisitVoidDataType(
+      const real_talk::parser::VoidDataTypeNode &node) override;
   virtual void VisitArrayDataType(
       const real_talk::parser::ArrayDataTypeNode &node) override;
+  virtual void VisitBoundedArrayDataType(
+      const real_talk::parser::BoundedArrayDataTypeNode &node) override;
   virtual void VisitReturnValue(
       const real_talk::parser::ReturnValueNode &node) override;
   virtual void VisitReturn(
@@ -102,24 +116,23 @@ class SimpleSemanticAnalyzer: public real_talk::parser::NodeVisitor {
 
  private:
   typedef std::unordered_map<std::string,
-                             std::unique_ptr<DataType> > VarDataTypes;
-  typedef std::unordered_map<const real_talk::parser::ExprNode*,
-                             std::unique_ptr<DataType> > ExprDataTypes;
+                             std::unique_ptr<DataType> > IdDataTypes;
 
   struct Scope {
-    VarDataTypes var_data_types;
+    IdDataTypes id_data_types;
   };
 
-  std::unique_ptr<DataTypeAdaptor> CreateDataTypeAdaptor(
-      const real_talk::parser::DataTypeNode &data_type_node);
   std::unique_ptr<DataType> CreateDataType(
       const real_talk::parser::DataTypeNode &data_type_node);
-  std::unique_ptr<DataType> GetVarDataType(
-      const real_talk::parser::VarLoadNode &var);
+  std::unique_ptr<DataType> GetDataTypeOfId(
+      const real_talk::parser::VarLoadNode &var_node);
 
   const real_talk::parser::ProgramNode &program_;
   std::vector< std::unique_ptr<SemanticError> > errors_;
-  ExprDataTypes expr_data_types_;
+  SemanticAnalysisResult::DefAnalyzes def_analyzes_;
+  SemanticAnalysisResult::ExprAnalyzes expr_analyzes_;
+  SemanticAnalysisResult::LitAnalyzes lit_analyzes_;
+  SemanticAnalysisResult::IdAnalyzes id_analyzes_;
   std::vector<Scope> scopes_stack_;
   std::unique_ptr<DataType> current_data_type_;
 };

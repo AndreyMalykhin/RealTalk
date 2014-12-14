@@ -9,13 +9,14 @@
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/scope_node.h"
 #include "real_talk/parser/arg_def_node.h"
+#include "real_talk/parser/def_node.h"
 
 namespace real_talk {
 namespace parser {
 
 class DataTypeNode;
 
-class FuncDefNode: public StmtNode {
+class FuncDefNode: public StmtNode, public DefNode {
  public:
   FuncDefNode(
       std::unique_ptr<DataTypeNode> return_data_type,
@@ -38,15 +39,11 @@ class FuncDefNode: public StmtNode {
            || (arg_separator_tokens_.size() == args_.size() - 1));
   }
 
-  const real_talk::lexer::TokenInfo &GetFuncNameToken() const {
+  const real_talk::lexer::TokenInfo &GetNameToken() const override {
     return func_name_token_;
   }
 
-  const std::string &GetFuncName() const {
-    return func_name_token_.GetValue();
-  }
-
-  const std::unique_ptr<DataTypeNode> &GetReturnDataType() const {
+  const std::unique_ptr<DataTypeNode> &GetDataType() const override {
     return return_data_type_;
   }
 
@@ -56,7 +53,21 @@ class FuncDefNode: public StmtNode {
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    const FuncDefNode &rhs = static_cast<const FuncDefNode&>(node);
+    return DoIsEqual(static_cast<const FuncDefNode&>(node));
+  }
+
+  virtual bool IsEqual(const DefNode &node) const override {
+    return DoIsEqual(static_cast<const FuncDefNode&>(node));
+  }
+
+  bool DoIsEqual(const FuncDefNode &rhs) const {
+    static auto args_comparator = [](
+        const std::unique_ptr<ArgDefNode> &lhs_arg,
+        const std::unique_ptr<ArgDefNode> &rhs_arg) {
+      return static_cast<const Node&>(*lhs_arg) ==
+      static_cast<const Node&>(*rhs_arg);
+    };
+
     return *return_data_type_ == *(rhs.return_data_type_)
         && func_name_token_ == rhs.func_name_token_
         && args_start_token_ == rhs.args_start_token_
@@ -68,10 +79,10 @@ class FuncDefNode: public StmtNode {
             arg_separator_tokens_.begin(),
             arg_separator_tokens_.end(),
             rhs.arg_separator_tokens_.begin())
-        && std::equal(
-            boost::make_indirect_iterator(args_.begin()),
-            boost::make_indirect_iterator(args_.end()),
-            boost::make_indirect_iterator(rhs.args_.begin()))
+        && std::equal(args_.begin(),
+                      args_.end(),
+                      rhs.args_.begin(),
+                      args_comparator)
         && *body_ == *(rhs.body_);
   }
 
@@ -84,11 +95,12 @@ class FuncDefNode: public StmtNode {
       auto arg_separator_token_it = arg_separator_tokens_.begin();
 
       for (auto arg_it = args_.begin(); arg_it != last_arg_it; ++arg_it) {
-        stream << **arg_it << arg_separator_token_it->GetValue() << ' ';
+        stream << static_cast<const Node&>(**arg_it)
+               << arg_separator_token_it->GetValue() << ' ';
         ++arg_separator_token_it;
       }
 
-      stream << **last_arg_it;
+      stream << static_cast<const Node&>(**last_arg_it);
     }
 
     stream << args_end_token_.GetValue() << ' ' << *body_;

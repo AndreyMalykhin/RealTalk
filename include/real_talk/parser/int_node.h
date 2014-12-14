@@ -2,14 +2,15 @@
 #ifndef _REAL_TALK_PARSER_INT_NODE_H_
 #define _REAL_TALK_PARSER_INT_NODE_H_
 
-#include "real_talk/parser/expr_node.h"
+#include <memory>
+#include "real_talk/parser/lit_node.h"
 #include "real_talk/parser/node_visitor.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
 namespace parser {
 
-class IntNode: public ExprNode {
+class IntNode: public LitNode {
  public:
   explicit IntNode(const real_talk::lexer::TokenInfo &token): token_(token) {
   }
@@ -20,6 +21,10 @@ class IntNode: public ExprNode {
 
   virtual void Accept(NodeVisitor &visitor) const override {
     visitor.VisitInt(*this);
+  }
+
+  virtual std::unique_ptr<IntNode> Clone() const {
+    return std::unique_ptr<IntNode>(new IntNode(token_));
   }
 
  private:

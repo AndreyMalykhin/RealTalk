@@ -1,11 +1,16 @@
 
 #include <boost/iterator/indirect_iterator.hpp>
+#include <cassert>
 #include <string>
 #include <vector>
 #include <utility>
 #include "real_talk/parser/expr_node.h"
+#include "real_talk/parser/def_node.h"
+#include "real_talk/parser/var_load_node.h"
+#include "real_talk/parser/lit_node.h"
 #include "real_talk/semantic/semantic_analysis_result.h"
 #include "real_talk/semantic/data_type.h"
+#include "real_talk/semantic/lit.h"
 
 using std::string;
 using std::vector;
@@ -21,8 +26,38 @@ namespace real_talk {
 namespace semantic {
 
 SemanticAnalysisResult::SemanticAnalysisResult(
-    vector< unique_ptr<SemanticError> > errors)
-    : errors_(move(errors)) {
+    vector< unique_ptr<SemanticError> > errors,
+    DefAnalyzes def_analyzes,
+    ExprAnalyzes expr_analyzes,
+    LitAnalyzes lit_analyzes,
+    const IdAnalyzes &id_analyzes)
+    : errors_(move(errors)),
+      def_analyzes_(move(def_analyzes)),
+      expr_analyzes_(move(expr_analyzes)),
+      lit_analyzes_(move(lit_analyzes)),
+      id_analyzes_(id_analyzes) {
+}
+
+DefAnalysis::DefAnalysis(unique_ptr<DataType> data_type)
+    : data_type_(move(data_type)) {
+  assert(data_type_);
+}
+
+ExprAnalysis::ExprAnalysis(unique_ptr<DataType> data_type)
+    : data_type_(move(data_type)) {
+  assert(data_type_);
+}
+
+LitAnalysis::LitAnalysis(unique_ptr<Lit> lit): lit_(move(lit)) {
+  assert(lit_);
+}
+
+const Lit &LitAnalysis::GetLit() const {
+  return *lit_;
+}
+
+const DataType &ExprAnalysis::GetDataType() const {
+  return *data_type_;
 }
 
 SemanticHint::SemanticHint(
@@ -47,6 +82,22 @@ SemanticError::SemanticError(
       hints_(move(hints)) {
 }
 
+bool operator==(const DefAnalysis &lhs, const DefAnalysis &rhs) {
+  return *(lhs.data_type_) == *(rhs.data_type_);
+}
+
+bool operator==(const ExprAnalysis &lhs, const ExprAnalysis &rhs) {
+  return *(lhs.data_type_) == *(rhs.data_type_);
+}
+
+bool operator==(const LitAnalysis &lhs, const LitAnalysis &rhs) {
+  return *(lhs.lit_) == *(rhs.lit_);
+}
+
+bool operator==(const IdAnalysis &lhs, const IdAnalysis &rhs) {
+  return lhs.def_ == rhs.def_;
+}
+
 bool operator==(const SemanticHint &lhs, const SemanticHint &rhs) {
   return lhs.message_ == rhs.message_
       && lhs.line_number_ == rhs.line_number_
@@ -67,9 +118,25 @@ bool operator==(const SemanticError &lhs, const SemanticError &rhs) {
 bool operator==(const SemanticAnalysisResult &lhs,
                 const SemanticAnalysisResult &rhs) {
   return lhs.errors_.size() == rhs.errors_.size()
+      && lhs.def_analyzes_.size() == rhs.def_analyzes_.size()
+      && lhs.expr_analyzes_.size() == rhs.expr_analyzes_.size()
+      && lhs.lit_analyzes_.size() == rhs.lit_analyzes_.size()
+      && lhs.id_analyzes_.size() == rhs.id_analyzes_.size()
       && equal(make_indirect_iterator(lhs.errors_.begin()),
                make_indirect_iterator(lhs.errors_.end()),
-               make_indirect_iterator(rhs.errors_.begin()));
+               make_indirect_iterator(rhs.errors_.begin()))
+      && equal(lhs.def_analyzes_.begin(),
+               lhs.def_analyzes_.end(),
+               rhs.def_analyzes_.begin())
+      && equal(lhs.expr_analyzes_.begin(),
+               lhs.expr_analyzes_.end(),
+               rhs.expr_analyzes_.begin())
+      && equal(lhs.lit_analyzes_.begin(),
+               lhs.lit_analyzes_.end(),
+               rhs.lit_analyzes_.begin())
+      && equal(lhs.id_analyzes_.begin(),
+               lhs.id_analyzes_.end(),
+               rhs.id_analyzes_.begin());
 }
 
 ostream &operator<<(ostream &stream, const SemanticHint &hint) {
@@ -90,9 +157,41 @@ ostream &operator<<(ostream &stream, const SemanticError &error) {
   return stream;
 }
 
+ostream &operator<<(ostream &stream, const DefAnalysis &def_analysis) {
+  return stream << "data_type=" << *(def_analysis.data_type_);
+}
+
+ostream &operator<<(ostream &stream, const ExprAnalysis &expr_analysis) {
+  return stream << "data_type=" << *(expr_analysis.data_type_);
+}
+
+ostream &operator<<(ostream &stream, const LitAnalysis &lit_analysis) {
+  return stream << "value=" << *(lit_analysis.lit_);
+}
+
+ostream &operator<<(ostream &stream, const IdAnalysis &id_analysis) {
+  return stream << "def=" << *(id_analysis.def_);
+}
+
 ostream &operator<<(ostream &stream, const SemanticAnalysisResult &result) {
   for (const unique_ptr<SemanticError> &error: result.errors_) {
     stream << "error=" << *error << "\n";
+  }
+
+  for (const auto &pair: result.def_analyzes_) {
+    stream << "def=" << *(pair.first) << "; analysis=" << pair.second << "\n";
+  }
+
+  for (const auto &pair: result.expr_analyzes_) {
+    stream << "expr=" << *(pair.first) << "; analysis=" << pair.second << "\n";
+  }
+
+  for (const auto &pair: result.lit_analyzes_) {
+    stream << "lit=" << *(pair.first) << "; analysis=" << pair.second << "\n";
+  }
+
+  for (const auto &pair: result.id_analyzes_) {
+    stream << "id=" << *(pair.first) << "; analysis=" << pair.second << "\n";
   }
 
   return stream;

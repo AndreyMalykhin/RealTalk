@@ -4,6 +4,7 @@
 
 #include <string>
 #include "real_talk/parser/expr_node.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {

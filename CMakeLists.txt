@@ -13,8 +13,18 @@ add_library(real_talk
   src/real_talk/parser/simple_parser.cpp
   src/real_talk/semantic/data_type.cpp
   src/real_talk/semantic/array_data_type.cpp
+  src/real_talk/semantic/bounded_array_data_type.cpp
   src/real_talk/semantic/int_data_type.cpp
+  src/real_talk/semantic/long_data_type.cpp
+  src/real_talk/semantic/double_data_type.cpp
   src/real_talk/semantic/string_data_type.cpp
+  src/real_talk/semantic/char_data_type.cpp
+  src/real_talk/semantic/bool_data_type.cpp
+  src/real_talk/semantic/void_data_type.cpp
+  src/real_talk/semantic/lit.cpp
+  src/real_talk/semantic/int_lit.cpp
+  src/real_talk/semantic/long_lit.cpp
+  src/real_talk/semantic/double_lit.cpp
   src/real_talk/semantic/semantic_analysis_result.cpp
   src/real_talk/semantic/simple_semantic_analyzer.cpp
 )
