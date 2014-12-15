@@ -6,7 +6,7 @@
 #include <utility>
 #include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/def_node.h"
-#include "real_talk/parser/var_load_node.h"
+#include "real_talk/parser/id_node.h"
 #include "real_talk/parser/lit_node.h"
 #include "real_talk/semantic/semantic_analysis_result.h"
 #include "real_talk/semantic/data_type.h"
@@ -21,6 +21,7 @@ using std::pair;
 using std::ostream;
 using boost::make_indirect_iterator;
 using real_talk::parser::ExprNode;
+using real_talk::parser::DefNode;
 
 namespace real_talk {
 namespace semantic {
@@ -36,6 +37,10 @@ SemanticAnalysisResult::SemanticAnalysisResult(
       expr_analyzes_(move(expr_analyzes)),
       lit_analyzes_(move(lit_analyzes)),
       id_analyzes_(id_analyzes) {
+}
+
+IdAnalysis::IdAnalysis(const DefNode* def): def_(def) {
+  assert(def_);
 }
 
 DefAnalysis::DefAnalysis(unique_ptr<DataType> data_type)

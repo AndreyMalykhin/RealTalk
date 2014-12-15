@@ -35,7 +35,7 @@
 #include "real_talk/parser/arg_def_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/array_alloc_without_init_node.h"
-#include "real_talk/parser/var_load_node.h"
+#include "real_talk/parser/id_node.h"
 #include "real_talk/parser/subscript_node.h"
 #include "real_talk/parser/assign_node.h"
 #include "real_talk/parser/greater_or_equal_node.h"
@@ -109,7 +109,7 @@ using real_talk::parser::FuncDefNode;
 using real_talk::parser::ArgDefNode;
 using real_talk::parser::ArrayAllocWithInitNode;
 using real_talk::parser::ArrayAllocWithoutInitNode;
-using real_talk::parser::VarLoadNode;
+using real_talk::parser::IdNode;
 using real_talk::parser::SubscriptNode;
 using real_talk::parser::AssignNode;
 using real_talk::parser::GreaterOrEqualNode;
@@ -887,10 +887,10 @@ TEST_F(SimpleParserTest, OrPrecedesAssign) {
     };
     unique_ptr<ExprNode> int1(new IntNode(tokens[2]));
     unique_ptr<ExprNode> int2(new IntNode(tokens[4]));
-    unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+    unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
     unique_ptr<ExprNode> or1(new OrNode(tokens[3], move(int1), move(int2)));
     unique_ptr<ExprNode> assign1(
-        new AssignNode(tokens[1], move(var_load1), move(or1)));
+        new AssignNode(tokens[1], move(id1), move(or1)));
     test_expr_nodes.push_back({tokens, move(assign1)});
   }
 
@@ -903,10 +903,10 @@ TEST_F(SimpleParserTest, OrPrecedesAssign) {
       TokenInfo(Token::kIntLit, "1", UINT32_C(9), UINT32_C(10))
     };
     unique_ptr<ExprNode> int1(new IntNode(tokens[4]));
-    unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
-    unique_ptr<ExprNode> var_load2(new VarLoadNode(tokens[2]));
+    unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
+    unique_ptr<ExprNode> id2(new IdNode(tokens[2]));
     unique_ptr<ExprNode> or1(
-        new OrNode(tokens[1], move(var_load1), move(var_load2)));
+        new OrNode(tokens[1], move(id1), move(id2)));
     unique_ptr<ExprNode> assign1(
         new AssignNode(tokens[3], move(or1), move(int1)));
     test_expr_nodes.push_back({tokens, move(assign1)});
@@ -1117,10 +1117,10 @@ TEST_F(SimpleParserTest, Subscript) {
     TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(6)),
     TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(7), UINT32_C(8))
   };
-  unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+  unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
   unique_ptr<ExprNode> int1(new IntNode(tokens[2]));
   unique_ptr<ExprNode> subscript1(
-      new SubscriptNode(tokens[1], tokens[3], move(var_load1), move(int1)));
+      new SubscriptNode(tokens[1], tokens[3], move(id1), move(int1)));
   test_expr_nodes.push_back({tokens, move(subscript1)});
 
   for (TestNode<ExprNode> &test_expr_node: test_expr_nodes) {
@@ -1141,9 +1141,9 @@ TEST_F(SimpleParserTest, SubscriptIsLeftAssociative) {
   };
   unique_ptr<ExprNode> int1(new IntNode(tokens[2]));
   unique_ptr<ExprNode> int2(new IntNode(tokens[5]));
-  unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+  unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
   unique_ptr<ExprNode> subscript1(
-      new SubscriptNode(tokens[1], tokens[3], move(var_load1), move(int1)));
+      new SubscriptNode(tokens[1], tokens[3], move(id1), move(int1)));
   unique_ptr<ExprNode> subscript2(
       new SubscriptNode(tokens[4], tokens[6], move(subscript1), move(int2)));
   test_expr_nodes.push_back({tokens, move(subscript2)});
@@ -1162,10 +1162,10 @@ TEST_F(SimpleParserTest, SubscriptPrecedesNot) {
     TokenInfo(Token::kIntLit, "7", UINT32_C(7), UINT32_C(8)),
     TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(9), UINT32_C(10))
   };
-  unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[1]));
+  unique_ptr<ExprNode> id1(new IdNode(tokens[1]));
   unique_ptr<ExprNode> int1(new IntNode(tokens[3]));
   unique_ptr<ExprNode> subscript1(
-      new SubscriptNode(tokens[2], tokens[4], move(var_load1), move(int1)));
+      new SubscriptNode(tokens[2], tokens[4], move(id1), move(int1)));
   unique_ptr<ExprNode> not1(
       new NotNode(tokens[0], move(subscript1)));
   test_expr_nodes.push_back({tokens, move(not1)});
@@ -1183,9 +1183,9 @@ TEST_F(SimpleParserTest, Assign) {
     TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(6))
   };
   unique_ptr<ExprNode> int1(new IntNode(tokens[2]));
-  unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+  unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
   unique_ptr<ExprNode> assign1(
-      new AssignNode(tokens[1], move(var_load1), move(int1)));
+      new AssignNode(tokens[1], move(id1), move(int1)));
   test_expr_nodes.push_back({tokens, move(assign1)});
 
   for (TestNode<ExprNode> &test_expr_node: test_expr_nodes) {
@@ -1203,12 +1203,12 @@ TEST_F(SimpleParserTest, AssignIsRightAssociative) {
     TokenInfo(Token::kIntLit, "7", UINT32_C(9), UINT32_C(10))
   };
   unique_ptr<ExprNode> int1(new IntNode(tokens[4]));
-  unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[2]));
-  unique_ptr<ExprNode> var_load2(new VarLoadNode(tokens[0]));
+  unique_ptr<ExprNode> id1(new IdNode(tokens[2]));
+  unique_ptr<ExprNode> id2(new IdNode(tokens[0]));
   unique_ptr<ExprNode> assign1(
-      new AssignNode(tokens[3], move(var_load1), move(int1)));
+      new AssignNode(tokens[3], move(id1), move(int1)));
   unique_ptr<ExprNode> assign2(
-      new AssignNode(tokens[1], move(var_load2), move(assign1)));
+      new AssignNode(tokens[1], move(id2), move(assign1)));
   test_expr_nodes.push_back({tokens, move(assign2)});
 
   for (TestNode<ExprNode> &test_expr_node: test_expr_nodes) {
@@ -1726,13 +1726,13 @@ TEST_F(SimpleParserTest, GreaterOrEqualPrecedesEqual) {
   }
 }
 
-TEST_F(SimpleParserTest, VarLoad) {
+TEST_F(SimpleParserTest, Id) {
   vector< TestNode<ExprNode> > test_expr_nodes;
   vector<TokenInfo> tokens = {
     TokenInfo(Token::kName, "myVar", UINT32_C(1), UINT32_C(2))
   };
-  unique_ptr<ExprNode> var_load(new VarLoadNode(tokens[0]));
-  test_expr_nodes.push_back({tokens, move(var_load)});
+  unique_ptr<ExprNode> id(new IdNode(tokens[0]));
+  test_expr_nodes.push_back({tokens, move(id)});
 
   for (TestNode<ExprNode> &test_expr_node: test_expr_nodes) {
     TestParse(ExprToProgram(test_expr_node));
@@ -1766,7 +1766,7 @@ TEST_F(SimpleParserTest, CallWithArgs) {
       TokenInfo(Token::kIntLit, "2", UINT32_C(9), UINT32_C(10)),
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(11), UINT32_C(12))
     };
-    unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+    unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
     const TokenInfo op_start_token = tokens[1];
     vector< unique_ptr<ExprNode> > args1;
     unique_ptr<ExprNode> int1(new IntNode(tokens[2]));
@@ -1776,7 +1776,7 @@ TEST_F(SimpleParserTest, CallWithArgs) {
     const vector<TokenInfo> arg_separator_tokens = {tokens[3]};
     const TokenInfo op_end_token = tokens[5];
     unique_ptr<ExprNode> call1(new CallNode(
-        move(var_load1),
+        move(id1),
         op_start_token,
         move(args1),
         arg_separator_tokens,
@@ -1791,7 +1791,7 @@ TEST_F(SimpleParserTest, CallWithArgs) {
       TokenInfo(Token::kIntLit, "1", UINT32_C(5), UINT32_C(6)),
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(11), UINT32_C(12))
     };
-    unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+    unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
     const TokenInfo op_start_token = tokens[1];
     vector< unique_ptr<ExprNode> > args1;
     unique_ptr<ExprNode> int1(new IntNode(tokens[2]));
@@ -1799,7 +1799,7 @@ TEST_F(SimpleParserTest, CallWithArgs) {
     const vector<TokenInfo> arg_separator_tokens;
     const TokenInfo op_end_token = tokens[3];
     unique_ptr<ExprNode> call1(new CallNode(
-        move(var_load1),
+        move(id1),
         op_start_token,
         move(args1),
         arg_separator_tokens,
@@ -1819,13 +1819,13 @@ TEST_F(SimpleParserTest, CallWithoutArgs) {
     TokenInfo(Token::kGroupStart, "(", UINT32_C(3), UINT32_C(4)),
     TokenInfo(Token::kGroupEnd, ")", UINT32_C(11), UINT32_C(12))
   };
-  unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+  unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
   const TokenInfo op_start_token = tokens[1];
   vector< unique_ptr<ExprNode> > args1;
   const vector<TokenInfo> arg_separator_tokens;
   const TokenInfo op_end_token = tokens[2];
   unique_ptr<ExprNode> call1(new CallNode(
-      move(var_load1),
+      move(id1),
       op_start_token,
       move(args1),
       arg_separator_tokens,
@@ -1846,13 +1846,13 @@ TEST_F(SimpleParserTest, CallIsLeftAssociative) {
     TokenInfo(Token::kGroupStart, "(", UINT32_C(7), UINT32_C(8)),
     TokenInfo(Token::kGroupEnd, ")", UINT32_C(9), UINT32_C(10))
   };
-  unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+  unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
   const TokenInfo op_start_token1 = tokens[1];
   vector< unique_ptr<ExprNode> > args1;
   const vector<TokenInfo> arg_separator_tokens1;
   const TokenInfo op_end_token1 = tokens[2];
   unique_ptr<ExprNode> call1(new CallNode(
-      move(var_load1),
+      move(id1),
       op_start_token1,
       move(args1),
       arg_separator_tokens1,
@@ -1886,13 +1886,13 @@ TEST_F(SimpleParserTest, CallPrioSameAsSubscript) {
       TokenInfo(Token::kIntLit, "1", UINT32_C(9), UINT32_C(10)),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(11), UINT32_C(12))
     };
-    unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+    unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
     const TokenInfo call_op_start_token = tokens[1];
     vector< unique_ptr<ExprNode> > call_args;
     const vector<TokenInfo> call_arg_separator_tokens;
     const TokenInfo call_op_end_token = tokens[2];
     unique_ptr<ExprNode> call1(new CallNode(
-        move(var_load1),
+        move(id1),
         call_op_start_token,
         move(call_args),
         call_arg_separator_tokens,
@@ -1912,10 +1912,10 @@ TEST_F(SimpleParserTest, CallPrioSameAsSubscript) {
       TokenInfo(Token::kGroupStart, "(", UINT32_C(9), UINT32_C(10)),
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(11), UINT32_C(12))
     };
-    unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[0]));
+    unique_ptr<ExprNode> id1(new IdNode(tokens[0]));
     unique_ptr<ExprNode> int1(new IntNode(tokens[2]));
     unique_ptr<ExprNode> subscript1(
-        new SubscriptNode(tokens[1], tokens[3], move(var_load1), move(int1)));
+        new SubscriptNode(tokens[1], tokens[3], move(id1), move(int1)));
     const TokenInfo call_op_start_token = tokens[4];
     vector< unique_ptr<ExprNode> > call_args;
     const vector<TokenInfo> call_arg_separator_tokens;
@@ -2078,13 +2078,13 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
       const TokenInfo args_end_token = tokens[8];
       const TokenInfo body_start_token = tokens[9];
       vector< unique_ptr<StmtNode> > body_stmts;
-      unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[10]));
+      unique_ptr<ExprNode> id1(new IdNode(tokens[10]));
       unique_ptr<StmtNode> body_stmt1(
-          new ExprStmtNode(move(var_load1), tokens[11]));
+          new ExprStmtNode(move(id1), tokens[11]));
       body_stmts.push_back(move(body_stmt1));
-      unique_ptr<ExprNode> var_load2(new VarLoadNode(tokens[12]));
+      unique_ptr<ExprNode> id2(new IdNode(tokens[12]));
       unique_ptr<StmtNode> body_stmt2(
-          new ExprStmtNode(move(var_load2), tokens[13]));
+          new ExprStmtNode(move(id2), tokens[13]));
       body_stmts.push_back(move(body_stmt2));
       const TokenInfo body_end_token = tokens[14];
       unique_ptr<ScopeNode> body(
@@ -2124,9 +2124,9 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
       const TokenInfo args_end_token = tokens[5];
       const TokenInfo body_start_token = tokens[6];
       vector< unique_ptr<StmtNode> > body_stmts;
-      unique_ptr<ExprNode> var_load1(new VarLoadNode(tokens[7]));
+      unique_ptr<ExprNode> id1(new IdNode(tokens[7]));
       unique_ptr<StmtNode> body_stmt1(
-          new ExprStmtNode(move(var_load1), tokens[8]));
+          new ExprStmtNode(move(id1), tokens[8]));
       body_stmts.push_back(move(body_stmt1));
       const TokenInfo body_end_token = tokens[9];
       unique_ptr<ScopeNode> body(

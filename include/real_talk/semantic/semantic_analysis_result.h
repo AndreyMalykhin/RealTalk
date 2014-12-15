@@ -15,7 +15,7 @@ namespace parser {
 class ExprNode;
 class DefNode;
 class LitNode;
-class VarLoadNode;
+class IdNode;
 }
 
 namespace semantic {
@@ -106,7 +106,7 @@ class IdAnalysis {
                                   const IdAnalysis &analysis);
 
  private:
-  real_talk::parser::DefNode* def_;
+  const real_talk::parser::DefNode* def_;
 };
 
 class SemanticAnalysisResult {
@@ -117,7 +117,7 @@ class SemanticAnalysisResult {
                              ExprAnalysis> ExprAnalyzes;
   typedef std::unordered_map<const real_talk::parser::LitNode*,
                              LitAnalysis> LitAnalyzes;
-  typedef std::unordered_map<const real_talk::parser::VarLoadNode*,
+  typedef std::unordered_map<const real_talk::parser::IdNode*,
                              IdAnalysis> IdAnalyzes;
 
   SemanticAnalysisResult(

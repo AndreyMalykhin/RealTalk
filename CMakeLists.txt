@@ -25,6 +25,8 @@ add_library(real_talk
   src/real_talk/semantic/int_lit.cpp
   src/real_talk/semantic/long_lit.cpp
   src/real_talk/semantic/double_lit.cpp
+  src/real_talk/semantic/string_lit.cpp
+  src/real_talk/semantic/bool_lit.cpp
   src/real_talk/semantic/semantic_analysis_result.cpp
   src/real_talk/semantic/simple_semantic_analyzer.cpp
 )

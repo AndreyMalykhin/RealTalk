@@ -27,6 +27,14 @@ class IfNode: public Node {
     assert(body_);
   }
 
+  const std::unique_ptr<ScopeNode> &GetBody() const {
+    return body_;
+  }
+
+  const std::unique_ptr<ExprNode> &GetCond() const {
+    return cond_;
+  }
+
   virtual void Accept(NodeVisitor&) const override {
     assert(false);
   }

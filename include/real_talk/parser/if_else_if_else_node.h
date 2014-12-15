@@ -10,7 +10,7 @@
 namespace real_talk {
 namespace parser {
 
-class IfElseIfElseNode: public StmtNode {
+class IfElseIfElseNode: public BranchNode {
  public:
   IfElseIfElseNode(
       std::unique_ptr<IfNode> if_node,
@@ -21,6 +21,18 @@ class IfElseIfElseNode: public StmtNode {
         else_token_(else_token),
         else_body_(move(else_body)) {
     assert(else_body_);
+  }
+
+  const std::unique_ptr<IfNode> &GetIf() const override {
+    return if_else_if_.GetIf();
+  }
+
+  const std::vector< std::unique_ptr<ElseIfNode> > &GetElseIfs() const override {
+    return if_else_if_.GetElseIfs();
+  }
+
+  const std::unique_ptr<ScopeNode> &GetElseBody() const {
+    return else_body_;
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {

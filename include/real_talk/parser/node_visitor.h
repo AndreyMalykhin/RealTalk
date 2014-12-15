@@ -43,7 +43,7 @@ class SubNode;
 class SumNode;
 class VarDefWithoutInitNode;
 class VarDefWithInitNode;
-class VarLoadNode;
+class IdNode;
 class IntDataTypeNode;
 class LongDataTypeNode;
 class DoubleDataTypeNode;
@@ -55,6 +55,7 @@ class ArrayDataTypeNode;
 class BoundedArrayDataTypeNode;
 class ReturnValueNode;
 class ReturnNode;
+class ArgDefNode;
 
 class NodeVisitor {
  public:
@@ -98,7 +99,7 @@ class NodeVisitor {
   virtual void VisitSum(const SumNode &node) = 0;
   virtual void VisitVarDefWithoutInit(const VarDefWithoutInitNode &node) = 0;
   virtual void VisitVarDefWithInit(const VarDefWithInitNode &node) = 0;
-  virtual void VisitVarLoad(const VarLoadNode &node) = 0;
+  virtual void VisitId(const IdNode &node) = 0;
   virtual void VisitIntDataType(const IntDataTypeNode &node) = 0;
   virtual void VisitLongDataType(const LongDataTypeNode &node) = 0;
   virtual void VisitCharDataType(const CharDataTypeNode &node) = 0;
@@ -111,6 +112,7 @@ class NodeVisitor {
       const BoundedArrayDataTypeNode &node) = 0;
   virtual void VisitReturnValue(const ReturnValueNode &node) = 0;
   virtual void VisitReturn(const ReturnNode &node) = 0;
+  virtual void VisitArgDef(const ArgDefNode &node) = 0;
 };
 }
 }

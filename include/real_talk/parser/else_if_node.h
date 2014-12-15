@@ -19,6 +19,10 @@ class ElseIfNode: public Node {
     assert(if_);
   }
 
+  const std::unique_ptr<IfNode> &GetIf() const {
+    return if_;
+  }
+
   virtual void Accept(NodeVisitor&) const override {
     assert(false);
   }

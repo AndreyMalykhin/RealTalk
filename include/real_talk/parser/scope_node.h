@@ -22,6 +22,10 @@ class ScopeNode: public Node {
         end_token_(end_token) {
   }
 
+  const std::vector< std::unique_ptr<StmtNode> > &GetStmts() const {
+    return stmts_;
+  }
+
   virtual void Accept(NodeVisitor&) const override {
     assert(false);
   }

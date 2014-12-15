@@ -5,7 +5,7 @@
 #include <boost/iterator/indirect_iterator.hpp>
 #include <memory>
 #include <vector>
-#include "real_talk/parser/stmt_node.h"
+#include "real_talk/parser/branch_node.h"
 #include "real_talk/parser/if_node.h"
 #include "real_talk/parser/else_if_node.h"
 #include "real_talk/lexer/token_info.h"
@@ -13,7 +13,7 @@
 namespace real_talk {
 namespace parser {
 
-class IfElseIfNode: public StmtNode {
+class IfElseIfNode: public BranchNode {
  public:
   IfElseIfNode(
       std::unique_ptr<IfNode> if_node,
@@ -27,11 +27,11 @@ class IfElseIfNode: public StmtNode {
     visitor.VisitIfElseIf(*this);
   }
 
-  const std::unique_ptr<IfNode> &GetIf() const {
+  const std::unique_ptr<IfNode> &GetIf() const override {
     return if_;
   }
 
-  const std::vector< std::unique_ptr<ElseIfNode> > &GetElseIfs() const {
+  const std::vector< std::unique_ptr<ElseIfNode> > &GetElseIfs() const override {
     return else_ifs_;
   }
 

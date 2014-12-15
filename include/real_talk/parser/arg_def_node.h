@@ -31,8 +31,8 @@ class ArgDefNode: public Node, public DefNode {
     return name_token_;
   }
 
-  virtual void Accept(NodeVisitor&) const override {
-    assert(false);
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitArgDef(*this);
   }
 
  private:

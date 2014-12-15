@@ -20,6 +20,10 @@ class ReturnValueNode: public StmtNode {
     assert(value_);
   }
 
+  const std::unique_ptr<ExprNode> &GetValue() const {
+    return value_;
+  }
+
   virtual void Accept(NodeVisitor &visitor) const override {
     visitor.VisitReturnValue(*this);
   }

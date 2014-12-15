@@ -39,6 +39,14 @@ class FuncDefNode: public StmtNode, public DefNode {
            || (arg_separator_tokens_.size() == args_.size() - 1));
   }
 
+  const std::unique_ptr<ScopeNode> &GetBody() const {
+    return body_;
+  }
+
+  const std::vector< std::unique_ptr<ArgDefNode> > &GetArgs() const {
+    return args_;
+  }
+
   const real_talk::lexer::TokenInfo &GetNameToken() const override {
     return func_name_token_;
   }

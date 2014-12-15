@@ -2,11 +2,13 @@
 #include <boost/format.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#include <unordered_map>
 #include <cassert>
 #include <vector>
 #include <string>
 #include <utility>
 #include <exception>
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/sum_node.h"
 #include "real_talk/parser/sub_node.h"
@@ -25,7 +27,7 @@
 #include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/array_alloc_without_init_node.h"
-#include "real_talk/parser/var_load_node.h"
+#include "real_talk/parser/id_node.h"
 #include "real_talk/parser/expr_stmt_node.h"
 #include "real_talk/parser/int_node.h"
 #include "real_talk/parser/long_node.h"
@@ -73,6 +75,8 @@
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
 #include "real_talk/semantic/double_lit.h"
+#include "real_talk/semantic/string_lit.h"
+#include "real_talk/semantic/bool_lit.h"
 
 using std::vector;
 using std::string;
@@ -86,6 +90,7 @@ using std::exception;
 using boost::format;
 using boost::adaptors::reverse;
 using boost::numeric_cast;
+using real_talk::lexer::Token;
 using real_talk::parser::ExprNode;
 using real_talk::parser::StmtNode;
 using real_talk::parser::AndNode;
@@ -106,6 +111,7 @@ using real_talk::parser::GreaterNode;
 using real_talk::parser::GreaterOrEqualNode;
 using real_talk::parser::IfElseIfElseNode;
 using real_talk::parser::IfElseIfNode;
+using real_talk::parser::ElseIfNode;
 using real_talk::parser::ImportNode;
 using real_talk::parser::IntNode;
 using real_talk::parser::LessNode;
@@ -126,7 +132,7 @@ using real_talk::parser::SubNode;
 using real_talk::parser::SumNode;
 using real_talk::parser::VarDefWithoutInitNode;
 using real_talk::parser::VarDefWithInitNode;
-using real_talk::parser::VarLoadNode;
+using real_talk::parser::IdNode;
 using real_talk::parser::IntDataTypeNode;
 using real_talk::parser::LongDataTypeNode;
 using real_talk::parser::DoubleDataTypeNode;
@@ -139,15 +145,143 @@ using real_talk::parser::BoundedArrayDataTypeNode;
 using real_talk::parser::DataTypeNode;
 using real_talk::parser::ReturnValueNode;
 using real_talk::parser::ReturnNode;
+using real_talk::parser::DefNode;
+using real_talk::parser::ArgDefNode;
+using real_talk::parser::LitNode;
+using real_talk::parser::BranchNode;
 
 namespace real_talk {
 namespace semantic {
 
+class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
+ public:
+  explicit Impl(const real_talk::parser::ProgramNode &program);
+  SemanticAnalysisResult Analyze();
+  virtual void VisitAnd(const real_talk::parser::AndNode &node) override;
+  virtual void VisitArrayAllocWithoutInit(
+      const real_talk::parser::ArrayAllocWithoutInitNode &node) override;
+  virtual void VisitArrayAllocWithInit(
+      const real_talk::parser::ArrayAllocWithInitNode &node) override;
+  virtual void VisitAssign(const real_talk::parser::AssignNode &node) override;
+  virtual void VisitBool(const real_talk::parser::BoolNode &node) override;
+  virtual void VisitBreak(const real_talk::parser::BreakNode &node) override;
+  virtual void VisitCall(const real_talk::parser::CallNode &node) override;
+  virtual void VisitChar(const real_talk::parser::CharNode &node) override;
+  virtual void VisitContinue(
+      const real_talk::parser::ContinueNode &node) override;
+  virtual void VisitDiv(const real_talk::parser::DivNode &node) override;
+  virtual void VisitDouble(const real_talk::parser::DoubleNode &node) override;
+  virtual void VisitEqual(const real_talk::parser::EqualNode &node) override;
+  virtual void VisitExprStmt(
+      const real_talk::parser::ExprStmtNode &node) override;
+  virtual void VisitFuncDef(
+      const real_talk::parser::FuncDefNode &node) override;
+  virtual void VisitGreater(
+      const real_talk::parser::GreaterNode &node) override;
+  virtual void VisitGreaterOrEqual(
+      const real_talk::parser::GreaterOrEqualNode &node) override;
+  virtual void VisitIfElseIfElse(
+      const real_talk::parser::IfElseIfElseNode &node) override;
+  virtual void VisitIfElseIf(
+      const real_talk::parser::IfElseIfNode &node) override;
+  virtual void VisitImport(const real_talk::parser::ImportNode &node) override;
+  virtual void VisitInt(const real_talk::parser::IntNode &node) override;
+  virtual void VisitLess(const real_talk::parser::LessNode &node) override;
+  virtual void VisitLessOrEqual(
+      const real_talk::parser::LessOrEqualNode &node) override;
+  virtual void VisitLong(const real_talk::parser::LongNode &node) override;
+  virtual void VisitMul(const real_talk::parser::MulNode &node) override;
+  virtual void VisitNegative(
+      const real_talk::parser::NegativeNode &node) override;
+  virtual void VisitNotEqual(
+      const real_talk::parser::NotEqualNode &node) override;
+  virtual void VisitNot(const real_talk::parser::NotNode &node) override;
+  virtual void VisitOr(const real_talk::parser::OrNode &node) override;
+  virtual void VisitPreDec(const real_talk::parser::PreDecNode &node) override;
+  virtual void VisitPreInc(const real_talk::parser::PreIncNode &node) override;
+  virtual void VisitPreTestLoop(
+      const real_talk::parser::PreTestLoopNode &node) override;
+  virtual void VisitProgram(
+      const real_talk::parser::ProgramNode &node) override;
+  virtual void VisitString(const real_talk::parser::StringNode &node) override;
+  virtual void VisitSubscript(
+      const real_talk::parser::SubscriptNode &node) override;
+  virtual void VisitSub(const real_talk::parser::SubNode &node) override;
+  virtual void VisitSum(const real_talk::parser::SumNode &node) override;
+  virtual void VisitVarDefWithoutInit(
+      const real_talk::parser::VarDefWithoutInitNode &node) override;
+  virtual void VisitVarDefWithInit(
+      const real_talk::parser::VarDefWithInitNode &node) override;
+  virtual void VisitId(
+      const real_talk::parser::IdNode &node) override;
+  virtual void VisitIntDataType(
+      const real_talk::parser::IntDataTypeNode &node) override;
+  virtual void VisitLongDataType(
+      const real_talk::parser::LongDataTypeNode &node) override;
+  virtual void VisitDoubleDataType(
+      const real_talk::parser::DoubleDataTypeNode &node) override;
+  virtual void VisitCharDataType(
+      const real_talk::parser::CharDataTypeNode &node) override;
+  virtual void VisitStringDataType(
+      const real_talk::parser::StringDataTypeNode &node) override;
+  virtual void VisitBoolDataType(
+      const real_talk::parser::BoolDataTypeNode &node) override;
+  virtual void VisitVoidDataType(
+      const real_talk::parser::VoidDataTypeNode &node) override;
+  virtual void VisitArrayDataType(
+      const real_talk::parser::ArrayDataTypeNode &node) override;
+  virtual void VisitBoundedArrayDataType(
+      const real_talk::parser::BoundedArrayDataTypeNode &node) override;
+  virtual void VisitReturnValue(
+      const real_talk::parser::ReturnValueNode &node) override;
+  virtual void VisitReturn(
+      const real_talk::parser::ReturnNode &node) override;
+  virtual void VisitArgDef(
+      const real_talk::parser::ArgDefNode &node) override;
+
+ private:
+  typedef std::unordered_map<std::string,
+                             const real_talk::parser::DefNode*> IdDefs;
+
+  struct Scope {
+    IdDefs id_defs;
+  };
+
+  void VisitDef(const real_talk::parser::DefNode &def_node);
+  void VisitBranch(const real_talk::parser::BranchNode &branch_node);
+  std::unique_ptr<DataType> CreateDataType(
+      const real_talk::parser::DataTypeNode &data_type_node);
+  const real_talk::parser::DefNode *GetIdDef(const std::string &id);
+  void AddLitAnalyzes(const real_talk::parser::LitNode *lit_node,
+                      std::unique_ptr<DataType> data_type,
+                      std::unique_ptr<Lit> lit);
+
+  const real_talk::parser::ProgramNode &program_;
+  std::vector< std::unique_ptr<SemanticError> > errors_;
+  SemanticAnalysisResult::DefAnalyzes def_analyzes_;
+  SemanticAnalysisResult::ExprAnalyzes expr_analyzes_;
+  SemanticAnalysisResult::LitAnalyzes lit_analyzes_;
+  SemanticAnalysisResult::IdAnalyzes id_analyzes_;
+  std::vector<Scope> scopes_stack_;
+  std::unique_ptr<DataType> current_data_type_;
+};
+
 SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(const ProgramNode &program)
-    : program_(program) {
+    : impl_(new SimpleSemanticAnalyzer::Impl(program)) {
+}
+
+SimpleSemanticAnalyzer::~SimpleSemanticAnalyzer() {
 }
 
 SemanticAnalysisResult SimpleSemanticAnalyzer::Analyze() {
+  return impl_->Analyze();
+}
+
+SimpleSemanticAnalyzer::Impl::Impl(const ProgramNode &program)
+    : program_(program) {
+}
+
+SemanticAnalysisResult SimpleSemanticAnalyzer::Impl::Analyze() {
   program_.Accept(*this);
   return SemanticAnalysisResult(move(errors_),
                                 move(def_analyzes_),
@@ -156,21 +290,21 @@ SemanticAnalysisResult SimpleSemanticAnalyzer::Analyze() {
                                 move(id_analyzes_));
 }
 
-void SimpleSemanticAnalyzer::VisitAnd(const AndNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitArrayAllocWithoutInit(
+void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitArrayAllocWithInit(
+void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitAssign(const AssignNode &assign) {
+void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign) {
   assign.GetLeftOperand()->Accept(*this);
   assign.GetRightOperand()->Accept(*this);
   auto left_operand_analysis_it =
@@ -204,72 +338,165 @@ void SimpleSemanticAnalyzer::VisitAssign(const AssignNode &assign) {
   expr_analyzes_.insert(make_pair(&assign, move(assign_analysis)));
 }
 
-void SimpleSemanticAnalyzer::VisitBool(const BoolNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitReturn(const ReturnNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitReturn(const ReturnNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitReturnValue(const ReturnValueNode &return_node) {
+  return_node.GetValue()->Accept(*this);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitReturnValue(const ReturnValueNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitBreak(const BreakNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitChar(const CharNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitCall(const CallNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitContinue(const ContinueNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitChar(const CharNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitDiv(const DivNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitContinue(const ContinueNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitDiv(const DivNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::VisitEqual(const EqualNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::VisitExprStmt(const ExprStmtNode& stmt) {
+void SimpleSemanticAnalyzer::Impl::VisitExprStmt(const ExprStmtNode& stmt) {
   stmt.GetExpr()->Accept(*this);
 }
 
-void SimpleSemanticAnalyzer::VisitFuncDef(const FuncDefNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitVarDefWithoutInit(
+    const VarDefWithoutInitNode &var_def_node) {
+  VisitDef(var_def_node);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitVarDefWithInit(
+    const VarDefWithInitNode &var_def_node) {
+  var_def_node.GetValue()->Accept(*this);
+  VisitDef(var_def_node);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitArgDef(const ArgDefNode &arg_def_node) {
+  VisitDef(arg_def_node);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitFuncDef(const FuncDefNode &func_def_node) {
+  VisitDef(func_def_node);
+  const Scope scope = {};
+  scopes_stack_.push_back(scope);
+
+  for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
+    arg_def_node->Accept(*this);
+  }
+
+  for (const unique_ptr<StmtNode> &stmt: func_def_node.GetBody()->GetStmts()) {
+    stmt->Accept(*this);
+  }
+
+  scopes_stack_.pop_back();
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitDef(const DefNode &def_node) {
+  unique_ptr<DataType> data_type =
+      CreateDataType(*(def_node.GetDataType()));
+  DefAnalysis def_analysis(move(data_type));
+  def_analyzes_.insert(make_pair(&def_node, move(def_analysis)));
+  assert(!scopes_stack_.empty());
+  Scope &current_scope = scopes_stack_.back();
+  const string &name = def_node.GetNameToken().GetValue();
+  assert(current_scope.id_defs.count(name) == 0);
+  current_scope.id_defs.insert(make_pair(name, &def_node));
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitGreater(const GreaterNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitGreater(const GreaterNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::VisitGreaterOrEqual(
+void SimpleSemanticAnalyzer::Impl::VisitGreaterOrEqual(
     const GreaterOrEqualNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitIfElseIfElse(const IfElseIfElseNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitIfElseIfElse(
+    const IfElseIfElseNode &if_else_if_else_node) {
+  VisitBranch(if_else_if_else_node);
+  const Scope scope = {};
+  scopes_stack_.push_back(scope);
+  const vector< unique_ptr<StmtNode> > &else_stmts =
+      if_else_if_else_node.GetElseBody()->GetStmts();
+
+  for (const unique_ptr<StmtNode> &else_stmt: else_stmts) {
+    else_stmt->Accept(*this);
+  }
+
+  scopes_stack_.pop_back();
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitIfElseIf(
+    const IfElseIfNode &if_else_if_node) {
+  VisitBranch(if_else_if_node);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
+  branch_node.GetIf()->GetCond()->Accept(*this);
+  const vector< unique_ptr<StmtNode> > &if_stmts =
+      branch_node.GetIf()->GetBody()->GetStmts();
+  const Scope scope = {};
+  scopes_stack_.push_back(scope);
+
+  for (const unique_ptr<StmtNode> &stmt: if_stmts) {
+    stmt->Accept(*this);
+  }
+
+  scopes_stack_.pop_back();
+
+  for (const unique_ptr<ElseIfNode> &else_if: branch_node.GetElseIfs()) {
+    else_if->GetIf()->GetCond()->Accept(*this);
+    const vector< unique_ptr<StmtNode> > &else_if_stmts =
+        else_if->GetIf()->GetBody()->GetStmts();
+    scopes_stack_.push_back(scope);
+
+    for (const unique_ptr<StmtNode> &stmt: else_if_stmts) {
+      stmt->Accept(*this);
+    }
+
+    scopes_stack_.pop_back();
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitIfElseIf(const IfElseIfNode&) {
-  
+void SimpleSemanticAnalyzer::Impl::VisitBool(const BoolNode &bool_node) {
+  bool value;
+
+  switch (bool_node.GetToken().GetId()) {
+    case Token::kBoolTrueLit:
+      value = true;
+      break;
+    case Token::kBoolFalseLit:
+      value = false;
+      break;
+    default:
+      assert(false);
+  }
+
+  unique_ptr<DataType> data_type(new BoolDataType());
+  unique_ptr<Lit> lit(new BoolLit(value));
+  AddLitAnalyzes(&bool_node, move(data_type), move(lit));
 }
 
-void SimpleSemanticAnalyzer::VisitImport(const ImportNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::VisitInt(const IntNode &int_node) {
+void SimpleSemanticAnalyzer::Impl::VisitInt(const IntNode &int_node) {
   int32_t value;
 
   try {
@@ -280,13 +507,11 @@ void SimpleSemanticAnalyzer::VisitInt(const IntNode &int_node) {
   }
 
   unique_ptr<DataType> data_type(new IntDataType());
-  ExprAnalysis expr_analysis(move(data_type));
-  expr_analyzes_.insert(make_pair(&int_node, move(expr_analysis)));
-  LitAnalysis lit_analysis(unique_ptr<Lit>(new IntLit(value)));
-  lit_analyzes_.insert(make_pair(&int_node, move(lit_analysis)));
+  unique_ptr<Lit> lit(new IntLit(value));
+  AddLitAnalyzes(&int_node, move(data_type), move(lit));
 }
 
-void SimpleSemanticAnalyzer::VisitLong(const LongNode &long_node) {
+void SimpleSemanticAnalyzer::Impl::VisitLong(const LongNode &long_node) {
   int64_t value;
 
   try {
@@ -297,13 +522,11 @@ void SimpleSemanticAnalyzer::VisitLong(const LongNode &long_node) {
   }
 
   unique_ptr<DataType> data_type(new LongDataType());
-  ExprAnalysis expr_analysis(move(data_type));
-  expr_analyzes_.insert(make_pair(&long_node, move(expr_analysis)));
-  LitAnalysis lit_analysis(unique_ptr<Lit>(new LongLit(value)));
-  lit_analyzes_.insert(make_pair(&long_node, move(lit_analysis)));
+  unique_ptr<Lit> lit(new LongLit(value));
+  AddLitAnalyzes(&long_node, move(data_type), move(lit));
 }
 
-void SimpleSemanticAnalyzer::VisitDouble(const DoubleNode &double_node) {
+void SimpleSemanticAnalyzer::Impl::VisitDouble(const DoubleNode &double_node) {
   double value;
 
   try {
@@ -314,55 +537,59 @@ void SimpleSemanticAnalyzer::VisitDouble(const DoubleNode &double_node) {
   }
 
   unique_ptr<DataType> data_type(new DoubleDataType());
-  ExprAnalysis expr_analysis(move(data_type));
-  expr_analyzes_.insert(make_pair(&double_node, move(expr_analysis)));
-  LitAnalysis lit_analysis(unique_ptr<Lit>(new DoubleLit(value)));
-  lit_analyzes_.insert(make_pair(&double_node, move(lit_analysis)));
+  unique_ptr<Lit> lit(new DoubleLit(value));
+  AddLitAnalyzes(&double_node, move(data_type), move(lit));
 }
 
-void SimpleSemanticAnalyzer::VisitLess(const LessNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
+  unique_ptr<DataType> data_type(new StringDataType());
+  unique_ptr<Lit> lit(new StringLit(string_node.GetToken().GetValue()));
+  AddLitAnalyzes(&string_node, move(data_type), move(lit));
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitLessOrEqual(const LessOrEqualNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitLessOrEqual(const LessOrEqualNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitMul(const MulNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitMul(const MulNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitNegative(const NegativeNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitNegative(const NegativeNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitNotEqual(const NotEqualNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitNotEqual(const NotEqualNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitNot(const NotNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitNot(const NotNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitOr(const OrNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitOr(const OrNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitPreDec(const PreDecNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitPreInc(const PreIncNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitPreTestLoop(const PreTestLoopNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(const PreTestLoopNode&) {
   
 }
 
-void SimpleSemanticAnalyzer::VisitProgram(const ProgramNode &program) {
-  Scope scope = {};
-  scopes_stack_.push_back(move(scope));
+void SimpleSemanticAnalyzer::Impl::VisitProgram(const ProgramNode &program) {
+  const Scope scope = {};
+  scopes_stack_.push_back(scope);
 
   for (const unique_ptr<StmtNode> &stmt: program.GetStmts()) {
     try {
@@ -371,95 +598,67 @@ void SimpleSemanticAnalyzer::VisitProgram(const ProgramNode &program) {
       errors_.push_back(e.GetError());
     }
   }
+
+  scopes_stack_.pop_back();
 }
 
-void SimpleSemanticAnalyzer::VisitString(const StringNode &string_node) {
-  unique_ptr<DataType> data_type(new StringDataType());
+void SimpleSemanticAnalyzer::Impl::VisitSubscript(const SubscriptNode&) {
+  
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitSub(const SubNode&) {
+  
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitSum(const SumNode&) {
+  
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
+  const DefNode *def_node = GetIdDef(id_node.GetNameToken().GetValue());
+  unique_ptr<DataType> data_type = CreateDataType(*(def_node->GetDataType()));
   ExprAnalysis expr_analysis(move(data_type));
-  expr_analyzes_.insert(make_pair(&string_node, move(expr_analysis)));
+  expr_analyzes_.insert(make_pair(&id_node, move(expr_analysis)));
+  const IdAnalysis id_analysis(def_node);
+  id_analyzes_.insert(make_pair(&id_node, id_analysis));
 }
 
-void SimpleSemanticAnalyzer::VisitSubscript(const SubscriptNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::VisitSub(const SubNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::VisitSum(const SumNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::VisitVarDefWithoutInit(
-    const VarDefWithoutInitNode &var_def_node) {
-  unique_ptr<DataType> data_type =
-      CreateDataType(*(var_def_node.GetDataType()));
-  DefAnalysis def_analysis(data_type->Clone());
-  def_analyzes_.insert(make_pair(&var_def_node, move(def_analysis)));
-  const string &var_name = var_def_node.GetNameToken().GetValue();
-  assert(!scopes_stack_.empty());
-  Scope &current_scope = scopes_stack_.back();
-  current_scope.id_data_types.insert(
-      make_pair(var_name, move(data_type)));
-}
-
-void SimpleSemanticAnalyzer::VisitVarDefWithInit(
-    const VarDefWithInitNode &var_def_node) {
-  var_def_node.GetValue()->Accept(*this);
-  unique_ptr<DataType> data_type =
-      CreateDataType(*(var_def_node.GetDataType()));
-  DefAnalysis def_analysis(data_type->Clone());
-  def_analyzes_.insert(make_pair(&var_def_node, move(def_analysis)));
-  const string &var_name = var_def_node.GetNameToken().GetValue();
-  assert(!scopes_stack_.empty());
-  Scope &current_scope = scopes_stack_.back();
-  current_scope.id_data_types.insert(
-      make_pair(var_name, move(data_type)));
-}
-
-void SimpleSemanticAnalyzer::VisitVarLoad(const VarLoadNode &var_node) {
-  unique_ptr<DataType> data_type = GetDataTypeOfId(var_node);
-  ExprAnalysis expr_analysis(move(data_type));
-  expr_analyzes_.insert(make_pair(&var_node, move(expr_analysis)));
-}
-
-void SimpleSemanticAnalyzer::VisitIntDataType(
+void SimpleSemanticAnalyzer::Impl::VisitIntDataType(
     const IntDataTypeNode&) {
   current_data_type_.reset(new IntDataType());
 }
 
-void SimpleSemanticAnalyzer::VisitLongDataType(
+void SimpleSemanticAnalyzer::Impl::VisitLongDataType(
     const LongDataTypeNode&) {
   current_data_type_.reset(new LongDataType());
 }
 
-void SimpleSemanticAnalyzer::VisitDoubleDataType(
+void SimpleSemanticAnalyzer::Impl::VisitDoubleDataType(
     const DoubleDataTypeNode&) {
   current_data_type_.reset(new DoubleDataType());
 }
 
-void SimpleSemanticAnalyzer::VisitCharDataType(
+void SimpleSemanticAnalyzer::Impl::VisitCharDataType(
     const CharDataTypeNode&) {
   current_data_type_.reset(new CharDataType());
 }
 
-void SimpleSemanticAnalyzer::VisitStringDataType(
+void SimpleSemanticAnalyzer::Impl::VisitStringDataType(
     const StringDataTypeNode&) {
   current_data_type_.reset(new StringDataType());
 }
 
-void SimpleSemanticAnalyzer::VisitBoolDataType(
+void SimpleSemanticAnalyzer::Impl::VisitBoolDataType(
     const BoolDataTypeNode&) {
   current_data_type_.reset(new BoolDataType());
 }
 
-void SimpleSemanticAnalyzer::VisitVoidDataType(
+void SimpleSemanticAnalyzer::Impl::VisitVoidDataType(
     const VoidDataTypeNode&) {
   current_data_type_.reset(new VoidDataType());
 }
 
-void SimpleSemanticAnalyzer::VisitArrayDataType(
+void SimpleSemanticAnalyzer::Impl::VisitArrayDataType(
     const ArrayDataTypeNode &data_type_node) {
   unique_ptr<DataType> element_data_type =
       CreateDataType(*(data_type_node.GetElementDataType()));
@@ -467,7 +666,7 @@ void SimpleSemanticAnalyzer::VisitArrayDataType(
       move(element_data_type)));
 }
 
-void SimpleSemanticAnalyzer::VisitBoundedArrayDataType(
+void SimpleSemanticAnalyzer::Impl::VisitBoundedArrayDataType(
     const BoundedArrayDataTypeNode &data_type_node) {
   data_type_node.GetSize()->Accept(*this);
   unique_ptr<DataType> element_data_type =
@@ -480,7 +679,7 @@ void SimpleSemanticAnalyzer::VisitBoundedArrayDataType(
       move(element_data_type), size.Clone()));
 }
 
-unique_ptr<DataType> SimpleSemanticAnalyzer::CreateDataType(
+unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::CreateDataType(
     const DataTypeNode &data_type_node) {
   assert(!current_data_type_);
   data_type_node.Accept(*this);
@@ -488,22 +687,29 @@ unique_ptr<DataType> SimpleSemanticAnalyzer::CreateDataType(
   return move(current_data_type_);
 }
 
-unique_ptr<DataType> SimpleSemanticAnalyzer::GetDataTypeOfId(
-    const VarLoadNode &var_node) {
-  unique_ptr<DataType> data_type;
+const DefNode *SimpleSemanticAnalyzer::Impl::GetIdDef(const string &id) {
+  const DefNode *def_node = nullptr;
 
   for (const Scope &scope: reverse(scopes_stack_)) {
-    IdDataTypes::const_iterator data_type_it =
-        scope.id_data_types.find(var_node.GetNameToken().GetValue());
+    IdDefs::const_iterator id_def_it = scope.id_defs.find(id);
 
-    if (data_type_it != scope.id_data_types.end()) {
-      data_type = data_type_it->second->Clone();
+    if (id_def_it != scope.id_defs.end()) {
+      def_node = id_def_it->second;
       break;
     }
   }
 
-  assert(data_type);
-  return data_type;
+  assert(def_node);
+  return def_node;
+}
+
+void SimpleSemanticAnalyzer::Impl::AddLitAnalyzes(const LitNode *lit_node,
+                                            unique_ptr<DataType> data_type,
+                                            unique_ptr<Lit> lit) {
+  ExprAnalysis expr_analysis(move(data_type));
+  expr_analyzes_.insert(make_pair(lit_node, move(expr_analysis)));
+  LitAnalysis lit_analysis(move(lit));
+  lit_analyzes_.insert(make_pair(lit_node, move(lit_analysis)));
 }
 
 SemanticErrorException::SemanticErrorException(unique_ptr<SemanticError> error)

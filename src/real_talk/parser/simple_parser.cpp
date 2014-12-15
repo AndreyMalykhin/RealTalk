@@ -24,7 +24,7 @@
 #include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/array_alloc_without_init_node.h"
-#include "real_talk/parser/var_load_node.h"
+#include "real_talk/parser/id_node.h"
 #include "real_talk/parser/expr_stmt_node.h"
 #include "real_talk/parser/int_node.h"
 #include "real_talk/parser/long_node.h"
@@ -426,7 +426,7 @@ SimpleParser::ExprState SimpleParser::BeforeExprState(
 
   switch (next_token_.GetId()) {
     case Token::kName: {
-      operands.push(ParseVarLoad());
+      operands.push(ParseId());
       next_state.handler = &SimpleParser::AfterExprState;
       break;
     }
@@ -790,10 +790,10 @@ SimpleParser::Op SimpleParser::ParseSubscript() {
   return op;
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseVarLoad() {
+unique_ptr<ExprNode> SimpleParser::ParseId() {
   const TokenInfo var_name_token = next_token_;
   ConsumeNextToken();
-  return unique_ptr<ExprNode>(new VarLoadNode(var_name_token));
+  return unique_ptr<ExprNode>(new IdNode(var_name_token));
 }
 
 unique_ptr<ExprNode> SimpleParser::ParseChar() {

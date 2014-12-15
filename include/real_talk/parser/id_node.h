@@ -1,6 +1,6 @@
 
-#ifndef _REAL_TALK_PARSER_VAR_LOAD_NODE_H_
-#define _REAL_TALK_PARSER_VAR_LOAD_NODE_H_
+#ifndef _REAL_TALK_PARSER_ID_NODE_H_
+#define _REAL_TALK_PARSER_ID_NODE_H_
 
 #include <string>
 #include "real_talk/parser/expr_node.h"
@@ -10,14 +10,14 @@
 namespace real_talk {
 namespace parser {
 
-class VarLoadNode: public ExprNode {
+class IdNode: public ExprNode {
  public:
-  explicit VarLoadNode(const real_talk::lexer::TokenInfo &name_token)
+  explicit IdNode(const real_talk::lexer::TokenInfo &name_token)
       : name_token_(name_token) {
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {
-    visitor.VisitVarLoad(*this);
+    visitor.VisitId(*this);
   }
 
   const real_talk::lexer::TokenInfo &GetNameToken() const {
@@ -26,7 +26,7 @@ class VarLoadNode: public ExprNode {
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    const VarLoadNode &rhs = static_cast<const VarLoadNode&>(node);
+    const IdNode &rhs = static_cast<const IdNode&>(node);
     return name_token_ == rhs.name_token_;
   }
 
