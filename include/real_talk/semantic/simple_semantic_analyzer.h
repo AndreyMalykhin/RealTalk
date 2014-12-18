@@ -4,12 +4,13 @@
 
 #include <memory>
 #include <stdexcept>
-#include "real_talk/semantic/semantic_analysis_result.h"
+#include "real_talk/semantic/semantic_analysis.h"
 
 namespace real_talk {
 namespace parser {
 
 class ProgramNode;
+class ParserFactory;
 }
 
 namespace semantic {
@@ -25,13 +26,13 @@ class SemanticErrorException: public std::runtime_error {
 class SimpleSemanticAnalyzer {
  public:
   explicit SimpleSemanticAnalyzer(
-      const real_talk::parser::ProgramNode &program);
+      const real_talk::parser::ProgramNode &program,
+      const real_talk::parser::ParserFactory &parser_factory);
   ~SimpleSemanticAnalyzer();
-  SemanticAnalysisResult Analyze();
+  SemanticAnalysis Analyze();
 
  private:
   class Impl;
-
   std::unique_ptr<Impl> impl_;
 };
 }

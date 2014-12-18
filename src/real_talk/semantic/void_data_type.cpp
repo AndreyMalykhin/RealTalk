@@ -1,18 +1,16 @@
 
 #include <string>
-#include "real_talk/lexer/simple_lexer.h"
 #include "real_talk/semantic/void_data_type.h"
 
 using std::unique_ptr;
 using std::string;
 using std::ostream;
-using real_talk::lexer::SimpleLexer;
 
 namespace real_talk {
 namespace semantic {
 
 string VoidDataType::GetName() const {
-  return SimpleLexer::kIntKeyword;
+  return "void";
 }
 
 unique_ptr<DataType> VoidDataType::Clone() const {

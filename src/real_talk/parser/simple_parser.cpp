@@ -63,6 +63,7 @@
 using std::pair;
 using std::string;
 using std::unique_ptr;
+using std::shared_ptr;
 using std::move;
 using std::vector;
 using std::unordered_map;
@@ -106,10 +107,10 @@ SimpleParser::SimpleParser(unique_ptr<Lexer> lexer)
       next_token_(TokenInfo(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0))) {
 }
 
-unique_ptr<ProgramNode> SimpleParser::Parse() {
+shared_ptr<ProgramNode> SimpleParser::Parse() {
   ConsumeNextToken();
   vector< unique_ptr<StmtNode> > stmts = ParseStmts(Token::kFileEnd);
-  return unique_ptr<ProgramNode>(new ProgramNode(move(stmts)));
+  return shared_ptr<ProgramNode>(new ProgramNode(move(stmts)));
 }
 
 unique_ptr<StmtNode> SimpleParser::ParseStmt() {

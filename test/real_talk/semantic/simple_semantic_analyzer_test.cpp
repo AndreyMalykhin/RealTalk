@@ -9,6 +9,7 @@
 #include <utility>
 #include <iterator>
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/parser_factory.h"
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
 #include "real_talk/parser/var_def_with_init_node.h"
@@ -36,6 +37,7 @@
 #include "real_talk/parser/scope_node.h"
 #include "real_talk/parser/if_else_if_node.h"
 #include "real_talk/parser/if_else_if_else_node.h"
+#include "real_talk/parser/import_node.h"
 #include "real_talk/semantic/int_data_type.h"
 #include "real_talk/semantic/long_data_type.h"
 #include "real_talk/semantic/double_data_type.h"
@@ -49,19 +51,30 @@
 #include "real_talk/semantic/long_lit.h"
 #include "real_talk/semantic/double_lit.h"
 #include "real_talk/semantic/bool_lit.h"
-#include "real_talk/semantic/semantic_analysis_result.h"
+#include "real_talk/semantic/string_lit.h"
+#include "real_talk/semantic/var_def_analysis.h"
+#include "real_talk/semantic/func_def_analysis.h"
+#include "real_talk/semantic/arg_def_analysis.h"
+#include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/simple_semantic_analyzer.h"
+#include "real_talk/semantic/global_data_storage.h"
+#include "real_talk/semantic/local_data_storage.h"
 
 using std::vector;
 using std::string;
 using std::unordered_map;
 using std::unique_ptr;
+using std::shared_ptr;
 using std::move;
 using std::make_pair;
 using std::make_move_iterator;
 using std::pair;
 using testing::Test;
 using testing::Return;
+using testing::NiceMock;
+using testing::Invoke;
+using testing::InvokeWithoutArgs;
+using testing::InSequence;
 using testing::_;
 using real_talk::lexer::TokenInfo;
 using real_talk::lexer::Token;
@@ -97,13 +110,36 @@ using real_talk::parser::IfNode;
 using real_talk::parser::ElseIfNode;
 using real_talk::parser::IfElseIfNode;
 using real_talk::parser::IfElseIfElseNode;
+using real_talk::parser::ImportNode;
+using real_talk::parser::ParserFactory;
+using real_talk::parser::Parser;
 
 namespace real_talk {
 namespace semantic {
 
+struct TestImportProgram {
+  string file_path;
+  shared_ptr<ProgramNode> node;
+};
+
 struct TestProgram {
-  unique_ptr<ProgramNode> program;
-  SemanticAnalysisResult result;
+  unique_ptr<ProgramNode> node;
+  SemanticAnalysis analysis;
+  vector<TestImportProgram> test_import_programs;
+};
+
+class ParserMock: public Parser {
+ public:
+  MOCK_METHOD0(Parse, shared_ptr<ProgramNode> ());
+};
+
+class ParserFactoryMock: public ParserFactory {
+ public:
+  virtual unique_ptr<Parser> Create(const string &file_path) const override {
+    return unique_ptr<Parser>(Create_(file_path));
+  }
+
+  MOCK_CONST_METHOD1(Create_, Parser* (const string&));
 };
 
 class SimpleSemanticAnalyzerTest: public Test {
@@ -115,9 +151,32 @@ class SimpleSemanticAnalyzerTest: public Test {
   }
 
   void TestAnalyze(const TestProgram &test_program) {
-    SimpleSemanticAnalyzer analyzer(*(test_program.program));
-    SemanticAnalysisResult actual_analysis_result = analyzer.Analyze();
-    ASSERT_EQ(test_program.result, actual_analysis_result);
+    ParserFactoryMock *parser_factory_mock = new NiceMock<ParserFactoryMock>();
+    unique_ptr<ParserFactory> parser_factory(parser_factory_mock);
+
+    {
+      InSequence sequence;
+
+      for (const TestImportProgram &test_import_program:
+               test_program.test_import_programs) {
+        ParserMock *parser_mock = new NiceMock<ParserMock>();
+        unique_ptr<Parser> parser(parser_mock);
+        EXPECT_CALL(*parser_factory_mock,
+                    Create_(test_import_program.file_path))
+            .Times(1)
+            .WillOnce(Return(parser_mock))
+            .RetiresOnSaturation();
+        EXPECT_CALL(*parser_mock, Parse())
+            .Times(1)
+            .WillOnce(Return(test_import_program.node))
+            .RetiresOnSaturation();
+        parser.release();
+      }
+    }
+
+    SimpleSemanticAnalyzer analyzer(*(test_program.node), *parser_factory);
+    SemanticAnalysis actual_analysis = analyzer.Analyze();
+    ASSERT_EQ(test_program.analysis, actual_analysis);
   }
 };
 
@@ -125,8 +184,8 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
   struct TestData {
     unique_ptr<DataTypeNode> data_type_node;
     unique_ptr<DataType> data_type;
-    SemanticAnalysisResult::ExprAnalyzes expr_analyzes;
-    SemanticAnalysisResult::LitAnalyzes lit_analyzes;
+    SemanticAnalysis::ExprAnalyzes expr_analyzes;
+    SemanticAnalysis::LitAnalyzes lit_analyzes;
   };
 
   vector<TestData> test_data_suits;
@@ -208,11 +267,11 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
     unique_ptr<IntLit> size(new IntLit(INT32_C(7)));
     unique_ptr<DataType> array_data_type(new BoundedArrayDataType(
         move(element_data_type), size->Clone()));
-    SemanticAnalysisResult::ExprAnalyzes expr_analyzes;
+    SemanticAnalysis::ExprAnalyzes expr_analyzes;
     unique_ptr<DataType> size_data_type(new IntDataType());
     ExprAnalysis expr_analysis(move(size_data_type));
     expr_analyzes.insert(make_pair(size_node_ptr, move(expr_analysis)));
-    SemanticAnalysisResult::LitAnalyzes lit_analyzes;
+    SemanticAnalysis::LitAnalyzes lit_analyzes;
     LitAnalysis lit_analysis(size->Clone());
     lit_analyzes.insert(make_pair(size_node_ptr, move(lit_analysis)));
     TestData test_data = {move(array_data_type_node),
@@ -232,18 +291,24 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
     stmt_nodes.push_back(move(def_node));
     unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-    vector< unique_ptr<SemanticError> > errors;
-    SemanticAnalysisResult::DefAnalyzes def_analyzes;
-    DefAnalysis def_analysis(move(test_data.data_type));
+    SemanticAnalysis::DefAnalyzes def_analyzes;
+    unique_ptr<DataStorage> data_storage(new GlobalDataStorage());
+    unique_ptr<DefAnalysis> def_analysis(
+        new VarDefAnalysis(move(test_data.data_type), move(data_storage)));
     def_analyzes.insert(make_pair(def_node_ptr, move(def_analysis)));
-    SemanticAnalysisResult::IdAnalyzes id_analyzes;
-    SemanticAnalysisResult result(move(errors),
-                                  move(def_analyzes),
-                                  move(test_data.expr_analyzes),
-                                  move(test_data.lit_analyzes),
-                                  id_analyzes);
 
-    TestAnalyze({move(program_node), move(result)});
+    vector< unique_ptr<SemanticError> > errors;
+    SemanticAnalysis::IdAnalyzes id_analyzes;
+    SemanticAnalysis::ImportAnalyzes import_analyzes;
+    SemanticAnalysis analysis(move(errors),
+                              move(def_analyzes),
+                              move(test_data.expr_analyzes),
+                              move(test_data.lit_analyzes),
+                              import_analyzes,
+                              id_analyzes);
+    vector<TestImportProgram> test_import_programs;
+
+    TestAnalyze({move(program_node), move(analysis), test_import_programs});
   }
 }
 
@@ -263,29 +328,34 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithInit) {
   stmt_nodes.push_back(move(def_node));
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysisResult::DefAnalyzes def_analyzes;
+  SemanticAnalysis::DefAnalyzes def_analyzes;
   unique_ptr<DataType> var_data_type(new IntDataType());
-  DefAnalysis def_analysis(move(var_data_type));
+  unique_ptr<DataStorage> var_data_storage(new GlobalDataStorage());
+  unique_ptr<DefAnalysis> def_analysis(new VarDefAnalysis(
+      move(var_data_type), move(var_data_storage)));
   def_analyzes.insert(make_pair(def_node_ptr, move(def_analysis)));
 
-  SemanticAnalysisResult::ExprAnalyzes expr_analyzes;
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
   unique_ptr<DataType> value_data_type(new IntDataType());
   ExprAnalysis expr_analysis(move(value_data_type));
   expr_analyzes.insert(make_pair(value_node, move(expr_analysis)));
 
-  SemanticAnalysisResult::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
   LitAnalysis lit_analysis(unique_ptr<Lit>(new IntLit(INT32_C(7))));
   lit_analyzes.insert(make_pair(value_node, move(lit_analysis)));
 
-  SemanticAnalysisResult::IdAnalyzes id_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticError> > errors;
-  SemanticAnalysisResult result(move(errors),
-                                move(def_analyzes),
-                                move(expr_analyzes),
-                                move(lit_analyzes),
-                                id_analyzes);
+  SemanticAnalysis analysis(move(errors),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestImportProgram> test_import_programs;
 
-  TestAnalyze({move(program_node), move(result)});
+  TestAnalyze({move(program_node), move(analysis), test_import_programs});
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Id) {
@@ -308,29 +378,34 @@ TEST_F(SimpleSemanticAnalyzerTest, Id) {
   stmt_nodes.push_back(move(id_stmt_node));
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysisResult::DefAnalyzes def_analyzes;
+  SemanticAnalysis::DefAnalyzes def_analyzes;
   unique_ptr<DataType> var_data_type(new IntDataType());
-  DefAnalysis def_analysis(move(var_data_type));
+  unique_ptr<DataStorage> var_data_storage(new GlobalDataStorage());
+  unique_ptr<DefAnalysis> def_analysis(new VarDefAnalysis(
+      move(var_data_type), move(var_data_storage)));
   def_analyzes.insert(make_pair(def_node_ptr, move(def_analysis)));
 
-  SemanticAnalysisResult::ExprAnalyzes expr_analyzes;
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
   unique_ptr<DataType> expr_data_type(new IntDataType());
   ExprAnalysis expr_analysis(move(expr_data_type));
   expr_analyzes.insert(make_pair(id_node_ptr, move(expr_analysis)));
 
-  SemanticAnalysisResult::IdAnalyzes id_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
   IdAnalysis id_analysis(def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr, id_analysis));
 
-  SemanticAnalysisResult::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticError> > errors;
-  SemanticAnalysisResult result(move(errors),
-                                move(def_analyzes),
-                                move(expr_analyzes),
-                                move(lit_analyzes),
-                                id_analyzes);
+  SemanticAnalysis analysis(move(errors),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestImportProgram> test_import_programs;
 
-  TestAnalyze({move(program_node), move(result)});
+  TestAnalyze({move(program_node), move(analysis), test_import_programs});
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithReturnValue) {
@@ -374,34 +449,39 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithReturnValue) {
   stmt_nodes.push_back(move(func_def_node));
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysisResult::DefAnalyzes def_analyzes;
+  SemanticAnalysis::DefAnalyzes def_analyzes;
   unique_ptr<DataType> func_data_type(new IntDataType());
-  DefAnalysis func_def_analysis(move(func_data_type));
+  unique_ptr<DefAnalysis> func_def_analysis(
+      new FuncDefAnalysis(move(func_data_type)));
   def_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
   unique_ptr<DataType> arg_data_type(new IntDataType());
-  DefAnalysis arg_def_analysis(move(arg_data_type));
+  unique_ptr<DefAnalysis> arg_def_analysis(
+      new ArgDefAnalysis(move(arg_data_type)));
   def_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
-  SemanticAnalysisResult::ExprAnalyzes expr_analyzes;
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
   unique_ptr<DataType> return_expr_data_type(new IntDataType);
   ExprAnalysis return_expr_analysis(move(return_expr_data_type));
   expr_analyzes.insert(make_pair(return_expr_node_ptr,
                                  move(return_expr_analysis)));
 
-  SemanticAnalysisResult::IdAnalyzes id_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
   IdAnalysis id_analysis(arg_def_node_ptr);
   id_analyzes.insert(make_pair(return_expr_node_ptr, id_analysis));
 
-  SemanticAnalysisResult::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticError> > errors;
-  SemanticAnalysisResult result(move(errors),
-                                move(def_analyzes),
-                                move(expr_analyzes),
-                                move(lit_analyzes),
-                                id_analyzes);
+  SemanticAnalysis analysis(move(errors),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestImportProgram> test_import_programs;
 
-  TestAnalyze({move(program_node), move(result)});
+  TestAnalyze({move(program_node), move(analysis), test_import_programs});
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutReturnValue) {
@@ -436,26 +516,31 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutReturnValue) {
   stmt_nodes.push_back(move(func_def_node));
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysisResult::DefAnalyzes def_analyzes;
+  SemanticAnalysis::DefAnalyzes def_analyzes;
   unique_ptr<DataType> func_data_type(new VoidDataType());
-  DefAnalysis func_def_analysis(move(func_data_type));
+  unique_ptr<DefAnalysis> func_def_analysis(
+      new FuncDefAnalysis(move(func_data_type)));
   def_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
   unique_ptr<DataType> arg_data_type(new IntDataType());
-  DefAnalysis arg_def_analysis(move(arg_data_type));
+  unique_ptr<DefAnalysis> arg_def_analysis(
+      new ArgDefAnalysis(move(arg_data_type)));
   def_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
-  SemanticAnalysisResult::IdAnalyzes id_analyzes;
-  SemanticAnalysisResult::ExprAnalyzes expr_analyzes;
-  SemanticAnalysisResult::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticError> > errors;
-  SemanticAnalysisResult result(move(errors),
-                                move(def_analyzes),
-                                move(expr_analyzes),
-                                move(lit_analyzes),
-                                id_analyzes);
+  SemanticAnalysis analysis(move(errors),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestImportProgram> test_import_programs;
 
-  TestAnalyze({move(program_node), move(result)});
+  TestAnalyze({move(program_node), move(analysis), test_import_programs});
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
@@ -527,18 +612,24 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   stmt_nodes.push_back(move(if_else_if_node));
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysisResult::DefAnalyzes def_analyzes;
+  SemanticAnalysis::DefAnalyzes def_analyzes;
   unique_ptr<DataType> var_data_type1(new BoolDataType());
-  DefAnalysis var_def_analysis1(move(var_data_type1));
+  unique_ptr<DataStorage> var_storage1(new GlobalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis1(
+      new VarDefAnalysis(move(var_data_type1), move(var_storage1)));
   def_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
   unique_ptr<DataType> var_data_type2(new BoolDataType());
-  DefAnalysis var_def_analysis2(move(var_data_type2));
+  unique_ptr<DataStorage> var_storage2(new LocalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis2(
+      new VarDefAnalysis(move(var_data_type2), move(var_storage2)));
   def_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<DataType> var_data_type3(new BoolDataType());
-  DefAnalysis var_def_analysis3(move(var_data_type3));
+  unique_ptr<DataStorage> var_storage3(new LocalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis3(
+      new VarDefAnalysis(move(var_data_type3), move(var_storage3)));
   def_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
-  SemanticAnalysisResult::ExprAnalyzes expr_analyzes;
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
   unique_ptr<DataType> if_cond_data_type1(new BoolDataType());
   ExprAnalysis if_cond_expr_analysis1(move(if_cond_data_type1));
   expr_analyzes.insert(make_pair(if_cond_ptr1, move(if_cond_expr_analysis1)));
@@ -546,21 +637,24 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   ExprAnalysis if_cond_expr_analysis2(move(if_cond_data_type2));
   expr_analyzes.insert(make_pair(if_cond_ptr2, move(if_cond_expr_analysis2)));
 
-  SemanticAnalysisResult::IdAnalyzes id_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
   IdAnalysis id_analysis1(var_def_node_ptr1);
   id_analyzes.insert(make_pair(if_cond_ptr1, id_analysis1));
   IdAnalysis id_analysis2(var_def_node_ptr1);
   id_analyzes.insert(make_pair(if_cond_ptr2, id_analysis2));
 
-  SemanticAnalysisResult::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticError> > errors;
-  SemanticAnalysisResult result(move(errors),
-                                move(def_analyzes),
-                                move(expr_analyzes),
-                                move(lit_analyzes),
-                                id_analyzes);
+  SemanticAnalysis analysis(move(errors),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestImportProgram> test_import_programs;
 
-  TestAnalyze({move(program_node), move(result)});
+  TestAnalyze({move(program_node), move(analysis), test_import_programs});
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
@@ -649,21 +743,29 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
   stmt_nodes.push_back(move(if_else_if_node));
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysisResult::DefAnalyzes def_analyzes;
+  SemanticAnalysis::DefAnalyzes def_analyzes;
   unique_ptr<DataType> var_data_type1(new BoolDataType());
-  DefAnalysis var_def_analysis1(move(var_data_type1));
+  unique_ptr<DataStorage> var_storage1(new GlobalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis1(
+      new VarDefAnalysis(move(var_data_type1), move(var_storage1)));
   def_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
   unique_ptr<DataType> var_data_type2(new BoolDataType());
-  DefAnalysis var_def_analysis2(move(var_data_type2));
+  unique_ptr<DataStorage> var_storage2(new LocalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis2(
+      new VarDefAnalysis(move(var_data_type2), move(var_storage2)));
   def_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<DataType> var_data_type3(new BoolDataType());
-  DefAnalysis var_def_analysis3(move(var_data_type3));
+  unique_ptr<DataStorage> var_storage3(new LocalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis3(
+      new VarDefAnalysis(move(var_data_type3), move(var_storage3)));
   def_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
   unique_ptr<DataType> var_data_type4(new BoolDataType());
-  DefAnalysis var_def_analysis4(move(var_data_type4));
+  unique_ptr<DataStorage> var_storage4(new LocalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis4(
+      new VarDefAnalysis(move(var_data_type4), move(var_storage4)));
   def_analyzes.insert(make_pair(var_def_node_ptr4, move(var_def_analysis4)));
 
-  SemanticAnalysisResult::ExprAnalyzes expr_analyzes;
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
   unique_ptr<DataType> if_cond_data_type1(new BoolDataType());
   ExprAnalysis if_cond_expr_analysis1(move(if_cond_data_type1));
   expr_analyzes.insert(make_pair(if_cond_ptr1, move(if_cond_expr_analysis1)));
@@ -671,21 +773,91 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
   ExprAnalysis if_cond_expr_analysis2(move(if_cond_data_type2));
   expr_analyzes.insert(make_pair(if_cond_ptr2, move(if_cond_expr_analysis2)));
 
-  SemanticAnalysisResult::IdAnalyzes id_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
   IdAnalysis id_analysis1(var_def_node_ptr1);
   id_analyzes.insert(make_pair(if_cond_ptr1, id_analysis1));
   IdAnalysis id_analysis2(var_def_node_ptr1);
   id_analyzes.insert(make_pair(if_cond_ptr2, id_analysis2));
 
-  SemanticAnalysisResult::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticError> > errors;
-  SemanticAnalysisResult result(move(errors),
-                                move(def_analyzes),
-                                move(expr_analyzes),
-                                move(lit_analyzes),
-                                id_analyzes);
+  SemanticAnalysis analysis(move(errors),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestImportProgram> test_import_programs;
 
-  TestAnalyze({move(program_node), move(result)});
+  TestAnalyze({move(program_node), move(analysis), test_import_programs});
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Import) {
+  vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
+  StringNode *file_path_node_ptr = new StringNode(
+      TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<StringNode> file_path_node(file_path_node_ptr);
+  ImportNode *import_node_ptr = new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
+      move(file_path_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> import_node(import_node_ptr);
+  main_program_stmt_nodes.push_back(move(import_node));
+  unique_ptr<ProgramNode> main_program_node(
+      new ProgramNode(move(main_program_stmt_nodes)));
+
+  vector<TestImportProgram> test_import_programs;
+  vector< unique_ptr<StmtNode> > import_program_stmt_nodes;
+  unique_ptr<DataTypeNode> var_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "name", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  import_program_stmt_nodes.push_back(move(var_def_node));
+
+  shared_ptr<ProgramNode> import_program_node(
+      new ProgramNode(move(import_program_stmt_nodes)));
+  string import_program_file_path = "file.rt";
+  TestImportProgram test_import_program =
+      {import_program_file_path, import_program_node};
+  test_import_programs.push_back(test_import_program);
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+  unique_ptr<DataType> var_data_type(new BoolDataType());
+  unique_ptr<DataStorage> var_storage(new GlobalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis(
+      new VarDefAnalysis(move(var_data_type), move(var_storage)));
+  def_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  unique_ptr<Lit> file_path_lit(new StringLit(import_program_file_path));
+  LitAnalysis file_path_lit_analysis(move(file_path_lit));
+  lit_analyzes.insert(
+      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
+
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  ImportAnalysis import_analysis(import_program_node);
+  import_analyzes.insert(make_pair(import_node_ptr, import_analysis));
+
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  unique_ptr<DataType> file_path_expr_data_type(new StringDataType());
+  ExprAnalysis file_path_expr_analysis(move(file_path_expr_data_type));
+  expr_analyzes.insert(
+      make_pair(file_path_node_ptr, move(file_path_expr_analysis)));
+
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  vector< unique_ptr<SemanticError> > errors;
+  SemanticAnalysis analysis(move(errors),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            move(import_analyzes),
+                            id_analyzes);
+
+  TestAnalyze({move(main_program_node), move(analysis), test_import_programs});
 }
 }
 }

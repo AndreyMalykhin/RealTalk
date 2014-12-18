@@ -16,6 +16,10 @@ bool StringLit::IsEqual(const Lit &lit) const {
   return value_ == rhs.value_;
 }
 
+const string &StringLit::GetValue() const {
+  return value_;
+}
+
 void StringLit::Print(ostream &stream) const {
   stream << value_;
 }

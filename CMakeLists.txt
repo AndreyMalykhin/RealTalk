@@ -27,7 +27,20 @@ add_library(real_talk
   src/real_talk/semantic/double_lit.cpp
   src/real_talk/semantic/string_lit.cpp
   src/real_talk/semantic/bool_lit.cpp
-  src/real_talk/semantic/semantic_analysis_result.cpp
+  src/real_talk/semantic/semantic_analysis.cpp
+  src/real_talk/semantic/semantic_hint.cpp
+  src/real_talk/semantic/semantic_error.cpp
+  src/real_talk/semantic/def_analysis.cpp
+  src/real_talk/semantic/var_def_analysis.cpp
+  src/real_talk/semantic/arg_def_analysis.cpp
+  src/real_talk/semantic/func_def_analysis.cpp
+  src/real_talk/semantic/expr_analysis.cpp
+  src/real_talk/semantic/lit_analysis.cpp
+  src/real_talk/semantic/id_analysis.cpp
+  src/real_talk/semantic/import_analysis.cpp
+  src/real_talk/semantic/data_storage.cpp
+  src/real_talk/semantic/local_data_storage.cpp
+  src/real_talk/semantic/global_data_storage.cpp
   src/real_talk/semantic/simple_semantic_analyzer.cpp
 )
 add_executable(real_talk_tests

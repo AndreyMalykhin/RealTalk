@@ -40,6 +40,7 @@ class SimpleLexer: public Lexer {
   static const char *kBoolKeyword;
   static const char kSubscriptStartChar;
   static const char kSubscriptEndChar;
+  static const char kEscapeChar;
 
   explicit SimpleLexer(std::istream &stream);
   virtual TokenInfo GetNextToken() override;

@@ -2,7 +2,6 @@
 #include <cassert>
 #include <string>
 #include <sstream>
-#include "real_talk/lexer/simple_lexer.h"
 #include "real_talk/semantic/bounded_array_data_type.h"
 #include "real_talk/semantic/int_lit.h"
 
@@ -10,7 +9,6 @@ using std::string;
 using std::unique_ptr;
 using std::ostream;
 using std::ostringstream;
-using real_talk::lexer::SimpleLexer;
 
 namespace real_talk {
 namespace semantic {
@@ -40,8 +38,7 @@ bool BoundedArrayDataType::IsEqual(const DataType &data_type) const {
 }
 
 void BoundedArrayDataType::Print(ostream &stream) const {
-  stream << element_data_type_->GetName() << SimpleLexer::kSubscriptStartChar
-         << *size_ << SimpleLexer::kSubscriptEndChar;
+  stream << element_data_type_->GetName() << "[" << *size_ << "]";
 }
 }
 }

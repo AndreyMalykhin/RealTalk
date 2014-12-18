@@ -12,6 +12,7 @@ namespace semantic {
 class StringLit: public Lit {
  public:
   explicit StringLit(const std::string &value);
+  const std::string &GetValue() const;
 
  private:
   virtual bool IsEqual(const Lit &rhs) const override;

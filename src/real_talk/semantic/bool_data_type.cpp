@@ -1,18 +1,16 @@
 
 #include <string>
-#include "real_talk/lexer/simple_lexer.h"
 #include "real_talk/semantic/bool_data_type.h"
 
 using std::unique_ptr;
 using std::string;
 using std::ostream;
-using real_talk::lexer::SimpleLexer;
 
 namespace real_talk {
 namespace semantic {
 
 string BoolDataType::GetName() const {
-  return SimpleLexer::kBoolKeyword;
+  return "bool";
 }
 
 unique_ptr<DataType> BoolDataType::Clone() const {

@@ -13,11 +13,11 @@
 #include <utility>
 #include "real_talk/lexer/lexer.h"
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/parser.h"
 
 namespace real_talk {
 namespace parser {
 
-class ProgramNode;
 class StmtNode;
 class ExprNode;
 class ArgDefNode;
@@ -37,10 +37,10 @@ class UnexpectedTokenError: public std::runtime_error {
   real_talk::lexer::TokenInfo token_;
 };
 
-class SimpleParser {
+class SimpleParser: public Parser {
  public:
   explicit SimpleParser(std::unique_ptr<real_talk::lexer::Lexer> lexer);
-  std::unique_ptr<ProgramNode> Parse();
+  virtual std::shared_ptr<ProgramNode> Parse() override;
 
  private:
   struct Op;

@@ -23,6 +23,7 @@ const char *SimpleLexer::kVoidKeyword = "void";
 const char *SimpleLexer::kBoolKeyword = "bool";
 const char SimpleLexer::kSubscriptStartChar = '[';
 const char SimpleLexer::kSubscriptEndChar = ']';
+const char SimpleLexer::kEscapeChar = '\\';
 
 const unordered_map<string, Token> &SimpleLexer::kKeywordTokens =
     *new unordered_map<string, Token>({
@@ -244,7 +245,7 @@ TokenInfo SimpleLexer::ParseStringToken(Token token, char enclosing_char) {
 
   while (IsNextCharExists()) {
     switch (GetNextChar()) {
-      case '\\': {
+      case kEscapeChar: {
         token_value += GetNextChar();
         ConsumeNextChar();
         AssertNextCharExists();

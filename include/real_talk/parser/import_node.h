@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_PARSER_IMPORT_NODE_H_
 #define _REAL_TALK_PARSER_IMPORT_NODE_H_
 
+#include <cassert>
 #include <string>
 #include <memory>
 #include "real_talk/parser/stmt_node.h"
@@ -20,6 +21,10 @@ class ImportNode: public StmtNode {
         file_path_(move(file_path)),
         end_token_(end_token) {
     assert(file_path_);
+  }
+
+  const std::unique_ptr<StringNode> &GetFilePath() const {
+    return file_path_;
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {

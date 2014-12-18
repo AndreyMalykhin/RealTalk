@@ -186,7 +186,7 @@ class SimpleParserTest: public Test {
 
     SimpleParser parser(move(lexer));
 
-    const unique_ptr<ProgramNode> actual_program_node = parser.Parse();
+    const shared_ptr<ProgramNode> actual_program_node = parser.Parse();
 
     ASSERT_EQ(*(test_program_node.node), *(actual_program_node))
         << "expected:\n" << *(test_program_node.node)
@@ -206,7 +206,7 @@ class SimpleParserTest: public Test {
     SimpleParser parser(move(lexer));
 
     try {
-      unique_ptr<ProgramNode> program_node = parser.Parse();
+      const shared_ptr<ProgramNode> program_node = parser.Parse();
       FAIL() << "expected_bad_token=" << mailformed_tokens.unexpected_token
              << "\nprogram:\n" << *program_node;
     } catch (const UnexpectedTokenError &error) {
