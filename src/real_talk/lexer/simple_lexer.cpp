@@ -21,6 +21,8 @@ const char *SimpleLexer::kLongKeyword = "long";
 const char *SimpleLexer::kCharKeyword = "char";
 const char *SimpleLexer::kVoidKeyword = "void";
 const char *SimpleLexer::kBoolKeyword = "bool";
+const char *SimpleLexer::kTrueKeyword = "yeah";
+const char *SimpleLexer::kFalseKeyword = "nah";
 const char SimpleLexer::kSubscriptStartChar = '[';
 const char SimpleLexer::kSubscriptEndChar = ']';
 const char SimpleLexer::kEscapeChar = '\\';
@@ -34,8 +36,8 @@ const unordered_map<string, Token> &SimpleLexer::kKeywordTokens =
         {SimpleLexer::kStringKeyword, Token::kStringType},
         {SimpleLexer::kVoidKeyword, Token::kVoidType},
         {SimpleLexer::kBoolKeyword, Token::kBoolType},
-        {"yeah", Token::kBoolTrueLit},
-        {"nah", Token::kBoolFalseLit},
+        {SimpleLexer::kTrueKeyword, Token::kBoolTrueLit},
+        {SimpleLexer::kFalseKeyword, Token::kBoolFalseLit},
         {"fresh", Token::kNew},
         {"homie", Token::kImport},
         {"holdon", Token::kBreak},

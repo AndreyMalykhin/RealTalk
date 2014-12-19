@@ -38,6 +38,8 @@ class SimpleLexer: public Lexer {
   static const char *kCharKeyword;
   static const char *kVoidKeyword;
   static const char *kBoolKeyword;
+  static const char *kTrueKeyword;
+  static const char *kFalseKeyword;
   static const char kSubscriptStartChar;
   static const char kSubscriptEndChar;
   static const char kEscapeChar;

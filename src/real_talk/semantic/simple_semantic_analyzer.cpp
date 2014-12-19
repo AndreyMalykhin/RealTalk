@@ -1,13 +1,15 @@
 
+#include <boost/functional/hash.hpp>
 #include <boost/format.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/numeric/conversion/cast.hpp>
 #include <unordered_map>
 #include <cassert>
 #include <vector>
 #include <string>
 #include <utility>
 #include <exception>
+#include <functional>
+#include "real_talk/parser/file_parser.h"
 #include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/sum_node.h"
@@ -62,7 +64,6 @@
 #include "real_talk/parser/negative_node.h"
 #include "real_talk/parser/return_value_node.h"
 #include "real_talk/parser/return_node.h"
-#include "real_talk/parser/parser_factory.h"
 #include "real_talk/semantic/simple_semantic_analyzer.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/bounded_array_data_type.h"
@@ -77,12 +78,15 @@
 #include "real_talk/semantic/long_lit.h"
 #include "real_talk/semantic/double_lit.h"
 #include "real_talk/semantic/string_lit.h"
+#include "real_talk/semantic/char_lit.h"
 #include "real_talk/semantic/bool_lit.h"
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/arg_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
 #include "real_talk/semantic/global_data_storage.h"
 #include "real_talk/semantic/local_data_storage.h"
+#include "real_talk/semantic/import_file_searcher.h"
+#include "real_talk/semantic/lit_parser.h"
 
 using std::vector;
 using std::string;
@@ -96,9 +100,9 @@ using std::move;
 using std::exception;
 using boost::format;
 using boost::adaptors::reverse;
-using boost::numeric_cast;
+using boost::filesystem::path;
+using boost::filesystem::filesystem_error;
 using real_talk::lexer::Token;
-using real_talk::parser::Parser;
 using real_talk::parser::ExprNode;
 using real_talk::parser::StmtNode;
 using real_talk::parser::AndNode;
@@ -157,7 +161,7 @@ using real_talk::parser::DefNode;
 using real_talk::parser::ArgDefNode;
 using real_talk::parser::LitNode;
 using real_talk::parser::BranchNode;
-using real_talk::parser::ParserFactory;
+using real_talk::parser::FileParser;
 
 namespace real_talk {
 namespace semantic {
@@ -166,7 +170,9 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
  public:
   Impl(
       const real_talk::parser::ProgramNode &program,
-      const real_talk::parser::ParserFactory &parser_factory);
+      const real_talk::parser::FileParser &file_parser,
+      const ImportFileSearcher &import_file_searcher,
+      const LitParser &lit_parser);
   SemanticAnalysis Analyze();
   virtual void VisitAnd(const real_talk::parser::AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -253,6 +259,11 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
  private:
   typedef std::unordered_map<std::string,
                              const real_talk::parser::DefNode*> IdDefs;
+  typedef std::unordered_map<boost::filesystem::path,
+                             std::shared_ptr<
+                               real_talk::parser::ProgramNode>,
+                             boost::hash<
+                               boost::filesystem::path> > FileAnalyzes;
 
   struct Scope {
     IdDefs id_defs;
@@ -270,20 +281,29 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
                       std::unique_ptr<Lit> lit);
 
   const real_talk::parser::ProgramNode &program_;
-  const real_talk::parser::ParserFactory &parser_factory_;
+  const real_talk::parser::FileParser &file_parser_;
+  const ImportFileSearcher &import_file_searcher_;
+  const LitParser &lit_parser_;
   std::vector< std::unique_ptr<SemanticError> > errors_;
   SemanticAnalysis::DefAnalyzes def_analyzes_;
   SemanticAnalysis::ExprAnalyzes expr_analyzes_;
   SemanticAnalysis::LitAnalyzes lit_analyzes_;
   SemanticAnalysis::ImportAnalyzes import_analyzes_;
   SemanticAnalysis::IdAnalyzes id_analyzes_;
+  FileAnalyzes file_analyzes_;
   std::vector<Scope> scopes_stack_;
   std::unique_ptr<DataType> current_data_type_;
 };
 
 SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(
-    const ProgramNode &program, const ParserFactory &parser_factory)
-    : impl_(new SimpleSemanticAnalyzer::Impl(program, parser_factory)) {
+    const ProgramNode &program,
+    const FileParser &file_parser,
+    const ImportFileSearcher &import_file_searcher,
+    const LitParser &lit_parser)
+    : impl_(new SimpleSemanticAnalyzer::Impl(program,
+                                             file_parser,
+                                             import_file_searcher,
+                                             lit_parser)) {
 }
 
 SimpleSemanticAnalyzer::~SimpleSemanticAnalyzer() {
@@ -295,9 +315,13 @@ SemanticAnalysis SimpleSemanticAnalyzer::Analyze() {
 
 SimpleSemanticAnalyzer::Impl::Impl(
     const ProgramNode &program,
-    const ParserFactory &parser_factory)
+    const FileParser &file_parser,
+    const ImportFileSearcher &import_file_searcher,
+    const LitParser &lit_parser)
     : program_(program),
-      parser_factory_(parser_factory) {
+      file_parser_(file_parser),
+      import_file_searcher_(import_file_searcher),
+      lit_parser_(lit_parser) {
 }
 
 SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze() {
@@ -374,10 +398,6 @@ void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode&) {
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitChar(const CharNode&) {
   
 }
 
@@ -466,6 +486,7 @@ void SimpleSemanticAnalyzer::Impl::AddDefAnalyzes(
   assert(!scopes_stack_.empty());
   Scope &current_scope = scopes_stack_.back();
   const string &name = def_node.GetNameToken().GetValue();
+  // TODO
   assert(current_scope.id_defs.count(name) == 0);
   current_scope.id_defs.insert(make_pair(name, &def_node));
 }
@@ -533,99 +554,80 @@ void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
   assert(lit_analysis_it != lit_analyzes_.end());
   const LitAnalysis &lit_analysis = lit_analysis_it->second;
   const StringLit &lit = static_cast<const StringLit&>(lit_analysis.GetLit());
-  const string &file_path = lit.GetValue();
-  unique_ptr<Parser> parser = parser_factory_.Create(file_path);
-  shared_ptr<ProgramNode> program = parser->Parse();
-  program->Accept(*this);
-  ImportAnalysis import_analysis(move(program));
-  import_analyzes_.insert(make_pair(&import_node, move(import_analysis)));
+  const path relative_file_path(lit.GetValue());
+  path absolute_file_path;
+
+  try {
+    absolute_file_path = import_file_searcher_.Search(relative_file_path);
+  } catch (...) {
+    // TODO
+    assert(false);
+  }
+
+  FileAnalyzes::const_iterator file_analysis_it =
+      file_analyzes_.find(absolute_file_path);
+  const bool is_file_already_analyzed =
+      file_analysis_it != file_analyzes_.end();
+  shared_ptr<ProgramNode> program;
+
+  if (is_file_already_analyzed) {
+    program = file_analysis_it->second;
+  } else {
+    try {
+      program = file_parser_.Parse(absolute_file_path);
+    } catch (...) {
+      // TODO
+      assert(false);
+    }
+
+    program->Accept(*this);
+    file_analyzes_.insert(make_pair(absolute_file_path, program));
+  }
+
+  const ImportAnalysis import_analysis(program);
+  import_analyzes_.insert(make_pair(&import_node, import_analysis));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBool(const BoolNode &bool_node) {
-  bool value;
-
-  switch (bool_node.GetToken().GetId()) {
-    case Token::kBoolTrueLit:
-      value = true;
-      break;
-    case Token::kBoolFalseLit:
-      value = false;
-      break;
-    default:
-      assert(false);
-  }
-
+  const bool value = lit_parser_.ParseBool(bool_node.GetToken().GetValue());
   unique_ptr<DataType> data_type(new BoolDataType());
   unique_ptr<Lit> lit(new BoolLit(value));
   AddLitAnalyzes(&bool_node, move(data_type), move(lit));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitInt(const IntNode &int_node) {
-  int32_t value;
-
-  try {
-    value = numeric_cast<int32_t>(stoi(int_node.GetToken().GetValue()));
-  } catch (const exception&) {
-    // TODO
-    throw;
-  }
-
+  const int32_t value = lit_parser_.ParseInt(int_node.GetToken().GetValue());
   unique_ptr<DataType> data_type(new IntDataType());
   unique_ptr<Lit> lit(new IntLit(value));
   AddLitAnalyzes(&int_node, move(data_type), move(lit));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitLong(const LongNode &long_node) {
-  int64_t value;
-
-  try {
-    value = numeric_cast<int64_t>(stoll(long_node.GetToken().GetValue()));
-  } catch (const exception&) {
-    // TODO
-    throw;
-  }
-
+  const int64_t value = lit_parser_.ParseLong(long_node.GetToken().GetValue());
   unique_ptr<DataType> data_type(new LongDataType());
   unique_ptr<Lit> lit(new LongLit(value));
   AddLitAnalyzes(&long_node, move(data_type), move(lit));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitDouble(const DoubleNode &double_node) {
-  double value;
-
-  try {
-    value = numeric_cast<double>(stod(double_node.GetToken().GetValue()));
-  } catch (const exception&) {
-    // TODO
-    throw;
-  }
-
+  const double value =
+      lit_parser_.ParseDouble(double_node.GetToken().GetValue());
   unique_ptr<DataType> data_type(new DoubleDataType());
   unique_ptr<Lit> lit(new DoubleLit(value));
   AddLitAnalyzes(&double_node, move(data_type), move(lit));
 }
 
+void SimpleSemanticAnalyzer::Impl::VisitChar(const CharNode &char_node) {
+  const char value =
+      lit_parser_.ParseChar(char_node.GetToken().GetValue());
+  unique_ptr<DataType> data_type(new CharDataType());
+  unique_ptr<Lit> lit(new CharLit(value));
+  AddLitAnalyzes(&char_node, move(data_type), move(lit));
+}
+
 void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
-  const string &token_value = string_node.GetToken().GetValue();
-  assert(token_value.size() > 1);
-  auto token_value_end_it = token_value.end() - 1;
-  auto token_value_it = token_value.begin() + 1;
-  string value;
-  value.reserve(static_cast<size_t>(token_value_end_it - token_value_it));
-  char previous_char = '\0';
-  const char escape_char_ = '\\';
-
-  while (token_value_it != token_value_end_it) {
-    const char current_char = *token_value_it;
-
-    if (current_char != escape_char_ || previous_char == escape_char_) {
-      value += current_char;
-    }
-
-    previous_char = current_char;
-    ++token_value_it;
-  }
-
+  const string &value =
+      lit_parser_.ParseString(string_node.GetToken().GetValue());
   unique_ptr<DataType> data_type(new StringDataType());
   unique_ptr<Lit> lit(new StringLit(value));
   AddLitAnalyzes(&string_node, move(data_type), move(lit));
@@ -778,13 +780,15 @@ const DefNode *SimpleSemanticAnalyzer::Impl::GetIdDef(const string &id) {
     }
   }
 
+  // TODO
   assert(def_node);
   return def_node;
 }
 
-void SimpleSemanticAnalyzer::Impl::AddLitAnalyzes(const LitNode *lit_node,
-                                            unique_ptr<DataType> data_type,
-                                            unique_ptr<Lit> lit) {
+void SimpleSemanticAnalyzer::Impl::AddLitAnalyzes(
+    const LitNode *lit_node,
+    unique_ptr<DataType> data_type,
+    unique_ptr<Lit> lit) {
   ExprAnalysis expr_analysis(move(data_type));
   expr_analyzes_.insert(make_pair(lit_node, move(expr_analysis)));
   LitAnalysis lit_analysis(move(lit));

@@ -15,7 +15,7 @@ ImportAnalysis::ImportAnalysis(shared_ptr<ProgramNode> program)
 }
 
 bool operator==(const ImportAnalysis &lhs, const ImportAnalysis &rhs) {
-  return *(lhs.program_) == *(rhs.program_);
+  return lhs.program_ == rhs.program_;
 }
 
 ostream &operator<<(ostream &stream, const ImportAnalysis &analysis) {

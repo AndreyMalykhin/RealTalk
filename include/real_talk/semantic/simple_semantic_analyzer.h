@@ -10,10 +10,13 @@ namespace real_talk {
 namespace parser {
 
 class ProgramNode;
-class ParserFactory;
+class FileParser;
 }
 
 namespace semantic {
+
+class ImportFileSearcher;
+class LitParser;
 
 class SemanticErrorException: public std::runtime_error {
  public:
@@ -27,7 +30,9 @@ class SimpleSemanticAnalyzer {
  public:
   explicit SimpleSemanticAnalyzer(
       const real_talk::parser::ProgramNode &program,
-      const real_talk::parser::ParserFactory &parser_factory);
+      const real_talk::parser::FileParser &file_parser,
+      const ImportFileSearcher &import_file_searcher,
+      const LitParser &lit_parser);
   ~SimpleSemanticAnalyzer();
   SemanticAnalysis Analyze();
 

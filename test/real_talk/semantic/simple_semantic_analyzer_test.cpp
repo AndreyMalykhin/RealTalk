@@ -1,6 +1,7 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <boost/filesystem.hpp>
 #include <unordered_map>
 #include <cstdint>
 #include <vector>
@@ -9,7 +10,8 @@
 #include <utility>
 #include <iterator>
 #include "real_talk/lexer/token_info.h"
-#include "real_talk/parser/parser_factory.h"
+#include "real_talk/parser/parser.h"
+#include "real_talk/parser/file_parser.h"
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
 #include "real_talk/parser/var_def_with_init_node.h"
@@ -59,6 +61,8 @@
 #include "real_talk/semantic/simple_semantic_analyzer.h"
 #include "real_talk/semantic/global_data_storage.h"
 #include "real_talk/semantic/local_data_storage.h"
+#include "real_talk/semantic/import_file_searcher.h"
+#include "real_talk/semantic/lit_parser.h"
 
 using std::vector;
 using std::string;
@@ -69,6 +73,7 @@ using std::move;
 using std::make_pair;
 using std::make_move_iterator;
 using std::pair;
+using std::ostream;
 using testing::Test;
 using testing::Return;
 using testing::NiceMock;
@@ -76,6 +81,7 @@ using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::InSequence;
 using testing::_;
+using boost::filesystem::path;
 using real_talk::lexer::TokenInfo;
 using real_talk::lexer::Token;
 using real_talk::parser::ProgramNode;
@@ -111,14 +117,43 @@ using real_talk::parser::ElseIfNode;
 using real_talk::parser::IfElseIfNode;
 using real_talk::parser::IfElseIfElseNode;
 using real_talk::parser::ImportNode;
-using real_talk::parser::ParserFactory;
+using real_talk::parser::FileParser;
 using real_talk::parser::Parser;
+
+namespace boost {
+namespace filesystem {
+
+void PrintTo(const path &p, ostream *stream);
+void PrintTo(const path &p, ostream *stream) {
+  *stream << p;
+}
+}
+}
 
 namespace real_talk {
 namespace semantic {
 
+template<typename T> struct TestLit {
+  string str;
+  T value;
+};
+
+struct TestLits {
+  vector< TestLit<int32_t> > ints;
+  vector< TestLit<int64_t> > longs;
+  vector< TestLit<double> > doubles;
+  vector< TestLit<bool> > bools;
+  vector< TestLit<string> > strings;
+  vector< TestLit<char> > chars;
+};
+
+struct TestImportFilePath {
+  path relative;
+  path absolute;
+};
+
 struct TestImportProgram {
-  string file_path;
+  path absolute_file_path;
   shared_ptr<ProgramNode> node;
 };
 
@@ -126,20 +161,28 @@ struct TestProgram {
   unique_ptr<ProgramNode> node;
   SemanticAnalysis analysis;
   vector<TestImportProgram> test_import_programs;
+  vector<TestImportFilePath> test_import_file_paths;
+  TestLits test_lits;
 };
 
-class ParserMock: public Parser {
+class LitParserMock: public LitParser {
  public:
-  MOCK_METHOD0(Parse, shared_ptr<ProgramNode> ());
+  MOCK_CONST_METHOD1(ParseInt, int32_t(const string&));
+  MOCK_CONST_METHOD1(ParseLong, int64_t(const string&));
+  MOCK_CONST_METHOD1(ParseDouble, double(const string&));
+  MOCK_CONST_METHOD1(ParseBool, bool(const string&));
+  MOCK_CONST_METHOD1(ParseString, string(const string&));
+  MOCK_CONST_METHOD1(ParseChar, char(const string&));
 };
 
-class ParserFactoryMock: public ParserFactory {
+class FileParserMock: public FileParser {
  public:
-  virtual unique_ptr<Parser> Create(const string &file_path) const override {
-    return unique_ptr<Parser>(Create_(file_path));
-  }
+  MOCK_CONST_METHOD1(Parse, shared_ptr<ProgramNode>(const path&));
+};
 
-  MOCK_CONST_METHOD1(Create_, Parser* (const string&));
+class ImportFileSearcherMock: public ImportFileSearcher {
+ public:
+  MOCK_CONST_METHOD1(Search, path(const path&));
 };
 
 class SimpleSemanticAnalyzerTest: public Test {
@@ -151,30 +194,79 @@ class SimpleSemanticAnalyzerTest: public Test {
   }
 
   void TestAnalyze(const TestProgram &test_program) {
-    ParserFactoryMock *parser_factory_mock = new NiceMock<ParserFactoryMock>();
-    unique_ptr<ParserFactory> parser_factory(parser_factory_mock);
+    ImportFileSearcherMock *import_file_searcher_mock =
+        new ImportFileSearcherMock();
+    unique_ptr<ImportFileSearcher> import_file_searcher(
+        import_file_searcher_mock);
 
-    {
-      InSequence sequence;
-
-      for (const TestImportProgram &test_import_program:
-               test_program.test_import_programs) {
-        ParserMock *parser_mock = new NiceMock<ParserMock>();
-        unique_ptr<Parser> parser(parser_mock);
-        EXPECT_CALL(*parser_factory_mock,
-                    Create_(test_import_program.file_path))
-            .Times(1)
-            .WillOnce(Return(parser_mock))
-            .RetiresOnSaturation();
-        EXPECT_CALL(*parser_mock, Parse())
-            .Times(1)
-            .WillOnce(Return(test_import_program.node))
-            .RetiresOnSaturation();
-        parser.release();
-      }
+    for (const TestImportFilePath &test_import_file_path:
+             test_program.test_import_file_paths) {
+      EXPECT_CALL(*import_file_searcher_mock,
+                  Search(test_import_file_path.relative))
+          .Times(1)
+          .WillOnce(Return(test_import_file_path.absolute))
+          .RetiresOnSaturation();
     }
 
-    SimpleSemanticAnalyzer analyzer(*(test_program.node), *parser_factory);
+    FileParserMock *file_parser_mock = new FileParserMock();
+    unique_ptr<FileParser> file_parser(file_parser_mock);
+
+    for (const TestImportProgram &test_import_program:
+             test_program.test_import_programs) {
+      EXPECT_CALL(*file_parser_mock,
+                  Parse(test_import_program.absolute_file_path))
+          .Times(1)
+          .WillOnce(Return(test_import_program.node))
+          .RetiresOnSaturation();
+    }
+
+    LitParserMock *lit_parser_mock = new LitParserMock();
+    unique_ptr<LitParser> lit_parser(lit_parser_mock);
+
+    for (const TestLit<int32_t> &test_lit: test_program.test_lits.ints) {
+      EXPECT_CALL(*lit_parser_mock, ParseInt(test_lit.str))
+          .Times(1)
+          .WillOnce(Return(test_lit.value))
+          .RetiresOnSaturation();
+    }
+
+    for (const TestLit<int64_t> &test_lit: test_program.test_lits.longs) {
+      EXPECT_CALL(*lit_parser_mock, ParseLong(test_lit.str))
+          .Times(1)
+          .WillOnce(Return(test_lit.value))
+          .RetiresOnSaturation();
+    }
+
+    for (const TestLit<double> &test_lit: test_program.test_lits.doubles) {
+      EXPECT_CALL(*lit_parser_mock, ParseDouble(test_lit.str))
+          .Times(1)
+          .WillOnce(Return(test_lit.value))
+          .RetiresOnSaturation();
+    }
+
+    for (const TestLit<string> &test_lit: test_program.test_lits.strings) {
+      EXPECT_CALL(*lit_parser_mock, ParseString(test_lit.str))
+          .Times(1)
+          .WillOnce(Return(test_lit.value))
+          .RetiresOnSaturation();
+    }
+
+    for (const TestLit<char> &test_lit: test_program.test_lits.chars) {
+      EXPECT_CALL(*lit_parser_mock, ParseChar(test_lit.str))
+          .Times(1)
+          .WillOnce(Return(test_lit.value))
+          .RetiresOnSaturation();
+    }
+
+    for (const TestLit<bool> &test_lit: test_program.test_lits.bools) {
+      EXPECT_CALL(*lit_parser_mock, ParseBool(test_lit.str))
+          .Times(1)
+          .WillOnce(Return(test_lit.value))
+          .RetiresOnSaturation();
+    }
+
+    SimpleSemanticAnalyzer analyzer(
+        *(test_program.node), *file_parser, *import_file_searcher, *lit_parser);
     SemanticAnalysis actual_analysis = analyzer.Analyze();
     ASSERT_EQ(test_program.analysis, actual_analysis);
   }
@@ -186,6 +278,7 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
     unique_ptr<DataType> data_type;
     SemanticAnalysis::ExprAnalyzes expr_analyzes;
     SemanticAnalysis::LitAnalyzes lit_analyzes;
+    TestLits test_lits;
   };
 
   vector<TestData> test_data_suits;
@@ -194,49 +287,56 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
     unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
         TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
     unique_ptr<DataType> data_type(new IntDataType());
-    test_data_suits.push_back({move(data_type_node), move(data_type), {}, {}});
+    test_data_suits.push_back(
+        {move(data_type_node), move(data_type), {}, {}, {}});
   }
 
   {
     unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
         TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
     unique_ptr<DataType> data_type(new LongDataType());
-    test_data_suits.push_back({move(data_type_node), move(data_type), {}, {}});
+    test_data_suits.push_back(
+        {move(data_type_node), move(data_type), {}, {}, {}});
   }
 
   {
     unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
         TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
     unique_ptr<DataType> data_type(new DoubleDataType());
-    test_data_suits.push_back({move(data_type_node), move(data_type), {}, {}});
+    test_data_suits.push_back(
+        {move(data_type_node), move(data_type), {}, {}, {}});
   }
 
   {
     unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
         TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
     unique_ptr<DataType> data_type(new BoolDataType());
-    test_data_suits.push_back({move(data_type_node), move(data_type), {}, {}});
+    test_data_suits.push_back(
+        {move(data_type_node), move(data_type), {}, {}, {}});
   }
 
   {
     unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
         TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
     unique_ptr<DataType> data_type(new CharDataType());
-    test_data_suits.push_back({move(data_type_node), move(data_type), {}, {}});
+    test_data_suits.push_back(
+        {move(data_type_node), move(data_type), {}, {}, {}});
   }
 
   {
     unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
         TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
     unique_ptr<DataType> data_type(new StringDataType());
-    test_data_suits.push_back({move(data_type_node), move(data_type), {}, {}});
+    test_data_suits.push_back(
+        {move(data_type_node), move(data_type), {}, {}, {}});
   }
 
   {
     unique_ptr<DataTypeNode> data_type_node(new VoidDataTypeNode(
         TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
     unique_ptr<DataType> data_type(new VoidDataType());
-    test_data_suits.push_back({move(data_type_node), move(data_type), {}, {}});
+    test_data_suits.push_back(
+        {move(data_type_node), move(data_type), {}, {}, {}});
   }
 
   {
@@ -248,7 +348,8 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
         TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
     unique_ptr<DataType> data_type(new ArrayDataType(
         unique_ptr<DataType>(new IntDataType())));
-    test_data_suits.push_back({move(data_type_node), move(data_type), {}, {}});
+    test_data_suits.push_back(
+        {move(data_type_node), move(data_type), {}, {}, {}});
   }
 
   {
@@ -274,10 +375,13 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
     SemanticAnalysis::LitAnalyzes lit_analyzes;
     LitAnalysis lit_analysis(size->Clone());
     lit_analyzes.insert(make_pair(size_node_ptr, move(lit_analysis)));
+    TestLits test_lits = {};
+    test_lits.ints = {{"7", INT32_C(7)}};
     TestData test_data = {move(array_data_type_node),
                           move(array_data_type),
                           move(expr_analyzes),
-                          move(lit_analyzes)};
+                          move(lit_analyzes),
+                          test_lits};
     test_data_suits.push_back(move(test_data));
   }
 
@@ -307,8 +411,14 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
                               import_analyzes,
                               id_analyzes);
     vector<TestImportProgram> test_import_programs;
+    vector<TestImportFilePath> test_import_file_paths;
+    TestProgram test_program = {move(program_node),
+                                move(analysis),
+                                test_import_programs,
+                                test_import_file_paths,
+                                test_data.test_lits};
 
-    TestAnalyze({move(program_node), move(analysis), test_import_programs});
+    TestAnalyze(test_program);
   }
 }
 
@@ -327,6 +437,9 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithInit) {
   unique_ptr<StmtNode> def_node(def_node_ptr);
   stmt_nodes.push_back(move(def_node));
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  TestLits test_lits = {};
+  test_lits.ints = {{"7", INT32_C(7)}};
 
   SemanticAnalysis::DefAnalyzes def_analyzes;
   unique_ptr<DataType> var_data_type(new IntDataType());
@@ -354,8 +467,14 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithInit) {
                             import_analyzes,
                             id_analyzes);
   vector<TestImportProgram> test_import_programs;
+  vector<TestImportFilePath> test_import_file_paths;
+  TestProgram test_program = {move(program_node),
+                              move(analysis),
+                              test_import_programs,
+                              test_import_file_paths,
+                              test_lits};
 
-  TestAnalyze({move(program_node), move(analysis), test_import_programs});
+  TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Id) {
@@ -404,8 +523,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Id) {
                             import_analyzes,
                             id_analyzes);
   vector<TestImportProgram> test_import_programs;
+  vector<TestImportFilePath> test_import_file_paths;
+  TestLits test_lits = {};
+  TestProgram test_program = {move(program_node),
+                              move(analysis),
+                              test_import_programs,
+                              test_import_file_paths,
+                              test_lits};
 
-  TestAnalyze({move(program_node), move(analysis), test_import_programs});
+  TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithReturnValue) {
@@ -480,8 +606,15 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithReturnValue) {
                             import_analyzes,
                             id_analyzes);
   vector<TestImportProgram> test_import_programs;
+  vector<TestImportFilePath> test_import_file_paths;
+  TestLits test_lits = {};
+  TestProgram test_program = {move(program_node),
+                              move(analysis),
+                              test_import_programs,
+                              test_import_file_paths,
+                              test_lits};
 
-  TestAnalyze({move(program_node), move(analysis), test_import_programs});
+  TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutReturnValue) {
@@ -539,8 +672,15 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutReturnValue) {
                             import_analyzes,
                             id_analyzes);
   vector<TestImportProgram> test_import_programs;
+  vector<TestImportFilePath> test_import_file_paths;
+  TestLits test_lits = {};
+  TestProgram test_program = {move(program_node),
+                              move(analysis),
+                              test_import_programs,
+                              test_import_file_paths,
+                              test_lits};
 
-  TestAnalyze({move(program_node), move(analysis), test_import_programs});
+  TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
@@ -653,8 +793,15 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
                             import_analyzes,
                             id_analyzes);
   vector<TestImportProgram> test_import_programs;
+  vector<TestImportFilePath> test_import_file_paths;
+  TestLits test_lits = {};
+  TestProgram test_program = {move(program_node),
+                              move(analysis),
+                              test_import_programs,
+                              test_import_file_paths,
+                              test_lits};
 
-  TestAnalyze({move(program_node), move(analysis), test_import_programs});
+  TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
@@ -789,21 +936,38 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
                             import_analyzes,
                             id_analyzes);
   vector<TestImportProgram> test_import_programs;
+  vector<TestImportFilePath> test_import_file_paths;
+  TestLits test_lits = {};
+  TestProgram test_program = {move(program_node),
+                              move(analysis),
+                              test_import_programs,
+                              test_import_file_paths,
+                              test_lits};
 
-  TestAnalyze({move(program_node), move(analysis), test_import_programs});
+  TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Import) {
   vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
-  StringNode *file_path_node_ptr = new StringNode(
+  StringNode *file_path_node_ptr1 = new StringNode(
       TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<StringNode> file_path_node(file_path_node_ptr);
-  ImportNode *import_node_ptr = new ImportNode(
+  unique_ptr<StringNode> file_path_node1(file_path_node_ptr1);
+  ImportNode *import_node_ptr1 = new ImportNode(
       TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
-      move(file_path_node),
+      move(file_path_node1),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> import_node(import_node_ptr);
-  main_program_stmt_nodes.push_back(move(import_node));
+  unique_ptr<StmtNode> import_node1(import_node_ptr1);
+  main_program_stmt_nodes.push_back(move(import_node1));
+
+  StringNode *file_path_node_ptr2 = new StringNode(
+      TokenInfo(Token::kStringLit, "\"./file.rt\"", UINT32_C(4), UINT32_C(4)));
+  unique_ptr<StringNode> file_path_node2(file_path_node_ptr2);
+  ImportNode *import_node_ptr2 = new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(3), UINT32_C(3)),
+      move(file_path_node2),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<StmtNode> import_node2(import_node_ptr2);
+  main_program_stmt_nodes.push_back(move(import_node2));
   unique_ptr<ProgramNode> main_program_node(
       new ProgramNode(move(main_program_stmt_nodes)));
 
@@ -817,13 +981,28 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   import_program_stmt_nodes.push_back(move(var_def_node));
-
   shared_ptr<ProgramNode> import_program_node(
       new ProgramNode(move(import_program_stmt_nodes)));
-  string import_program_file_path = "file.rt";
+  path import_program_absolute_file_path("/myproject/file.rt");
   TestImportProgram test_import_program =
-      {import_program_file_path, import_program_node};
+      {import_program_absolute_file_path, import_program_node};
   test_import_programs.push_back(test_import_program);
+
+  vector<TestImportFilePath> test_import_file_paths;
+  path import_relative_file_path1("file.rt");
+  path import_absolute_file_path1 = import_program_absolute_file_path;
+  TestImportFilePath test_import_file_path1 =
+      {import_relative_file_path1, import_absolute_file_path1};
+  test_import_file_paths.push_back(test_import_file_path1);
+  path import_relative_file_path2("./file.rt");
+  path import_absolute_file_path2 = import_program_absolute_file_path;
+  TestImportFilePath test_import_file_path2 =
+      {import_relative_file_path2, import_absolute_file_path2};
+  test_import_file_paths.push_back(test_import_file_path2);
+
+  TestLits test_lits = {};
+  test_lits.strings = {{"\"file.rt\"", "file.rt"},
+                       {"\"./file.rt\"", "./file.rt"}};
 
   SemanticAnalysis::DefAnalyzes def_analyzes;
   unique_ptr<DataType> var_data_type(new BoolDataType());
@@ -833,20 +1012,30 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
   def_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   SemanticAnalysis::LitAnalyzes lit_analyzes;
-  unique_ptr<Lit> file_path_lit(new StringLit(import_program_file_path));
-  LitAnalysis file_path_lit_analysis(move(file_path_lit));
+  unique_ptr<Lit> file_path_lit1(new StringLit("file.rt"));
+  LitAnalysis file_path_lit_analysis1(move(file_path_lit1));
   lit_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
+      make_pair(file_path_node_ptr1, move(file_path_lit_analysis1)));
+  unique_ptr<Lit> file_path_lit2(new StringLit("./file.rt"));
+  LitAnalysis file_path_lit_analysis2(move(file_path_lit2));
+  lit_analyzes.insert(
+      make_pair(file_path_node_ptr2, move(file_path_lit_analysis2)));
 
   SemanticAnalysis::ImportAnalyzes import_analyzes;
-  ImportAnalysis import_analysis(import_program_node);
-  import_analyzes.insert(make_pair(import_node_ptr, import_analysis));
+  ImportAnalysis import_analysis1(import_program_node);
+  import_analyzes.insert(make_pair(import_node_ptr1, import_analysis1));
+  ImportAnalysis import_analysis2(import_program_node);
+  import_analyzes.insert(make_pair(import_node_ptr2, import_analysis2));
 
   SemanticAnalysis::ExprAnalyzes expr_analyzes;
-  unique_ptr<DataType> file_path_expr_data_type(new StringDataType());
-  ExprAnalysis file_path_expr_analysis(move(file_path_expr_data_type));
+  unique_ptr<DataType> file_path_expr_data_type1(new StringDataType());
+  ExprAnalysis file_path_expr_analysis1(move(file_path_expr_data_type1));
   expr_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_expr_analysis)));
+      make_pair(file_path_node_ptr1, move(file_path_expr_analysis1)));
+  unique_ptr<DataType> file_path_expr_data_type2(new StringDataType());
+  ExprAnalysis file_path_expr_analysis2(move(file_path_expr_data_type2));
+  expr_analyzes.insert(
+      make_pair(file_path_node_ptr2, move(file_path_expr_analysis2)));
 
   SemanticAnalysis::IdAnalyzes id_analyzes;
   vector< unique_ptr<SemanticError> > errors;
@@ -856,8 +1045,13 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
                             move(lit_analyzes),
                             move(import_analyzes),
                             id_analyzes);
+  TestProgram test_program = {move(main_program_node),
+                              move(analysis),
+                              test_import_programs,
+                              test_import_file_paths,
+                              test_lits};
 
-  TestAnalyze({move(main_program_node), move(analysis), test_import_programs});
+  TestAnalyze(test_program);
 }
 }
 }
