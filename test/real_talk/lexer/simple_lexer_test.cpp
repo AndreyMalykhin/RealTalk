@@ -1322,19 +1322,19 @@ TEST_F(SimpleLexerTest, ImportToken) {
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kImport, "homie", UINT32_C(0), UINT32_C(0))
+      TokenInfo(Token::kImport, "checkthisout", UINT32_C(0), UINT32_C(0))
     };
-    string code = "homie";
+    string code = "checkthisout";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kImport, "homie", UINT32_C(0), UINT32_C(0)),
-      TokenInfo(Token::kImport, "homie", UINT32_C(0), UINT32_C(6))
+      TokenInfo(Token::kImport, "checkthisout", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kImport, "checkthisout", UINT32_C(0), UINT32_C(13))
     };
-    string code = "homie homie";
+    string code = "checkthisout checkthisout";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }

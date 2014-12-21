@@ -39,7 +39,7 @@ const unordered_map<string, Token> &SimpleLexer::kKeywordTokens =
         {SimpleLexer::kTrueKeyword, Token::kBoolTrueLit},
         {SimpleLexer::kFalseKeyword, Token::kBoolFalseLit},
         {"fresh", Token::kNew},
-        {"homie", Token::kImport},
+        {"checkthisout", Token::kImport},
         {"holdon", Token::kBreak},
         {"bringitback", Token::kReturn},
         {"keeprollin", Token::kContinue},

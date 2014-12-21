@@ -56,5 +56,6 @@ add_executable(real_talk_tests
   test/real_talk/lexer/simple_lexer_test.cpp
   test/real_talk/semantic/simple_semantic_analyzer_test.cpp
   test/real_talk/semantic/simple_import_file_searcher_test.cpp
+  test/real_talk/semantic/simple_lit_parser_test.cpp
 )
 target_link_libraries(real_talk_tests ${GMOCK_LIBRARY} ${Boost_LIBRARIES} real_talk)
