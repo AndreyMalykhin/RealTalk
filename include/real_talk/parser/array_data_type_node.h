@@ -30,13 +30,6 @@ class ArrayDataTypeNode: public DataTypeNode {
     visitor.VisitArrayDataType(*this);
   }
 
-  virtual std::unique_ptr<DataTypeNode> Clone() const override {
-    return std::unique_ptr<DataTypeNode>(new ArrayDataTypeNode(
-        element_data_type_->Clone(),
-        subscript_start_token_,
-        subscript_end_token_));
-  }
-
  private:
   virtual bool IsEqual(const Node &node) const override {
     const ArrayDataTypeNode &rhs = static_cast<const ArrayDataTypeNode&>(node);

@@ -23,10 +23,6 @@ class CharDataTypeNode: public DataTypeNode {
     visitor.VisitCharDataType(*this);
   }
 
-  virtual std::unique_ptr<DataTypeNode> Clone() const override {
-    return std::unique_ptr<DataTypeNode>(new CharDataTypeNode(name_token_));
-  }
-
  private:
   virtual bool IsEqual(const Node &node) const override {
     const CharDataTypeNode &rhs =

@@ -17,6 +17,10 @@ unique_ptr<DataType> DoubleDataType::Clone() const {
   return unique_ptr<DataType>(new DoubleDataType());
 }
 
+const DataType &DoubleDataType::AsPrimitive() const {
+  return *this;
+}
+
 bool DoubleDataType::IsEqual(const DataType&) const {
   return true;
 }

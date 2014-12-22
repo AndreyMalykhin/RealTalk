@@ -23,10 +23,6 @@ class VoidDataTypeNode: public DataTypeNode {
     visitor.VisitVoidDataType(*this);
   }
 
-  virtual std::unique_ptr<DataTypeNode> Clone() const override {
-    return std::unique_ptr<DataTypeNode>(new VoidDataTypeNode(name_token_));
-  }
-
  private:
   virtual bool IsEqual(const Node &node) const override {
     const VoidDataTypeNode &rhs =

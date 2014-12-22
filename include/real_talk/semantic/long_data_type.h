@@ -13,6 +13,7 @@ class LongDataType: public DataType {
  public:
   virtual std::string GetName() const override;
   virtual std::unique_ptr<DataType> Clone() const override;
+  virtual const DataType &AsPrimitive() const override;
 
  private:
   virtual bool IsEqual(const DataType &rhs) const override;

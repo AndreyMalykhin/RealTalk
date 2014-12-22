@@ -16,7 +16,6 @@ add_library(real_talk
   src/real_talk/parser/simple_file_parser.cpp
   src/real_talk/semantic/data_type.cpp
   src/real_talk/semantic/array_data_type.cpp
-  src/real_talk/semantic/bounded_array_data_type.cpp
   src/real_talk/semantic/int_data_type.cpp
   src/real_talk/semantic/long_data_type.cpp
   src/real_talk/semantic/double_data_type.cpp
@@ -32,8 +31,8 @@ add_library(real_talk
   src/real_talk/semantic/char_lit.cpp
   src/real_talk/semantic/bool_lit.cpp
   src/real_talk/semantic/semantic_analysis.cpp
-  src/real_talk/semantic/semantic_hint.cpp
-  src/real_talk/semantic/semantic_error.cpp
+  src/real_talk/semantic/semantic_problem.cpp
+  src/real_talk/semantic/semantic_problems.cpp
   src/real_talk/semantic/def_analysis.cpp
   src/real_talk/semantic/var_def_analysis.cpp
   src/real_talk/semantic/arg_def_analysis.cpp

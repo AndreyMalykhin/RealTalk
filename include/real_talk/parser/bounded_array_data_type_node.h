@@ -3,9 +3,8 @@
 #define _REAL_TALK_PARSER_BOUNDED_ARRAY_DATA_TYPE_NODE_H_
 
 #include <string>
-#include <sstream>
 #include "real_talk/parser/data_type_node.h"
-#include "real_talk/parser/int_node.h"
+#include "real_talk/parser/expr_node.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
@@ -16,7 +15,7 @@ class BoundedArrayDataTypeNode: public DataTypeNode {
   BoundedArrayDataTypeNode(
       std::unique_ptr<DataTypeNode> element_data_type,
       const real_talk::lexer::TokenInfo &subscript_start_token,
-      std::unique_ptr<IntNode> size,
+      std::unique_ptr<ExprNode> size,
       const real_talk::lexer::TokenInfo &subscript_end_token)
       : element_data_type_(move(element_data_type)),
         subscript_start_token_(subscript_start_token),
@@ -26,7 +25,7 @@ class BoundedArrayDataTypeNode: public DataTypeNode {
     assert(size_);
   }
 
-  const std::unique_ptr<IntNode> &GetSize() const {
+  const std::unique_ptr<ExprNode> &GetSize() const {
     return size_;
   }
 
@@ -38,17 +37,10 @@ class BoundedArrayDataTypeNode: public DataTypeNode {
     visitor.VisitBoundedArrayDataType(*this);
   }
 
-  virtual std::unique_ptr<DataTypeNode> Clone() const override {
-    return std::unique_ptr<DataTypeNode>(new BoundedArrayDataTypeNode(
-        element_data_type_->Clone(),
-        subscript_start_token_,
-        size_->Clone(),
-        subscript_end_token_));
-  }
-
  private:
   virtual bool IsEqual(const Node &node) const override {
-    const BoundedArrayDataTypeNode &rhs = static_cast<const BoundedArrayDataTypeNode&>(node);
+    const BoundedArrayDataTypeNode &rhs =
+        static_cast<const BoundedArrayDataTypeNode&>(node);
     return subscript_start_token_ == rhs.subscript_start_token_
         && subscript_end_token_ == rhs.subscript_end_token_
         && *size_ == *(rhs.size_)
@@ -63,7 +55,7 @@ class BoundedArrayDataTypeNode: public DataTypeNode {
  private:
   std::unique_ptr<DataTypeNode> element_data_type_;
   real_talk::lexer::TokenInfo subscript_start_token_;
-  std::unique_ptr<IntNode> size_;
+  std::unique_ptr<ExprNode> size_;
   real_talk::lexer::TokenInfo subscript_end_token_;
 };
 }

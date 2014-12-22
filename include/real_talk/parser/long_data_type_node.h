@@ -23,10 +23,6 @@ class LongDataTypeNode: public DataTypeNode {
     visitor.VisitLongDataType(*this);
   }
 
-  virtual std::unique_ptr<DataTypeNode> Clone() const override {
-    return std::unique_ptr<DataTypeNode>(new LongDataTypeNode(name_token_));
-  }
-
  private:
   virtual bool IsEqual(const Node &node) const override {
     const LongDataTypeNode &rhs =

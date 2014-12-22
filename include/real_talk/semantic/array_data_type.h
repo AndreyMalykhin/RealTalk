@@ -13,6 +13,7 @@ class ArrayDataType: public DataType {
   explicit ArrayDataType(std::unique_ptr<DataType> element_data_type);
   virtual std::string GetName() const override;
   virtual std::unique_ptr<DataType> Clone() const override;
+  virtual const DataType &AsPrimitive() const override;
 
  private:
   virtual bool IsEqual(const DataType &rhs) const override;

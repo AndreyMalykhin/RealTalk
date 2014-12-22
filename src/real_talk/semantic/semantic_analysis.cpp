@@ -20,13 +20,13 @@ namespace real_talk {
 namespace semantic {
 
 SemanticAnalysis::SemanticAnalysis(
-    vector< unique_ptr<SemanticError> > errors,
+    vector< unique_ptr<SemanticProblem> > problems,
     DefAnalyzes def_analyzes,
     ExprAnalyzes expr_analyzes,
     LitAnalyzes lit_analyzes,
     ImportAnalyzes import_analyzes,
     const IdAnalyzes &id_analyzes)
-    : errors_(move(errors)),
+    : problems_(move(problems)),
       def_analyzes_(move(def_analyzes)),
       expr_analyzes_(move(expr_analyzes)),
       lit_analyzes_(move(lit_analyzes)),
@@ -42,14 +42,14 @@ bool operator==(const SemanticAnalysis &lhs, const SemanticAnalysis &rhs) {
     && *(lhs_pair.second) == *(rhs_pair.second);
   };
 
-  return lhs.errors_.size() == rhs.errors_.size()
+  return lhs.problems_.size() == rhs.problems_.size()
       && lhs.def_analyzes_.size() == rhs.def_analyzes_.size()
       && lhs.expr_analyzes_.size() == rhs.expr_analyzes_.size()
       && lhs.lit_analyzes_.size() == rhs.lit_analyzes_.size()
       && lhs.id_analyzes_.size() == rhs.id_analyzes_.size()
-      && equal(make_indirect_iterator(lhs.errors_.begin()),
-               make_indirect_iterator(lhs.errors_.end()),
-               make_indirect_iterator(rhs.errors_.begin()))
+      && equal(make_indirect_iterator(lhs.problems_.begin()),
+               make_indirect_iterator(lhs.problems_.end()),
+               make_indirect_iterator(rhs.problems_.begin()))
       && equal(lhs.def_analyzes_.begin(),
                lhs.def_analyzes_.end(),
                rhs.def_analyzes_.begin(),
@@ -69,8 +69,8 @@ bool operator==(const SemanticAnalysis &lhs, const SemanticAnalysis &rhs) {
 }
 
 ostream &operator<<(ostream &stream, const SemanticAnalysis &result) {
-  for (const unique_ptr<SemanticError> &error: result.errors_) {
-    stream << "error=" << *error << "\n";
+  for (const unique_ptr<SemanticProblem> &problem: result.problems_) {
+    stream << "problem=" << *problem << "\n";
   }
 
   for (const auto &pair: result.def_analyzes_) {

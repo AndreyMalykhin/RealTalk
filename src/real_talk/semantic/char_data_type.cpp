@@ -13,6 +13,10 @@ string CharDataType::GetName() const {
   return "char";
 }
 
+const DataType &CharDataType::AsPrimitive() const {
+  return *this;
+}
+
 unique_ptr<DataType> CharDataType::Clone() const {
   return unique_ptr<DataType>(new CharDataType());
 }

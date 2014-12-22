@@ -21,6 +21,10 @@ class ArrayAllocNode final: public ExprNode {
     assert(data_type_);
   }
 
+  const std::unique_ptr<BoundedArrayDataTypeNode> &GetDataType() const {
+    return data_type_;
+  }
+
   virtual void Accept(NodeVisitor&) const override {
     assert(false);
   }

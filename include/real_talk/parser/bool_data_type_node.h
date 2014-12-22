@@ -23,10 +23,6 @@ class BoolDataTypeNode: public DataTypeNode {
     visitor.VisitBoolDataType(*this);
   }
 
-  virtual std::unique_ptr<DataTypeNode> Clone() const override {
-    return std::unique_ptr<DataTypeNode>(new BoolDataTypeNode(name_token_));
-  }
-
  private:
   virtual bool IsEqual(const Node &node) const override {
     const BoolDataTypeNode &rhs =

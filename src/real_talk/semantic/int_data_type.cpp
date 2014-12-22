@@ -13,6 +13,10 @@ string IntDataType::GetName() const {
   return "int";
 }
 
+const DataType &IntDataType::AsPrimitive() const {
+  return *this;
+}
+
 unique_ptr<DataType> IntDataType::Clone() const {
   return unique_ptr<DataType>(new IntDataType());
 }

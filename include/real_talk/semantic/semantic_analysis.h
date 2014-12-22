@@ -8,8 +8,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
-#include "real_talk/semantic/semantic_hint.h"
-#include "real_talk/semantic/semantic_error.h"
+#include "real_talk/semantic/semantic_problem.h"
 #include "real_talk/semantic/def_analysis.h"
 #include "real_talk/semantic/expr_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
@@ -42,7 +41,7 @@ class SemanticAnalysis {
                              IdAnalysis> IdAnalyzes;
 
   SemanticAnalysis(
-      std::vector< std::unique_ptr<SemanticError> > errors,
+      std::vector< std::unique_ptr<SemanticProblem> > problems,
       DefAnalyzes def_analyzes,
       ExprAnalyzes expr_analyzes,
       LitAnalyzes lit_analyzes,
@@ -54,7 +53,7 @@ class SemanticAnalysis {
                                   const SemanticAnalysis &result);
 
  private:
-  std::vector< std::unique_ptr<SemanticError> > errors_;
+  std::vector< std::unique_ptr<SemanticProblem> > problems_;
   DefAnalyzes def_analyzes_;
   ExprAnalyzes expr_analyzes_;
   LitAnalyzes lit_analyzes_;

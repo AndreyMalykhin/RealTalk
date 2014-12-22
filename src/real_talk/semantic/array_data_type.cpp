@@ -21,6 +21,10 @@ string ArrayDataType::GetName() const {
   return name;
 }
 
+const DataType &ArrayDataType::AsPrimitive() const {
+  return element_data_type_->AsPrimitive();
+}
+
 unique_ptr<DataType> ArrayDataType::Clone() const {
   return unique_ptr<DataType>(new ArrayDataType(element_data_type_->Clone()));
 }

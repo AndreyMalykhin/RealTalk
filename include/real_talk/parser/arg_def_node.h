@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 #include "real_talk/parser/node.h"
-#include "real_talk/parser/def_node.h"
+#include "real_talk/parser/var_def_node.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
@@ -13,7 +13,7 @@ namespace parser {
 
 class DataTypeNode;
 
-class ArgDefNode: public Node, public DefNode {
+class ArgDefNode: public Node, public VarDefNode {
  public:
   ArgDefNode(
       std::unique_ptr<DataTypeNode> data_type,

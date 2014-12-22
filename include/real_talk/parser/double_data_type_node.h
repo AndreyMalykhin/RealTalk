@@ -23,10 +23,6 @@ class DoubleDataTypeNode: public DataTypeNode {
     visitor.VisitDoubleDataType(*this);
   }
 
-  virtual std::unique_ptr<DataTypeNode> Clone() const override {
-    return std::unique_ptr<DataTypeNode>(new DoubleDataTypeNode(name_token_));
-  }
-
  private:
   virtual bool IsEqual(const Node &node) const override {
     const DoubleDataTypeNode &rhs =

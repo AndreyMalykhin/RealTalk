@@ -13,6 +13,10 @@ string BoolDataType::GetName() const {
   return "bool";
 }
 
+const DataType &BoolDataType::AsPrimitive() const {
+  return *this;
+}
+
 unique_ptr<DataType> BoolDataType::Clone() const {
   return unique_ptr<DataType>(new BoolDataType());
 }

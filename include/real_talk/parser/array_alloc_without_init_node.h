@@ -12,7 +12,11 @@ class ArrayAllocWithoutInitNode: public ExprNode {
   ArrayAllocWithoutInitNode(
       const real_talk::lexer::TokenInfo &op_token,
       std::unique_ptr<BoundedArrayDataTypeNode> data_type)
-      : array_alloc_node(op_token, move(data_type)) {
+      : array_alloc_node_(op_token, move(data_type)) {
+  }
+
+  const std::unique_ptr<BoundedArrayDataTypeNode> &GetDataType() const {
+    return array_alloc_node_.GetDataType();
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {
@@ -23,14 +27,14 @@ class ArrayAllocWithoutInitNode: public ExprNode {
   virtual bool IsEqual(const Node &node) const override {
     const ArrayAllocWithoutInitNode &rhs =
         static_cast<const ArrayAllocWithoutInitNode&>(node);
-    return array_alloc_node.IsEqual(rhs.array_alloc_node);
+    return array_alloc_node_.IsEqual(rhs.array_alloc_node_);
   }
 
   virtual void Print(std::ostream &stream) const override {
-    array_alloc_node.Print(stream);
+    array_alloc_node_.Print(stream);
   }
 
-  ArrayAllocNode array_alloc_node;
+  ArrayAllocNode array_alloc_node_;
 };
 }
 }

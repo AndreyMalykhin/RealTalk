@@ -5,13 +5,13 @@
 #include <string>
 #include <memory>
 #include "real_talk/parser/stmt_node.h"
-#include "real_talk/parser/def_node.h"
+#include "real_talk/parser/var_def_node.h"
 #include "real_talk/parser/data_type_node.h"
 
 namespace real_talk {
 namespace parser {
 
-class VarDefWithoutInitNode: public StmtNode, public DefNode {
+class VarDefWithoutInitNode: public StmtNode, public VarDefNode {
  public:
   VarDefWithoutInitNode(
       std::unique_ptr<DataTypeNode> data_type,

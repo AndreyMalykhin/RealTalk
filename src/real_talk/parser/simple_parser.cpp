@@ -954,30 +954,21 @@ unique_ptr<DataTypeNode> SimpleParser::ParseDataType(
     const TokenInfo subscript_start_token = next_token_;
     ConsumeNextToken();
 
-    switch (next_token_.GetId()) {
-      case Token::kIntLit: {
-        unique_ptr<IntNode> array_size(
-            static_cast<IntNode*>(ParseInt().release()));
-        AssertNextToken(Token::kSubscriptEnd);
-        const TokenInfo subscript_end_token = next_token_;
-        ConsumeNextToken();
-        data_type.reset(new BoundedArrayDataTypeNode(
-            move(data_type),
-            subscript_start_token,
-            move(array_size),
-            subscript_end_token));
-        break;
-      }
-      case Token::kSubscriptEnd: {
-        const TokenInfo subscript_end_token = next_token_;
-        ConsumeNextToken();
-        data_type.reset(new ArrayDataTypeNode(
-            move(data_type), subscript_start_token, subscript_end_token));
-        break;
-      }
-      default: {
-        UnexpectedToken();
-      }
+    if (next_token_.GetId() == Token::kSubscriptEnd) {
+      const TokenInfo subscript_end_token = next_token_;
+      ConsumeNextToken();
+      data_type.reset(new ArrayDataTypeNode(
+          move(data_type), subscript_start_token, subscript_end_token));
+    } else {
+      unique_ptr<ExprNode> array_size = ParseExpr();
+      AssertNextToken(Token::kSubscriptEnd);
+      const TokenInfo subscript_end_token = next_token_;
+      ConsumeNextToken();
+      data_type.reset(new BoundedArrayDataTypeNode(
+          move(data_type),
+          subscript_start_token,
+          move(array_size),
+          subscript_end_token));
     }
   }
 
@@ -992,9 +983,7 @@ unique_ptr<BoundedArrayDataTypeNode> SimpleParser::ParseBoundedArrayDataType(
   do {
     const TokenInfo subscript_start_token = next_token_;
     ConsumeNextToken();
-    AssertNextToken(Token::kIntLit);
-    unique_ptr<IntNode> array_size(
-        static_cast<IntNode*>(ParseInt().release()));
+    unique_ptr<ExprNode> array_size = ParseExpr();
     AssertNextToken(Token::kSubscriptEnd);
     const TokenInfo subscript_end_token = next_token_;
     ConsumeNextToken();

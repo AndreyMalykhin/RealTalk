@@ -2,17 +2,20 @@
 #ifndef _REAL_TALK_PARSER_VAR_DEF_WITH_INIT_NODE_H_
 #define _REAL_TALK_PARSER_VAR_DEF_WITH_INIT_NODE_H_
 
+#include <cassert>
 #include <string>
 #include <memory>
+#include "real_talk/lexer/token_info.h"
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/expr_node.h"
-#include "real_talk/parser/def_node.h"
+#include "real_talk/parser/var_def_node.h"
 #include "real_talk/parser/data_type_node.h"
+#include "real_talk/parser/node_visitor.h"
 
 namespace real_talk {
 namespace parser {
 
-class VarDefWithInitNode: public StmtNode, public DefNode {
+class VarDefWithInitNode: public StmtNode, public VarDefNode {
  public:
   VarDefWithInitNode(
       std::unique_ptr<DataTypeNode> data_type,

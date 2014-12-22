@@ -13,6 +13,10 @@ string VoidDataType::GetName() const {
   return "void";
 }
 
+const DataType &VoidDataType::AsPrimitive() const {
+  return *this;
+}
+
 unique_ptr<DataType> VoidDataType::Clone() const {
   return unique_ptr<DataType>(new VoidDataType());
 }

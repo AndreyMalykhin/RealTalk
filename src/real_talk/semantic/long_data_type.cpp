@@ -13,6 +13,10 @@ string LongDataType::GetName() const {
   return "long";
 }
 
+const DataType &LongDataType::AsPrimitive() const {
+  return *this;
+}
+
 unique_ptr<DataType> LongDataType::Clone() const {
   return unique_ptr<DataType>(new LongDataType());
 }
