@@ -57,7 +57,6 @@
 #include "real_talk/parser/bool_data_type_node.h"
 #include "real_talk/parser/void_data_type_node.h"
 #include "real_talk/parser/array_data_type_node.h"
-#include "real_talk/parser/bounded_array_data_type_node.h"
 #include "real_talk/parser/import_node.h"
 #include "real_talk/parser/break_node.h"
 #include "real_talk/parser/continue_node.h"
@@ -153,7 +152,6 @@ using real_talk::parser::StringDataTypeNode;
 using real_talk::parser::BoolDataTypeNode;
 using real_talk::parser::VoidDataTypeNode;
 using real_talk::parser::ArrayDataTypeNode;
-using real_talk::parser::BoundedArrayDataTypeNode;
 using real_talk::parser::DataTypeNode;
 using real_talk::parser::ReturnValueNode;
 using real_talk::parser::ReturnNode;
@@ -163,6 +161,8 @@ using real_talk::parser::ArgDefNode;
 using real_talk::parser::LitNode;
 using real_talk::parser::BranchNode;
 using real_talk::parser::FileParser;
+using real_talk::parser::ArraySizeNode;
+using real_talk::parser::ArrayAllocNode;
 
 namespace real_talk {
 namespace semantic {
@@ -256,8 +256,6 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
       const real_talk::parser::VoidDataTypeNode &node) override;
   virtual void VisitArrayDataType(
       const real_talk::parser::ArrayDataTypeNode &node) override;
-  virtual void VisitBoundedArrayDataType(
-      const real_talk::parser::BoundedArrayDataTypeNode &node) override;
   virtual void VisitReturnValue(
       const real_talk::parser::ReturnValueNode &node) override;
   virtual void VisitReturn(
@@ -279,6 +277,8 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   };
 
   void VisitBranch(const real_talk::parser::BranchNode &branch_node);
+  void VisitArrayAlloc(
+      const real_talk::parser::ArrayAllocNode &array_alloc_node);
   const DataType &VisitVarDef(
       const real_talk::parser::VarDefNode &var_def_node);
   std::unique_ptr<DataType> CreateDataType(
@@ -286,6 +286,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   const real_talk::parser::DefNode *GetIdDef(const std::string &id);
   const DataType &GetExprDataType(const real_talk::parser::ExprNode *expr);
   bool IsCurrentScopeGlobal();
+  const boost::filesystem::path &GetCurrentFilePath();
   void AddDefAnalyzes(const real_talk::parser::DefNode &def_node,
                       std::unique_ptr<DefAnalysis> def_analysis);
   void AddLitAnalyzes(const real_talk::parser::LitNode *lit_node,
@@ -343,7 +344,9 @@ SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze() {
   const path file_path;
   file_paths_stack_.push_back(file_path);
   program_.Accept(*this);
+  assert(scopes_stack_.size() == 1);
   scopes_stack_.pop_back();
+  assert(file_paths_stack_.size() == 1);
   file_paths_stack_.pop_back();
   return SemanticAnalysis(move(problems_),
                           move(def_analyzes_),
@@ -359,17 +362,25 @@ void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode&) {
 
 void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &alloc_node) {
-  unique_ptr<DataType> data_type = CreateDataType(*(alloc_node.GetDataType()));
-  ExprAnalysis expr_analysis(move(data_type));
-  expr_analyzes_.insert(make_pair(&alloc_node, move(expr_analysis)));
+  VisitArrayAlloc(alloc_node);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode &alloc_node) {
-  unique_ptr<DataType> data_type = CreateDataType(*(alloc_node.GetDataType()));
+  VisitArrayAlloc(alloc_node);
 
   for (const unique_ptr<ExprNode> &value: alloc_node.GetValues()) {
     value->Accept(*this);
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
+    const ArrayAllocNode &alloc_node) {
+  unique_ptr<DataType> data_type = CreateDataType(*(alloc_node.GetDataType()));
+
+  for (const unique_ptr<ArraySizeNode> &size: alloc_node.GetSizes()) {
+    data_type.reset(new ArrayDataType(move(data_type)));
+    size->GetValue()->Accept(*this);
   }
 
   ExprAnalysis expr_analysis(move(data_type));
@@ -465,9 +476,8 @@ void SimpleSemanticAnalyzer::Impl::VisitVarDefWithInit(
       GetExprDataType(var_def_node.GetValue().get());
 
   if (var_data_type != value_data_type) {
-    const path &current_file_path = file_paths_stack_.back();
     unique_ptr<SemanticError> error(new InitWithIncompatibleTypeError(
-        current_file_path, var_def_node, var_data_type, value_data_type));
+        GetCurrentFilePath(), var_def_node, var_data_type, value_data_type));
     throw SemanticErrorException(move(error));
   }
 }
@@ -490,9 +500,8 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
   AddDefAnalyzes(var_def_node, move(def_analysis));
 
   if (data_type.AsPrimitive() == VoidDataType()) {
-    const path &current_file_path = file_paths_stack_.back();
     unique_ptr<SemanticError> error(
-        new VoidVarDefError(current_file_path, var_def_node));
+        new VoidVarDefError(GetCurrentFilePath(), var_def_node));
     throw SemanticErrorException(move(error));
   }
 
@@ -527,15 +536,19 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
 }
 
 void SimpleSemanticAnalyzer::Impl::AddDefAnalyzes(
-    const DefNode &def_node,
-    unique_ptr<DefAnalysis> def_analysis) {
+    const DefNode &def_node, unique_ptr<DefAnalysis> def_analysis) {
   def_analyzes_.insert(make_pair(&def_node, move(def_analysis)));
   assert(!scopes_stack_.empty());
   Scope &current_scope = scopes_stack_.back();
-  const string &name = def_node.GetNameToken().GetValue();
-  // TODO
-  assert(current_scope.id_defs.count(name) == 0);
-  current_scope.id_defs.insert(make_pair(name, &def_node));
+  const string &id = def_node.GetNameToken().GetValue();
+  const bool is_id_already_exists =
+      !current_scope.id_defs.insert(make_pair(id, &def_node)).second;
+
+  if (is_id_already_exists) {
+    unique_ptr<SemanticError> error(
+        new DuplicateDefError(GetCurrentFilePath(), def_node));
+    throw SemanticErrorException(move(error));
+  }
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitGreater(const GreaterNode&) {
@@ -629,6 +642,7 @@ void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
 
     file_paths_stack_.push_back(absolute_file_path);
     program->Accept(*this);
+    assert(!file_paths_stack_.empty());
     file_paths_stack_.pop_back();
     file_analyzes_.insert(make_pair(absolute_file_path, program));
   }
@@ -796,15 +810,6 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayDataType(
       move(element_data_type)));
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitBoundedArrayDataType(
-    const BoundedArrayDataTypeNode &data_type_node) {
-  data_type_node.GetSize()->Accept(*this);
-  unique_ptr<DataType> element_data_type =
-      CreateDataType(*(data_type_node.GetElementDataType()));
-  current_data_type_.reset(new ArrayDataType(
-      move(element_data_type)));
-}
-
 unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::CreateDataType(
     const DataTypeNode &data_type_node) {
   assert(!current_data_type_);
@@ -851,6 +856,11 @@ void SimpleSemanticAnalyzer::Impl::AddLitAnalyzes(
 
 bool SimpleSemanticAnalyzer::Impl::IsCurrentScopeGlobal() {
   return scopes_stack_.size() == 1;
+}
+
+const path &SimpleSemanticAnalyzer::Impl::GetCurrentFilePath() {
+  assert(!file_paths_stack_.empty());
+  return file_paths_stack_.back();
 }
 
 SemanticErrorException::SemanticErrorException(unique_ptr<SemanticError> error)

@@ -52,7 +52,6 @@ class StringDataTypeNode;
 class BoolDataTypeNode;
 class VoidDataTypeNode;
 class ArrayDataTypeNode;
-class BoundedArrayDataTypeNode;
 class ReturnValueNode;
 class ReturnNode;
 class ArgDefNode;
@@ -108,8 +107,6 @@ class NodeVisitor {
   virtual void VisitBoolDataType(const BoolDataTypeNode &node) = 0;
   virtual void VisitVoidDataType(const VoidDataTypeNode &node) = 0;
   virtual void VisitArrayDataType(const ArrayDataTypeNode &node) = 0;
-  virtual void VisitBoundedArrayDataType(
-      const BoundedArrayDataTypeNode &node) = 0;
   virtual void VisitReturnValue(const ReturnValueNode &node) = 0;
   virtual void VisitReturn(const ReturnNode &node) = 0;
   virtual void VisitArgDef(const ArgDefNode &node) = 0;

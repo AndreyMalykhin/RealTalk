@@ -47,6 +47,7 @@ bool operator==(const SemanticAnalysis &lhs, const SemanticAnalysis &rhs) {
       && lhs.expr_analyzes_.size() == rhs.expr_analyzes_.size()
       && lhs.lit_analyzes_.size() == rhs.lit_analyzes_.size()
       && lhs.id_analyzes_.size() == rhs.id_analyzes_.size()
+      && lhs.import_analyzes_.size() == rhs.import_analyzes_.size()
       && equal(make_indirect_iterator(lhs.problems_.begin()),
                make_indirect_iterator(lhs.problems_.end()),
                make_indirect_iterator(rhs.problems_.begin()))

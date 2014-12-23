@@ -3,13 +3,13 @@
 #define _REAL_TALK_PARSER_BINARY_EXPR_NODE_H_
 
 #include <memory>
-#include "real_talk/parser/node.h"
+#include "real_talk/parser/expr_node.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
 namespace parser {
 
-class BinaryExprNode final: public Node {
+class BinaryExprNode final {
  public:
   BinaryExprNode(
       const real_talk::lexer::TokenInfo &token,
@@ -34,20 +34,17 @@ class BinaryExprNode final: public Node {
     return right_operand_;
   }
 
-  virtual void Accept(NodeVisitor&) const override {
-    assert(false);
+  friend std::ostream &operator<<(std::ostream &stream,
+                                 const BinaryExprNode &node) {
+    stream << '(' << *(node.left_operand_) << ' ' << node.token_.GetValue()
+           << ' ' << *(node.right_operand_) << ')';
+    return stream;
   }
 
-  virtual void Print(std::ostream &stream) const override {
-    stream << '(' << *left_operand_ << ' ' << token_.GetValue() << ' '
-           << *right_operand_ << ')';
-  }
-
-  virtual bool IsEqual(const Node &node) const override {
-    const BinaryExprNode &bin_node = static_cast<const BinaryExprNode&>(node);
-    return token_ == bin_node.token_
-        && *left_operand_ == *(bin_node.left_operand_)
-        && *right_operand_ == *(bin_node.right_operand_);
+  friend bool operator==(const BinaryExprNode &lhs, const BinaryExprNode &rhs) {
+    return lhs.token_ == rhs.token_
+        && *(lhs.left_operand_) == *(rhs.left_operand_)
+        && *(lhs.right_operand_) == *(rhs.right_operand_);
   }
 
  private:

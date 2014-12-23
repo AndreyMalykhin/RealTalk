@@ -7,6 +7,7 @@ using std::ostream;
 using boost::filesystem::path;
 using real_talk::parser::VarDefWithInitNode;
 using real_talk::parser::Node;
+using real_talk::parser::DefNode;
 
 namespace real_talk {
 namespace semantic {
@@ -71,9 +72,31 @@ void VoidVarDefError::Print(std::ostream &stream) const {
   stream << "var_def=" << var_def_;
 }
 
-bool VoidVarDefError::IsEqual(const SemanticProblem &node) const {
-  const VoidVarDefError &rhs = static_cast<const VoidVarDefError&>(node);
+bool VoidVarDefError::IsEqual(const SemanticProblem &problem) const {
+  const VoidVarDefError &rhs = static_cast<const VoidVarDefError&>(problem);
   return var_def_ == rhs.var_def_;
+}
+
+DuplicateDefError::DuplicateDefError(
+    const path &file_path, const DefNode &def)
+    : file_path_(file_path), def_(def) {
+}
+
+const boost::filesystem::path &DuplicateDefError::GetFilePath() const {
+  return file_path_;
+}
+
+const real_talk::parser::DefNode &DuplicateDefError::GetDef() const {
+  return def_;
+}
+
+void DuplicateDefError::Print(std::ostream &stream) const {
+  stream << "def=" << def_;
+}
+
+bool DuplicateDefError::IsEqual(const SemanticProblem &problem) const {
+  const DuplicateDefError &rhs = static_cast<const DuplicateDefError&>(problem);
+  return def_ == rhs.def_;
 }
 }
 }

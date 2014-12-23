@@ -52,6 +52,22 @@ class VoidVarDefError: public SemanticError {
   boost::filesystem::path file_path_;
   const real_talk::parser::VarDefNode &var_def_;
 };
+
+class DuplicateDefError: public SemanticError {
+ public:
+  DuplicateDefError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::DefNode &def);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::DefNode &GetDef() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::DefNode &def_;
+};
 }
 }
 #endif

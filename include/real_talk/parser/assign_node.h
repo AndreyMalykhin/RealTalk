@@ -35,12 +35,11 @@ class AssignNode: public ExprNode {
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    return binary_expr_.IsEqual(
-        static_cast<const AssignNode&>(node).binary_expr_);
+    return binary_expr_ == static_cast<const AssignNode&>(node).binary_expr_;
   }
 
   virtual void Print(std::ostream &stream) const override {
-    binary_expr_.Print(stream);
+    stream << binary_expr_;
   }
 
   BinaryExprNode binary_expr_;

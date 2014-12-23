@@ -11,7 +11,7 @@
 namespace real_talk {
 namespace parser {
 
-class ScopeNode: public Node {
+class ScopeNode final {
  public:
   ScopeNode(
       const real_talk::lexer::TokenInfo &start_token,
@@ -26,31 +26,26 @@ class ScopeNode: public Node {
     return stmts_;
   }
 
-  virtual void Accept(NodeVisitor&) const override {
-    assert(false);
-  }
-
- private:
-  virtual bool IsEqual(const Node &node) const override {
-    const ScopeNode &rhs = static_cast<const ScopeNode&>(node);
-    return start_token_ == rhs.start_token_
-        && end_token_ == rhs.end_token_
-        && stmts_.size() == rhs.stmts_.size()
-        && std::equal(boost::make_indirect_iterator(stmts_.begin()),
-                      boost::make_indirect_iterator(stmts_.end()),
+  friend bool operator==(const ScopeNode &lhs, const ScopeNode &rhs) {
+    return lhs.start_token_ == rhs.start_token_
+        && lhs.end_token_ == rhs.end_token_
+        && lhs.stmts_.size() == rhs.stmts_.size()
+        && std::equal(boost::make_indirect_iterator(lhs.stmts_.begin()),
+                      boost::make_indirect_iterator(lhs.stmts_.end()),
                       boost::make_indirect_iterator(rhs.stmts_.begin()));
   }
 
-  virtual void Print(std::ostream &stream) const override {
-    stream << start_token_.GetValue() << '\n';
+  friend std::ostream &operator<<(std::ostream &stream, const ScopeNode &node) {
+    stream << node.start_token_.GetValue() << '\n';
 
-    for (const std::unique_ptr<StmtNode> &stmt: stmts_) {
+    for (const std::unique_ptr<StmtNode> &stmt: node.stmts_) {
       stream << *stmt << '\n';
     }
 
-    stream << end_token_.GetValue();
+    return stream << node.end_token_.GetValue();
   }
 
+ private:
   real_talk::lexer::TokenInfo start_token_;
   std::vector< std::unique_ptr<StmtNode> > stmts_;
   real_talk::lexer::TokenInfo end_token_;

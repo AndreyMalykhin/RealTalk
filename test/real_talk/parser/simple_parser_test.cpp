@@ -49,7 +49,6 @@
 #include "real_talk/parser/if_else_if_node.h"
 #include "real_talk/parser/if_else_if_else_node.h"
 #include "real_talk/parser/array_data_type_node.h"
-#include "real_talk/parser/bounded_array_data_type_node.h"
 #include "real_talk/parser/int_data_type_node.h"
 #include "real_talk/parser/long_data_type_node.h"
 #include "real_talk/parser/double_data_type_node.h"
@@ -149,7 +148,7 @@ template<typename TNode> struct TestNode {
 
 struct TestDataTypeNode {
   TokenInfo token;
-  unique_ptr<DataTypeNode> node;
+  unique_ptr<PrimitiveDataTypeNode> node;
 };
 
 struct MailformedTestTokens {
@@ -245,44 +244,46 @@ class SimpleParserTest: public Test {
 
     {
       TokenInfo token(Token::kIntType, "int", UINT32_C(0), UINT32_C(0));
-      test_data_types.push_back(
-          {token, unique_ptr<DataTypeNode>(new IntDataTypeNode(token))});
+      test_data_types.push_back({token,
+              unique_ptr<PrimitiveDataTypeNode>(new IntDataTypeNode(token))});
     }
 
     {
       TokenInfo token(Token::kLongType, "long", UINT32_C(0), UINT32_C(0));
-      test_data_types.push_back(
-          {token, unique_ptr<DataTypeNode>(new LongDataTypeNode(token))});
+      test_data_types.push_back({token,
+              unique_ptr<PrimitiveDataTypeNode>(new LongDataTypeNode(token))});
     }
 
     {
       TokenInfo token(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0));
-      test_data_types.push_back(
-          {token, unique_ptr<DataTypeNode>(new DoubleDataTypeNode(token))});
+      test_data_types.push_back({token,
+              unique_ptr<PrimitiveDataTypeNode>(
+                  new DoubleDataTypeNode(token))});
     }
 
     {
       TokenInfo token(Token::kCharType, "char", UINT32_C(0), UINT32_C(0));
-      test_data_types.push_back(
-          {token, unique_ptr<DataTypeNode>(new CharDataTypeNode(token))});
+      test_data_types.push_back({token,
+              unique_ptr<PrimitiveDataTypeNode>(new CharDataTypeNode(token))});
     }
 
     {
       TokenInfo token(Token::kStringType, "string", UINT32_C(0), UINT32_C(0));
-      test_data_types.push_back(
-          {token, unique_ptr<DataTypeNode>(new StringDataTypeNode(token))});
+      test_data_types.push_back({token,
+              unique_ptr<PrimitiveDataTypeNode>(
+                  new StringDataTypeNode(token))});
     }
 
     {
       TokenInfo token(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0));
-      test_data_types.push_back(
-          {token, unique_ptr<DataTypeNode>(new BoolDataTypeNode(token))});
+      test_data_types.push_back({token,
+              unique_ptr<PrimitiveDataTypeNode>(new BoolDataTypeNode(token))});
     }
 
     {
       TokenInfo token(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0));
-      test_data_types.push_back(
-          {token, unique_ptr<DataTypeNode>(new VoidDataTypeNode(token))});
+      test_data_types.push_back({token,
+              unique_ptr<PrimitiveDataTypeNode>(new VoidDataTypeNode(token))});
     }
 
     return test_data_types;
@@ -1935,8 +1936,6 @@ TEST_F(SimpleParserTest, CallPrioSameAsSubscript) {
 }
 
 TEST_F(SimpleParserTest, ArrayAllocWithoutInit) {
-  vector< TestNode<ExprNode> > test_expr_nodes;
-
   for (TestDataTypeNode &test_data_type: GetTestDataTypes()) {
     vector<TokenInfo> tokens = {
       TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
@@ -1945,59 +1944,21 @@ TEST_F(SimpleParserTest, ArrayAllocWithoutInit) {
       TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))
     };
-    const TokenInfo op_token = tokens[0];
-    unique_ptr<IntNode> size(new IntNode(tokens[3]));
-    unique_ptr<BoundedArrayDataTypeNode> array_data_type(
-        new BoundedArrayDataTypeNode(
-            move(test_data_type.node),
-            tokens[2],
-            move(size),
-            tokens[4]));
+    const TokenInfo &op_token = tokens[0];
+    vector< unique_ptr<ArraySizeNode> > sizes;
+    unique_ptr<ExprNode> size_value(new IntNode(tokens[3]));
+    unique_ptr<ArraySizeNode> size(new ArraySizeNode(
+        tokens[2], move(size_value), tokens[4]));
+    sizes.push_back(move(size));
     unique_ptr<ExprNode> array_alloc(new ArrayAllocWithoutInitNode(
-        op_token, move(array_data_type)));
-    test_expr_nodes.push_back({tokens, move(array_alloc)});
-  }
+        op_token, move(test_data_type.node), move(sizes)));
+    TestNode<ExprNode> test_expr_node = {tokens, move(array_alloc)};
 
-  for (TestNode<ExprNode> &test_expr_node: test_expr_nodes) {
     TestParse(ExprToProgram(test_expr_node));
   }
 }
 
 TEST_F(SimpleParserTest, ArrayAllocWithInit) {
-  vector< TestNode<ExprNode> > test_expr_nodes;
-
-  for (TestDataTypeNode &test_data_type: GetTestDataTypes()) {
-    vector<TokenInfo> tokens = {
-      TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
-      test_data_type.token,
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kIntLit, "2", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(5), UINT32_C(5)),
-      TokenInfo(Token::kIntLit, "3", UINT32_C(6), UINT32_C(6)),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7))
-    };
-    const TokenInfo op_token = tokens[0];
-    unique_ptr<IntNode> size(new IntNode(tokens[3]));
-    unique_ptr<BoundedArrayDataTypeNode> array_data_type(
-        new BoundedArrayDataTypeNode(
-            move(test_data_type.node), tokens[2], move(size), tokens[4]));
-    const TokenInfo values_start_token = tokens[5];
-    vector< unique_ptr<ExprNode> > values;
-    unique_ptr<ExprNode> value1(new IntNode(tokens[6]));
-    values.push_back(move(value1));
-    vector<TokenInfo> value_separator_tokens;
-    const TokenInfo values_end_token = tokens[7];
-    unique_ptr<ExprNode> array_alloc(new ArrayAllocWithInitNode(
-        op_token,
-        move(array_data_type),
-        values_start_token,
-        move(values),
-        value_separator_tokens,
-        values_end_token));
-    test_expr_nodes.push_back({tokens, move(array_alloc)});
-  }
-
   for (TestDataTypeNode &test_data_type: GetTestDataTypes()) {
     vector<TokenInfo> tokens = {
       TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
@@ -2012,10 +1973,11 @@ TEST_F(SimpleParserTest, ArrayAllocWithInit) {
       TokenInfo(Token::kScopeEnd, "}", UINT32_C(9), UINT32_C(9))
     };
     const TokenInfo op_token = tokens[0];
-    unique_ptr<IntNode> size(new IntNode(tokens[3]));
-    unique_ptr<BoundedArrayDataTypeNode> array_data_type(
-        new BoundedArrayDataTypeNode(
-            move(test_data_type.node), tokens[2], move(size), tokens[4]));
+    vector< unique_ptr<ArraySizeNode> > sizes;
+    unique_ptr<ExprNode> size_value(new IntNode(tokens[3]));
+    unique_ptr<ArraySizeNode> size(new ArraySizeNode(
+        tokens[2], move(size_value), tokens[4]));
+    sizes.push_back(move(size));
     const TokenInfo values_start_token = tokens[5];
     vector< unique_ptr<ExprNode> > values;
     unique_ptr<ExprNode> value1(new IntNode(tokens[6]));
@@ -2027,15 +1989,14 @@ TEST_F(SimpleParserTest, ArrayAllocWithInit) {
     const TokenInfo values_end_token = tokens[9];
     unique_ptr<ExprNode> array_alloc(new ArrayAllocWithInitNode(
         op_token,
-        move(array_data_type),
+        move(test_data_type.node),
+        move(sizes),
         values_start_token,
         move(values),
         value_separator_tokens,
         values_end_token));
-    test_expr_nodes.push_back({tokens, move(array_alloc)});
-  }
+    TestNode<ExprNode> test_expr_node = {tokens, move(array_alloc)};
 
-  for (TestNode<ExprNode> &test_expr_node: test_expr_nodes) {
     TestParse(ExprToProgram(test_expr_node));
   }
 }
@@ -2053,19 +2014,22 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
         TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(2));
     TestDataTypeNode test_return_data_type = {
       return_data_type_token,
-      unique_ptr<DataTypeNode>(new IntDataTypeNode(return_data_type_token))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new IntDataTypeNode(return_data_type_token))
     };
     TokenInfo arg_data_type_token1 =
         TokenInfo(Token::kIntType, "int", UINT32_C(7), UINT32_C(8));
     TestDataTypeNode test_arg_data_type1 = {
       arg_data_type_token1,
-      unique_ptr<DataTypeNode>(new IntDataTypeNode(arg_data_type_token1))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new IntDataTypeNode(arg_data_type_token1))
     };
     TokenInfo arg_data_type_token2 =
         TokenInfo(Token::kIntType, "int", UINT32_C(13), UINT32_C(14));
     TestDataTypeNode test_arg_data_type2 = {
       arg_data_type_token2,
-      unique_ptr<DataTypeNode>(new IntDataTypeNode(arg_data_type_token2))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new IntDataTypeNode(arg_data_type_token2))
     };
     TestData test_data = {move(test_return_data_type),
                           move(test_arg_data_type1),
@@ -2078,19 +2042,20 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
         TokenInfo(Token::kLongType, "long", UINT32_C(1), UINT32_C(2));
     TestDataTypeNode test_return_data_type = {
       return_data_type_token,
-      unique_ptr<DataTypeNode>(new LongDataTypeNode(return_data_type_token))
+      unique_ptr<PrimitiveDataTypeNode>(new LongDataTypeNode(return_data_type_token))
     };
     TokenInfo arg_data_type_token1 =
         TokenInfo(Token::kLongType, "long", UINT32_C(7), UINT32_C(8));
     TestDataTypeNode test_arg_data_type1 = {
       arg_data_type_token1,
-      unique_ptr<DataTypeNode>(new LongDataTypeNode(arg_data_type_token1))
+      unique_ptr<PrimitiveDataTypeNode>(new LongDataTypeNode(arg_data_type_token1))
     };
     TokenInfo arg_data_type_token2 =
         TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(14));
     TestDataTypeNode test_arg_data_type2 = {
       arg_data_type_token2,
-      unique_ptr<DataTypeNode>(new LongDataTypeNode(arg_data_type_token2))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new LongDataTypeNode(arg_data_type_token2))
     };
     TestData test_data = {move(test_return_data_type),
                           move(test_arg_data_type1),
@@ -2103,19 +2068,22 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
         TokenInfo(Token::kDoubleType, "double", UINT32_C(1), UINT32_C(2));
     TestDataTypeNode test_return_data_type = {
       return_data_type_token,
-      unique_ptr<DataTypeNode>(new DoubleDataTypeNode(return_data_type_token))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new DoubleDataTypeNode(return_data_type_token))
     };
     TokenInfo arg_data_type_token1 =
         TokenInfo(Token::kDoubleType, "double", UINT32_C(7), UINT32_C(8));
     TestDataTypeNode test_arg_data_type1 = {
       arg_data_type_token1,
-      unique_ptr<DataTypeNode>(new DoubleDataTypeNode(arg_data_type_token1))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new DoubleDataTypeNode(arg_data_type_token1))
     };
     TokenInfo arg_data_type_token2 =
         TokenInfo(Token::kDoubleType, "double", UINT32_C(13), UINT32_C(14));
     TestDataTypeNode test_arg_data_type2 = {
       arg_data_type_token2,
-      unique_ptr<DataTypeNode>(new DoubleDataTypeNode(arg_data_type_token2))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new DoubleDataTypeNode(arg_data_type_token2))
     };
     TestData test_data = {move(test_return_data_type),
                           move(test_arg_data_type1),
@@ -2128,19 +2096,22 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
         TokenInfo(Token::kBoolType, "bool", UINT32_C(1), UINT32_C(2));
     TestDataTypeNode test_return_data_type = {
       return_data_type_token,
-      unique_ptr<DataTypeNode>(new BoolDataTypeNode(return_data_type_token))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new BoolDataTypeNode(return_data_type_token))
     };
     TokenInfo arg_data_type_token1 =
         TokenInfo(Token::kBoolType, "bool", UINT32_C(7), UINT32_C(8));
     TestDataTypeNode test_arg_data_type1 = {
       arg_data_type_token1,
-      unique_ptr<DataTypeNode>(new BoolDataTypeNode(arg_data_type_token1))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new BoolDataTypeNode(arg_data_type_token1))
     };
     TokenInfo arg_data_type_token2 =
         TokenInfo(Token::kBoolType, "bool", UINT32_C(13), UINT32_C(14));
     TestDataTypeNode test_arg_data_type2 = {
       arg_data_type_token2,
-      unique_ptr<DataTypeNode>(new BoolDataTypeNode(arg_data_type_token2))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new BoolDataTypeNode(arg_data_type_token2))
     };
     TestData test_data = {move(test_return_data_type),
                           move(test_arg_data_type1),
@@ -2153,19 +2124,22 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
         TokenInfo(Token::kCharType, "char", UINT32_C(1), UINT32_C(2));
     TestDataTypeNode test_return_data_type = {
       return_data_type_token,
-      unique_ptr<DataTypeNode>(new CharDataTypeNode(return_data_type_token))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new CharDataTypeNode(return_data_type_token))
     };
     TokenInfo arg_data_type_token1 =
         TokenInfo(Token::kCharType, "char", UINT32_C(7), UINT32_C(8));
     TestDataTypeNode test_arg_data_type1 = {
       arg_data_type_token1,
-      unique_ptr<DataTypeNode>(new CharDataTypeNode(arg_data_type_token1))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new CharDataTypeNode(arg_data_type_token1))
     };
     TokenInfo arg_data_type_token2 =
         TokenInfo(Token::kCharType, "char", UINT32_C(13), UINT32_C(14));
     TestDataTypeNode test_arg_data_type2 = {
       arg_data_type_token2,
-      unique_ptr<DataTypeNode>(new CharDataTypeNode(arg_data_type_token2))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new CharDataTypeNode(arg_data_type_token2))
     };
     TestData test_data = {move(test_return_data_type),
                           move(test_arg_data_type1),
@@ -2178,19 +2152,22 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
         TokenInfo(Token::kStringType, "string", UINT32_C(1), UINT32_C(2));
     TestDataTypeNode test_return_data_type = {
       return_data_type_token,
-      unique_ptr<DataTypeNode>(new StringDataTypeNode(return_data_type_token))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new StringDataTypeNode(return_data_type_token))
     };
     TokenInfo arg_data_type_token1 =
         TokenInfo(Token::kStringType, "string", UINT32_C(7), UINT32_C(8));
     TestDataTypeNode test_arg_data_type1 = {
       arg_data_type_token1,
-      unique_ptr<DataTypeNode>(new StringDataTypeNode(arg_data_type_token1))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new StringDataTypeNode(arg_data_type_token1))
     };
     TokenInfo arg_data_type_token2 =
         TokenInfo(Token::kStringType, "string", UINT32_C(13), UINT32_C(14));
     TestDataTypeNode test_arg_data_type2 = {
       arg_data_type_token2,
-      unique_ptr<DataTypeNode>(new StringDataTypeNode(arg_data_type_token2))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new StringDataTypeNode(arg_data_type_token2))
     };
     TestData test_data = {move(test_return_data_type),
                           move(test_arg_data_type1),
@@ -2986,56 +2963,6 @@ TEST_F(SimpleParserTest, ArrayOfArraysDataType) {
   }
 }
 
-TEST_F(SimpleParserTest, BoundedArrayDataType) {
-  for (TestDataTypeNode &test_data_type: GetTestDataTypes()) {
-    vector<TokenInfo> tokens = {
-      test_data_type.token,
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kIntLit, "1", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kName, "myVar", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))
-    };
-    unique_ptr<DataTypeNode> simple_data_type(move(test_data_type.node));
-    unique_ptr<ExprNode> size(new IntNode(tokens[2]));
-    unique_ptr<DataTypeNode> array_data_type(new BoundedArrayDataTypeNode(
-        move(simple_data_type), tokens[1], move(size), tokens[3]));
-    unique_ptr<StmtNode> var_def(new VarDefWithoutInitNode(
-        move(array_data_type), tokens[4], tokens[5]));
-    TestNode<StmtNode> test_stmt = {tokens, move(var_def)};
-
-    TestParse(StmtToProgram(test_stmt));
-  }
-}
-
-TEST_F(SimpleParserTest, BoundedArrayOfArraysDataType) {
-  for (TestDataTypeNode &test_data_type: GetTestDataTypes()) {
-    vector<TokenInfo> tokens = {
-      test_data_type.token,
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kIntLit, "1", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kIntLit, "2", UINT32_C(5), UINT32_C(5)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(6), UINT32_C(6)),
-      TokenInfo(Token::kName, "myVar", UINT32_C(7), UINT32_C(7)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8))
-    };
-    unique_ptr<DataTypeNode> simple_data_type(move(test_data_type.node));
-    unique_ptr<IntNode> size1(new IntNode(tokens[2]));
-    unique_ptr<DataTypeNode> array_data_type1(new BoundedArrayDataTypeNode(
-        move(simple_data_type), tokens[1], move(size1), tokens[3]));
-    unique_ptr<IntNode> size2(new IntNode(tokens[5]));
-    unique_ptr<DataTypeNode> array_data_type2(new BoundedArrayDataTypeNode(
-        move(array_data_type1), tokens[4], move(size2), tokens[6]));
-    unique_ptr<StmtNode> var_def(new VarDefWithoutInitNode(
-        move(array_data_type2), tokens[7], tokens[8]));
-    TestNode<StmtNode> test_stmt = {tokens, move(var_def)};
-
-    TestParse(StmtToProgram(test_stmt));
-  }
-}
-
 TEST_F(SimpleParserTest, TwoOperandsInARowIsInvalid) {
   vector<MailformedTestTokens> mailformed_token_suits;
 
@@ -3407,19 +3334,18 @@ TEST_F(SimpleParserTest, VarDefWithoutEndIsInvalid) {
   }
 }
 
-TEST_F(SimpleParserTest, BoundedArrayDataTypeWithoutSubscriptEndIsInvalid) {
+TEST_F(SimpleParserTest, ArrayDataTypeWithoutSubscriptEndIsInvalid) {
   vector<MailformedTestTokens> mailformed_token_suits;
 
   {
     const vector<TokenInfo> tokens = {
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0)),
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kIntLit, "1", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kFileEnd, "", UINT32_C(5), UINT32_C(5))
+      TokenInfo(Token::kName, "var", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kFileEnd, "", UINT32_C(4), UINT32_C(4))
     };
-    const TokenInfo &unexpected_token = tokens[3];
+    const TokenInfo &unexpected_token = tokens[2];
     const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
     mailformed_token_suits.push_back(mailformed_tokens);
   }

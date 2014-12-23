@@ -3,13 +3,13 @@
 #define _REAL_TALK_PARSER_STRING_DATA_TYPE_NODE_H_
 
 #include <string>
-#include "real_talk/parser/data_type_node.h"
+#include "real_talk/parser/primitive_data_type_node.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
 namespace parser {
 
-class StringDataTypeNode: public DataTypeNode {
+class StringDataTypeNode: public PrimitiveDataTypeNode {
  public:
   explicit StringDataTypeNode(const real_talk::lexer::TokenInfo &name_token)
       : name_token_(name_token) {

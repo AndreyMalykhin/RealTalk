@@ -24,7 +24,7 @@ class ArgDefNode;
 class DataTypeNode;
 class ScopeNode;
 class IfNode;
-class BoundedArrayDataTypeNode;
+class PrimitiveDataTypeNode;
 
 class UnexpectedTokenError: public std::runtime_error {
  public:
@@ -75,7 +75,7 @@ class SimpleParser: public Parser {
       real_talk::lexer::Token until_token);
   std::unique_ptr<StmtNode> ParseStmt();
   std::unique_ptr<StmtNode> ParseDef(
-      std::unique_ptr<DataTypeNode> simple_data_type);
+      std::unique_ptr<PrimitiveDataTypeNode> primitive_data_type);
   std::unique_ptr<StmtNode> ParseFuncDef(
       std::unique_ptr<DataTypeNode> return_data_type,
       const real_talk::lexer::TokenInfo &func_name_token);
@@ -95,17 +95,15 @@ class SimpleParser: public Parser {
   std::unique_ptr<ExprNode> ParseString();
   std::unique_ptr<ExprNode> ParseDouble();
   std::unique_ptr<ExprNode> ParseBool();
-  std::unique_ptr<DataTypeNode> ParseIntDataType();
-  std::unique_ptr<DataTypeNode> ParseLongDataType();
-  std::unique_ptr<DataTypeNode> ParseDoubleDataType();
-  std::unique_ptr<DataTypeNode> ParseCharDataType();
-  std::unique_ptr<DataTypeNode> ParseStringDataType();
-  std::unique_ptr<DataTypeNode> ParseBoolDataType();
-  std::unique_ptr<DataTypeNode> ParseVoidDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseIntDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseLongDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseDoubleDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseCharDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseStringDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseBoolDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseVoidDataType();
   std::unique_ptr<DataTypeNode> ParseDataType(
-      std::unique_ptr<DataTypeNode> simple_data_type);
-  std::unique_ptr<BoundedArrayDataTypeNode> ParseBoundedArrayDataType(
-      std::unique_ptr<DataTypeNode> simple_data_type);
+      std::unique_ptr<PrimitiveDataTypeNode> primitive_data_type);
   std::unique_ptr<ArgDefNode> ParseArgDef();
   std::unique_ptr<IfNode> DoParseIf();
   std::unique_ptr<ScopeNode> ParseScope();

@@ -10,11 +10,10 @@
 #include "real_talk/parser/scope_node.h"
 #include "real_talk/parser/arg_def_node.h"
 #include "real_talk/parser/def_node.h"
+#include "real_talk/parser/data_type_node.h"
 
 namespace real_talk {
 namespace parser {
-
-class DataTypeNode;
 
 class FuncDefNode: public StmtNode, public DefNode {
  public:
