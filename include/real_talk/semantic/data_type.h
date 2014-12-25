@@ -9,12 +9,14 @@
 namespace real_talk {
 namespace semantic {
 
+class DataTypeVisitor;
+
 class DataType {
  public:
   virtual ~DataType() {}
   virtual std::string GetName() const = 0;
   virtual std::unique_ptr<DataType> Clone() const = 0;
-  virtual const DataType &AsPrimitive() const = 0;
+  virtual void Accept(DataTypeVisitor &visitor) const = 0;
   friend bool operator==(const DataType &lhs, const DataType &rhs);
   friend bool operator!=(const DataType &lhs, const DataType &rhs);
   friend std::ostream &operator<<(std::ostream &stream,

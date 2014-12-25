@@ -2,6 +2,7 @@
 #include <cassert>
 #include <string>
 #include "real_talk/semantic/array_data_type.h"
+#include "real_talk/semantic/data_type_visitor.h"
 
 using std::string;
 using std::unique_ptr;
@@ -21,8 +22,12 @@ string ArrayDataType::GetName() const {
   return name;
 }
 
-const DataType &ArrayDataType::AsPrimitive() const {
-  return element_data_type_->AsPrimitive();
+void ArrayDataType::Accept(DataTypeVisitor &visitor) const {
+  visitor.VisitArray(*this);
+}
+
+const DataType &ArrayDataType::GetElementDataType() const {
+  return *element_data_type_;
 }
 
 unique_ptr<DataType> ArrayDataType::Clone() const {

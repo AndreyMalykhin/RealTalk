@@ -16,6 +16,7 @@ namespace semantic {
 
 class ImportFileSearcher;
 class LitParser;
+class DataTypeConverter;
 
 class SimpleSemanticAnalyzer {
  public:
@@ -23,7 +24,8 @@ class SimpleSemanticAnalyzer {
       const real_talk::parser::ProgramNode &program,
       const real_talk::parser::FileParser &file_parser,
       const ImportFileSearcher &import_file_searcher,
-      const LitParser &lit_parser);
+      const LitParser &lit_parser,
+      const DataTypeConverter &data_type_converter);
   ~SimpleSemanticAnalyzer();
   SemanticAnalysis Analyze();
 

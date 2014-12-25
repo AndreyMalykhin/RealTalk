@@ -4,12 +4,13 @@
 
 #include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/binary_expr_node.h"
+#include "real_talk/parser/base_binary_expr_node.h"
 #include "real_talk/parser/node_visitor.h"
 
 namespace real_talk {
 namespace parser {
 
-class SumNode: public ExprNode {
+class SumNode: public BinaryExprNode {
  public:
   SumNode(
       const real_talk::lexer::TokenInfo &token,
@@ -22,15 +23,15 @@ class SumNode: public ExprNode {
     visitor.VisitSum(*this);
   }
 
-  const real_talk::lexer::TokenInfo &GetToken() const {
-    return binary_expr_.GetToken();
+  const real_talk::lexer::TokenInfo &GetOpToken() const override {
+    return binary_expr_.GetOpToken();
   }
 
-  const std::unique_ptr<ExprNode> &GetLeftOperand() const {
+  const std::unique_ptr<ExprNode> &GetLeftOperand() const override {
     return binary_expr_.GetLeftOperand();
   }
 
-  const std::unique_ptr<ExprNode> &GetRightOperand() const {
+  const std::unique_ptr<ExprNode> &GetRightOperand() const override {
     return binary_expr_.GetRightOperand();
   }
 
@@ -43,7 +44,7 @@ class SumNode: public ExprNode {
     stream << binary_expr_;
   }
 
-  BinaryExprNode binary_expr_;
+  BaseBinaryExprNode binary_expr_;
 };
 }
 }

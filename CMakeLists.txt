@@ -16,6 +16,7 @@ add_library(real_talk
   src/real_talk/parser/simple_file_parser.cpp
   src/real_talk/semantic/data_type.cpp
   src/real_talk/semantic/array_data_type.cpp
+  src/real_talk/semantic/func_data_type.cpp
   src/real_talk/semantic/int_data_type.cpp
   src/real_talk/semantic/long_data_type.cpp
   src/real_talk/semantic/double_data_type.cpp

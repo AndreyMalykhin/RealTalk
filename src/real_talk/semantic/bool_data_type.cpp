@@ -1,6 +1,7 @@
 
 #include <string>
 #include "real_talk/semantic/bool_data_type.h"
+#include "real_talk/semantic/data_type_visitor.h"
 
 using std::unique_ptr;
 using std::string;
@@ -13,8 +14,8 @@ string BoolDataType::GetName() const {
   return "bool";
 }
 
-const DataType &BoolDataType::AsPrimitive() const {
-  return *this;
+void BoolDataType::Accept(DataTypeVisitor &visitor) const {
+  visitor.VisitBool(*this);
 }
 
 unique_ptr<DataType> BoolDataType::Clone() const {

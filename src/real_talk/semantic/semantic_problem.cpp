@@ -14,7 +14,8 @@ bool operator==(const SemanticProblem &lhs, const SemanticProblem &rhs) {
 }
 
 ostream &operator<<(ostream &stream, const SemanticProblem &problem) {
-  stream << "file_path=" << problem.GetFilePath() << "; ";
+  stream << "type=" << typeid(problem).name() << "; file_path="
+         << problem.GetFilePath() << "; ";
   problem.Print(stream);
   return stream;
 }

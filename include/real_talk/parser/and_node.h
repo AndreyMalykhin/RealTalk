@@ -2,14 +2,14 @@
 #ifndef _REAL_TALK_PARSER_AND_NODE_H_
 #define _REAL_TALK_PARSER_AND_NODE_H_
 
-#include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/binary_expr_node.h"
+#include "real_talk/parser/base_binary_expr_node.h"
 #include "real_talk/parser/node_visitor.h"
 
 namespace real_talk {
 namespace parser {
 
-class AndNode: public ExprNode {
+class AndNode: public BinaryExprNode {
  public:
   AndNode(
       const real_talk::lexer::TokenInfo &token,
@@ -18,15 +18,15 @@ class AndNode: public ExprNode {
       : binary_expr_(token, move(left_operand), move(right_operand)) {
   }
 
-  const real_talk::lexer::TokenInfo &GetToken() const {
-    return binary_expr_.GetToken();
+  const real_talk::lexer::TokenInfo &GetOpToken() const override {
+    return binary_expr_.GetOpToken();
   }
 
-  const std::unique_ptr<ExprNode> &GetLeftOperand() const {
+  const std::unique_ptr<ExprNode> &GetLeftOperand() const override {
     return binary_expr_.GetLeftOperand();
   }
 
-  const std::unique_ptr<ExprNode> &GetRightOperand() const {
+  const std::unique_ptr<ExprNode> &GetRightOperand() const override {
     return binary_expr_.GetRightOperand();
   }
 
@@ -43,7 +43,7 @@ class AndNode: public ExprNode {
     stream << binary_expr_;
   }
 
-  BinaryExprNode binary_expr_;
+  BaseBinaryExprNode binary_expr_;
 };
 }
 }

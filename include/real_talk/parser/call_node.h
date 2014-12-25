@@ -29,6 +29,14 @@ class CallNode: public ExprNode {
            || (arg_separator_tokens_.size() == args_.size() - 1));
   }
 
+  const std::vector< std::unique_ptr<ExprNode> > &GetArgs() const {
+    return args_;
+  }
+
+  const std::unique_ptr<ExprNode> &GetOperand() const {
+    return operand_;
+  }
+
   virtual void Accept(NodeVisitor &visitor) const override {
     visitor.VisitCall(*this);
   }

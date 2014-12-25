@@ -8,12 +8,12 @@ using std::ostream;
 namespace real_talk {
 namespace semantic {
 
-FuncDefAnalysis::FuncDefAnalysis(unique_ptr<DataType> data_type)
+FuncDefAnalysis::FuncDefAnalysis(unique_ptr<FuncDataType> data_type)
     : data_type_(move(data_type)) {
   assert(data_type_);
 }
 
-const DataType &FuncDefAnalysis::GetDataType() const {
+const FuncDataType &FuncDefAnalysis::GetDataType() const {
   return *data_type_;
 }
 

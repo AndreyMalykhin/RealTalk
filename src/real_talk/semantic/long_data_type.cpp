@@ -1,6 +1,7 @@
 
 #include <string>
 #include "real_talk/semantic/long_data_type.h"
+#include "real_talk/semantic/data_type_visitor.h"
 
 using std::unique_ptr;
 using std::string;
@@ -13,8 +14,8 @@ string LongDataType::GetName() const {
   return "long";
 }
 
-const DataType &LongDataType::AsPrimitive() const {
-  return *this;
+void LongDataType::Accept(DataTypeVisitor &visitor) const {
+  visitor.VisitLong(*this);
 }
 
 unique_ptr<DataType> LongDataType::Clone() const {

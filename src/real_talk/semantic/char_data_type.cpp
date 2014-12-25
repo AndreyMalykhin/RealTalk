@@ -1,6 +1,7 @@
 
 #include <string>
 #include "real_talk/semantic/char_data_type.h"
+#include "real_talk/semantic/data_type_visitor.h"
 
 using std::unique_ptr;
 using std::string;
@@ -13,8 +14,8 @@ string CharDataType::GetName() const {
   return "char";
 }
 
-const DataType &CharDataType::AsPrimitive() const {
-  return *this;
+void CharDataType::Accept(DataTypeVisitor &visitor) const {
+  visitor.VisitChar(*this);
 }
 
 unique_ptr<DataType> CharDataType::Clone() const {

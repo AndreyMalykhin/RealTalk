@@ -1,6 +1,7 @@
 
 #include <string>
 #include "real_talk/semantic/void_data_type.h"
+#include "real_talk/semantic/data_type_visitor.h"
 
 using std::unique_ptr;
 using std::string;
@@ -13,8 +14,8 @@ string VoidDataType::GetName() const {
   return "void";
 }
 
-const DataType &VoidDataType::AsPrimitive() const {
-  return *this;
+void VoidDataType::Accept(DataTypeVisitor &visitor) const {
+  visitor.VisitVoid(*this);
 }
 
 unique_ptr<DataType> VoidDataType::Clone() const {

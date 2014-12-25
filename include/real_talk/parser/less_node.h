@@ -2,13 +2,13 @@
 #ifndef _REAL_TALK_PARSER_LESS_NODE_H_
 #define _REAL_TALK_PARSER_LESS_NODE_H_
 
-#include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/binary_expr_node.h"
+#include "real_talk/parser/base_binary_expr_node.h"
 
 namespace real_talk {
 namespace parser {
 
-class LessNode: public ExprNode {
+class LessNode: public BinaryExprNode {
  public:
   LessNode(
       const real_talk::lexer::TokenInfo &token,
@@ -17,15 +17,15 @@ class LessNode: public ExprNode {
       : binary_expr_(token, move(left_operand), move(right_operand)) {
   }
 
-  const real_talk::lexer::TokenInfo &GetToken() const {
-    return binary_expr_.GetToken();
+  const real_talk::lexer::TokenInfo &GetOpToken() const override {
+    return binary_expr_.GetOpToken();
   }
 
-  const std::unique_ptr<ExprNode> &GetLeftOperand() const {
+  const std::unique_ptr<ExprNode> &GetLeftOperand() const override {
     return binary_expr_.GetLeftOperand();
   }
 
-  const std::unique_ptr<ExprNode> &GetRightOperand() const {
+  const std::unique_ptr<ExprNode> &GetRightOperand() const override {
     return binary_expr_.GetRightOperand();
   }
 
@@ -42,7 +42,7 @@ class LessNode: public ExprNode {
     stream << binary_expr_;
   }
 
-  BinaryExprNode binary_expr_;
+  BaseBinaryExprNode binary_expr_;
 };
 }
 }
