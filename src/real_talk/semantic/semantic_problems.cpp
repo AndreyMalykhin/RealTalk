@@ -3,6 +3,9 @@
 #include "real_talk/parser/func_def_node.h"
 #include "real_talk/parser/call_node.h"
 #include "real_talk/parser/binary_expr_node.h"
+#include "real_talk/parser/return_value_node.h"
+#include "real_talk/parser/return_without_value_node.h"
+#include "real_talk/parser/import_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
@@ -14,9 +17,99 @@ using real_talk::parser::DefNode;
 using real_talk::parser::CallNode;
 using real_talk::parser::BinaryExprNode;
 using real_talk::parser::FuncDefNode;
+using real_talk::parser::ReturnValueNode;
+using real_talk::parser::ReturnWithoutValueNode;
+using real_talk::parser::ReturnNode;
+using real_talk::parser::ImportNode;
 
 namespace real_talk {
 namespace semantic {
+
+ImportIOError::ImportIOError(
+    const path &src_file_path,
+    const ImportNode &import,
+    const path &import_file_path)
+    : src_file_path_(src_file_path),
+      import_(import),
+      import_file_path_(import_file_path) {
+}
+
+const path &ImportIOError::GetFilePath() const {
+  return src_file_path_;
+}
+
+const ImportNode &ImportIOError::GetImport() const {
+  return import_;
+}
+
+const path &ImportIOError::GetImportFilePath() const {
+  return import_file_path_;
+}
+
+void ImportIOError::Print(ostream &stream) const {
+  stream << "import=" << import_ << "; import_file_path=" << import_file_path_;
+}
+
+bool ImportIOError::IsEqual(const SemanticProblem &problem) const {
+  const ImportIOError &rhs =
+      static_cast<const ImportIOError&>(problem);
+  return import_ == rhs.import_ && import_file_path_ == rhs.import_file_path_;
+}
+
+ImportWithNotExistingFileError::ImportWithNotExistingFileError(
+    const path &src_file_path,
+    const ImportNode &import,
+    const path &import_file_path)
+    : src_file_path_(src_file_path),
+      import_(import),
+      import_file_path_(import_file_path) {
+}
+
+const path &ImportWithNotExistingFileError::GetFilePath() const {
+  return src_file_path_;
+}
+
+const ImportNode &ImportWithNotExistingFileError::GetImport() const {
+  return import_;
+}
+
+const path &ImportWithNotExistingFileError::GetImportFilePath() const {
+  return import_file_path_;
+}
+
+void ImportWithNotExistingFileError::Print(ostream &stream) const {
+  stream << "import=" << import_ << "; import_file_path=" << import_file_path_;
+}
+
+bool ImportWithNotExistingFileError::IsEqual(
+    const SemanticProblem &problem) const {
+  const ImportWithNotExistingFileError &rhs =
+      static_cast<const ImportWithNotExistingFileError&>(problem);
+  return import_ == rhs.import_ && import_file_path_ == rhs.import_file_path_;
+}
+
+ImportIsNotFirstStmtError::ImportIsNotFirstStmtError(
+    const path &file_path, const ImportNode &import)
+    : file_path_(file_path), import_(import) {
+}
+
+const path &ImportIsNotFirstStmtError::GetFilePath() const {
+  return file_path_;
+}
+
+const ImportNode &ImportIsNotFirstStmtError::GetImport() const {
+  return import_;
+}
+
+void ImportIsNotFirstStmtError::Print(ostream &stream) const {
+  stream << "import=" << import_;
+}
+
+bool ImportIsNotFirstStmtError::IsEqual(const SemanticProblem &problem) const {
+  const ImportIsNotFirstStmtError &rhs =
+      static_cast<const ImportIsNotFirstStmtError&>(problem);
+  return import_ == rhs.import_;
+}
 
 InitWithIncompatibleTypeError::InitWithIncompatibleTypeError(
     const path &file_path,
@@ -56,6 +149,93 @@ bool InitWithIncompatibleTypeError::IsEqual(
   const InitWithIncompatibleTypeError &rhs =
       static_cast<const InitWithIncompatibleTypeError&>(problem);
   return var_def_ == static_cast<const Node&>(rhs.var_def_)
+      && dest_data_type_ == rhs.dest_data_type_
+      && src_data_type_ == rhs.src_data_type_;
+}
+
+ReturnWithoutValueError::ReturnWithoutValueError(
+    const path &file_path, const ReturnWithoutValueNode &return_node)
+    : file_path_(file_path), return_(return_node) {
+}
+
+const path &ReturnWithoutValueError::GetFilePath() const {
+  return file_path_;
+}
+
+const ReturnWithoutValueNode &ReturnWithoutValueError::GetReturn() const {
+  return return_;
+}
+
+void ReturnWithoutValueError::Print(std::ostream &stream) const {
+  stream << "return=" << return_;
+}
+
+bool ReturnWithoutValueError::IsEqual(const SemanticProblem &problem) const {
+  const ReturnWithoutValueError &rhs =
+      static_cast<const ReturnWithoutValueError&>(problem);
+  return return_ == rhs.return_;
+}
+
+ReturnNotWithinFuncError::ReturnNotWithinFuncError(
+    const path &file_path, const ReturnNode &return_node)
+    : file_path_(file_path), return_(return_node) {
+}
+
+const path &ReturnNotWithinFuncError::GetFilePath() const {
+  return file_path_;
+}
+
+const ReturnNode &ReturnNotWithinFuncError::GetReturn() const {
+  return return_;
+}
+
+void ReturnNotWithinFuncError::Print(std::ostream &stream) const {
+  stream << "return=" << return_;
+}
+
+bool ReturnNotWithinFuncError::IsEqual(const SemanticProblem &problem) const {
+  const ReturnNotWithinFuncError &rhs =
+      static_cast<const ReturnNotWithinFuncError&>(problem);
+  return return_ == rhs.return_;
+}
+
+ReturnWithIncompatibleTypeError::ReturnWithIncompatibleTypeError(
+    const path &file_path,
+    const ReturnValueNode &return_node,
+    const DataType &dest_data_type,
+    const DataType &src_data_type)
+    : file_path_(file_path),
+      return_(return_node),
+      dest_data_type_(dest_data_type),
+      src_data_type_(src_data_type) {
+}
+
+const path &ReturnWithIncompatibleTypeError::GetFilePath() const {
+  return file_path_;
+}
+
+const ReturnValueNode &ReturnWithIncompatibleTypeError::GetReturn() const {
+  return return_;
+}
+
+const DataType &ReturnWithIncompatibleTypeError::GetDestDataType() const {
+  return dest_data_type_;
+}
+
+const DataType &ReturnWithIncompatibleTypeError::GetSrcDataType() const {
+  return src_data_type_;
+}
+
+void ReturnWithIncompatibleTypeError::Print(ostream &stream) const {
+  stream << "return=" << return_ << "; dest_type=" << dest_data_type_
+         << "; src_type=" << src_data_type_;
+}
+
+bool ReturnWithIncompatibleTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const ReturnWithIncompatibleTypeError &rhs =
+      static_cast<const ReturnWithIncompatibleTypeError&>(problem);
+  return return_ == rhs.return_
       && dest_data_type_ == rhs.dest_data_type_
       && src_data_type_ == rhs.src_data_type_;
 }
@@ -194,31 +374,31 @@ bool CallWithIncompatibleTypeError::IsEqual(
       && src_data_type_ == rhs.src_data_type_;
 }
 
-DefWithUnsupportedDataTypeError::DefWithUnsupportedDataTypeError(
+DefWithUnsupportedTypeError::DefWithUnsupportedTypeError(
     const path &file_path, const DefNode &def, const DataType &data_type)
     : file_path_(file_path), def_(def), data_type_(data_type) {
 }
 
-const path &DefWithUnsupportedDataTypeError::GetFilePath() const {
+const path &DefWithUnsupportedTypeError::GetFilePath() const {
   return file_path_;
 }
 
-const DefNode &DefWithUnsupportedDataTypeError::GetDef() const {
+const DefNode &DefWithUnsupportedTypeError::GetDef() const {
   return def_;
 }
 
-const DataType &DefWithUnsupportedDataTypeError::GetDataType() const {
+const DataType &DefWithUnsupportedTypeError::GetDataType() const {
   return data_type_;
 }
 
-void DefWithUnsupportedDataTypeError::Print(ostream &stream) const {
+void DefWithUnsupportedTypeError::Print(ostream &stream) const {
   stream << "def=" << def_ << "; type=" << data_type_;
 }
 
-bool DefWithUnsupportedDataTypeError::IsEqual(
+bool DefWithUnsupportedTypeError::IsEqual(
     const SemanticProblem &problem) const {
-  const DefWithUnsupportedDataTypeError &rhs =
-      static_cast<const DefWithUnsupportedDataTypeError&>(problem);
+  const DefWithUnsupportedTypeError &rhs =
+      static_cast<const DefWithUnsupportedTypeError&>(problem);
   return def_ == rhs.def_ && data_type_ == rhs.data_type_;
 }
 
@@ -315,7 +495,7 @@ bool NonFuncCallError::IsEqual(const SemanticProblem &problem) const {
   return call_ == rhs.call_;
 }
 
-InvalidArgsCountError::InvalidArgsCountError(
+CallWithInvalidArgsCount::CallWithInvalidArgsCount(
     const path &file_path,
     const CallNode &call,
     size_t expected_count,
@@ -326,30 +506,30 @@ InvalidArgsCountError::InvalidArgsCountError(
       actual_count_(actual_count) {
 }
 
-const path &InvalidArgsCountError::GetFilePath() const {
+const path &CallWithInvalidArgsCount::GetFilePath() const {
   return file_path_;
 }
 
-const CallNode &InvalidArgsCountError::GetCall() const {
+const CallNode &CallWithInvalidArgsCount::GetCall() const {
   return call_;
 }
 
-size_t InvalidArgsCountError::GetExpectedCount() const {
+size_t CallWithInvalidArgsCount::GetExpectedCount() const {
   return expected_count_;
 }
 
-size_t InvalidArgsCountError::GetActualCount() const {
+size_t CallWithInvalidArgsCount::GetActualCount() const {
   return actual_count_;
 }
 
-void InvalidArgsCountError::Print(ostream &stream) const {
+void CallWithInvalidArgsCount::Print(ostream &stream) const {
   stream << "call=" << call_ << "; expected=" << expected_count_
          << "; actual=" << actual_count_;
 }
 
-bool InvalidArgsCountError::IsEqual(const SemanticProblem &problem) const {
-  const InvalidArgsCountError &rhs =
-      static_cast<const InvalidArgsCountError&>(problem);
+bool CallWithInvalidArgsCount::IsEqual(const SemanticProblem &problem) const {
+  const CallWithInvalidArgsCount &rhs =
+      static_cast<const CallWithInvalidArgsCount&>(problem);
   return call_ == rhs.call_
       && expected_count_ == rhs.expected_count_
       && actual_count_ == rhs.actual_count_;

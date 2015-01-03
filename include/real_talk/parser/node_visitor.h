@@ -53,7 +53,7 @@ class BoolDataTypeNode;
 class VoidDataTypeNode;
 class ArrayDataTypeNode;
 class ReturnValueNode;
-class ReturnNode;
+class ReturnWithoutValueNode;
 class ArgDefNode;
 
 class NodeVisitor {
@@ -108,7 +108,7 @@ class NodeVisitor {
   virtual void VisitVoidDataType(const VoidDataTypeNode &node) = 0;
   virtual void VisitArrayDataType(const ArrayDataTypeNode &node) = 0;
   virtual void VisitReturnValue(const ReturnValueNode &node) = 0;
-  virtual void VisitReturn(const ReturnNode &node) = 0;
+  virtual void VisitReturnWithoutValue(const ReturnWithoutValueNode &node) = 0;
   virtual void VisitArgDef(const ArgDefNode &node) = 0;
 };
 }

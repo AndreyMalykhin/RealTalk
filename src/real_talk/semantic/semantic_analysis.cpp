@@ -35,38 +35,26 @@ SemanticAnalysis::SemanticAnalysis(
 }
 
 bool operator==(const SemanticAnalysis &lhs, const SemanticAnalysis &rhs) {
-  static auto def_analysis_comparator = [](
-      const SemanticAnalysis::DefAnalyzes::value_type &lhs_pair,
-      const SemanticAnalysis::DefAnalyzes::value_type &rhs_pair) {
-    return lhs_pair.first == rhs_pair.first
-    && *(lhs_pair.second) == *(rhs_pair.second);
+  const auto def_analyzes_comparator = [&rhs](
+      const SemanticAnalysis::DefAnalyzes::value_type &lhs_pair) {
+    SemanticAnalysis::DefAnalyzes::const_iterator rhs_pair_it =
+    rhs.def_analyzes_.find(lhs_pair.first);
+    return rhs_pair_it != rhs.def_analyzes_.end()
+    && *(rhs_pair_it->second) == *(lhs_pair.second);
   };
 
   return lhs.problems_.size() == rhs.problems_.size()
       && lhs.def_analyzes_.size() == rhs.def_analyzes_.size()
-      && lhs.expr_analyzes_.size() == rhs.expr_analyzes_.size()
-      && lhs.lit_analyzes_.size() == rhs.lit_analyzes_.size()
-      && lhs.id_analyzes_.size() == rhs.id_analyzes_.size()
-      && lhs.import_analyzes_.size() == rhs.import_analyzes_.size()
       && equal(make_indirect_iterator(lhs.problems_.begin()),
                make_indirect_iterator(lhs.problems_.end()),
                make_indirect_iterator(rhs.problems_.begin()))
-      && equal(lhs.def_analyzes_.begin(),
-               lhs.def_analyzes_.end(),
-               rhs.def_analyzes_.begin(),
-               def_analysis_comparator)
-      && equal(lhs.expr_analyzes_.begin(),
-               lhs.expr_analyzes_.end(),
-               rhs.expr_analyzes_.begin())
-      && equal(lhs.lit_analyzes_.begin(),
-               lhs.lit_analyzes_.end(),
-               rhs.lit_analyzes_.begin())
-      && equal(lhs.import_analyzes_.begin(),
-               lhs.import_analyzes_.end(),
-               rhs.import_analyzes_.begin())
-      && equal(lhs.id_analyzes_.begin(),
-               lhs.id_analyzes_.end(),
-               rhs.id_analyzes_.begin());
+      && lhs.expr_analyzes_ == rhs.expr_analyzes_
+      && lhs.lit_analyzes_ == rhs.lit_analyzes_
+      && lhs.import_analyzes_ == rhs.import_analyzes_
+      && lhs.id_analyzes_ == rhs.id_analyzes_
+      && all_of(lhs.def_analyzes_.begin(),
+                lhs.def_analyzes_.end(),
+                def_analyzes_comparator);
 }
 
 ostream &operator<<(ostream &stream, const SemanticAnalysis &result) {

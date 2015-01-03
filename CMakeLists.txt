@@ -10,8 +10,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Weverything -
 add_library(real_talk
   src/real_talk/lexer/token_info.cpp
   src/real_talk/lexer/simple_lexer.cpp
+  src/real_talk/lexer/lexer.cpp
   src/real_talk/lexer/simple_lexer_factory.cpp
   src/real_talk/parser/simple_parser.cpp
+  src/real_talk/parser/parser.cpp
   src/real_talk/parser/simple_parser_factory.cpp
   src/real_talk/parser/simple_file_parser.cpp
   src/real_talk/semantic/data_type.cpp
@@ -48,6 +50,7 @@ add_library(real_talk
   src/real_talk/semantic/simple_semantic_analyzer.cpp
   src/real_talk/semantic/simple_import_file_searcher.cpp
   src/real_talk/semantic/simple_lit_parser.cpp
+  src/real_talk/util/errors.cpp
 )
 add_executable(real_talk_tests
   test/main.cpp

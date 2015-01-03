@@ -3,13 +3,16 @@
 #include <cassert>
 #include <cctype>
 #include <string>
+#include "real_talk/util/errors.h"
 #include "real_talk/lexer/simple_lexer.h"
 
 using std::istream;
 using std::string;
+using std::ios;
 using std::unordered_map;
 using std::char_traits;
 using boost::format;
+using real_talk::util::IOError;
 
 namespace real_talk {
 namespace lexer {
@@ -58,102 +61,106 @@ SimpleLexer::SimpleLexer(istream &stream)
 }
 
 TokenInfo SimpleLexer::GetNextToken() {
-  while (IsNextCharExists()) {
-    switch (GetNextChar()) {
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9': {
-        return ParseNumberToken();
-      }
-      case '+': {
-        return ParsePlusOrMinusToken(Token::kSumOp, Token::kPreIncOp, '+');
-      }
-      case '-': {
-        return ParsePlusOrMinusToken(Token::kSubOp, Token::kPreDecOp, '-');
-      }
-      case '>': {
-        return ParseOneOrTwoCharTokenWithSharedPrefix(
-            Token::kGreaterOp, Token::kGreaterOrEqualOp, '=');
-      }
-      case '<': {
-        return ParseOneOrTwoCharTokenWithSharedPrefix(
-            Token::kLessOp, Token::kLessOrEqualOp, '=');
-      }
-      case '=': {
-        return ParseOneOrTwoCharTokenWithSharedPrefix(
-            Token::kAssignOp, Token::kEqualOp, '=');
-      }
-      case '!': {
-        return ParseOneOrTwoCharTokenWithSharedPrefix(
-            Token::kNotOp, Token::kNotEqualOp, '=');
-      }
-      case '*': {
-        return ParseOneCharToken(Token::kMulOp);
-      }
-      case '/': {
-        return ParseOneCharToken(Token::kDivOp);
-      }
-      case '&': {
-        return ParseTwoCharToken(Token::kAndOp, '&');
-      }
-      case '|': {
-        return ParseTwoCharToken(Token::kOrOp, '|');
-      }
-      case kSubscriptStartChar: {
-        return ParseOneCharToken(Token::kSubscriptStart);
-      }
-      case kSubscriptEndChar: {
-        return ParseOneCharToken(Token::kSubscriptEnd);
-      }
-      case '(': {
-        return ParseOneCharToken(Token::kGroupStart);
-      }
-      case ')': {
-        return ParseOneCharToken(Token::kGroupEnd);
-      }
-      case '{': {
-        return ParseOneCharToken(Token::kScopeStart);
-      }
-      case '}': {
-        return ParseOneCharToken(Token::kScopeEnd);
-      }
-      case ',': {
-        return ParseOneCharToken(Token::kSeparator);
-      }
-      case ';': {
-        return ParseOneCharToken(Token::kStmtEnd);
-      }
-      case '\'': {
-        return ParseStringToken(Token::kCharLit, GetNextChar());
-      }
-      case '"': {
-        return ParseStringToken(Token::kStringLit, GetNextChar());
-      }
-      case '\n': {
-        ConsumeLineEndChar();
-        break;
-      }
-      case ' ':
-      case '\r':
-      case '\t': {
-        ConsumeNextChar();
-        break;
-      }
-      default: {
-        if (!isalpha(GetNextChar())) {
-          UnexpectedNextChar();
+  try {
+    while (IsNextCharExists()) {
+      switch (GetNextChar()) {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9': {
+          return ParseNumberToken();
         }
+        case '+': {
+          return ParsePlusOrMinusToken(Token::kSumOp, Token::kPreIncOp, '+');
+        }
+        case '-': {
+          return ParsePlusOrMinusToken(Token::kSubOp, Token::kPreDecOp, '-');
+        }
+        case '>': {
+          return ParseOneOrTwoCharTokenWithSharedPrefix(
+              Token::kGreaterOp, Token::kGreaterOrEqualOp, '=');
+        }
+        case '<': {
+          return ParseOneOrTwoCharTokenWithSharedPrefix(
+              Token::kLessOp, Token::kLessOrEqualOp, '=');
+        }
+        case '=': {
+          return ParseOneOrTwoCharTokenWithSharedPrefix(
+              Token::kAssignOp, Token::kEqualOp, '=');
+        }
+        case '!': {
+          return ParseOneOrTwoCharTokenWithSharedPrefix(
+              Token::kNotOp, Token::kNotEqualOp, '=');
+        }
+        case '*': {
+          return ParseOneCharToken(Token::kMulOp);
+        }
+        case '/': {
+          return ParseOneCharToken(Token::kDivOp);
+        }
+        case '&': {
+          return ParseTwoCharToken(Token::kAndOp, '&');
+        }
+        case '|': {
+          return ParseTwoCharToken(Token::kOrOp, '|');
+        }
+        case kSubscriptStartChar: {
+          return ParseOneCharToken(Token::kSubscriptStart);
+        }
+        case kSubscriptEndChar: {
+          return ParseOneCharToken(Token::kSubscriptEnd);
+        }
+        case '(': {
+          return ParseOneCharToken(Token::kGroupStart);
+        }
+        case ')': {
+          return ParseOneCharToken(Token::kGroupEnd);
+        }
+        case '{': {
+          return ParseOneCharToken(Token::kScopeStart);
+        }
+        case '}': {
+          return ParseOneCharToken(Token::kScopeEnd);
+        }
+        case ',': {
+          return ParseOneCharToken(Token::kSeparator);
+        }
+        case ';': {
+          return ParseOneCharToken(Token::kStmtEnd);
+        }
+        case '\'': {
+          return ParseStringToken(Token::kCharLit, GetNextChar());
+        }
+        case '"': {
+          return ParseStringToken(Token::kStringLit, GetNextChar());
+        }
+        case '\n': {
+          ConsumeLineEndChar();
+          break;
+        }
+        case ' ':
+        case '\r':
+        case '\t': {
+          ConsumeNextChar();
+          break;
+        }
+        default: {
+          if (!isalpha(GetNextChar())) {
+            UnexpectedNextChar();
+          }
 
-        return ParseAlphaNumToken();
+          return ParseAlphaNumToken();
+        }
       }
     }
+  } catch (const ios::failure &e) {
+    throw IOError(e.what());
   }
 
   return TokenInfo(Token::kFileEnd, "", line_number_, column_number_);
@@ -365,29 +372,6 @@ TokenInfo SimpleLexer::ParseAlphaNumToken() {
   }
 
   return TokenInfo(Token::kName, token_value, line_number_, start_column);
-}
-
-UnexpectedCharError::UnexpectedCharError(
-    char c,
-    std::uint32_t line_number,
-    std::uint32_t column_number,
-    const std::string &msg)
-    : runtime_error(msg),
-      c_(c),
-      line_number_(line_number),
-      column_number_(column_number) {
-}
-
-char UnexpectedCharError::GetChar() const {
-  return c_;
-}
-
-std::uint32_t UnexpectedCharError::GetLineNumber() const {
-  return line_number_;
-}
-
-std::uint32_t UnexpectedCharError::GetColumnNumber() const {
-  return column_number_;
 }
 }
 }

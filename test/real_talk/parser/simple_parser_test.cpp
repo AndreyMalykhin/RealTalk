@@ -61,7 +61,7 @@
 #include "real_talk/parser/continue_node.h"
 #include "real_talk/parser/negative_node.h"
 #include "real_talk/parser/return_value_node.h"
-#include "real_talk/parser/return_node.h"
+#include "real_talk/parser/return_without_value_node.h"
 #include "real_talk/parser/simple_parser.h"
 
 using std::string;
@@ -134,7 +134,7 @@ using real_talk::parser::BreakNode;
 using real_talk::parser::ContinueNode;
 using real_talk::parser::NegativeNode;
 using real_talk::parser::ReturnValueNode;
-using real_talk::parser::ReturnNode;
+using real_talk::parser::ReturnWithoutValueNode;
 using real_talk::parser::SimpleParser;
 using real_talk::parser::UnexpectedTokenError;
 
@@ -2325,7 +2325,7 @@ TEST_F(SimpleParserTest, ReturnValue) {
   }
 }
 
-TEST_F(SimpleParserTest, Return) {
+TEST_F(SimpleParserTest, ReturnWithoutValue) {
   vector< TestNode<StmtNode> > test_stmt_nodes;
   vector<TokenInfo> tokens = {
     TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(0)),
@@ -2334,7 +2334,7 @@ TEST_F(SimpleParserTest, Return) {
   const TokenInfo &start_token = tokens[0];
   const TokenInfo &end_token = tokens[1];
   unique_ptr<StmtNode> return1(
-      new ReturnNode(start_token, end_token));
+      new ReturnWithoutValueNode(start_token, end_token));
   test_stmt_nodes.push_back({tokens, move(return1)});
 
   for (TestNode<StmtNode> &test_stmt_node: test_stmt_nodes) {
@@ -3782,7 +3782,7 @@ TEST_F(SimpleParserTest, ElseWithoutBodyIsInvalid) {
   }
 }
 
-TEST_F(SimpleParserTest, ReturnWithoutEndIsInvalid) {
+TEST_F(SimpleParserTest, ReturnWithoutValueAndWithoutEndIsInvalid) {
   vector<MailformedTestTokens> mailformed_token_suits;
 
   {

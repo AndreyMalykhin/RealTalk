@@ -9,6 +9,7 @@
 #include <utility>
 #include <exception>
 #include <functional>
+#include "real_talk/util/errors.h"
 #include "real_talk/parser/file_parser.h"
 #include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/stmt_node.h"
@@ -62,7 +63,7 @@
 #include "real_talk/parser/continue_node.h"
 #include "real_talk/parser/negative_node.h"
 #include "real_talk/parser/return_value_node.h"
-#include "real_talk/parser/return_node.h"
+#include "real_talk/parser/return_without_value_node.h"
 #include "real_talk/semantic/simple_semantic_analyzer.h"
 #include "real_talk/semantic/semantic_problems.h"
 #include "real_talk/semantic/array_data_type.h"
@@ -157,6 +158,7 @@ using real_talk::parser::ArrayDataTypeNode;
 using real_talk::parser::DataTypeNode;
 using real_talk::parser::ReturnValueNode;
 using real_talk::parser::ReturnNode;
+using real_talk::parser::ReturnWithoutValueNode;
 using real_talk::parser::DefNode;
 using real_talk::parser::VarDefNode;
 using real_talk::parser::ArgDefNode;
@@ -165,6 +167,8 @@ using real_talk::parser::BranchNode;
 using real_talk::parser::FileParser;
 using real_talk::parser::ArraySizeNode;
 using real_talk::parser::ArrayAllocNode;
+using real_talk::util::FileNotFoundError;
+using real_talk::util::IOError;
 
 namespace real_talk {
 namespace semantic {
@@ -253,8 +257,8 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
       const real_talk::parser::ArrayDataTypeNode &node) override;
   virtual void VisitReturnValue(
       const real_talk::parser::ReturnValueNode &node) override;
-  virtual void VisitReturn(
-      const real_talk::parser::ReturnNode &node) override;
+  virtual void VisitReturnWithoutValue(
+      const real_talk::parser::ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(
       const real_talk::parser::ArgDefNode &node) override;
 
@@ -280,11 +284,15 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
       const real_talk::parser::ArrayAllocNode &array_alloc_node);
   const DataType &VisitVarDef(
       const real_talk::parser::VarDefNode &var_def_node);
+  void VisitReturn(const real_talk::parser::ReturnNode &return_node);
   std::unique_ptr<DataType> CreateDataType(
       const real_talk::parser::DataTypeNode &data_type_node);
   const real_talk::parser::DefNode *GetIdDef(const std::string &id);
   const DataType &GetExprDataType(const real_talk::parser::ExprNode *expr);
+  const DataType &GetFuncReturnDataType(
+      const real_talk::parser::FuncDefNode *func_def);
   bool IsCurrentScopeGlobal();
+  bool IsWithinImportProgram();
   bool IsTypeConvertible(const DataType &dest, const DataType &src);
   const boost::filesystem::path &GetCurrentFilePath();
   void AddDefAnalyzes(const real_talk::parser::DefNode &def_node,
@@ -309,6 +317,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   std::vector<FileScope*> file_scopes_stack_;
   std::vector<FuncScope*> func_scopes_stack_;
   std::unique_ptr<DataType> current_data_type_;
+  size_t non_import_stmts_count_;
 };
 
 class SimpleSemanticAnalyzer::Impl::SemanticErrorException
@@ -582,7 +591,8 @@ SimpleSemanticAnalyzer::Impl::Impl(
       file_parser_(file_parser),
       import_file_searcher_(import_file_searcher),
       lit_parser_(lit_parser),
-      data_type_converter_(data_type_converter) {
+      data_type_converter_(data_type_converter),
+      non_import_stmts_count_(0) {
 }
 
 SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze() {
@@ -604,8 +614,342 @@ SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze() {
                           move(id_analyzes_));
 }
 
+void SimpleSemanticAnalyzer::Impl::VisitProgram(const ProgramNode &program) {
+  for (const unique_ptr<StmtNode> &stmt: program.GetStmts()) {
+    try {
+      stmt->Accept(*this);
+    } catch (SemanticErrorException &e) {
+      problems_.push_back(e.GetError());
+    }
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
+    const ReturnValueNode &return_node) {
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  VisitReturn(return_node);
+  return_node.GetValue()->Accept(*this);
+  FuncScope &current_func_scope = *(func_scopes_stack_.back());
+  current_func_scope.SetHasReturnValue(true);
+  const DataType &func_def_return_data_type =
+      GetFuncReturnDataType(&current_func_scope.GetFuncDef());
+  const DataType &value_data_type =
+      GetExprDataType(return_node.GetValue().get());
+
+  if (!IsTypeConvertible(func_def_return_data_type, value_data_type)) {
+    unique_ptr<SemanticError> error(new ReturnWithIncompatibleTypeError(
+        GetCurrentFilePath(),
+        return_node,
+        func_def_return_data_type,
+        value_data_type));
+    throw SemanticErrorException(move(error));
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitReturnWithoutValue(
+    const ReturnWithoutValueNode &return_node) {
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  VisitReturn(return_node);
+  FuncScope &current_func_scope = *(func_scopes_stack_.back());
+  const DataType &func_def_return_data_type =
+      GetFuncReturnDataType(&current_func_scope.GetFuncDef());
+
+  if (func_def_return_data_type != VoidDataType()) {
+    unique_ptr<SemanticError> error(
+        new ReturnWithoutValueError(GetCurrentFilePath(), return_node));
+    throw SemanticErrorException(move(error));
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitReturn(const ReturnNode &return_node) {
+  ++non_import_stmts_count_;
+
+  if (func_scopes_stack_.empty()) {
+    unique_ptr<SemanticError> error(
+        new ReturnNotWithinFuncError(GetCurrentFilePath(), return_node));
+    throw SemanticErrorException(move(error));
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode&) {
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  ++non_import_stmts_count_;
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitContinue(const ContinueNode&) {
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  ++non_import_stmts_count_;
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitExprStmt(const ExprStmtNode& stmt) {
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  ++non_import_stmts_count_;
+  stmt.GetExpr()->Accept(*this);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitVarDefWithoutInit(
+    const VarDefWithoutInitNode &var_def_node) {
+  VisitVarDef(var_def_node);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitVarDefWithInit(
+    const VarDefWithInitNode &var_def_node) {
+  const DataType &var_data_type = VisitVarDef(var_def_node);
+
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  var_def_node.GetValue()->Accept(*this);
+  const DataType &value_data_type =
+      GetExprDataType(var_def_node.GetValue().get());
+
+  if (!IsTypeConvertible(var_data_type, value_data_type)) {
+    unique_ptr<SemanticError> error(new InitWithIncompatibleTypeError(
+        GetCurrentFilePath(), var_def_node, var_data_type, value_data_type));
+    throw SemanticErrorException(move(error));
+  }
+}
+
+const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
+    const VarDefNode &var_def_node) {
+  if (!IsWithinImportProgram()) {
+    ++non_import_stmts_count_;
+  }
+
+  unique_ptr<DataType> data_type_ptr =
+      CreateDataType(*(var_def_node.GetDataType()));
+  const DataType &data_type = *data_type_ptr;
+  unique_ptr<DataStorage> data_storage;
+
+  if (IsCurrentScopeGlobal()) {
+    data_storage.reset(new GlobalDataStorage());
+  } else {
+    data_storage.reset(new LocalDataStorage());
+  }
+
+  unique_ptr<DefAnalysis> def_analysis(
+      new VarDefAnalysis(move(data_type_ptr), move(data_storage)));
+  AddDefAnalyzes(var_def_node, move(def_analysis));
+  const bool is_void_data_type = IsVoidDataType(data_type).Check();
+
+  if (is_void_data_type) {
+    unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
+        GetCurrentFilePath(), var_def_node, data_type));
+    throw SemanticErrorException(move(error));
+  }
+
+  return data_type;
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitArgDef(const ArgDefNode &arg_def_node) {
+  unique_ptr<DataType> data_type_ptr =
+      CreateDataType(*(arg_def_node.GetDataType()));
+  const DataType &data_type = *data_type_ptr;
+  unique_ptr<DefAnalysis> def_analysis(new ArgDefAnalysis(move(data_type_ptr)));
+  AddDefAnalyzes(arg_def_node, move(def_analysis));
+  const bool is_void_data_type = IsVoidDataType(data_type).Check();
+
+  if (is_void_data_type) {
+    unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
+        GetCurrentFilePath(), arg_def_node, data_type));
+    throw SemanticErrorException(move(error));
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
+    const FuncDefNode &func_def_node) {
+  if (!IsWithinImportProgram()) {
+    ++non_import_stmts_count_;
+  }
+
+  unique_ptr<DataType> return_data_type_ptr =
+      CreateDataType(*(func_def_node.GetDataType()));
+  const DataType &return_data_type = *return_data_type_ptr;
+  vector< unique_ptr<DataType> > arg_data_types;
+
+  for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
+    unique_ptr<DataType> arg_data_type =
+        CreateDataType(*(arg_def_node->GetDataType()));
+    arg_data_types.push_back(move(arg_data_type));
+  }
+
+  unique_ptr<FuncDataType> func_data_type(
+      new FuncDataType(move(return_data_type_ptr), move(arg_data_types)));
+  unique_ptr<DefAnalysis> def_analysis(
+      new FuncDefAnalysis(move(func_data_type)));
+  AddDefAnalyzes(func_def_node, move(def_analysis));
+
+  if (!IsCurrentScopeGlobal()) {
+    unique_ptr<SemanticError> error(
+        new NestedFuncDefError(GetCurrentFilePath(), func_def_node));
+    throw SemanticErrorException(move(error));
+  }
+
+  const bool is_return_data_type_supported =
+      IsDataTypeSupportedByFuncDef(return_data_type).Check();
+
+  if (!is_return_data_type_supported) {
+    unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
+        GetCurrentFilePath(), func_def_node, return_data_type));
+    throw SemanticErrorException(move(error));
+  }
+
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  FuncScope func_scope(func_scopes_stack_, func_def_node);
+  Scope scope(scopes_stack_);
+
+  for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
+    arg_def_node->Accept(*this);
+  }
+
+  for (const unique_ptr<StmtNode> &stmt: func_def_node.GetBody()->GetStmts()) {
+    stmt->Accept(*this);
+  }
+
+  if (return_data_type != VoidDataType() && !func_scope.HasReturnValue()) {
+    unique_ptr<SemanticError> error(new FuncDefWithoutReturnValueError(
+        GetCurrentFilePath(), func_def_node));
+    throw SemanticErrorException(move(error));
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(const PreTestLoopNode&) {
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  ++non_import_stmts_count_;
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitIfElseIf(
+    const IfElseIfNode &if_else_if_node) {
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  VisitBranch(if_else_if_node);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitIfElseIfElse(
+    const IfElseIfElseNode &if_else_if_else_node) {
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  VisitBranch(if_else_if_else_node);
+  const vector< unique_ptr<StmtNode> > &else_stmts =
+      if_else_if_else_node.GetElseBody()->GetStmts();
+  Scope scope(scopes_stack_);
+
+  for (const unique_ptr<StmtNode> &else_stmt: else_stmts) {
+    else_stmt->Accept(*this);
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
+  ++non_import_stmts_count_;
+  const ExprNode &if_cond = *(branch_node.GetIf()->GetCond());
+  if_cond.Accept(*this);
+  BoolDataType bool_data_type;
+  assert(IsTypeConvertible(bool_data_type, GetExprDataType(&if_cond)));
+  const vector< unique_ptr<StmtNode> > &if_stmts =
+      branch_node.GetIf()->GetBody()->GetStmts();
+
+  {
+    Scope scope(scopes_stack_);
+
+    for (const unique_ptr<StmtNode> &stmt: if_stmts) {
+      stmt->Accept(*this);
+    }
+  }
+
+  for (const unique_ptr<ElseIfNode> &else_if: branch_node.GetElseIfs()) {
+    const ExprNode &else_if_cond = *(else_if->GetIf()->GetCond());
+    else_if_cond.Accept(*this);
+    assert(IsTypeConvertible(bool_data_type, GetExprDataType(&else_if_cond)));
+    const vector< unique_ptr<StmtNode> > &else_if_stmts =
+        else_if->GetIf()->GetBody()->GetStmts();
+    Scope scope(scopes_stack_);
+
+    for (const unique_ptr<StmtNode> &stmt: else_if_stmts) {
+      stmt->Accept(*this);
+    }
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
+  import_node.GetFilePath()->Accept(*this);
+  SemanticAnalysis::LitAnalyzes::const_iterator lit_analysis_it =
+      lit_analyzes_.find(import_node.GetFilePath().get());
+  assert(lit_analysis_it != lit_analyzes_.end());
+  const LitAnalysis &lit_analysis = lit_analysis_it->second;
+  const StringLit &lit = static_cast<const StringLit&>(lit_analysis.GetLit());
+  const path relative_file_path(lit.GetValue());
+  path absolute_file_path;
+
+  try {
+    absolute_file_path = import_file_searcher_.Search(relative_file_path);
+  } catch (const FileNotFoundError&) {
+    unique_ptr<SemanticError> error(new ImportWithNotExistingFileError(
+        GetCurrentFilePath(), import_node, relative_file_path));
+    throw SemanticErrorException(move(error));
+  } catch (const IOError&) {
+    unique_ptr<SemanticError> error(new ImportIOError(
+        GetCurrentFilePath(), import_node, relative_file_path));
+    throw SemanticErrorException(move(error));
+  }
+
+  FileAnalyzes::const_iterator file_analysis_it =
+      file_analyzes_.find(absolute_file_path);
+  const bool is_file_already_analyzed =
+      file_analysis_it != file_analyzes_.end();
+  shared_ptr<ProgramNode> program;
+
+  if (is_file_already_analyzed) {
+    program = file_analysis_it->second;
+  } else {
+    try {
+      program = file_parser_.Parse(absolute_file_path);
+    } catch (...) {
+      // TODO
+      assert(false);
+    }
+
+    FileScope file_scope(file_scopes_stack_, absolute_file_path);
+    program->Accept(*this);
+    file_analyzes_.insert(make_pair(absolute_file_path, program));
+  }
+
+  const ImportAnalysis import_analysis(program);
+  import_analyzes_.insert(make_pair(&import_node, import_analysis));
+
+  if (non_import_stmts_count_ != 0) {
+    unique_ptr<SemanticError> error(
+        new ImportIsNotFirstStmtError(GetCurrentFilePath(), import_node));
+    throw SemanticErrorException(move(error));
+  }
+}
+
 void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
@@ -668,7 +1012,6 @@ void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitDiv(const DivNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
@@ -690,7 +1033,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
   size_t actual_args_count = call_node.GetArgs().size();
 
   if (expected_args_count != actual_args_count) {
-    unique_ptr<SemanticError> error(new InvalidArgsCountError(
+    unique_ptr<SemanticError> error(new CallWithInvalidArgsCount(
         GetCurrentFilePath(),
         call_node,
         expected_args_count,
@@ -725,257 +1068,11 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
   }
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
-    const ReturnValueNode &return_node) {
-  return_node.GetValue()->Accept(*this);
-  assert(!func_scopes_stack_.empty());
-  FuncScope &current_func_scope = *(func_scopes_stack_.back());
-  current_func_scope.SetHasReturnValue(true);
-  SemanticAnalysis::DefAnalyzes::const_iterator func_def_analysis_it =
-      def_analyzes_.find(&current_func_scope.GetFuncDef());
-  assert(func_def_analysis_it != def_analyzes_.end());
-  const FuncDefAnalysis &func_def_analysis =
-      static_cast<const FuncDefAnalysis&>(*(func_def_analysis_it->second));
-  const DataType &func_return_data_type =
-      func_def_analysis.GetDataType().GetReturnDataType();
-  const DataType &value_data_type =
-      GetExprDataType(return_node.GetValue().get());
-  assert(IsTypeConvertible(func_return_data_type, value_data_type));
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitReturn(const ReturnNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitContinue(const ContinueNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitExprStmt(const ExprStmtNode& stmt) {
-  stmt.GetExpr()->Accept(*this);
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitVarDefWithoutInit(
-    const VarDefWithoutInitNode &var_def_node) {
-  VisitVarDef(var_def_node);
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitVarDefWithInit(
-    const VarDefWithInitNode &var_def_node) {
-  const DataType &var_data_type = VisitVarDef(var_def_node);
-  var_def_node.GetValue()->Accept(*this);
-  const DataType &value_data_type =
-      GetExprDataType(var_def_node.GetValue().get());
-
-  if (!IsTypeConvertible(var_data_type, value_data_type)) {
-    unique_ptr<SemanticError> error(new InitWithIncompatibleTypeError(
-        GetCurrentFilePath(), var_def_node, var_data_type, value_data_type));
-    throw SemanticErrorException(move(error));
-  }
-}
-
-const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
-    const VarDefNode &var_def_node) {
-  unique_ptr<DataType> data_type_ptr =
-      CreateDataType(*(var_def_node.GetDataType()));
-  const DataType &data_type = *data_type_ptr;
-  unique_ptr<DataStorage> data_storage;
-
-  if (IsCurrentScopeGlobal()) {
-    data_storage.reset(new GlobalDataStorage());
-  } else {
-    data_storage.reset(new LocalDataStorage());
-  }
-
-  unique_ptr<DefAnalysis> def_analysis(
-      new VarDefAnalysis(move(data_type_ptr), move(data_storage)));
-  AddDefAnalyzes(var_def_node, move(def_analysis));
-  const bool is_void_data_type = IsVoidDataType(data_type).Check();
-
-  if (is_void_data_type) {
-    unique_ptr<SemanticError> error(new DefWithUnsupportedDataTypeError(
-        GetCurrentFilePath(), var_def_node, data_type));
-    throw SemanticErrorException(move(error));
-  }
-
-  return data_type;
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitArgDef(const ArgDefNode &arg_def_node) {
-  unique_ptr<DataType> data_type =
-      CreateDataType(*(arg_def_node.GetDataType()));
-  unique_ptr<DefAnalysis> def_analysis(new ArgDefAnalysis(move(data_type)));
-  AddDefAnalyzes(arg_def_node, move(def_analysis));
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
-    const FuncDefNode &func_def_node) {
-  unique_ptr<DataType> return_data_type_ptr =
-      CreateDataType(*(func_def_node.GetDataType()));
-  const DataType &return_data_type = *return_data_type_ptr;
-  vector< unique_ptr<DataType> > arg_data_types;
-
-  for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
-    unique_ptr<DataType> arg_data_type =
-        CreateDataType(*(arg_def_node->GetDataType()));
-    arg_data_types.push_back(move(arg_data_type));
-  }
-
-  unique_ptr<FuncDataType> func_data_type(
-      new FuncDataType(move(return_data_type_ptr), move(arg_data_types)));
-  unique_ptr<DefAnalysis> def_analysis(
-      new FuncDefAnalysis(move(func_data_type)));
-  AddDefAnalyzes(func_def_node, move(def_analysis));
-
-  if (!IsCurrentScopeGlobal()) {
-    unique_ptr<SemanticError> error(
-        new NestedFuncDefError(GetCurrentFilePath(), func_def_node));
-    throw SemanticErrorException(move(error));
-  }
-
-  const bool is_return_data_type_supported =
-      IsDataTypeSupportedByFuncDef(return_data_type).Check();
-
-  if (!is_return_data_type_supported) {
-    unique_ptr<SemanticError> error(new DefWithUnsupportedDataTypeError(
-        GetCurrentFilePath(), func_def_node, return_data_type));
-    throw SemanticErrorException(move(error));
-  }
-
-  FuncScope func_scope(func_scopes_stack_, func_def_node);
-  Scope scope(scopes_stack_);
-
-  for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
-    arg_def_node->Accept(*this);
-  }
-
-  for (const unique_ptr<StmtNode> &stmt: func_def_node.GetBody()->GetStmts()) {
-    stmt->Accept(*this);
-  }
-
-  if (return_data_type != VoidDataType() && !func_scope.HasReturnValue()) {
-    unique_ptr<SemanticError> error(new FuncDefWithoutReturnValueError(
-        GetCurrentFilePath(), func_def_node));
-    throw SemanticErrorException(move(error));
-  }
-}
-
-void SimpleSemanticAnalyzer::Impl::AddDefAnalyzes(
-    const DefNode &def_node, unique_ptr<DefAnalysis> def_analysis) {
-  def_analyzes_.insert(make_pair(&def_node, move(def_analysis)));
-  assert(!scopes_stack_.empty());
-  Scope &current_scope = *(scopes_stack_.back());
-  const string &id = def_node.GetNameToken().GetValue();
-  const bool is_id_already_exists =
-      !current_scope.GetIdDefs().insert(make_pair(id, &def_node)).second;
-
-  if (is_id_already_exists) {
-    unique_ptr<SemanticError> error(
-        new DuplicateDefError(GetCurrentFilePath(), def_node));
-    throw SemanticErrorException(move(error));
-  }
-}
-
 void SimpleSemanticAnalyzer::Impl::VisitGreater(const GreaterNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitGreaterOrEqual(
     const GreaterOrEqualNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitIfElseIf(
-    const IfElseIfNode &if_else_if_node) {
-  VisitBranch(if_else_if_node);
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitIfElseIfElse(
-    const IfElseIfElseNode &if_else_if_else_node) {
-  VisitBranch(if_else_if_else_node);
-  const vector< unique_ptr<StmtNode> > &else_stmts =
-      if_else_if_else_node.GetElseBody()->GetStmts();
-  Scope scope(scopes_stack_);
-
-  for (const unique_ptr<StmtNode> &else_stmt: else_stmts) {
-    else_stmt->Accept(*this);
-  }
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
-  const ExprNode &if_cond = *(branch_node.GetIf()->GetCond());
-  if_cond.Accept(*this);
-  BoolDataType bool_data_type;
-  assert(IsTypeConvertible(bool_data_type, GetExprDataType(&if_cond)));
-  const vector< unique_ptr<StmtNode> > &if_stmts =
-      branch_node.GetIf()->GetBody()->GetStmts();
-
-  {
-    Scope scope(scopes_stack_);
-
-    for (const unique_ptr<StmtNode> &stmt: if_stmts) {
-      stmt->Accept(*this);
-    }
-  }
-
-  for (const unique_ptr<ElseIfNode> &else_if: branch_node.GetElseIfs()) {
-    const ExprNode &else_if_cond = *(else_if->GetIf()->GetCond());
-    else_if_cond.Accept(*this);
-    assert(IsTypeConvertible(bool_data_type, GetExprDataType(&else_if_cond)));
-    const vector< unique_ptr<StmtNode> > &else_if_stmts =
-        else_if->GetIf()->GetBody()->GetStmts();
-    Scope scope(scopes_stack_);
-
-    for (const unique_ptr<StmtNode> &stmt: else_if_stmts) {
-      stmt->Accept(*this);
-    }
-  }
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
-  import_node.GetFilePath()->Accept(*this);
-  SemanticAnalysis::LitAnalyzes::const_iterator lit_analysis_it =
-      lit_analyzes_.find(import_node.GetFilePath().get());
-  assert(lit_analysis_it != lit_analyzes_.end());
-  const LitAnalysis &lit_analysis = lit_analysis_it->second;
-  const StringLit &lit = static_cast<const StringLit&>(lit_analysis.GetLit());
-  const path relative_file_path(lit.GetValue());
-  path absolute_file_path;
-
-  try {
-    absolute_file_path = import_file_searcher_.Search(relative_file_path);
-  } catch (...) {
-    // TODO
-    assert(false);
-  }
-
-  FileAnalyzes::const_iterator file_analysis_it =
-      file_analyzes_.find(absolute_file_path);
-  const bool is_file_already_analyzed =
-      file_analysis_it != file_analyzes_.end();
-  shared_ptr<ProgramNode> program;
-
-  if (is_file_already_analyzed) {
-    program = file_analysis_it->second;
-  } else {
-    try {
-      program = file_parser_.Parse(absolute_file_path);
-    } catch (...) {
-      // TODO
-      assert(false);
-    }
-
-    FileScope file_scope(file_scopes_stack_, absolute_file_path);
-    program->Accept(*this);
-    file_analyzes_.insert(make_pair(absolute_file_path, program));
-  }
-
-  const ImportAnalysis import_analysis(program);
-  import_analyzes_.insert(make_pair(&import_node, import_analysis));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBool(const BoolNode &bool_node) {
@@ -986,38 +1083,75 @@ void SimpleSemanticAnalyzer::Impl::VisitBool(const BoolNode &bool_node) {
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitInt(const IntNode &int_node) {
-  const int32_t value = lit_parser_.ParseInt(int_node.GetToken().GetValue());
+  int32_t value;
+
+  try {
+    value = lit_parser_.ParseInt(int_node.GetToken().GetValue());
+  } catch (...) {
+    // TODO
+    assert(false);
+  }
+
   unique_ptr<DataType> data_type(new IntDataType());
   unique_ptr<Lit> lit(new IntLit(value));
   AddLitAnalyzes(&int_node, move(data_type), move(lit));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitLong(const LongNode &long_node) {
-  const int64_t value = lit_parser_.ParseLong(long_node.GetToken().GetValue());
+  int64_t value;
+
+  try {
+    value = lit_parser_.ParseLong(long_node.GetToken().GetValue());
+  } catch (...) {
+    // TODO
+    assert(false);
+  }
+
   unique_ptr<DataType> data_type(new LongDataType());
   unique_ptr<Lit> lit(new LongLit(value));
   AddLitAnalyzes(&long_node, move(data_type), move(lit));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitDouble(const DoubleNode &double_node) {
-  const double value =
-      lit_parser_.ParseDouble(double_node.GetToken().GetValue());
+  double value;
+
+  try {
+    value = lit_parser_.ParseDouble(double_node.GetToken().GetValue());
+  } catch (...) {
+    // TODO
+    assert(false);
+  }
+
   unique_ptr<DataType> data_type(new DoubleDataType());
   unique_ptr<Lit> lit(new DoubleLit(value));
   AddLitAnalyzes(&double_node, move(data_type), move(lit));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitChar(const CharNode &char_node) {
-  const char value =
-      lit_parser_.ParseChar(char_node.GetToken().GetValue());
+  char value;
+
+  try {
+    value = lit_parser_.ParseChar(char_node.GetToken().GetValue());
+  } catch (...) {
+    // TODO
+    assert(false);
+  }
+
   unique_ptr<DataType> data_type(new CharDataType());
   unique_ptr<Lit> lit(new CharLit(value));
   AddLitAnalyzes(&char_node, move(data_type), move(lit));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
-  const string &value =
-      lit_parser_.ParseString(string_node.GetToken().GetValue());
+  string value;
+
+  try {
+    value = lit_parser_.ParseString(string_node.GetToken().GetValue());
+  } catch (...) {
+    // TODO
+    assert(false);
+  }
+
   unique_ptr<DataType> data_type(new StringDataType());
   unique_ptr<Lit> lit(new StringLit(value));
   AddLitAnalyzes(&string_node, move(data_type), move(lit));
@@ -1078,61 +1212,36 @@ void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitLessOrEqual(const LessOrEqualNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitMul(const MulNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitNegative(const NegativeNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitNotEqual(const NotEqualNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitNot(const NotNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitOr(const OrNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(const PreTestLoopNode&) {
-  
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitProgram(const ProgramNode &program) {
-  for (const unique_ptr<StmtNode> &stmt: program.GetStmts()) {
-    try {
-      stmt->Accept(*this);
-    } catch (SemanticErrorException &e) {
-      problems_.push_back(e.GetError());
-    }
-  }
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitSubscript(const SubscriptNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitSub(const SubNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitSum(const SumNode&) {
-  
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
@@ -1225,6 +1334,16 @@ const DataType &SimpleSemanticAnalyzer::Impl::GetExprDataType(
   return expr_analysis.GetDataType();
 }
 
+const DataType &SimpleSemanticAnalyzer::Impl::GetFuncReturnDataType(
+    const FuncDefNode *func_def) {
+  SemanticAnalysis::DefAnalyzes::const_iterator func_def_analysis_it =
+      def_analyzes_.find(func_def);
+  assert(func_def_analysis_it != def_analyzes_.end());
+  const FuncDefAnalysis &func_def_analysis =
+      static_cast<const FuncDefAnalysis&>(*(func_def_analysis_it->second));
+  return func_def_analysis.GetDataType().GetReturnDataType();
+}
+
 void SimpleSemanticAnalyzer::Impl::AddLitAnalyzes(
     const LitNode *lit_node,
     unique_ptr<DataType> data_type,
@@ -1235,8 +1354,28 @@ void SimpleSemanticAnalyzer::Impl::AddLitAnalyzes(
   lit_analyzes_.insert(make_pair(lit_node, move(lit_analysis)));
 }
 
+void SimpleSemanticAnalyzer::Impl::AddDefAnalyzes(
+    const DefNode &def_node, unique_ptr<DefAnalysis> def_analysis) {
+  def_analyzes_.insert(make_pair(&def_node, move(def_analysis)));
+  assert(!scopes_stack_.empty());
+  Scope &current_scope = *(scopes_stack_.back());
+  const string &id = def_node.GetNameToken().GetValue();
+  const bool is_id_already_exists =
+      !current_scope.GetIdDefs().insert(make_pair(id, &def_node)).second;
+
+  if (is_id_already_exists) {
+    unique_ptr<SemanticError> error(
+        new DuplicateDefError(GetCurrentFilePath(), def_node));
+    throw SemanticErrorException(move(error));
+  }
+}
+
 bool SimpleSemanticAnalyzer::Impl::IsCurrentScopeGlobal() {
   return scopes_stack_.size() == 1;
+}
+
+bool SimpleSemanticAnalyzer::Impl::IsWithinImportProgram() {
+  return file_scopes_stack_.size() > 1;
 }
 
 bool SimpleSemanticAnalyzer::Impl::IsTypeConvertible(const DataType &dest,

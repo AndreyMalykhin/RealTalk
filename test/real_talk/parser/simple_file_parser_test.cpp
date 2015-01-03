@@ -9,6 +9,7 @@
 #include "real_talk/parser/parser_factory.h"
 #include "real_talk/parser/parser.h"
 #include "real_talk/parser/simple_file_parser.h"
+#include "real_talk/util/errors.h"
 
 using std::unique_ptr;
 using std::shared_ptr;
@@ -25,6 +26,7 @@ using real_talk::lexer::LexerFactory;
 using real_talk::lexer::Lexer;
 using real_talk::lexer::TokenInfo;
 using real_talk::parser::ParserFactory;
+using real_talk::util::IOError;
 
 namespace real_talk {
 namespace parser {
@@ -118,7 +120,7 @@ TEST_F(SimpleFileParserTest, ParseFailsIfCantOpenFile) {
   try {
     file_parser.Parse(file_path);
     FAIL();
-  } catch (const ios::failure&) {
+  } catch (const IOError&) {
   }
 }
 }

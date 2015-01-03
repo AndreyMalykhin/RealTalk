@@ -3,14 +3,21 @@
 #include <gmock/gmock.h>
 #include <string>
 #include <vector>
+#include "real_talk/util/errors.h"
 #include "real_talk/lexer/simple_lexer.h"
 #include "real_talk/lexer/token_info.h"
 
+using std::ios;
 using std::istringstream;
+using std::istream;
+using std::streambuf;
 using std::string;
 using std::vector;
 using std::char_traits;
 using testing::Test;
+using testing::Throw;
+using testing::Return;
+using real_talk::util::IOError;
 
 namespace real_talk {
 namespace lexer {
@@ -27,6 +34,11 @@ struct MailformedTestToken {
   uint32_t unexpected_char_column_number;
 };
 
+class StreambufMock: public streambuf {
+ public:
+  MOCK_METHOD0(underflow, int());
+};
+
 class SimpleLexerTest: public Test {
  protected:
   virtual void SetUp() override {
@@ -41,7 +53,6 @@ class SimpleLexerTest: public Test {
 
     for (const TokenInfo &expected_token: test_tokens.tokens) {
       const TokenInfo &actual_token = lexer.GetNextToken();
-
       ASSERT_EQ(expected_token, actual_token);
     }
   }
@@ -1756,6 +1767,21 @@ TEST_F(SimpleLexerTest, UnexpectedChar) {
 
   for (const MailformedTestToken &mailformed_token: mailformed_tokens) {
     TestFailingGetNextToken(mailformed_token);
+  }
+}
+
+TEST_F(SimpleLexerTest, IOError) {
+  StreambufMock stream_buffer;
+  EXPECT_CALL(stream_buffer, underflow())
+      .Times(1)
+      .WillOnce(Throw(ios::failure("underflow() error")));
+  istream code_stream(&stream_buffer);
+  SimpleLexer lexer(code_stream);
+
+  try {
+    const TokenInfo &token = lexer.GetNextToken();
+    FAIL() << "token=" << token;
+  } catch (const IOError&) {
   }
 }
 }

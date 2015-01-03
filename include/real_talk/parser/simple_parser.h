@@ -12,7 +12,6 @@
 #include <stdexcept>
 #include <utility>
 #include "real_talk/lexer/lexer.h"
-#include "real_talk/lexer/token_info.h"
 #include "real_talk/parser/parser.h"
 
 namespace real_talk {
@@ -25,17 +24,6 @@ class DataTypeNode;
 class ScopeNode;
 class IfNode;
 class PrimitiveDataTypeNode;
-
-class UnexpectedTokenError: public std::runtime_error {
- public:
-  UnexpectedTokenError(
-      const real_talk::lexer::TokenInfo &token,
-      const std::string &msg);
-  const real_talk::lexer::TokenInfo &GetToken() const;
-
- private:
-  real_talk::lexer::TokenInfo token_;
-};
 
 class SimpleParser: public Parser {
  public:

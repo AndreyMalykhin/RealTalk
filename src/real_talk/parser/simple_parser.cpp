@@ -57,7 +57,7 @@
 #include "real_talk/parser/continue_node.h"
 #include "real_talk/parser/negative_node.h"
 #include "real_talk/parser/return_value_node.h"
-#include "real_talk/parser/return_node.h"
+#include "real_talk/parser/return_without_value_node.h"
 
 using std::pair;
 using std::string;
@@ -156,7 +156,7 @@ unique_ptr<StmtNode> SimpleParser::ParseReturn() {
     const TokenInfo end_token = next_token_;
     ConsumeNextToken();
     return unique_ptr<StmtNode>(
-      new ReturnNode(start_token, end_token));
+      new ReturnWithoutValueNode(start_token, end_token));
   }
 
   unique_ptr<ExprNode> value = ParseExpr();
@@ -1006,17 +1006,6 @@ void SimpleParser::UnexpectedToken() {
        % next_token_.GetLine()
        % next_token_.GetColumn()).str();
   throw UnexpectedTokenError(next_token_, msg);
-}
-
-UnexpectedTokenError::UnexpectedTokenError(
-    const TokenInfo &token,
-    const string &msg)
-    : runtime_error(msg),
-      token_(token) {
-}
-
-const TokenInfo &UnexpectedTokenError::GetToken() const {
-  return token_;
 }
 }
 }

@@ -13,6 +13,12 @@ class ProgramNode;
 class FileParser {
  public:
   virtual ~FileParser() {}
+
+  /**
+   * @throws real_talk::parser::UnexpectedTokenError
+   * @throws real_talk::lexer::UnexpectedCharError
+   * @throws real_talk::util::IOError
+   */
   virtual std::shared_ptr<ProgramNode> Parse(
       const boost::filesystem::path &file_path) const = 0;
 };

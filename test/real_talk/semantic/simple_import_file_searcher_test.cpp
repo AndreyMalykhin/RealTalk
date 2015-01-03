@@ -2,13 +2,14 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "real_talk/test/test_config.h"
+#include "real_talk/util/errors.h"
 #include "real_talk/semantic/simple_import_file_searcher.h"
 
 using boost::filesystem::path;
 using boost::filesystem::current_path;
-using boost::filesystem::filesystem_error;
 using testing::Test;
 using real_talk::test::TestConfig;
+using real_talk::util::FileNotFoundError;
 
 namespace real_talk {
 namespace semantic {
@@ -38,7 +39,7 @@ TEST_F(SimpleImportFileSearcherTest, SearchFailsIfFileNotExists) {
 
   try {
     searcher.Search(relative_file_path);
-  } catch (const filesystem_error&) {
+  } catch (const FileNotFoundError&) {
   }
 }
 }
