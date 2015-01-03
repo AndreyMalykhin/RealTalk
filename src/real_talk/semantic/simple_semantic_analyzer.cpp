@@ -9,7 +9,9 @@
 #include <utility>
 #include <exception>
 #include <functional>
+#include "real_talk/lexer/lexer.h"
 #include "real_talk/util/errors.h"
+#include "real_talk/parser/parser.h"
 #include "real_talk/parser/file_parser.h"
 #include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/stmt_node.h"
@@ -105,6 +107,7 @@ using boost::adaptors::reverse;
 using boost::filesystem::path;
 using boost::filesystem::filesystem_error;
 using real_talk::lexer::Token;
+using real_talk::lexer::UnexpectedCharError;
 using real_talk::parser::ExprNode;
 using real_talk::parser::StmtNode;
 using real_talk::parser::AndNode;
@@ -167,6 +170,7 @@ using real_talk::parser::BranchNode;
 using real_talk::parser::FileParser;
 using real_talk::parser::ArraySizeNode;
 using real_talk::parser::ArrayAllocNode;
+using real_talk::parser::UnexpectedTokenError;
 using real_talk::util::FileNotFoundError;
 using real_talk::util::IOError;
 
@@ -176,7 +180,8 @@ namespace semantic {
 class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
  public:
   Impl(
-      const real_talk::parser::ProgramNode &program,
+      std::shared_ptr<real_talk::parser::ProgramNode> program,
+      const boost::filesystem::path &absolute_file_path,
       const real_talk::parser::FileParser &file_parser,
       const ImportFileSearcher &import_file_searcher,
       const LitParser &lit_parser,
@@ -277,7 +282,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
                              std::shared_ptr<
                                real_talk::parser::ProgramNode>,
                              boost::hash<
-                               boost::filesystem::path> > FileAnalyzes;
+                               boost::filesystem::path> > ImportPrograms;
 
   void VisitBranch(const real_talk::parser::BranchNode &branch_node);
   const ArrayDataType &VisitArrayAlloc(
@@ -301,7 +306,8 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
                       std::unique_ptr<DataType> data_type,
                       std::unique_ptr<Lit> lit);
 
-  const real_talk::parser::ProgramNode &program_;
+  std::shared_ptr<real_talk::parser::ProgramNode> program_;
+  const boost::filesystem::path file_path_;
   const real_talk::parser::FileParser &file_parser_;
   const ImportFileSearcher &import_file_searcher_;
   const LitParser &lit_parser_;
@@ -312,7 +318,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   SemanticAnalysis::LitAnalyzes lit_analyzes_;
   SemanticAnalysis::ImportAnalyzes import_analyzes_;
   SemanticAnalysis::IdAnalyzes id_analyzes_;
-  FileAnalyzes file_analyzes_;
+  ImportPrograms import_programs_;
   std::vector<Scope*> scopes_stack_;
   std::vector<FileScope*> file_scopes_stack_;
   std::vector<FuncScope*> func_scopes_stack_;
@@ -562,12 +568,14 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByLess
 };
 
 SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(
-    const ProgramNode &program,
+    shared_ptr<ProgramNode> program,
+    const path &file_path,
     const FileParser &file_parser,
     const ImportFileSearcher &import_file_searcher,
     const LitParser &lit_parser,
     const DataTypeConverter &data_type_converter)
     : impl_(new SimpleSemanticAnalyzer::Impl(program,
+                                             file_path,
                                              file_parser,
                                              import_file_searcher,
                                              lit_parser,
@@ -582,12 +590,14 @@ SemanticAnalysis SimpleSemanticAnalyzer::Analyze() {
 }
 
 SimpleSemanticAnalyzer::Impl::Impl(
-    const ProgramNode &program,
+    shared_ptr<ProgramNode> program,
+    const path &file_path,
     const FileParser &file_parser,
     const ImportFileSearcher &import_file_searcher,
     const LitParser &lit_parser,
     const DataTypeConverter &data_type_converter)
     : program_(program),
+      file_path_(file_path),
       file_parser_(file_parser),
       import_file_searcher_(import_file_searcher),
       lit_parser_(lit_parser),
@@ -596,11 +606,12 @@ SimpleSemanticAnalyzer::Impl::Impl(
 }
 
 SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze() {
+  import_programs_.insert(make_pair(file_path_, program_));
+
   {
     Scope scope(scopes_stack_);
-    const path file_path;
-    FileScope file_scope(file_scopes_stack_, file_path);
-    program_.Accept(*this);
+    FileScope file_scope(file_scopes_stack_, file_path_);
+    program_->Accept(*this);
   }
 
   assert(scopes_stack_.empty());
@@ -832,12 +843,28 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
   }
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(const PreTestLoopNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(
+    const PreTestLoopNode &loop_node) {
   if (IsWithinImportProgram()) {
     return;
   }
 
   ++non_import_stmts_count_;
+  loop_node.GetCond()->Accept(*this);
+  const DataType &cond_data_type = GetExprDataType(loop_node.GetCond().get());
+  BoolDataType bool_data_type;
+
+  if (!IsTypeConvertible(bool_data_type, cond_data_type)) {
+    unique_ptr<SemanticError> error(new PreTestLoopWithIncompatibleTypeError(
+        GetCurrentFilePath(), loop_node, bool_data_type, cond_data_type));
+    throw SemanticErrorException(move(error));
+  }
+
+  Scope scope(scopes_stack_);
+
+  for (const unique_ptr<StmtNode> &stmt: loop_node.GetBody()->GetStmts()) {
+    stmt->Accept(*this);
+  }
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitIfElseIf(
@@ -913,30 +940,44 @@ void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
         GetCurrentFilePath(), import_node, relative_file_path));
     throw SemanticErrorException(move(error));
   } catch (const IOError&) {
-    unique_ptr<SemanticError> error(new ImportIOError(
+    unique_ptr<SemanticError> error(new ImportWithIOError(
         GetCurrentFilePath(), import_node, relative_file_path));
     throw SemanticErrorException(move(error));
   }
 
-  FileAnalyzes::const_iterator file_analysis_it =
-      file_analyzes_.find(absolute_file_path);
+  ImportPrograms::const_iterator import_program_it =
+      import_programs_.find(absolute_file_path);
   const bool is_file_already_analyzed =
-      file_analysis_it != file_analyzes_.end();
+      import_program_it != import_programs_.end();
   shared_ptr<ProgramNode> program;
 
   if (is_file_already_analyzed) {
-    program = file_analysis_it->second;
+    program = import_program_it->second;
   } else {
     try {
       program = file_parser_.Parse(absolute_file_path);
-    } catch (...) {
-      // TODO
-      assert(false);
+    } catch (const IOError&) {
+      unique_ptr<SemanticError> error(new ImportWithIOError(
+          GetCurrentFilePath(), import_node, absolute_file_path));
+      throw SemanticErrorException(move(error));
+    } catch (const UnexpectedTokenError &e) {
+      unique_ptr<SemanticError> error(new ImportWithUnexpectedTokenError(
+          GetCurrentFilePath(), import_node, absolute_file_path, e.GetToken()));
+      throw SemanticErrorException(move(error));
+    } catch (const UnexpectedCharError &e) {
+      unique_ptr<SemanticError> error(new ImportWithUnexpectedCharError(
+          GetCurrentFilePath(),
+          import_node,
+          absolute_file_path,
+          e.GetChar(),
+          e.GetLineNumber(),
+          e.GetColumnNumber()));
+      throw SemanticErrorException(move(error));
     }
 
+    import_programs_.insert(make_pair(absolute_file_path, program));
     FileScope file_scope(file_scopes_stack_, absolute_file_path);
     program->Accept(*this);
-    file_analyzes_.insert(make_pair(absolute_file_path, program));
   }
 
   const ImportAnalysis import_analysis(program);

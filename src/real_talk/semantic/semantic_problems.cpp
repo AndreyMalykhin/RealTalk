@@ -2,6 +2,7 @@
 #include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/func_def_node.h"
 #include "real_talk/parser/call_node.h"
+#include "real_talk/parser/pre_test_loop_node.h"
 #include "real_talk/parser/binary_expr_node.h"
 #include "real_talk/parser/return_value_node.h"
 #include "real_talk/parser/return_without_value_node.h"
@@ -11,6 +12,7 @@
 
 using std::ostream;
 using boost::filesystem::path;
+using real_talk::lexer::TokenInfo;
 using real_talk::parser::VarDefWithInitNode;
 using real_talk::parser::Node;
 using real_talk::parser::DefNode;
@@ -21,11 +23,148 @@ using real_talk::parser::ReturnValueNode;
 using real_talk::parser::ReturnWithoutValueNode;
 using real_talk::parser::ReturnNode;
 using real_talk::parser::ImportNode;
+using real_talk::parser::PreTestLoopNode;
 
 namespace real_talk {
 namespace semantic {
 
-ImportIOError::ImportIOError(
+PreTestLoopWithIncompatibleTypeError::PreTestLoopWithIncompatibleTypeError(
+    const path &file_path,
+    const PreTestLoopNode &loop,
+    const DataType &dest_data_type,
+    const DataType &src_data_type)
+    : file_path_(file_path),
+      loop_(loop),
+      dest_data_type_(dest_data_type.Clone()),
+      src_data_type_(src_data_type.Clone()) {
+}
+
+const path &PreTestLoopWithIncompatibleTypeError::GetFilePath() const {
+  return file_path_;
+}
+
+const PreTestLoopNode &PreTestLoopWithIncompatibleTypeError::GetLoop() const {
+  return loop_;
+}
+
+const DataType &PreTestLoopWithIncompatibleTypeError::GetDestDataType() const {
+  return *dest_data_type_;
+}
+
+const DataType &PreTestLoopWithIncompatibleTypeError::GetSrcDataType() const {
+  return *src_data_type_;
+}
+
+void PreTestLoopWithIncompatibleTypeError::Print(ostream &stream) const {
+  stream << "loop=" << loop_ << "; dest_type=" << *dest_data_type_
+         << "; src_type=" << *src_data_type_;
+}
+
+bool PreTestLoopWithIncompatibleTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const PreTestLoopWithIncompatibleTypeError &rhs =
+      static_cast<const PreTestLoopWithIncompatibleTypeError&>(problem);
+  return loop_ == rhs.loop_
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
+}
+
+ImportWithUnexpectedCharError::ImportWithUnexpectedCharError(
+    const path &src_file_path,
+    const ImportNode &import,
+    const path &import_file_path,
+    char c,
+    uint32_t line_number,
+    uint32_t column_number)
+    : src_file_path_(src_file_path),
+      import_(import),
+      import_file_path_(import_file_path),
+      c_(c),
+      line_number_(line_number),
+      column_number_(column_number) {
+}
+
+const path &ImportWithUnexpectedCharError::GetFilePath() const {
+  return src_file_path_;
+}
+
+const ImportNode &ImportWithUnexpectedCharError::GetImport() const {
+  return import_;
+}
+
+const path &ImportWithUnexpectedCharError::GetImportFilePath() const {
+  return import_file_path_;
+}
+
+char ImportWithUnexpectedCharError::GetChar() const {
+  return c_;
+}
+
+uint32_t ImportWithUnexpectedCharError::GetLineNumber() const {
+  return line_number_;
+}
+
+uint32_t ImportWithUnexpectedCharError::GetColumnNumber() const {
+  return column_number_;
+}
+
+void ImportWithUnexpectedCharError::Print(std::ostream &stream) const {
+  stream << "import=" << import_ << "; import_file_path=" << import_file_path_
+         << "; char=" << c_ << "; line=" << line_number_ << "; column="
+         << column_number_;
+}
+
+bool ImportWithUnexpectedCharError::IsEqual(const SemanticProblem &problem) const {
+  const ImportWithUnexpectedCharError &rhs =
+      static_cast<const ImportWithUnexpectedCharError&>(problem);
+  return import_ == rhs.import_
+      && import_file_path_ == rhs.import_file_path_
+      && c_ == rhs.c_
+      && line_number_ == rhs.line_number_
+      && column_number_ == rhs.column_number_;
+}
+
+ImportWithUnexpectedTokenError::ImportWithUnexpectedTokenError(
+    const path &src_file_path,
+    const ImportNode &import,
+    const path &import_file_path,
+    const TokenInfo &token)
+    : src_file_path_(src_file_path),
+      import_(import),
+      import_file_path_(import_file_path),
+      token_(token) {
+}
+
+const path &ImportWithUnexpectedTokenError::GetFilePath() const {
+  return src_file_path_;
+}
+
+const ImportNode &ImportWithUnexpectedTokenError::GetImport() const {
+  return import_;
+}
+
+const path &ImportWithUnexpectedTokenError::GetImportFilePath() const {
+  return import_file_path_;
+}
+
+const TokenInfo &ImportWithUnexpectedTokenError::GetToken() const {
+  return token_;
+}
+
+void ImportWithUnexpectedTokenError::Print(ostream &stream) const {
+  stream << "import=" << import_ << "; import_file_path=" << import_file_path_
+         << "; token=" << token_;
+}
+
+bool ImportWithUnexpectedTokenError::IsEqual(const SemanticProblem &problem) const {
+  const ImportWithUnexpectedTokenError &rhs =
+      static_cast<const ImportWithUnexpectedTokenError&>(problem);
+  return import_ == rhs.import_
+      && import_file_path_ == rhs.import_file_path_
+      && token_ == rhs.token_;
+}
+
+ImportWithIOError::ImportWithIOError(
     const path &src_file_path,
     const ImportNode &import,
     const path &import_file_path)
@@ -34,25 +173,25 @@ ImportIOError::ImportIOError(
       import_file_path_(import_file_path) {
 }
 
-const path &ImportIOError::GetFilePath() const {
+const path &ImportWithIOError::GetFilePath() const {
   return src_file_path_;
 }
 
-const ImportNode &ImportIOError::GetImport() const {
+const ImportNode &ImportWithIOError::GetImport() const {
   return import_;
 }
 
-const path &ImportIOError::GetImportFilePath() const {
+const path &ImportWithIOError::GetImportFilePath() const {
   return import_file_path_;
 }
 
-void ImportIOError::Print(ostream &stream) const {
+void ImportWithIOError::Print(ostream &stream) const {
   stream << "import=" << import_ << "; import_file_path=" << import_file_path_;
 }
 
-bool ImportIOError::IsEqual(const SemanticProblem &problem) const {
-  const ImportIOError &rhs =
-      static_cast<const ImportIOError&>(problem);
+bool ImportWithIOError::IsEqual(const SemanticProblem &problem) const {
+  const ImportWithIOError &rhs =
+      static_cast<const ImportWithIOError&>(problem);
   return import_ == rhs.import_ && import_file_path_ == rhs.import_file_path_;
 }
 

@@ -21,7 +21,8 @@ class DataTypeConverter;
 class SimpleSemanticAnalyzer {
  public:
   explicit SimpleSemanticAnalyzer(
-      const real_talk::parser::ProgramNode &program,
+      std::shared_ptr<real_talk::parser::ProgramNode> program,
+      const boost::filesystem::path &absolute_file_path,
       const real_talk::parser::FileParser &file_parser,
       const ImportFileSearcher &import_file_searcher,
       const LitParser &lit_parser,

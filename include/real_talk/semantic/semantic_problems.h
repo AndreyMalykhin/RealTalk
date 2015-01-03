@@ -16,9 +16,81 @@ namespace semantic {
 
 class DataType;
 
-class ImportIOError: public SemanticError {
+class PreTestLoopWithIncompatibleTypeError: public SemanticError {
  public:
-  ImportIOError(
+  PreTestLoopWithIncompatibleTypeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::PreTestLoopNode &loop,
+      const DataType &dest_data_type,
+      const DataType &src_data_type);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::PreTestLoopNode &GetLoop() const;
+  const DataType &GetDestDataType() const;
+  const DataType &GetSrcDataType() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::PreTestLoopNode &loop_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
+};
+
+class ImportWithUnexpectedCharError: public SemanticError {
+ public:
+  ImportWithUnexpectedCharError(
+      const boost::filesystem::path &src_file_path,
+      const real_talk::parser::ImportNode &import,
+      const boost::filesystem::path &import_file_path,
+      char c,
+      uint32_t line_number,
+      uint32_t column_number);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::ImportNode &GetImport() const;
+  const boost::filesystem::path &GetImportFilePath() const;
+  char GetChar() const;
+  uint32_t GetLineNumber() const;
+  uint32_t GetColumnNumber() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path src_file_path_;
+  const real_talk::parser::ImportNode &import_;
+  boost::filesystem::path import_file_path_;
+  char c_;
+  uint32_t line_number_;
+  uint32_t column_number_;
+};
+
+class ImportWithUnexpectedTokenError: public SemanticError {
+ public:
+  ImportWithUnexpectedTokenError(
+      const boost::filesystem::path &src_file_path,
+      const real_talk::parser::ImportNode &import,
+      const boost::filesystem::path &import_file_path,
+      const real_talk::lexer::TokenInfo &token);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::ImportNode &GetImport() const;
+  const boost::filesystem::path &GetImportFilePath() const;
+  const real_talk::lexer::TokenInfo &GetToken() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path src_file_path_;
+  const real_talk::parser::ImportNode &import_;
+  boost::filesystem::path import_file_path_;
+  real_talk::lexer::TokenInfo token_;
+};
+
+class ImportWithIOError: public SemanticError {
+ public:
+  ImportWithIOError(
       const boost::filesystem::path &src_file_path,
       const real_talk::parser::ImportNode &import,
       const boost::filesystem::path &import_file_path);

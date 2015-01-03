@@ -5,6 +5,7 @@
 #include <memory>
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/scope_node.h"
+#include "real_talk/parser/expr_node.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
@@ -25,6 +26,14 @@ class PreTestLoopNode: public StmtNode {
         body_(move(body)) {
     assert(cond_);
     assert(body_);
+  }
+
+  const std::unique_ptr<ExprNode> &GetCond() const {
+    return cond_;
+  }
+
+  const std::unique_ptr<ScopeNode> &GetBody() const {
+    return body_;
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {
