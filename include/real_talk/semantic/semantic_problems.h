@@ -9,12 +9,71 @@ namespace parser {
 
 class VarDefWithInitNode;
 class VarDefNode;
+class BranchNode;
+class IfNode;
 class BinaryExprNode;
 }
 
 namespace semantic {
 
 class DataType;
+
+class IfWithIncompatibleTypeError: public SemanticError {
+ public:
+  IfWithIncompatibleTypeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::BranchNode &branch_node,
+      const real_talk::parser::IfNode &if_node,
+      const DataType &dest_data_type,
+      const DataType &src_data_type);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::BranchNode &GetBranch() const;
+  const real_talk::parser::IfNode &GetIf() const;
+  const DataType &GetDestDataType() const;
+  const DataType &GetSrcDataType() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::BranchNode &branch_;
+  const real_talk::parser::IfNode &if_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
+};
+
+class BreakNotWithinLoopError: public SemanticError {
+ public:
+  BreakNotWithinLoopError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::BreakNode &break_node);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::BreakNode &GetBreak() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::BreakNode &break_;
+};
+
+class ContinueNotWithinLoopError: public SemanticError {
+ public:
+  ContinueNotWithinLoopError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::ContinueNode &continue_node);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::ContinueNode &GetContinue() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::ContinueNode &continue_;
+};
 
 class PreTestLoopWithIncompatibleTypeError: public SemanticError {
  public:

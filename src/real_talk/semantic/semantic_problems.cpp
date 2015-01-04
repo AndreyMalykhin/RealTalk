@@ -7,6 +7,10 @@
 #include "real_talk/parser/return_value_node.h"
 #include "real_talk/parser/return_without_value_node.h"
 #include "real_talk/parser/import_node.h"
+#include "real_talk/parser/continue_node.h"
+#include "real_talk/parser/break_node.h"
+#include "real_talk/parser/branch_node.h"
+#include "real_talk/parser/if_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
@@ -24,9 +28,107 @@ using real_talk::parser::ReturnWithoutValueNode;
 using real_talk::parser::ReturnNode;
 using real_talk::parser::ImportNode;
 using real_talk::parser::PreTestLoopNode;
+using real_talk::parser::ContinueNode;
+using real_talk::parser::BreakNode;
+using real_talk::parser::BranchNode;
+using real_talk::parser::IfNode;
 
 namespace real_talk {
 namespace semantic {
+
+IfWithIncompatibleTypeError::IfWithIncompatibleTypeError(
+    const path &file_path,
+    const BranchNode &branch_node,
+    const IfNode &if_node,
+    const DataType &dest_data_type,
+    const DataType &src_data_type)
+    : file_path_(file_path),
+      branch_(branch_node),
+      if_(if_node),
+      dest_data_type_(dest_data_type.Clone()),
+      src_data_type_(src_data_type.Clone()) {
+}
+
+const path &IfWithIncompatibleTypeError::GetFilePath() const {
+  return file_path_;
+}
+
+const BranchNode &IfWithIncompatibleTypeError::GetBranch() const {
+  return branch_;
+}
+
+const IfNode &IfWithIncompatibleTypeError::GetIf() const {
+  return if_;
+}
+
+const DataType &IfWithIncompatibleTypeError::GetDestDataType() const {
+  return *dest_data_type_;
+}
+
+const DataType &IfWithIncompatibleTypeError::GetSrcDataType() const {
+  return *src_data_type_;
+}
+
+void IfWithIncompatibleTypeError::Print(ostream &stream) const {
+  stream << "branch=" << branch_ << "; if=" << if_ << "; dest_type="
+         << *dest_data_type_ << "; src_type=" << *src_data_type_;
+}
+
+bool IfWithIncompatibleTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const IfWithIncompatibleTypeError &rhs =
+      static_cast<const IfWithIncompatibleTypeError&>(problem);
+  return branch_ == rhs.branch_
+      && if_ == rhs.if_
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
+}
+
+BreakNotWithinLoopError::BreakNotWithinLoopError(
+    const path &file_path, const BreakNode &break_node)
+    : file_path_(file_path), break_(break_node) {
+}
+
+const path &BreakNotWithinLoopError::GetFilePath() const {
+  return file_path_;
+}
+
+const BreakNode &BreakNotWithinLoopError::GetBreak() const {
+  return break_;
+}
+
+void BreakNotWithinLoopError::Print(ostream &stream) const {
+  stream << "break=" << break_;
+}
+
+bool BreakNotWithinLoopError::IsEqual(const SemanticProblem &problem) const {
+  const BreakNotWithinLoopError &rhs =
+      static_cast<const BreakNotWithinLoopError&>(problem);
+  return break_ == rhs.break_;
+}
+
+ContinueNotWithinLoopError::ContinueNotWithinLoopError(
+    const path &file_path, const ContinueNode &continue_node)
+    : file_path_(file_path), continue_(continue_node) {
+}
+
+const path &ContinueNotWithinLoopError::GetFilePath() const {
+  return file_path_;
+}
+
+const ContinueNode &ContinueNotWithinLoopError::GetContinue() const {
+  return continue_;
+}
+
+void ContinueNotWithinLoopError::Print(ostream &stream) const {
+  stream << "continue=" << continue_;
+}
+
+bool ContinueNotWithinLoopError::IsEqual(const SemanticProblem &problem) const {
+  const ContinueNotWithinLoopError &rhs =
+      static_cast<const ContinueNotWithinLoopError&>(problem);
+  return continue_ == rhs.continue_;
+}
 
 PreTestLoopWithIncompatibleTypeError::PreTestLoopWithIncompatibleTypeError(
     const path &file_path,

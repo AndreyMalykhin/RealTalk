@@ -271,6 +271,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   class Scope;
   class FileScope;
   class FuncScope;
+  class LoopScope;
   class SemanticErrorException;
   class IsVoidDataType;
   class IsDataTypeSupportedByLess;
@@ -322,6 +323,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   std::vector<Scope*> scopes_stack_;
   std::vector<FileScope*> file_scopes_stack_;
   std::vector<FuncScope*> func_scopes_stack_;
+  std::vector<LoopScope*> loop_scopes_stack_;
   std::unique_ptr<DataType> current_data_type_;
   size_t non_import_stmts_count_;
 };
@@ -413,6 +415,21 @@ class SimpleSemanticAnalyzer::Impl::FuncScope {
   std::vector<FuncScope*> &func_scopes_stack_;
   const FuncDefNode &func_def_;
   bool has_return_value_;
+};
+
+class SimpleSemanticAnalyzer::Impl::LoopScope {
+ public:
+  explicit LoopScope(vector<LoopScope*> &scopes_stack)
+      : scopes_stack_(scopes_stack) {
+    scopes_stack_.push_back(this);
+  }
+
+  ~LoopScope() {
+    scopes_stack_.pop_back();
+  }
+
+ private:
+  std::vector<LoopScope*> &scopes_stack_;
 };
 
 class SimpleSemanticAnalyzer::Impl::IsVoidDataType: public DataTypeVisitor {
@@ -617,6 +634,7 @@ SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze() {
   assert(scopes_stack_.empty());
   assert(file_scopes_stack_.empty());
   assert(func_scopes_stack_.empty());
+  assert(loop_scopes_stack_.empty());
   return SemanticAnalysis(move(problems_),
                           move(def_analyzes_),
                           move(expr_analyzes_),
@@ -688,20 +706,33 @@ void SimpleSemanticAnalyzer::Impl::VisitReturn(const ReturnNode &return_node) {
   }
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode &break_node) {
   if (IsWithinImportProgram()) {
     return;
   }
 
   ++non_import_stmts_count_;
+
+  if (loop_scopes_stack_.empty()) {
+    unique_ptr<SemanticError> error(
+        new BreakNotWithinLoopError(GetCurrentFilePath(), break_node));
+    throw SemanticErrorException(move(error));
+  }
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitContinue(const ContinueNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitContinue(
+    const ContinueNode &continue_node) {
   if (IsWithinImportProgram()) {
     return;
   }
 
   ++non_import_stmts_count_;
+
+  if (loop_scopes_stack_.empty()) {
+    unique_ptr<SemanticError> error(
+        new ContinueNotWithinLoopError(GetCurrentFilePath(), continue_node));
+    throw SemanticErrorException(move(error));
+  }
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitExprStmt(const ExprStmtNode& stmt) {
@@ -860,6 +891,7 @@ void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(
     throw SemanticErrorException(move(error));
   }
 
+  LoopScope loop_scope(loop_scopes_stack_);
   Scope scope(scopes_stack_);
 
   for (const unique_ptr<StmtNode> &stmt: loop_node.GetBody()->GetStmts()) {
@@ -897,7 +929,18 @@ void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
   const ExprNode &if_cond = *(branch_node.GetIf()->GetCond());
   if_cond.Accept(*this);
   BoolDataType bool_data_type;
-  assert(IsTypeConvertible(bool_data_type, GetExprDataType(&if_cond)));
+  const DataType &if_cond_data_type = GetExprDataType(&if_cond);
+
+  if (!IsTypeConvertible(bool_data_type, if_cond_data_type)) {
+    unique_ptr<SemanticError> error(new IfWithIncompatibleTypeError(
+        GetCurrentFilePath(),
+        branch_node,
+        *(branch_node.GetIf()),
+        bool_data_type,
+        if_cond_data_type));
+    throw SemanticErrorException(move(error));
+  }
+
   const vector< unique_ptr<StmtNode> > &if_stmts =
       branch_node.GetIf()->GetBody()->GetStmts();
 
@@ -912,7 +955,18 @@ void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
   for (const unique_ptr<ElseIfNode> &else_if: branch_node.GetElseIfs()) {
     const ExprNode &else_if_cond = *(else_if->GetIf()->GetCond());
     else_if_cond.Accept(*this);
-    assert(IsTypeConvertible(bool_data_type, GetExprDataType(&else_if_cond)));
+    const DataType &else_if_cond_data_type = GetExprDataType(&else_if_cond);
+
+    if (!IsTypeConvertible(bool_data_type, else_if_cond_data_type)) {
+      unique_ptr<SemanticError> error(new IfWithIncompatibleTypeError(
+          GetCurrentFilePath(),
+          branch_node,
+          *(else_if->GetIf()),
+          bool_data_type,
+          else_if_cond_data_type));
+      throw SemanticErrorException(move(error));
+    }
+
     const vector< unique_ptr<StmtNode> > &else_if_stmts =
         else_if->GetIf()->GetBody()->GetStmts();
     Scope scope(scopes_stack_);

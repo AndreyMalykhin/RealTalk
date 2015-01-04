@@ -15,6 +15,8 @@
 #include "real_talk/parser/parser.h"
 #include "real_talk/parser/file_parser.h"
 #include "real_talk/parser/program_node.h"
+#include "real_talk/parser/continue_node.h"
+#include "real_talk/parser/break_node.h"
 #include "real_talk/parser/pre_test_loop_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
 #include "real_talk/parser/var_def_with_init_node.h"
@@ -141,6 +143,8 @@ using real_talk::parser::CallNode;
 using real_talk::parser::LessNode;
 using real_talk::parser::UnexpectedTokenError;
 using real_talk::parser::PreTestLoopNode;
+using real_talk::parser::ContinueNode;
+using real_talk::parser::BreakNode;
 using real_talk::util::FileNotFoundError;
 using real_talk::util::IOError;
 
@@ -2594,10 +2598,10 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   id_analyzes.insert(make_pair(if_cond_ptr2, id_analysis2));
 
   vector<TestDataTypeConversion> test_data_type_conversions;
-  unique_ptr<BoolDataType> bool_data_type(new BoolDataType());
+  BoolDataType bool_data_type;
 
   {
-    DataType *dest_data_type = bool_data_type.get();
+    DataType *dest_data_type = &bool_data_type;
     DataType *src_data_type = if_cond_data_type_ptr1;
     bool is_data_type_convertable = true;
     TestDataTypeConversion test_data_type_conversion =
@@ -2606,7 +2610,7 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   }
 
   {
-    DataType *dest_data_type = bool_data_type.get();
+    DataType *dest_data_type = &bool_data_type;
     DataType *src_data_type = if_cond_data_type_ptr2;
     bool is_data_type_convertable = true;
     TestDataTypeConversion test_data_type_conversion =
@@ -2627,6 +2631,273 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
   path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses,
+                              test_data_type_conversions};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, IfWithIncompatibleDataTypeIsInvalid) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<ScopeNode> func_body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
+      TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
+  FuncDefNode *func_def_node_ptr = new FuncDefNode(
+      move(return_data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
+      vector< unique_ptr<ArgDefNode> >(),
+      vector<TokenInfo>(),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      move(func_body_node));
+  unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
+  stmt_nodes.push_back(move(func_def_node));
+
+  unique_ptr<ScopeNode> if_body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(10), UINT32_C(10)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11))));
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "func", UINT32_C(8), UINT32_C(8)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
+  IfNode *if_node_ptr = new IfNode(
+      TokenInfo(Token::kIf, "if", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(7), UINT32_C(7)),
+      move(id_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(9), UINT32_C(9)),
+      move(if_body_node));
+  unique_ptr<IfNode> if_node(if_node_ptr);
+
+  IfElseIfNode *if_else_if_node_ptr =
+      new IfElseIfNode(move(if_node), vector< unique_ptr<ElseIfNode> >());
+  unique_ptr<StmtNode> if_else_if_node(if_else_if_node_ptr);
+  stmt_nodes.push_back(move(if_else_if_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+
+  {
+    unique_ptr<DataType> func_return_data_type(new VoidDataType());
+    vector< unique_ptr<DataType> > func_arg_data_types;
+    unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+        move(func_return_data_type), move(func_arg_data_types)));
+    unique_ptr<DefAnalysis> func_def_analysis(
+        new FuncDefAnalysis(move(func_data_type)));
+    def_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
+  }
+
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  unique_ptr<DataType> func_return_data_type(new VoidDataType());
+  vector< unique_ptr<DataType> > func_arg_data_types;
+  FuncDataType *func_data_type_ptr = new FuncDataType(
+      move(func_return_data_type), move(func_arg_data_types));
+  unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  ExprAnalysis id_expr_analysis(move(func_data_type));
+  expr_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
+
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  IdAnalysis id_analysis(func_def_node_ptr);
+  id_analyzes.insert(make_pair(id_node_ptr, id_analysis));
+
+  vector<TestDataTypeConversion> test_data_type_conversions;
+  BoolDataType bool_data_type;
+  DataType *dest_data_type = &bool_data_type;
+  DataType *src_data_type = func_data_type_ptr;
+  bool is_data_type_convertable = false;
+  TestDataTypeConversion test_data_type_conversion =
+      {dest_data_type, src_data_type, is_data_type_convertable};
+  test_data_type_conversions.push_back(test_data_type_conversion);
+
+  vector< unique_ptr<SemanticProblem> > problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
+      program_file_path,
+      *if_else_if_node_ptr,
+      *if_node_ptr,
+      bool_data_type,
+      *func_data_type_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  SemanticAnalysis analysis(move(problems),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  TestLitParses test_lit_parses = {};
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses,
+                              test_data_type_conversions};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, ElseIfWithIncompatibleDataTypeIsInvalid) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<ScopeNode> func_body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
+      TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
+  FuncDefNode *func_def_node_ptr = new FuncDefNode(
+      move(return_data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
+      vector< unique_ptr<ArgDefNode> >(),
+      vector<TokenInfo>(),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      move(func_body_node));
+  unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
+  stmt_nodes.push_back(move(func_def_node));
+
+  unique_ptr<DataTypeNode> var_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(6), UINT32_C(6))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(7), UINT32_C(7)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  stmt_nodes.push_back(move(var_def_node));
+
+  unique_ptr<ScopeNode> if_body_node1(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(13), UINT32_C(13)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(14), UINT32_C(14))));
+  IdNode *id_node_ptr1 = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(11), UINT32_C(11)));
+  unique_ptr<ExprNode> id_node1(id_node_ptr1);
+  IfNode *if_node_ptr1 = new IfNode(
+      TokenInfo(Token::kIf, "if", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(10), UINT32_C(10)),
+      move(id_node1),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(12), UINT32_C(12)),
+      move(if_body_node1));
+  unique_ptr<IfNode> if_node1(if_node_ptr1);
+
+  vector< unique_ptr<ElseIfNode> > else_if_nodes;
+    unique_ptr<ScopeNode> if_body_node2(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(20), UINT32_C(20)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(21), UINT32_C(21))));
+  IdNode *id_node_ptr2 = new IdNode(
+      TokenInfo(Token::kName, "func", UINT32_C(18), UINT32_C(18)));
+  unique_ptr<ExprNode> id_node2(id_node_ptr2);
+  IfNode *if_node_ptr2 = new IfNode(
+      TokenInfo(Token::kIf, "if", UINT32_C(16), UINT32_C(16)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(17), UINT32_C(17)),
+      move(id_node2),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(19), UINT32_C(19)),
+      move(if_body_node2));
+  unique_ptr<IfNode> if_node2(if_node_ptr2);
+  unique_ptr<ElseIfNode> else_if_node(new ElseIfNode(
+      TokenInfo(Token::kElse, "else", UINT32_C(15), UINT32_C(15)),
+      move(if_node2)));
+  else_if_nodes.push_back(move(else_if_node));
+
+  IfElseIfNode *if_else_if_node_ptr =
+      new IfElseIfNode(move(if_node1), move(else_if_nodes));
+  unique_ptr<StmtNode> if_else_if_node(if_else_if_node_ptr);
+  stmt_nodes.push_back(move(if_else_if_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+
+  {
+    unique_ptr<DataType> func_return_data_type(new VoidDataType());
+    vector< unique_ptr<DataType> > func_arg_data_types;
+    unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+        move(func_return_data_type), move(func_arg_data_types)));
+    unique_ptr<DefAnalysis> func_def_analysis(
+        new FuncDefAnalysis(move(func_data_type)));
+    def_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
+  }
+
+  {
+    unique_ptr<DataType> var_data_type(new BoolDataType());
+    unique_ptr<DataStorage> var_storage(new GlobalDataStorage());
+    unique_ptr<DefAnalysis> var_def_analysis(
+        new VarDefAnalysis(move(var_data_type), move(var_storage)));
+    def_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  }
+
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  BoolDataType *var_data_type_ptr = new BoolDataType();
+  unique_ptr<DataType> var_data_type(var_data_type_ptr);
+  ExprAnalysis id_expr_analysis1(move(var_data_type));
+  expr_analyzes.insert(make_pair(id_node_ptr1, move(id_expr_analysis1)));
+  unique_ptr<DataType> func_return_data_type(new VoidDataType());
+  vector< unique_ptr<DataType> > func_arg_data_types;
+  FuncDataType *func_data_type_ptr = new FuncDataType(
+      move(func_return_data_type), move(func_arg_data_types));
+  unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  ExprAnalysis id_expr_analysis2(move(func_data_type));
+  expr_analyzes.insert(make_pair(id_node_ptr2, move(id_expr_analysis2)));
+
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  IdAnalysis id_analysis1(var_def_node_ptr);
+  id_analyzes.insert(make_pair(id_node_ptr1, id_analysis1));
+  IdAnalysis id_analysis2(func_def_node_ptr);
+  id_analyzes.insert(make_pair(id_node_ptr2, id_analysis2));
+
+  vector<TestDataTypeConversion> test_data_type_conversions;
+  BoolDataType bool_data_type;
+
+  {
+    DataType *dest_data_type = &bool_data_type;
+    DataType *src_data_type = func_data_type_ptr;
+    bool is_data_type_convertable = false;
+    TestDataTypeConversion test_data_type_conversion =
+        {dest_data_type, src_data_type, is_data_type_convertable};
+    test_data_type_conversions.push_back(test_data_type_conversion);
+  }
+
+  {
+    DataType *dest_data_type = &bool_data_type;
+    DataType *src_data_type = var_data_type_ptr;
+    bool is_data_type_convertable = true;
+    TestDataTypeConversion test_data_type_conversion =
+        {dest_data_type, src_data_type, is_data_type_convertable};
+    test_data_type_conversions.push_back(test_data_type_conversion);
+  }
+
+  vector< unique_ptr<SemanticProblem> > problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
+      program_file_path,
+      *if_else_if_node_ptr,
+      *if_node_ptr2,
+      bool_data_type,
+      *func_data_type_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  SemanticAnalysis analysis(move(problems),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  TestLitParses test_lit_parses = {};
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
@@ -3986,6 +4257,254 @@ TEST_F(SimpleSemanticAnalyzerTest,
   TestLitParses test_lit_parses = {};
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses,
+                              test_data_type_conversions};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Continue) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<DataTypeNode> var_data_type_node1(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr1 = new VarDefWithoutInitNode(
+      move(var_data_type_node1),
+      TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> var_def_node1(var_def_node_ptr1);
+  stmt_nodes.push_back(move(var_def_node1));
+
+  vector< unique_ptr<StmtNode> > body_stmt_nodes;
+  unique_ptr<StmtNode> continue_node(new ContinueNode(
+      TokenInfo(Token::kContinue, "continue", UINT32_C(8), UINT32_C(8)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
+  body_stmt_nodes.push_back(move(continue_node));
+  unique_ptr<ScopeNode> body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
+      move(body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10))));
+
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
+  unique_ptr<StmtNode> loop_node(new PreTestLoopNode(
+      TokenInfo(Token::kWhile, "while", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(4), UINT32_C(4)),
+      move(id_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(6)),
+      move(body_node)));
+  stmt_nodes.push_back(move(loop_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+  unique_ptr<DataType> var_def_data_type1(new BoolDataType());
+  unique_ptr<DataStorage> var_storage1(new GlobalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis1(new VarDefAnalysis(
+      move(var_def_data_type1), move(var_storage1)));
+  def_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
+
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  BoolDataType *id_data_type_ptr = new BoolDataType();
+  unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  ExprAnalysis id_expr_analysis(move(id_data_type));
+  expr_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
+
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  IdAnalysis id_analysis(var_def_node_ptr1);
+  id_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+
+  vector<TestDataTypeConversion> test_data_type_conversions;
+  BoolDataType bool_data_type;
+  DataType *dest_data_type = &bool_data_type;
+  DataType *src_data_type = id_data_type_ptr;
+  bool is_data_type_convertable = true;
+  TestDataTypeConversion test_data_type_conversion =
+      {dest_data_type, src_data_type, is_data_type_convertable};
+  test_data_type_conversions.push_back(test_data_type_conversion);
+
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  vector< unique_ptr<SemanticProblem> > problems;
+  SemanticAnalysis analysis(move(problems),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  TestLitParses test_lit_parses = {};
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses,
+                              test_data_type_conversions};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, ContinueNotWithinLoopIsInvalid) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  ContinueNode *continue_node_ptr = new ContinueNode(
+      TokenInfo(Token::kContinue, "continue", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<StmtNode> continue_node(continue_node_ptr);
+  stmt_nodes.push_back(move(continue_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  vector< unique_ptr<SemanticProblem> > problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new ContinueNotWithinLoopError(
+      program_file_path, *continue_node_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  SemanticAnalysis analysis(move(problems),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  TestLitParses test_lit_parses = {};
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  vector<TestDataTypeConversion> test_data_type_conversions;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses,
+                              test_data_type_conversions};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Break) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<DataTypeNode> var_data_type_node1(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr1 = new VarDefWithoutInitNode(
+      move(var_data_type_node1),
+      TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> var_def_node1(var_def_node_ptr1);
+  stmt_nodes.push_back(move(var_def_node1));
+
+  vector< unique_ptr<StmtNode> > body_stmt_nodes;
+  unique_ptr<StmtNode> break_node(new BreakNode(
+      TokenInfo(Token::kBreak, "break", UINT32_C(8), UINT32_C(8)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
+  body_stmt_nodes.push_back(move(break_node));
+  unique_ptr<ScopeNode> body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
+      move(body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10))));
+
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
+  unique_ptr<StmtNode> loop_node(new PreTestLoopNode(
+      TokenInfo(Token::kWhile, "while", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(4), UINT32_C(4)),
+      move(id_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(6)),
+      move(body_node)));
+  stmt_nodes.push_back(move(loop_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+  unique_ptr<DataType> var_def_data_type1(new BoolDataType());
+  unique_ptr<DataStorage> var_storage1(new GlobalDataStorage());
+  unique_ptr<DefAnalysis> var_def_analysis1(new VarDefAnalysis(
+      move(var_def_data_type1), move(var_storage1)));
+  def_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
+
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  BoolDataType *id_data_type_ptr = new BoolDataType();
+  unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  ExprAnalysis id_expr_analysis(move(id_data_type));
+  expr_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
+
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  IdAnalysis id_analysis(var_def_node_ptr1);
+  id_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+
+  vector<TestDataTypeConversion> test_data_type_conversions;
+  BoolDataType bool_data_type;
+  DataType *dest_data_type = &bool_data_type;
+  DataType *src_data_type = id_data_type_ptr;
+  bool is_data_type_convertable = true;
+  TestDataTypeConversion test_data_type_conversion =
+      {dest_data_type, src_data_type, is_data_type_convertable};
+  test_data_type_conversions.push_back(test_data_type_conversion);
+
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  vector< unique_ptr<SemanticProblem> > problems;
+  SemanticAnalysis analysis(move(problems),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  TestLitParses test_lit_parses = {};
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses,
+                              test_data_type_conversions};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, BreakNotWithinLoopIsInvalid) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  BreakNode *break_node_ptr = new BreakNode(
+      TokenInfo(Token::kBreak, "break", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<StmtNode> break_node(break_node_ptr);
+  stmt_nodes.push_back(move(break_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  vector< unique_ptr<SemanticProblem> > problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new BreakNotWithinLoopError(
+      program_file_path, *break_node_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  SemanticAnalysis analysis(move(problems),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  TestLitParses test_lit_parses = {};
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
