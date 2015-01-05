@@ -672,8 +672,8 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
     unique_ptr<SemanticError> error(new ReturnWithIncompatibleTypeError(
         GetCurrentFilePath(),
         return_node,
-        func_def_return_data_type,
-        value_data_type));
+        func_def_return_data_type.Clone(),
+        value_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 }
@@ -763,7 +763,10 @@ void SimpleSemanticAnalyzer::Impl::VisitVarDefWithInit(
 
   if (!IsTypeConvertible(var_data_type, value_data_type)) {
     unique_ptr<SemanticError> error(new InitWithIncompatibleTypeError(
-        GetCurrentFilePath(), var_def_node, var_data_type, value_data_type));
+        GetCurrentFilePath(),
+        var_def_node,
+        var_data_type.Clone(),
+        value_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 }
@@ -792,7 +795,7 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
 
   if (is_void_data_type) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
-        GetCurrentFilePath(), var_def_node, data_type));
+        GetCurrentFilePath(), var_def_node, data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 
@@ -809,7 +812,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArgDef(const ArgDefNode &arg_def_node) {
 
   if (is_void_data_type) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
-        GetCurrentFilePath(), arg_def_node, data_type));
+        GetCurrentFilePath(), arg_def_node, data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 }
@@ -839,7 +842,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
 
   if (!IsCurrentScopeGlobal()) {
     unique_ptr<SemanticError> error(
-        new NestedFuncDefError(GetCurrentFilePath(), func_def_node));
+        new FuncDefWithinNonGlobalScope(GetCurrentFilePath(), func_def_node));
     throw SemanticErrorException(move(error));
   }
 
@@ -848,7 +851,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
 
   if (!is_return_data_type_supported) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
-        GetCurrentFilePath(), func_def_node, return_data_type));
+        GetCurrentFilePath(), func_def_node, return_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 
@@ -883,11 +886,14 @@ void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(
   ++non_import_stmts_count_;
   loop_node.GetCond()->Accept(*this);
   const DataType &cond_data_type = GetExprDataType(loop_node.GetCond().get());
-  BoolDataType bool_data_type;
+  unique_ptr<DataType> bool_data_type(new BoolDataType());
 
-  if (!IsTypeConvertible(bool_data_type, cond_data_type)) {
+  if (!IsTypeConvertible(*bool_data_type, cond_data_type)) {
     unique_ptr<SemanticError> error(new PreTestLoopWithIncompatibleTypeError(
-        GetCurrentFilePath(), loop_node, bool_data_type, cond_data_type));
+        GetCurrentFilePath(),
+        loop_node,
+        move(bool_data_type),
+        cond_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 
@@ -928,17 +934,20 @@ void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
   ++non_import_stmts_count_;
   const ExprNode &if_cond = *(branch_node.GetIf()->GetCond());
   if_cond.Accept(*this);
-  BoolDataType bool_data_type;
-  const DataType &if_cond_data_type = GetExprDataType(&if_cond);
 
-  if (!IsTypeConvertible(bool_data_type, if_cond_data_type)) {
-    unique_ptr<SemanticError> error(new IfWithIncompatibleTypeError(
-        GetCurrentFilePath(),
-        branch_node,
-        *(branch_node.GetIf()),
-        bool_data_type,
-        if_cond_data_type));
-    throw SemanticErrorException(move(error));
+  {
+    unique_ptr<DataType> bool_data_type(new BoolDataType());
+    const DataType &if_cond_data_type = GetExprDataType(&if_cond);
+
+    if (!IsTypeConvertible(*bool_data_type, if_cond_data_type)) {
+      unique_ptr<SemanticError> error(new IfWithIncompatibleTypeError(
+          GetCurrentFilePath(),
+          branch_node,
+          *(branch_node.GetIf()),
+          move(bool_data_type),
+          if_cond_data_type.Clone()));
+      throw SemanticErrorException(move(error));
+    }
   }
 
   const vector< unique_ptr<StmtNode> > &if_stmts =
@@ -956,14 +965,15 @@ void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
     const ExprNode &else_if_cond = *(else_if->GetIf()->GetCond());
     else_if_cond.Accept(*this);
     const DataType &else_if_cond_data_type = GetExprDataType(&else_if_cond);
+    unique_ptr<DataType> bool_data_type(new BoolDataType);
 
-    if (!IsTypeConvertible(bool_data_type, else_if_cond_data_type)) {
+    if (!IsTypeConvertible(*bool_data_type, else_if_cond_data_type)) {
       unique_ptr<SemanticError> error(new IfWithIncompatibleTypeError(
           GetCurrentFilePath(),
           branch_node,
           *(else_if->GetIf()),
-          bool_data_type,
-          else_if_cond_data_type));
+          move(bool_data_type),
+          else_if_cond_data_type.Clone()));
       throw SemanticErrorException(move(error));
     }
 
@@ -1056,10 +1066,27 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode &alloc_node) {
   const DataType &element_data_type =
       VisitArrayAlloc(alloc_node).GetElementDataType();
+  const vector< unique_ptr<ExprNode> > &values = alloc_node.GetValues();
+  auto value_end_it = values.end();
 
-  for (const unique_ptr<ExprNode> &value: alloc_node.GetValues()) {
-    value->Accept(*this);
-    assert(IsTypeConvertible(element_data_type, GetExprDataType(value.get())));
+  for (auto value_it = values.begin();
+       value_it != value_end_it;
+       ++value_it) {
+    const ExprNode &value = **value_it;
+    value.Accept(*this);
+    const DataType &value_data_type = GetExprDataType(&value);
+
+    if (!IsTypeConvertible(element_data_type, value_data_type)) {
+      size_t value_index = static_cast<size_t>(value_it - values.begin());
+      unique_ptr<SemanticError> error(
+          new ArrayAllocWithIncompatibleValueTypeError(
+              GetCurrentFilePath(),
+              alloc_node,
+              value_index,
+              element_data_type.Clone(),
+              value_data_type.Clone()));
+      throw SemanticErrorException(move(error));
+    }
   }
 }
 
@@ -1067,14 +1094,34 @@ const ArrayDataType &SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
     const ArrayAllocNode &alloc_node) {
   unique_ptr<DataType> data_type_ptr =
       CreateDataType(*(alloc_node.GetDataType()));
-  IntDataType int_data_type;
+  const DataType &element_data_type = *data_type_ptr;
+
+  if (element_data_type == VoidDataType()) {
+    unique_ptr<SemanticError> error(
+        new ArrayAllocWithUnsupportedElementTypeError(
+            GetCurrentFilePath(), alloc_node, element_data_type.Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
   assert(!alloc_node.GetSizes().empty());
 
   for (const unique_ptr<ArraySizeNode> &size: alloc_node.GetSizes()) {
     data_type_ptr.reset(new ArrayDataType(move(data_type_ptr)));
     const ExprNode &size_value = *(size->GetValue());
     size_value.Accept(*this);
-    assert(IsTypeConvertible(int_data_type, GetExprDataType(&size_value)));
+    const DataType &size_data_type = GetExprDataType(&size_value);
+    unique_ptr<DataType> int_data_type(new IntDataType());
+
+    if (!IsTypeConvertible(*int_data_type, size_data_type)) {
+      unique_ptr<SemanticError> error(
+          new ArrayAllocWithIncompatibleSizeTypeError(
+              GetCurrentFilePath(),
+              alloc_node,
+              *size,
+              move(int_data_type),
+              size_data_type.Clone()));
+      throw SemanticErrorException(move(error));
+    }
   }
 
   const ArrayDataType &data_type =
@@ -1113,18 +1160,19 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
   call_node.GetOperand()->Accept(*this);
   const DataType &operand_data_type =
       GetExprDataType(call_node.GetOperand().get());
-  const FuncDataType *func_def_data_type =
+  const FuncDataType *func_data_type =
       dynamic_cast<const FuncDataType*>(&operand_data_type);
+  const bool is_operand_func = func_data_type != nullptr;
 
-  if (func_def_data_type == nullptr) {
+  if (!is_operand_func) {
     unique_ptr<SemanticError> error(
-        new NonFuncCallError(GetCurrentFilePath(), call_node));
+        new CallWithNonFuncError(GetCurrentFilePath(), call_node));
     throw SemanticErrorException(move(error));
   }
 
-  ExprAnalysis expr_analysis(func_def_data_type->GetReturnDataType().Clone());
+  ExprAnalysis expr_analysis(func_data_type->GetReturnDataType().Clone());
   expr_analyzes_.insert(make_pair(&call_node, move(expr_analysis)));
-  size_t expected_args_count = func_def_data_type->GetArgDataTypes().size();
+  size_t expected_args_count = func_data_type->GetArgDataTypes().size();
   size_t actual_args_count = call_node.GetArgs().size();
 
   if (expected_args_count != actual_args_count) {
@@ -1141,7 +1189,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
       call_node.GetArgs().begin();
 
   for (const unique_ptr<DataType> &arg_def_data_type_ptr:
-           func_def_data_type->GetArgDataTypes()) {
+           func_data_type->GetArgDataTypes()) {
     const ExprNode &call_arg = **call_arg_it;
     call_arg.Accept(*this);
     const DataType &call_arg_data_type = GetExprDataType(&call_arg);
@@ -1154,8 +1202,8 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
           GetCurrentFilePath(),
           call_node,
           arg_index,
-          arg_def_data_type,
-          call_arg_data_type));
+          arg_def_data_type.Clone(),
+          call_arg_data_type.Clone()));
       throw SemanticErrorException(move(error));
     }
 
@@ -1267,8 +1315,8 @@ void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
     unique_ptr<SemanticError> error(new BinaryExprWithIncompatibleTypeError(
         GetCurrentFilePath(),
         equal_node,
-        left_operand_data_type,
-        right_operand_data_type));
+        left_operand_data_type.Clone(),
+        right_operand_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 }
@@ -1288,8 +1336,8 @@ void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
     unique_ptr<SemanticError> error(new BinaryExprWithIncompatibleTypeError(
         GetCurrentFilePath(),
         less_node,
-        left_operand_data_type,
-        right_operand_data_type));
+        left_operand_data_type.Clone(),
+        right_operand_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 
@@ -1300,8 +1348,8 @@ void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
     unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
         GetCurrentFilePath(),
         less_node,
-        left_operand_data_type,
-        right_operand_data_type));
+        left_operand_data_type.Clone(),
+        right_operand_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 }

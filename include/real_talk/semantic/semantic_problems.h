@@ -12,11 +12,82 @@ class VarDefNode;
 class BranchNode;
 class IfNode;
 class BinaryExprNode;
+class ArrayAllocNode;
+class ArraySizeNode;
 }
 
 namespace semantic {
 
 class DataType;
+
+class ArrayAllocWithIncompatibleValueTypeError: public SemanticError {
+ public:
+  ArrayAllocWithIncompatibleValueTypeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::ArrayAllocNode &alloc,
+      size_t value_index,
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::ArrayAllocNode &GetAlloc() const;
+  size_t GetValueIndex() const;
+  const DataType &GetDestDataType() const;
+  const DataType &GetSrcDataType() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::ArrayAllocNode &alloc_;
+  size_t value_index_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
+};
+
+class ArrayAllocWithUnsupportedElementTypeError: public SemanticError {
+ public:
+  ArrayAllocWithUnsupportedElementTypeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::ArrayAllocNode &alloc,
+      std::unique_ptr<DataType> data_type);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::ArrayAllocNode &GetAlloc() const;
+  const DataType &GetDataType() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::ArrayAllocNode &alloc_;
+  std::unique_ptr<DataType> data_type_;
+};
+
+class ArrayAllocWithIncompatibleSizeTypeError: public SemanticError {
+ public:
+  ArrayAllocWithIncompatibleSizeTypeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::ArrayAllocNode &alloc,
+      const real_talk::parser::ArraySizeNode &size,
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::ArrayAllocNode &GetAlloc() const;
+  const real_talk::parser::ArraySizeNode &GetSize() const;
+  const DataType &GetDestDataType() const;
+  const DataType &GetSrcDataType() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::ArrayAllocNode &alloc_;
+  const real_talk::parser::ArraySizeNode &size_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
+};
 
 class IfWithIncompatibleTypeError: public SemanticError {
  public:
@@ -24,8 +95,8 @@ class IfWithIncompatibleTypeError: public SemanticError {
       const boost::filesystem::path &file_path,
       const real_talk::parser::BranchNode &branch_node,
       const real_talk::parser::IfNode &if_node,
-      const DataType &dest_data_type,
-      const DataType &src_data_type);
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::BranchNode &GetBranch() const;
   const real_talk::parser::IfNode &GetIf() const;
@@ -80,8 +151,8 @@ class PreTestLoopWithIncompatibleTypeError: public SemanticError {
   PreTestLoopWithIncompatibleTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::PreTestLoopNode &loop,
-      const DataType &dest_data_type,
-      const DataType &src_data_type);
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::PreTestLoopNode &GetLoop() const;
   const DataType &GetDestDataType() const;
@@ -206,8 +277,8 @@ class InitWithIncompatibleTypeError: public SemanticError {
   InitWithIncompatibleTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::VarDefWithInitNode &var_def,
-      const DataType &dest_data_type,
-      const DataType &src_data_type);
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::VarDefWithInitNode &GetVarDef() const;
   const DataType &GetDestDataType() const;
@@ -219,8 +290,8 @@ class InitWithIncompatibleTypeError: public SemanticError {
 
   boost::filesystem::path file_path_;
   const real_talk::parser::VarDefWithInitNode &var_def_;
-  const DataType &dest_data_type_;
-  const DataType &src_data_type_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
 };
 
 class ReturnWithoutValueError: public SemanticError {
@@ -260,8 +331,8 @@ class ReturnWithIncompatibleTypeError: public SemanticError {
   ReturnWithIncompatibleTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::ReturnValueNode &return_node,
-      const DataType &dest_data_type,
-      const DataType &src_data_type);
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::ReturnValueNode &GetReturn() const;
   const DataType &GetDestDataType() const;
@@ -273,8 +344,8 @@ class ReturnWithIncompatibleTypeError: public SemanticError {
 
   boost::filesystem::path file_path_;
   const real_talk::parser::ReturnValueNode &return_;
-  const DataType &dest_data_type_;
-  const DataType &src_data_type_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
 };
 
 class CallWithIncompatibleTypeError: public SemanticError {
@@ -283,8 +354,8 @@ class CallWithIncompatibleTypeError: public SemanticError {
       const boost::filesystem::path &file_path,
       const real_talk::parser::CallNode &call,
       size_t arg_index,
-      const DataType &dest_data_type,
-      const DataType &src_data_type);
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::CallNode &GetCall() const;
   size_t GetArgIndex() const;
@@ -298,8 +369,8 @@ class CallWithIncompatibleTypeError: public SemanticError {
   boost::filesystem::path file_path_;
   const real_talk::parser::CallNode &call_;
   size_t arg_index_;
-  const DataType &dest_data_type_;
-  const DataType &src_data_type_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
 };
 
 class BinaryExprWithIncompatibleTypeError: public SemanticError {
@@ -307,8 +378,8 @@ class BinaryExprWithIncompatibleTypeError: public SemanticError {
   BinaryExprWithIncompatibleTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::BinaryExprNode &expr,
-      const DataType &dest_data_type,
-      const DataType &src_data_type);
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::BinaryExprNode &GetExpr() const;
   const DataType &GetDestDataType() const;
@@ -320,8 +391,8 @@ class BinaryExprWithIncompatibleTypeError: public SemanticError {
 
   boost::filesystem::path file_path_;
   const real_talk::parser::BinaryExprNode &expr_;
-  const DataType &dest_data_type_;
-  const DataType &src_data_type_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
 };
 
 class BinaryExprWithUnsupportedTypesError: public SemanticError {
@@ -329,8 +400,8 @@ class BinaryExprWithUnsupportedTypesError: public SemanticError {
   BinaryExprWithUnsupportedTypesError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::BinaryExprNode &expr,
-      const DataType &left_operand_data_type,
-      const DataType &right_operand_data_type);
+      std::unique_ptr<DataType> left_operand_data_type,
+      std::unique_ptr<DataType> right_operand_data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::BinaryExprNode &GetExpr() const;
   const DataType &GetLeftOperandDataType() const;
@@ -342,8 +413,8 @@ class BinaryExprWithUnsupportedTypesError: public SemanticError {
 
   boost::filesystem::path file_path_;
   const real_talk::parser::BinaryExprNode &expr_;
-  const DataType &left_operand_data_type_;
-  const DataType &right_operand_data_type_;
+  std::unique_ptr<DataType> left_operand_data_type_;
+  std::unique_ptr<DataType> right_operand_data_type_;
 };
 
 class DefWithUnsupportedTypeError: public SemanticError {
@@ -351,7 +422,7 @@ class DefWithUnsupportedTypeError: public SemanticError {
   DefWithUnsupportedTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::DefNode &def,
-      const DataType &data_type);
+      std::unique_ptr<DataType> data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::DefNode &GetDef() const;
   const DataType &GetDataType() const;
@@ -362,7 +433,7 @@ class DefWithUnsupportedTypeError: public SemanticError {
 
   boost::filesystem::path file_path_;
   const real_talk::parser::DefNode &def_;
-  const DataType &data_type_;
+  std::unique_ptr<DataType> data_type_;
 };
 
 class DuplicateDefError: public SemanticError {
@@ -381,9 +452,9 @@ class DuplicateDefError: public SemanticError {
   const real_talk::parser::DefNode &def_;
 };
 
-class NestedFuncDefError: public SemanticError {
+class FuncDefWithinNonGlobalScope: public SemanticError {
  public:
-  NestedFuncDefError(
+  FuncDefWithinNonGlobalScope(
       const boost::filesystem::path &file_path,
       const real_talk::parser::FuncDefNode &def);
   virtual const boost::filesystem::path &GetFilePath() const override;
@@ -413,9 +484,9 @@ class FuncDefWithoutReturnValueError: public SemanticError {
   const real_talk::parser::FuncDefNode &def_;
 };
 
-class NonFuncCallError: public SemanticError {
+class CallWithNonFuncError: public SemanticError {
  public:
-  NonFuncCallError(
+  CallWithNonFuncError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::CallNode &call);
   virtual const boost::filesystem::path &GetFilePath() const override;

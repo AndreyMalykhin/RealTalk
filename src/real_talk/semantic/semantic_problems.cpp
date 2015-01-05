@@ -1,4 +1,5 @@
 
+#include <cassert>
 #include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/func_def_node.h"
 #include "real_talk/parser/call_node.h"
@@ -11,10 +12,13 @@
 #include "real_talk/parser/break_node.h"
 #include "real_talk/parser/branch_node.h"
 #include "real_talk/parser/if_node.h"
+#include "real_talk/parser/array_alloc_node.h"
+#include "real_talk/parser/array_size_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
 using std::ostream;
+using std::unique_ptr;
 using boost::filesystem::path;
 using real_talk::lexer::TokenInfo;
 using real_talk::parser::VarDefWithInitNode;
@@ -32,21 +36,170 @@ using real_talk::parser::ContinueNode;
 using real_talk::parser::BreakNode;
 using real_talk::parser::BranchNode;
 using real_talk::parser::IfNode;
+using real_talk::parser::ArrayAllocNode;
+using real_talk::parser::ArraySizeNode;
 
 namespace real_talk {
 namespace semantic {
+
+ArrayAllocWithIncompatibleValueTypeError::
+ArrayAllocWithIncompatibleValueTypeError(
+    const path &file_path,
+    const ArrayAllocNode &alloc,
+    size_t value_index,
+    unique_ptr<DataType> dest_data_type,
+    unique_ptr<DataType> src_data_type)
+    : file_path_(file_path),
+      alloc_(alloc),
+      value_index_(value_index),
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
+}
+
+const path &ArrayAllocWithIncompatibleValueTypeError::GetFilePath() const {
+  return file_path_;
+}
+
+const ArrayAllocNode
+&ArrayAllocWithIncompatibleValueTypeError::GetAlloc() const {
+  return alloc_;
+}
+
+size_t ArrayAllocWithIncompatibleValueTypeError::GetValueIndex() const {
+  return value_index_;
+}
+
+const DataType
+&ArrayAllocWithIncompatibleValueTypeError::GetDestDataType() const {
+  return *dest_data_type_;
+}
+
+const DataType
+&ArrayAllocWithIncompatibleValueTypeError::GetSrcDataType() const {
+  return *src_data_type_;
+}
+
+void ArrayAllocWithIncompatibleValueTypeError::Print(ostream &stream) const {
+  stream << "alloc=" << alloc_ << "; value_index=" << value_index_
+         << "; dest_type=" << *dest_data_type_ << "; src_type="
+         << *src_data_type_;
+}
+
+bool ArrayAllocWithIncompatibleValueTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const ArrayAllocWithIncompatibleValueTypeError &rhs =
+      static_cast<const ArrayAllocWithIncompatibleValueTypeError&>(problem);
+  return alloc_ == rhs.alloc_
+      && value_index_ == rhs.value_index_
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
+}
+
+ArrayAllocWithUnsupportedElementTypeError::
+ArrayAllocWithUnsupportedElementTypeError(
+    const path &file_path,
+    const ArrayAllocNode &alloc,
+    unique_ptr<DataType> data_type)
+    : file_path_(file_path),
+      alloc_(alloc),
+      data_type_(move(data_type)) {
+  assert(data_type_);
+}
+
+const path &ArrayAllocWithUnsupportedElementTypeError::GetFilePath() const {
+  return file_path_;
+}
+
+const ArrayAllocNode
+&ArrayAllocWithUnsupportedElementTypeError::GetAlloc() const {
+  return alloc_;
+}
+
+const DataType &ArrayAllocWithUnsupportedElementTypeError::GetDataType() const {
+  return *data_type_;
+}
+
+void ArrayAllocWithUnsupportedElementTypeError::Print(ostream &stream) const {
+  stream << "alloc=" << alloc_ << "; data_type=" << *data_type_;
+}
+
+bool ArrayAllocWithUnsupportedElementTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const ArrayAllocWithUnsupportedElementTypeError &rhs =
+      static_cast<const ArrayAllocWithUnsupportedElementTypeError&>(problem);
+  return alloc_ == rhs.alloc_
+      && *(data_type_) == *(rhs.data_type_);
+}
+
+ArrayAllocWithIncompatibleSizeTypeError::
+ArrayAllocWithIncompatibleSizeTypeError(
+    const path &file_path,
+    const ArrayAllocNode &alloc,
+    const ArraySizeNode &size,
+    unique_ptr<DataType> dest_data_type,
+    unique_ptr<DataType> src_data_type)
+    : file_path_(file_path),
+      alloc_(alloc),
+      size_(size),
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
+}
+
+const path &ArrayAllocWithIncompatibleSizeTypeError::GetFilePath() const {
+  return file_path_;
+}
+
+const ArrayAllocNode
+&ArrayAllocWithIncompatibleSizeTypeError::GetAlloc() const {
+  return alloc_;
+}
+
+const ArraySizeNode &ArrayAllocWithIncompatibleSizeTypeError::GetSize() const {
+  return size_;
+}
+
+const DataType
+&ArrayAllocWithIncompatibleSizeTypeError::GetDestDataType() const {
+  return *dest_data_type_;
+}
+
+const DataType
+&ArrayAllocWithIncompatibleSizeTypeError::GetSrcDataType() const {
+  return *src_data_type_;
+}
+
+void ArrayAllocWithIncompatibleSizeTypeError::Print(ostream &stream) const {
+  stream << "alloc=" << alloc_ << "; size=" << size_ << "; dest_type="
+         << *dest_data_type_ << "; src_type=" << *src_data_type_;
+}
+
+bool ArrayAllocWithIncompatibleSizeTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const ArrayAllocWithIncompatibleSizeTypeError &rhs =
+      static_cast<const ArrayAllocWithIncompatibleSizeTypeError&>(problem);
+  return alloc_ == rhs.alloc_
+      && size_ == rhs.size_
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
+}
 
 IfWithIncompatibleTypeError::IfWithIncompatibleTypeError(
     const path &file_path,
     const BranchNode &branch_node,
     const IfNode &if_node,
-    const DataType &dest_data_type,
-    const DataType &src_data_type)
+    unique_ptr<DataType> dest_data_type,
+    unique_ptr<DataType> src_data_type)
     : file_path_(file_path),
       branch_(branch_node),
       if_(if_node),
-      dest_data_type_(dest_data_type.Clone()),
-      src_data_type_(src_data_type.Clone()) {
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
 }
 
 const path &IfWithIncompatibleTypeError::GetFilePath() const {
@@ -133,12 +286,14 @@ bool ContinueNotWithinLoopError::IsEqual(const SemanticProblem &problem) const {
 PreTestLoopWithIncompatibleTypeError::PreTestLoopWithIncompatibleTypeError(
     const path &file_path,
     const PreTestLoopNode &loop,
-    const DataType &dest_data_type,
-    const DataType &src_data_type)
+    unique_ptr<DataType> dest_data_type,
+    unique_ptr<DataType> src_data_type)
     : file_path_(file_path),
       loop_(loop),
-      dest_data_type_(dest_data_type.Clone()),
-      src_data_type_(src_data_type.Clone()) {
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
 }
 
 const path &PreTestLoopWithIncompatibleTypeError::GetFilePath() const {
@@ -355,12 +510,14 @@ bool ImportIsNotFirstStmtError::IsEqual(const SemanticProblem &problem) const {
 InitWithIncompatibleTypeError::InitWithIncompatibleTypeError(
     const path &file_path,
     const VarDefWithInitNode &var_def,
-    const DataType &dest_data_type,
-    const DataType &src_data_type)
+    unique_ptr<DataType> dest_data_type,
+    unique_ptr<DataType> src_data_type)
     : file_path_(file_path),
       var_def_(var_def),
-      dest_data_type_(dest_data_type),
-      src_data_type_(src_data_type) {
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
 }
 
 const path &InitWithIncompatibleTypeError::GetFilePath() const {
@@ -372,17 +529,17 @@ const VarDefWithInitNode &InitWithIncompatibleTypeError::GetVarDef() const {
 }
 
 const DataType &InitWithIncompatibleTypeError::GetDestDataType() const {
-  return dest_data_type_;
+  return *dest_data_type_;
 }
 
 const DataType &InitWithIncompatibleTypeError::GetSrcDataType() const {
-  return src_data_type_;
+  return *src_data_type_;
 }
 
 void InitWithIncompatibleTypeError::Print(ostream &stream) const {
   stream << "var_def=" << static_cast<const Node&>(var_def_)
-         << "; dest_type=" << dest_data_type_ << "; src_type="
-         << src_data_type_;
+         << "; dest_type=" << *dest_data_type_ << "; src_type="
+         << *src_data_type_;
 }
 
 bool InitWithIncompatibleTypeError::IsEqual(
@@ -390,8 +547,8 @@ bool InitWithIncompatibleTypeError::IsEqual(
   const InitWithIncompatibleTypeError &rhs =
       static_cast<const InitWithIncompatibleTypeError&>(problem);
   return var_def_ == static_cast<const Node&>(rhs.var_def_)
-      && dest_data_type_ == rhs.dest_data_type_
-      && src_data_type_ == rhs.src_data_type_;
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
 }
 
 ReturnWithoutValueError::ReturnWithoutValueError(
@@ -443,12 +600,14 @@ bool ReturnNotWithinFuncError::IsEqual(const SemanticProblem &problem) const {
 ReturnWithIncompatibleTypeError::ReturnWithIncompatibleTypeError(
     const path &file_path,
     const ReturnValueNode &return_node,
-    const DataType &dest_data_type,
-    const DataType &src_data_type)
+    unique_ptr<DataType> dest_data_type,
+    unique_ptr<DataType> src_data_type)
     : file_path_(file_path),
       return_(return_node),
-      dest_data_type_(dest_data_type),
-      src_data_type_(src_data_type) {
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
 }
 
 const path &ReturnWithIncompatibleTypeError::GetFilePath() const {
@@ -460,16 +619,16 @@ const ReturnValueNode &ReturnWithIncompatibleTypeError::GetReturn() const {
 }
 
 const DataType &ReturnWithIncompatibleTypeError::GetDestDataType() const {
-  return dest_data_type_;
+  return *dest_data_type_;
 }
 
 const DataType &ReturnWithIncompatibleTypeError::GetSrcDataType() const {
-  return src_data_type_;
+  return *src_data_type_;
 }
 
 void ReturnWithIncompatibleTypeError::Print(ostream &stream) const {
-  stream << "return=" << return_ << "; dest_type=" << dest_data_type_
-         << "; src_type=" << src_data_type_;
+  stream << "return=" << return_ << "; dest_type=" << *dest_data_type_
+         << "; src_type=" << *src_data_type_;
 }
 
 bool ReturnWithIncompatibleTypeError::IsEqual(
@@ -477,19 +636,21 @@ bool ReturnWithIncompatibleTypeError::IsEqual(
   const ReturnWithIncompatibleTypeError &rhs =
       static_cast<const ReturnWithIncompatibleTypeError&>(problem);
   return return_ == rhs.return_
-      && dest_data_type_ == rhs.dest_data_type_
-      && src_data_type_ == rhs.src_data_type_;
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
 }
 
 BinaryExprWithIncompatibleTypeError::BinaryExprWithIncompatibleTypeError(
     const path &file_path,
     const BinaryExprNode &expr,
-    const DataType &dest_data_type,
-    const DataType &src_data_type)
+    unique_ptr<DataType> dest_data_type,
+    unique_ptr<DataType> src_data_type)
     : file_path_(file_path),
       expr_(expr),
-      dest_data_type_(dest_data_type),
-      src_data_type_(src_data_type) {
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
 }
 
 const path &BinaryExprWithIncompatibleTypeError::GetFilePath() const {
@@ -501,16 +662,16 @@ const BinaryExprNode &BinaryExprWithIncompatibleTypeError::GetExpr() const {
 }
 
 const DataType &BinaryExprWithIncompatibleTypeError::GetDestDataType() const {
-  return dest_data_type_;
+  return *dest_data_type_;
 }
 
 const DataType &BinaryExprWithIncompatibleTypeError::GetSrcDataType() const {
-  return src_data_type_;
+  return *src_data_type_;
 }
 
 void BinaryExprWithIncompatibleTypeError::Print(ostream &stream) const {
-  stream << "expr=" << expr_ << "; dest_type=" << dest_data_type_
-         << "; src_type=" << src_data_type_;
+  stream << "expr=" << expr_ << "; dest_type=" << *dest_data_type_
+         << "; src_type=" << *src_data_type_;
 }
 
 bool BinaryExprWithIncompatibleTypeError::IsEqual(
@@ -518,19 +679,21 @@ bool BinaryExprWithIncompatibleTypeError::IsEqual(
   const BinaryExprWithIncompatibleTypeError &rhs =
       static_cast<const BinaryExprWithIncompatibleTypeError&>(problem);
   return expr_ == rhs.expr_
-      && dest_data_type_ == rhs.dest_data_type_
-      && src_data_type_ == rhs.src_data_type_;
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
 }
 
 BinaryExprWithUnsupportedTypesError::BinaryExprWithUnsupportedTypesError(
     const path &file_path,
     const BinaryExprNode &expr,
-    const DataType &left_operand_data_type,
-    const DataType &right_operand_data_type)
+    unique_ptr<DataType> left_operand_data_type,
+    unique_ptr<DataType> right_operand_data_type)
     : file_path_(file_path),
       expr_(expr),
-      left_operand_data_type_(left_operand_data_type),
-      right_operand_data_type_(right_operand_data_type) {
+      left_operand_data_type_(move(left_operand_data_type)),
+      right_operand_data_type_(move(right_operand_data_type)) {
+  assert(left_operand_data_type_);
+  assert(right_operand_data_type_);
 }
 
 const path &BinaryExprWithUnsupportedTypesError::GetFilePath() const {
@@ -543,18 +706,18 @@ const BinaryExprNode &BinaryExprWithUnsupportedTypesError::GetExpr() const {
 
 const DataType
 &BinaryExprWithUnsupportedTypesError::GetLeftOperandDataType() const {
-  return left_operand_data_type_;
+  return *left_operand_data_type_;
 }
 
 const DataType
 &BinaryExprWithUnsupportedTypesError::GetRightOperandDataType() const {
-  return right_operand_data_type_;
+  return *right_operand_data_type_;
 }
 
 void BinaryExprWithUnsupportedTypesError::Print(ostream &stream) const {
   stream << "expr=" << expr_ << "; left_operand_type="
-         << left_operand_data_type_ << "; right_operand_type="
-         << right_operand_data_type_;
+         << *left_operand_data_type_ << "; right_operand_type="
+         << *right_operand_data_type_;
 }
 
 bool BinaryExprWithUnsupportedTypesError::IsEqual(
@@ -562,21 +725,23 @@ bool BinaryExprWithUnsupportedTypesError::IsEqual(
   const BinaryExprWithUnsupportedTypesError &rhs =
       static_cast<const BinaryExprWithUnsupportedTypesError&>(problem);
   return expr_ == rhs.expr_
-      && left_operand_data_type_ == rhs.left_operand_data_type_
-      && right_operand_data_type_ == rhs.right_operand_data_type_;
+      && *left_operand_data_type_ == *(rhs.left_operand_data_type_)
+      && *right_operand_data_type_ == *(rhs.right_operand_data_type_);
 }
 
 CallWithIncompatibleTypeError::CallWithIncompatibleTypeError(
     const path &file_path,
     const CallNode &call,
     size_t arg_index,
-    const DataType &dest_data_type,
-    const DataType &src_data_type)
+    unique_ptr<DataType> dest_data_type,
+    unique_ptr<DataType> src_data_type)
     : file_path_(file_path),
       call_(call),
       arg_index_(arg_index),
-      dest_data_type_(dest_data_type),
-      src_data_type_(src_data_type) {
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
 }
 
 const path &CallWithIncompatibleTypeError::GetFilePath() const {
@@ -592,17 +757,17 @@ size_t CallWithIncompatibleTypeError::GetArgIndex() const {
 }
 
 const DataType &CallWithIncompatibleTypeError::GetDestDataType() const {
-  return dest_data_type_;
+  return *dest_data_type_;
 }
 
 const DataType &CallWithIncompatibleTypeError::GetSrcDataType() const {
-  return src_data_type_;
+  return *src_data_type_;
 }
 
 void CallWithIncompatibleTypeError::Print(ostream &stream) const {
   stream << "call=" << call_ << "; arg_index=" << arg_index_
-         << "; dest_type=" << dest_data_type_ << "; src_type="
-         << src_data_type_;
+         << "; dest_type=" << *dest_data_type_ << "; src_type="
+         << *src_data_type_;
 }
 
 bool CallWithIncompatibleTypeError::IsEqual(
@@ -611,13 +776,14 @@ bool CallWithIncompatibleTypeError::IsEqual(
       static_cast<const CallWithIncompatibleTypeError&>(problem);
   return call_ == rhs.call_
       && arg_index_ == rhs.arg_index_
-      && dest_data_type_ == rhs.dest_data_type_
-      && src_data_type_ == rhs.src_data_type_;
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
 }
 
 DefWithUnsupportedTypeError::DefWithUnsupportedTypeError(
-    const path &file_path, const DefNode &def, const DataType &data_type)
-    : file_path_(file_path), def_(def), data_type_(data_type) {
+    const path &file_path, const DefNode &def, unique_ptr<DataType> data_type)
+    : file_path_(file_path), def_(def), data_type_(move(data_type)) {
+  assert(data_type_);
 }
 
 const path &DefWithUnsupportedTypeError::GetFilePath() const {
@@ -629,18 +795,18 @@ const DefNode &DefWithUnsupportedTypeError::GetDef() const {
 }
 
 const DataType &DefWithUnsupportedTypeError::GetDataType() const {
-  return data_type_;
+  return *data_type_;
 }
 
 void DefWithUnsupportedTypeError::Print(ostream &stream) const {
-  stream << "def=" << def_ << "; type=" << data_type_;
+  stream << "def=" << def_ << "; type=" << *data_type_;
 }
 
 bool DefWithUnsupportedTypeError::IsEqual(
     const SemanticProblem &problem) const {
   const DefWithUnsupportedTypeError &rhs =
       static_cast<const DefWithUnsupportedTypeError&>(problem);
-  return def_ == rhs.def_ && data_type_ == rhs.data_type_;
+  return def_ == rhs.def_ && *data_type_ == *(rhs.data_type_);
 }
 
 DuplicateDefError::DuplicateDefError(
@@ -665,26 +831,27 @@ bool DuplicateDefError::IsEqual(const SemanticProblem &problem) const {
   return def_ == rhs.def_;
 }
 
-NestedFuncDefError::NestedFuncDefError(
+FuncDefWithinNonGlobalScope::FuncDefWithinNonGlobalScope(
     const path &file_path, const FuncDefNode &def)
     : file_path_(file_path), def_(def) {
 }
 
-const boost::filesystem::path &NestedFuncDefError::GetFilePath() const {
+const path &FuncDefWithinNonGlobalScope::GetFilePath() const {
   return file_path_;
 }
 
-const real_talk::parser::FuncDefNode &NestedFuncDefError::GetDef() const {
+const FuncDefNode &FuncDefWithinNonGlobalScope::GetDef() const {
   return def_;
 }
 
-void NestedFuncDefError::Print(std::ostream &stream) const {
+void FuncDefWithinNonGlobalScope::Print(ostream &stream) const {
   stream << "def=" << static_cast<const Node&>(def_);
 }
 
-bool NestedFuncDefError::IsEqual(const SemanticProblem &problem) const {
-  const NestedFuncDefError &rhs =
-      static_cast<const NestedFuncDefError&>(problem);
+bool FuncDefWithinNonGlobalScope::IsEqual(
+    const SemanticProblem &problem) const {
+  const FuncDefWithinNonGlobalScope &rhs =
+      static_cast<const FuncDefWithinNonGlobalScope&>(problem);
   return def_ == static_cast<const Node&>(rhs.def_);
 }
 
@@ -693,17 +860,15 @@ FuncDefWithoutReturnValueError::FuncDefWithoutReturnValueError(
     : file_path_(file_path), def_(def) {
 }
 
-const boost::filesystem::path
-&FuncDefWithoutReturnValueError::GetFilePath() const {
+const path &FuncDefWithoutReturnValueError::GetFilePath() const {
   return file_path_;
 }
 
-const real_talk::parser::FuncDefNode
-&FuncDefWithoutReturnValueError::GetDef() const {
+const FuncDefNode &FuncDefWithoutReturnValueError::GetDef() const {
   return def_;
 }
 
-void FuncDefWithoutReturnValueError::Print(std::ostream &stream) const {
+void FuncDefWithoutReturnValueError::Print(ostream &stream) const {
   stream << "def=" << static_cast<const Node&>(def_);
 }
 
@@ -714,25 +879,26 @@ bool FuncDefWithoutReturnValueError::IsEqual(
   return def_ == static_cast<const Node&>(rhs.def_);
 }
 
-NonFuncCallError::NonFuncCallError(
+CallWithNonFuncError::CallWithNonFuncError(
     const path &file_path, const CallNode &call)
     : file_path_(file_path), call_(call) {
 }
 
-const path &NonFuncCallError::GetFilePath() const {
+const path &CallWithNonFuncError::GetFilePath() const {
   return file_path_;
 }
 
-const CallNode &NonFuncCallError::GetCall() const {
+const CallNode &CallWithNonFuncError::GetCall() const {
   return call_;
 }
 
-void NonFuncCallError::Print(ostream &stream) const {
+void CallWithNonFuncError::Print(ostream &stream) const {
   stream << "call=" << call_;
 }
 
-bool NonFuncCallError::IsEqual(const SemanticProblem &problem) const {
-  const NonFuncCallError &rhs = static_cast<const NonFuncCallError&>(problem);
+bool CallWithNonFuncError::IsEqual(const SemanticProblem &problem) const {
+  const CallWithNonFuncError &rhs =
+      static_cast<const CallWithNonFuncError&>(problem);
   return call_ == rhs.call_;
 }
 
