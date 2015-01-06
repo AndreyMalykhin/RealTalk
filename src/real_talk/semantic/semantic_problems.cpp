@@ -13,7 +13,7 @@
 #include "real_talk/parser/branch_node.h"
 #include "real_talk/parser/if_node.h"
 #include "real_talk/parser/array_alloc_node.h"
-#include "real_talk/parser/array_size_node.h"
+#include "real_talk/parser/bounded_array_size_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
@@ -37,7 +37,7 @@ using real_talk::parser::BreakNode;
 using real_talk::parser::BranchNode;
 using real_talk::parser::IfNode;
 using real_talk::parser::ArrayAllocNode;
-using real_talk::parser::ArraySizeNode;
+using real_talk::parser::BoundedArraySizeNode;
 
 namespace real_talk {
 namespace semantic {
@@ -137,7 +137,7 @@ ArrayAllocWithIncompatibleSizeTypeError::
 ArrayAllocWithIncompatibleSizeTypeError(
     const path &file_path,
     const ArrayAllocNode &alloc,
-    const ArraySizeNode &size,
+    const BoundedArraySizeNode &size,
     unique_ptr<DataType> dest_data_type,
     unique_ptr<DataType> src_data_type)
     : file_path_(file_path),
@@ -158,7 +158,7 @@ const ArrayAllocNode
   return alloc_;
 }
 
-const ArraySizeNode &ArrayAllocWithIncompatibleSizeTypeError::GetSize() const {
+const BoundedArraySizeNode &ArrayAllocWithIncompatibleSizeTypeError::GetSize() const {
   return size_;
 }
 

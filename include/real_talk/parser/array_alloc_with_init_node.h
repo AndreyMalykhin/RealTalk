@@ -6,6 +6,7 @@
 #include <vector>
 #include "real_talk/parser/array_alloc_node.h"
 #include "real_talk/parser/base_array_alloc_node.h"
+#include "real_talk/parser/unbounded_array_size_node.h"
 
 namespace real_talk {
 namespace parser {
@@ -15,23 +16,27 @@ class ArrayAllocWithInitNode: public ArrayAllocNode {
   ArrayAllocWithInitNode(
       const real_talk::lexer::TokenInfo &op_token,
       std::unique_ptr<PrimitiveDataTypeNode> data_type,
-      std::vector< std::unique_ptr<ArraySizeNode> > sizes,
+      std::vector< std::unique_ptr<UnboundedArraySizeNode> > sizes,
       const real_talk::lexer::TokenInfo &values_start_token,
       std::vector< std::unique_ptr<ExprNode> > values,
       const std::vector< real_talk::lexer::TokenInfo > &value_separator_tokens,
       const real_talk::lexer::TokenInfo &values_end_token)
-      : array_alloc_node_(op_token, move(data_type), move(sizes)),
+      : array_alloc_node_(op_token, move(data_type)),
+        sizes_(move(sizes)),
         values_start_token_(values_start_token),
         values_(move(values)),
         value_separator_tokens_(value_separator_tokens),
         values_end_token_(values_end_token) {
-    assert(!values_.empty());
-    assert(value_separator_tokens_.size() == values_.size() - 1);
+    assert(!sizes_.empty());
+    assert((!values_.empty()
+            && value_separator_tokens_.size() == values_.size() - 1)
+           || (values_.empty()
+               && value_separator_tokens_.empty()));
   }
 
-  const std::vector< std::unique_ptr<ArraySizeNode> > &GetSizes()
-      const override {
-    return array_alloc_node_.GetSizes();
+  const std::vector< std::unique_ptr<UnboundedArraySizeNode> >
+  &GetSizes() const {
+    return sizes_;
   }
 
   const std::unique_ptr<PrimitiveDataTypeNode> &GetDataType() const override {
@@ -55,18 +60,29 @@ class ArrayAllocWithInitNode: public ArrayAllocNode {
         && values_end_token_ == rhs.values_end_token_
         && value_separator_tokens_.size() ==
         rhs.value_separator_tokens_.size()
+        && values_.size() == rhs.values_.size()
+        && sizes_.size() == rhs.sizes_.size()
         && std::equal(value_separator_tokens_.begin(),
                       value_separator_tokens_.end(),
                       rhs.value_separator_tokens_.begin())
-        && values_.size() == rhs.values_.size()
         && std::equal(
             boost::make_indirect_iterator(values_.begin()),
             boost::make_indirect_iterator(values_.end()),
-            boost::make_indirect_iterator(rhs.values_.begin()));
+            boost::make_indirect_iterator(rhs.values_.begin()))
+        && std::equal(
+            boost::make_indirect_iterator(sizes_.begin()),
+            boost::make_indirect_iterator(sizes_.end()),
+            boost::make_indirect_iterator(rhs.sizes_.begin()));
   }
 
   virtual void Print(std::ostream &stream) const override {
-    stream << array_alloc_node_ << values_start_token_.GetValue();
+    stream << array_alloc_node_;
+
+    for (const std::unique_ptr<UnboundedArraySizeNode> &size: sizes_) {
+      stream << *size;
+    }
+
+    stream << values_start_token_.GetValue();
     auto last_value_it = values_.end() - 1;
     auto value_separator_token_it = value_separator_tokens_.begin();
 
@@ -81,6 +97,7 @@ class ArrayAllocWithInitNode: public ArrayAllocNode {
   }
 
   BaseArrayAllocNode array_alloc_node_;
+  std::vector< std::unique_ptr<UnboundedArraySizeNode> > sizes_;
   real_talk::lexer::TokenInfo values_start_token_;
   std::vector< std::unique_ptr<ExprNode> > values_;
   std::vector< real_talk::lexer::TokenInfo > value_separator_tokens_;

@@ -138,7 +138,8 @@ using real_talk::parser::ArrayAllocWithoutInitNode;
 using real_talk::parser::FileParser;
 using real_talk::parser::Parser;
 using real_talk::parser::PrimitiveDataTypeNode;
-using real_talk::parser::ArraySizeNode;
+using real_talk::parser::BoundedArraySizeNode;
+using real_talk::parser::UnboundedArraySizeNode;
 using real_talk::parser::CallNode;
 using real_talk::parser::LessNode;
 using real_talk::parser::UnexpectedTokenError;
@@ -5320,11 +5321,11 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithoutInit) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
-  vector< unique_ptr<ArraySizeNode> > size_nodes;
+  vector< unique_ptr<BoundedArraySizeNode> > size_nodes;
   IntNode *size_value_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)));
   unique_ptr<ExprNode> size_value_node(size_value_node_ptr);
-  unique_ptr<ArraySizeNode> size_node(new ArraySizeNode(
+  unique_ptr<BoundedArraySizeNode> size_node(new BoundedArraySizeNode(
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
       move(size_value_node),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
@@ -5398,15 +5399,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
-  vector< unique_ptr<ArraySizeNode> > size_nodes;
+  vector< unique_ptr<BoundedArraySizeNode> > size_nodes;
   StringNode *size_value_node_ptr = new StringNode(
       TokenInfo(Token::kStringLit, "\"1\"", UINT32_C(3), UINT32_C(3)));
   unique_ptr<ExprNode> size_value_node(size_value_node_ptr);
-  ArraySizeNode *size_node_ptr = new ArraySizeNode(
+  BoundedArraySizeNode *size_node_ptr = new BoundedArraySizeNode(
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
       move(size_value_node),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4)));
-  unique_ptr<ArraySizeNode> size_node(size_node_ptr);
+  unique_ptr<BoundedArraySizeNode> size_node(size_node_ptr);
   size_nodes.push_back(move(size_node));
   ArrayAllocWithoutInitNode *alloc_node_ptr = new ArrayAllocWithoutInitNode(
       TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
@@ -5481,11 +5482,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(1), UINT32_C(1))));
-  vector< unique_ptr<ArraySizeNode> > size_nodes;
+  vector< unique_ptr<BoundedArraySizeNode> > size_nodes;
   IntNode *size_value_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)));
   unique_ptr<ExprNode> size_value_node(size_value_node_ptr);
-  unique_ptr<ArraySizeNode> size_node(new ArraySizeNode(
+  unique_ptr<BoundedArraySizeNode> size_node(new BoundedArraySizeNode(
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
       move(size_value_node),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
@@ -5537,13 +5538,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
 TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  vector< unique_ptr<ArraySizeNode> > size_nodes;
-  IntNode *size_value_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)));
-  unique_ptr<ExprNode> size_value_node(size_value_node_ptr);
-  unique_ptr<ArraySizeNode> size_node(new ArraySizeNode(
+  vector< unique_ptr<UnboundedArraySizeNode> > size_nodes;
+  unique_ptr<UnboundedArraySizeNode> size_node(new UnboundedArraySizeNode(
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      move(size_value_node),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
   size_nodes.push_back(move(size_node));
   vector< unique_ptr<ExprNode> > value_nodes;
@@ -5569,15 +5566,9 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)},
-                          {"2", INT32_C(2)}};
+  test_lit_parses.ints = {{"2", INT32_C(2)}};
 
   SemanticAnalysis::ExprAnalyzes expr_analyzes;
-  IntDataType *size_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> size_data_type(size_data_type_ptr);
-  ExprAnalysis size_expr_analysis(move(size_data_type));
-  expr_analyzes.insert(
-      make_pair(size_value_node_ptr, move(size_expr_analysis)));
   IntDataType *element_data_type_ptr = new IntDataType();
   unique_ptr<DataType> element_data_type(element_data_type_ptr);
   unique_ptr<DataType> alloc_data_type(
@@ -5590,24 +5581,11 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
   expr_analyzes.insert(make_pair(value_node_ptr, move(value_expr_analysis)));
 
   SemanticAnalysis::LitAnalyzes lit_analyzes;
-  unique_ptr<Lit> size_lit(new IntLit(INT32_C(1)));
-  LitAnalysis size_lit_analysis(move(size_lit));
-  lit_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
   unique_ptr<Lit> value_lit(new IntLit(INT32_C(2)));
   LitAnalysis value_lit_analysis(move(value_lit));
   lit_analyzes.insert(make_pair(value_node_ptr, move(value_lit_analysis)));
 
   vector<TestDataTypeConversion> test_data_type_conversions;
-  IntDataType int_data_type;
-
-  {
-    DataType *dest_data_type = &int_data_type;
-    DataType *src_data_type = size_data_type_ptr;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
 
   {
     DataType *dest_data_type = element_data_type_ptr;
@@ -5643,107 +5621,11 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
 }
 
 TEST_F(SimpleSemanticAnalyzerTest,
-       ArrayAllocWithInitUsingIncompatibleSizeDataTypeIsInvalid) {
-  vector< unique_ptr<StmtNode> > stmt_nodes;
-  vector< unique_ptr<ArraySizeNode> > size_nodes;
-  StringNode *size_value_node_ptr = new StringNode(
-      TokenInfo(Token::kStringLit, "\"1\"", UINT32_C(3), UINT32_C(3)));
-  unique_ptr<ExprNode> size_value_node(size_value_node_ptr);
-  ArraySizeNode *size_node_ptr = new ArraySizeNode(
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      move(size_value_node),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4)));
-  unique_ptr<ArraySizeNode> size_node(size_node_ptr);
-  size_nodes.push_back(move(size_node));
-  vector< unique_ptr<ExprNode> > value_nodes;
-  IntNode *value_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "2", UINT32_C(6), UINT32_C(6)));
-  unique_ptr<ExprNode> value_node(value_node_ptr);
-  value_nodes.push_back(move(value_node));
-  unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
-  ArrayAllocWithInitNode *alloc_node_ptr = new ArrayAllocWithInitNode(
-      TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
-      move(data_type_node),
-      move(size_nodes),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(5), UINT32_C(5)),
-      move(value_nodes),
-      vector<TokenInfo>(),
-      TokenInfo(Token::kScopeStart, "}", UINT32_C(7), UINT32_C(7)));
-  unique_ptr<ExprNode> alloc_expr_node(alloc_node_ptr);
-  unique_ptr<StmtNode> alloc_stmt_node(new ExprStmtNode(
-      move(alloc_expr_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
-  stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
-
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.strings = {{"\"1\"", "1"}};
-
-  SemanticAnalysis::ExprAnalyzes expr_analyzes;
-  StringDataType *size_data_type_ptr = new StringDataType();
-  unique_ptr<DataType> size_data_type(size_data_type_ptr);
-  ExprAnalysis size_expr_analysis(move(size_data_type));
-  expr_analyzes.insert(
-      make_pair(size_value_node_ptr, move(size_expr_analysis)));
-
-  SemanticAnalysis::LitAnalyzes lit_analyzes;
-  unique_ptr<Lit> size_lit(new StringLit("1"));
-  LitAnalysis size_lit_analysis(move(size_lit));
-  lit_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
-
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  IntDataType int_data_type;
-  DataType *dest_data_type = &int_data_type;
-  DataType *src_data_type = size_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
-  vector< unique_ptr<SemanticProblem> > problems;
-  path program_file_path;
-  unique_ptr<SemanticProblem> problem(
-      new ArrayAllocWithIncompatibleSizeTypeError(
-          program_file_path,
-          *alloc_node_ptr,
-          *size_node_ptr,
-          int_data_type.Clone(),
-          size_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
-
-  SemanticAnalysis::DefAnalyzes def_analyzes;
-  SemanticAnalysis::IdAnalyzes id_analyzes;
-  SemanticAnalysis::ImportAnalyzes import_analyzes;
-  SemanticAnalysis analysis(move(problems),
-                            move(def_analyzes),
-                            move(expr_analyzes),
-                            move(lit_analyzes),
-                            import_analyzes,
-                            id_analyzes);
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
-                              move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
-
-  TestAnalyze(test_program);
-}
-
-TEST_F(SimpleSemanticAnalyzerTest,
        ArrayAllocWithInitUsingUnsupportedElementDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  vector< unique_ptr<ArraySizeNode> > size_nodes;
-  IntNode *size_value_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)));
-  unique_ptr<ExprNode> size_value_node(size_value_node_ptr);
-  unique_ptr<ArraySizeNode> size_node(new ArraySizeNode(
+  vector< unique_ptr<UnboundedArraySizeNode> > size_nodes;
+  unique_ptr<UnboundedArraySizeNode> size_node(new UnboundedArraySizeNode(
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      move(size_value_node),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
   size_nodes.push_back(move(size_node));
   vector< unique_ptr<ExprNode> > value_nodes;
@@ -5805,13 +5687,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
 TEST_F(SimpleSemanticAnalyzerTest,
        ArrayAllocWithInitUsingIncompatibleValueTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  vector< unique_ptr<ArraySizeNode> > size_nodes;
-  IntNode *size_value_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)));
-  unique_ptr<ExprNode> size_value_node(size_value_node_ptr);
-  unique_ptr<ArraySizeNode> size_node(new ArraySizeNode(
+  vector< unique_ptr<UnboundedArraySizeNode> > size_nodes;
+  unique_ptr<UnboundedArraySizeNode> size_node(new UnboundedArraySizeNode(
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      move(size_value_node),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
   size_nodes.push_back(move(size_node));
   vector< unique_ptr<ExprNode> > value_nodes;
@@ -5837,48 +5715,24 @@ TEST_F(SimpleSemanticAnalyzerTest,
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)}};
   test_lit_parses.strings = {{"\"2\"", "2"}};
 
   SemanticAnalysis::ExprAnalyzes expr_analyzes;
-  IntDataType *size_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> size_data_type(size_data_type_ptr);
-  ExprAnalysis size_expr_analysis(move(size_data_type));
-  expr_analyzes.insert(
-      make_pair(size_value_node_ptr, move(size_expr_analysis)));
-  IntDataType *element_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> element_data_type(element_data_type_ptr);
-  unique_ptr<DataType> alloc_data_type(
-      new ArrayDataType(move(element_data_type)));
-  ExprAnalysis alloc_expr_analysis(move(alloc_data_type));
-  expr_analyzes.insert(make_pair(alloc_node_ptr, move(alloc_expr_analysis)));
   StringDataType *value_data_type_ptr = new StringDataType();
   unique_ptr<DataType> value_data_type(value_data_type_ptr);
   ExprAnalysis value_expr_analysis(move(value_data_type));
   expr_analyzes.insert(make_pair(value_node_ptr, move(value_expr_analysis)));
 
   SemanticAnalysis::LitAnalyzes lit_analyzes;
-  unique_ptr<Lit> size_lit(new IntLit(INT32_C(1)));
-  LitAnalysis size_lit_analysis(move(size_lit));
-  lit_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
   unique_ptr<Lit> value_lit(new StringLit("2"));
   LitAnalysis value_lit_analysis(move(value_lit));
   lit_analyzes.insert(make_pair(value_node_ptr, move(value_lit_analysis)));
 
   vector<TestDataTypeConversion> test_data_type_conversions;
-  IntDataType int_data_type;
+  IntDataType element_data_type;
 
   {
-    DataType *dest_data_type = &int_data_type;
-    DataType *src_data_type = size_data_type_ptr;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
-  {
-    DataType *dest_data_type = element_data_type_ptr;
+    DataType *dest_data_type = &element_data_type;
     DataType *src_data_type = value_data_type_ptr;
     bool is_data_type_convertable = false;
     TestDataTypeConversion test_data_type_conversion =
@@ -5894,7 +5748,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
           program_file_path,
           *alloc_node_ptr,
           bad_value_index,
-          element_data_type_ptr->Clone(),
+          element_data_type.Clone(),
           value_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 

@@ -1945,9 +1945,9 @@ TEST_F(SimpleParserTest, ArrayAllocWithoutInit) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))
     };
     const TokenInfo &op_token = tokens[0];
-    vector< unique_ptr<ArraySizeNode> > sizes;
+    vector< unique_ptr<BoundedArraySizeNode> > sizes;
     unique_ptr<ExprNode> size_value(new IntNode(tokens[3]));
-    unique_ptr<ArraySizeNode> size(new ArraySizeNode(
+    unique_ptr<BoundedArraySizeNode> size(new BoundedArraySizeNode(
         tokens[2], move(size_value), tokens[4]));
     sizes.push_back(move(size));
     unique_ptr<ExprNode> array_alloc(new ArrayAllocWithoutInitNode(
@@ -1959,34 +1959,34 @@ TEST_F(SimpleParserTest, ArrayAllocWithoutInit) {
 }
 
 TEST_F(SimpleParserTest, ArrayAllocWithInit) {
+  vector< TestNode<ExprNode> > test_expr_nodes;
+
   for (TestDataTypeNode &test_data_type: GetTestDataTypes()) {
     vector<TokenInfo> tokens = {
       TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
       test_data_type.token,
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kIntLit, "2", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(5), UINT32_C(5)),
-      TokenInfo(Token::kIntLit, "3", UINT32_C(6), UINT32_C(6)),
-      TokenInfo(Token::kSeparator, ",", UINT32_C(7), UINT32_C(7)),
-      TokenInfo(Token::kIntLit, "4", UINT32_C(8), UINT32_C(8)),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(9), UINT32_C(9))
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kIntLit, "3", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kSeparator, ",", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kIntLit, "4", UINT32_C(7), UINT32_C(7)),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(8), UINT32_C(8))
     };
     const TokenInfo op_token = tokens[0];
-    vector< unique_ptr<ArraySizeNode> > sizes;
-    unique_ptr<ExprNode> size_value(new IntNode(tokens[3]));
-    unique_ptr<ArraySizeNode> size(new ArraySizeNode(
-        tokens[2], move(size_value), tokens[4]));
+    vector< unique_ptr<UnboundedArraySizeNode> > sizes;
+    unique_ptr<UnboundedArraySizeNode> size(new UnboundedArraySizeNode(
+        tokens[2], tokens[3]));
     sizes.push_back(move(size));
-    const TokenInfo values_start_token = tokens[5];
+    const TokenInfo values_start_token = tokens[4];
     vector< unique_ptr<ExprNode> > values;
-    unique_ptr<ExprNode> value1(new IntNode(tokens[6]));
+    unique_ptr<ExprNode> value1(new IntNode(tokens[5]));
     values.push_back(move(value1));
-    unique_ptr<ExprNode> value2(new IntNode(tokens[8]));
+    unique_ptr<ExprNode> value2(new IntNode(tokens[7]));
     values.push_back(move(value2));
     vector<TokenInfo> value_separator_tokens;
-    value_separator_tokens.push_back(tokens[7]);
-    const TokenInfo values_end_token = tokens[9];
+    value_separator_tokens.push_back(tokens[6]);
+    const TokenInfo values_end_token = tokens[8];
     unique_ptr<ExprNode> array_alloc(new ArrayAllocWithInitNode(
         op_token,
         move(test_data_type.node),
@@ -1996,7 +1996,40 @@ TEST_F(SimpleParserTest, ArrayAllocWithInit) {
         value_separator_tokens,
         values_end_token));
     TestNode<ExprNode> test_expr_node = {tokens, move(array_alloc)};
+    test_expr_nodes.push_back(move(test_expr_node));
+  }
 
+  for (TestDataTypeNode &test_data_type: GetTestDataTypes()) {
+    vector<TokenInfo> tokens = {
+      TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
+      test_data_type.token,
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))
+    };
+    const TokenInfo op_token = tokens[0];
+    vector< unique_ptr<UnboundedArraySizeNode> > sizes;
+    unique_ptr<UnboundedArraySizeNode> size(new UnboundedArraySizeNode(
+        tokens[2], tokens[3]));
+    sizes.push_back(move(size));
+    const TokenInfo values_start_token = tokens[4];
+    vector< unique_ptr<ExprNode> > values;
+    vector<TokenInfo> value_separator_tokens;
+    const TokenInfo values_end_token = tokens[5];
+    unique_ptr<ExprNode> array_alloc(new ArrayAllocWithInitNode(
+        op_token,
+        move(test_data_type.node),
+        move(sizes),
+        values_start_token,
+        move(values),
+        value_separator_tokens,
+        values_end_token));
+    TestNode<ExprNode> test_expr_node = {tokens, move(array_alloc)};
+    test_expr_nodes.push_back(move(test_expr_node));
+  }
+
+  for (TestNode<ExprNode> &test_expr_node: test_expr_nodes){
     TestParse(ExprToProgram(test_expr_node));
   }
 }
@@ -3156,20 +3189,6 @@ TEST_F(SimpleParserTest, ArrayAllocWithoutSizeIsInvalid) {
     mailformed_token_suits.push_back(mailformed_tokens);
   }
 
-  {
-    const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
-      TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kFileEnd, "", UINT32_C(5), UINT32_C(5))
-    };
-    const TokenInfo &unexpected_token = tokens[3];
-    const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
-    mailformed_token_suits.push_back(mailformed_tokens);
-  }
-
   for (const MailformedTestTokens &mailformed_tokens: mailformed_token_suits) {
     TestFailingParse(mailformed_tokens);
   }
@@ -3183,13 +3202,11 @@ TEST_F(SimpleParserTest, ArrayAllocWithInitButWithoutValuesIsInvalid) {
       TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(5), UINT32_C(5)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6)),
-      TokenInfo(Token::kFileEnd, "", UINT32_C(7), UINT32_C(7))
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kFileEnd, "", UINT32_C(5), UINT32_C(5))
     };
-    const TokenInfo &unexpected_token = tokens[6];
+    const TokenInfo &unexpected_token = tokens[4];
     const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
     mailformed_token_suits.push_back(mailformed_tokens);
   }
@@ -3199,14 +3216,12 @@ TEST_F(SimpleParserTest, ArrayAllocWithInitButWithoutValuesIsInvalid) {
       TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(5), UINT32_C(5)),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(6), UINT32_C(6)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)),
-      TokenInfo(Token::kFileEnd, "", UINT32_C(8), UINT32_C(8))
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kFileEnd, "", UINT32_C(6), UINT32_C(6))
     };
-    const TokenInfo &unexpected_token = tokens[6];
+    const TokenInfo &unexpected_token = tokens[5];
     const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
     mailformed_token_suits.push_back(mailformed_tokens);
   }

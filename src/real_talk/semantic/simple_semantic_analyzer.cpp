@@ -168,7 +168,8 @@ using real_talk::parser::ArgDefNode;
 using real_talk::parser::LitNode;
 using real_talk::parser::BranchNode;
 using real_talk::parser::FileParser;
-using real_talk::parser::ArraySizeNode;
+using real_talk::parser::BoundedArraySizeNode;
+using real_talk::parser::UnboundedArraySizeNode;
 using real_talk::parser::ArrayAllocNode;
 using real_talk::parser::UnexpectedTokenError;
 using real_talk::util::FileNotFoundError;
@@ -286,7 +287,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
                                boost::filesystem::path> > ImportPrograms;
 
   void VisitBranch(const real_talk::parser::BranchNode &branch_node);
-  const ArrayDataType &VisitArrayAlloc(
+  std::unique_ptr<DataType> VisitArrayAlloc(
       const real_talk::parser::ArrayAllocNode &array_alloc_node);
   const DataType &VisitVarDef(
       const real_talk::parser::VarDefNode &var_def_node);
@@ -1059,54 +1060,11 @@ void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode&) {
 
 void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &alloc_node) {
-  VisitArrayAlloc(alloc_node);
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
-    const ArrayAllocWithInitNode &alloc_node) {
-  const DataType &element_data_type =
-      VisitArrayAlloc(alloc_node).GetElementDataType();
-  const vector< unique_ptr<ExprNode> > &values = alloc_node.GetValues();
-  auto value_end_it = values.end();
-
-  for (auto value_it = values.begin();
-       value_it != value_end_it;
-       ++value_it) {
-    const ExprNode &value = **value_it;
-    value.Accept(*this);
-    const DataType &value_data_type = GetExprDataType(&value);
-
-    if (!IsTypeConvertible(element_data_type, value_data_type)) {
-      size_t value_index = static_cast<size_t>(value_it - values.begin());
-      unique_ptr<SemanticError> error(
-          new ArrayAllocWithIncompatibleValueTypeError(
-              GetCurrentFilePath(),
-              alloc_node,
-              value_index,
-              element_data_type.Clone(),
-              value_data_type.Clone()));
-      throw SemanticErrorException(move(error));
-    }
-  }
-}
-
-const ArrayDataType &SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
-    const ArrayAllocNode &alloc_node) {
-  unique_ptr<DataType> data_type_ptr =
-      CreateDataType(*(alloc_node.GetDataType()));
-  const DataType &element_data_type = *data_type_ptr;
-
-  if (element_data_type == VoidDataType()) {
-    unique_ptr<SemanticError> error(
-        new ArrayAllocWithUnsupportedElementTypeError(
-            GetCurrentFilePath(), alloc_node, element_data_type.Clone()));
-    throw SemanticErrorException(move(error));
-  }
-
+  unique_ptr<DataType> array_data_type = VisitArrayAlloc(alloc_node);
   assert(!alloc_node.GetSizes().empty());
 
-  for (const unique_ptr<ArraySizeNode> &size: alloc_node.GetSizes()) {
-    data_type_ptr.reset(new ArrayDataType(move(data_type_ptr)));
+  for (const unique_ptr<BoundedArraySizeNode> &size: alloc_node.GetSizes()) {
+    array_data_type.reset(new ArrayDataType(move(array_data_type)));
     const ExprNode &size_value = *(size->GetValue());
     size_value.Accept(*this);
     const DataType &size_data_type = GetExprDataType(&size_value);
@@ -1124,11 +1082,62 @@ const ArrayDataType &SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
     }
   }
 
-  const ArrayDataType &data_type =
-      static_cast<const ArrayDataType&>(*data_type_ptr);
-  ExprAnalysis expr_analysis(move(data_type_ptr));
+  ExprAnalysis expr_analysis(move(array_data_type));
   expr_analyzes_.insert(make_pair(&alloc_node, move(expr_analysis)));
-  return data_type;
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
+    const ArrayAllocWithInitNode &alloc_node) {
+  unique_ptr<DataType> array_data_type = VisitArrayAlloc(alloc_node);
+  assert(!alloc_node.GetSizes().empty());
+
+  for (const unique_ptr<UnboundedArraySizeNode> &size: alloc_node.GetSizes()) {
+    array_data_type.reset(new ArrayDataType(move(array_data_type)));
+    (void) size;
+  }
+
+  const vector< unique_ptr<ExprNode> > &values = alloc_node.GetValues();
+  auto value_end_it = values.end();
+
+  for (auto value_it = values.begin();
+       value_it != value_end_it;
+       ++value_it) {
+    const ExprNode &value = **value_it;
+    value.Accept(*this);
+    const DataType &value_data_type = GetExprDataType(&value);
+    const DataType &element_data_type = static_cast<const ArrayDataType&>(
+        *array_data_type).GetElementDataType();
+
+    if (!IsTypeConvertible(element_data_type, value_data_type)) {
+      size_t value_index = static_cast<size_t>(value_it - values.begin());
+      unique_ptr<SemanticError> error(
+          new ArrayAllocWithIncompatibleValueTypeError(
+              GetCurrentFilePath(),
+              alloc_node,
+              value_index,
+              element_data_type.Clone(),
+              value_data_type.Clone()));
+      throw SemanticErrorException(move(error));
+    }
+  }
+
+  ExprAnalysis expr_analysis(move(array_data_type));
+  expr_analyzes_.insert(make_pair(&alloc_node, move(expr_analysis)));
+}
+
+unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
+    const ArrayAllocNode &alloc_node) {
+  unique_ptr<DataType> element_data_type =
+      CreateDataType(*(alloc_node.GetDataType()));
+
+  if (*element_data_type == VoidDataType()) {
+    unique_ptr<SemanticError> error(
+        new ArrayAllocWithUnsupportedElementTypeError(
+            GetCurrentFilePath(), alloc_node, element_data_type->Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
+  return element_data_type;
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {

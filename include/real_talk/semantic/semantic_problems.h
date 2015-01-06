@@ -13,7 +13,7 @@ class BranchNode;
 class IfNode;
 class BinaryExprNode;
 class ArrayAllocNode;
-class ArraySizeNode;
+class BoundedArraySizeNode;
 }
 
 namespace semantic {
@@ -69,12 +69,12 @@ class ArrayAllocWithIncompatibleSizeTypeError: public SemanticError {
   ArrayAllocWithIncompatibleSizeTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::ArrayAllocNode &alloc,
-      const real_talk::parser::ArraySizeNode &size,
+      const real_talk::parser::BoundedArraySizeNode &size,
       std::unique_ptr<DataType> dest_data_type,
       std::unique_ptr<DataType> src_data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::ArrayAllocNode &GetAlloc() const;
-  const real_talk::parser::ArraySizeNode &GetSize() const;
+  const real_talk::parser::BoundedArraySizeNode &GetSize() const;
   const DataType &GetDestDataType() const;
   const DataType &GetSrcDataType() const;
 
@@ -84,7 +84,7 @@ class ArrayAllocWithIncompatibleSizeTypeError: public SemanticError {
 
   boost::filesystem::path file_path_;
   const real_talk::parser::ArrayAllocNode &alloc_;
-  const real_talk::parser::ArraySizeNode &size_;
+  const real_talk::parser::BoundedArraySizeNode &size_;
   std::unique_ptr<DataType> dest_data_type_;
   std::unique_ptr<DataType> src_data_type_;
 };

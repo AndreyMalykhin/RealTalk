@@ -1,19 +1,18 @@
 
-#ifndef _REAL_TALK_PARSER_ARRAY_SIZE_NODE_H_
-#define _REAL_TALK_PARSER_ARRAY_SIZE_NODE_H_
+#ifndef _REAL_TALK_PARSER_BOUNDED_ARRAY_SIZE_NODE_H_
+#define _REAL_TALK_PARSER_BOUNDED_ARRAY_SIZE_NODE_H_
 
 #include <cassert>
 #include <memory>
-#include <iostream>
 #include "real_talk/lexer/token_info.h"
 #include "real_talk/parser/expr_node.h"
 
 namespace real_talk {
 namespace parser {
 
-class ArraySizeNode final {
+class BoundedArraySizeNode final {
  public:
-  ArraySizeNode(
+  BoundedArraySizeNode(
       const real_talk::lexer::TokenInfo &start_token,
       std::unique_ptr<ExprNode> value,
       const real_talk::lexer::TokenInfo &end_token)
@@ -28,12 +27,13 @@ class ArraySizeNode final {
   }
 
   friend std::ostream &operator<<(std::ostream &stream,
-                                  const ArraySizeNode &node) {
+                                  const BoundedArraySizeNode &node) {
     return stream << node.start_token_.GetValue() << *(node.value_)
                   << node.end_token_.GetValue();
   }
 
-  friend bool operator==(const ArraySizeNode &lhs, const ArraySizeNode &rhs) {
+  friend bool operator==(const BoundedArraySizeNode &lhs,
+                         const BoundedArraySizeNode &rhs) {
     return lhs.start_token_ == rhs.start_token_
         && lhs.end_token_ == rhs.end_token_
         && *(lhs.value_) == *(rhs.value_);

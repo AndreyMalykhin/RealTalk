@@ -864,56 +864,96 @@ unique_ptr<ExprNode> SimpleParser::ParseArrayAlloc() {
   }
 
   AssertNextToken(Token::kSubscriptStart);
-  vector< unique_ptr<ArraySizeNode> > array_sizes;
+  TokenInfo array_size_start_token = next_token_;
+  ConsumeNextToken();
 
-  do {
-    const TokenInfo array_size_start_token = next_token_;
+  if (next_token_.GetId() == Token::kSubscriptEnd) {
+    TokenInfo array_size_end_token = next_token_;
     ConsumeNextToken();
-    unique_ptr<ExprNode> array_size_value = ParseExpr();
-    AssertNextToken(Token::kSubscriptEnd);
-    const TokenInfo array_size_end_token = next_token_;
-    ConsumeNextToken();
-    unique_ptr<ArraySizeNode> array_size(new ArraySizeNode(
-        array_size_start_token, move(array_size_value), array_size_end_token));
+    unique_ptr<UnboundedArraySizeNode> array_size(new UnboundedArraySizeNode(
+        array_size_start_token, array_size_end_token));
+    vector< unique_ptr<UnboundedArraySizeNode> > array_sizes;
     array_sizes.push_back(move(array_size));
-  } while (next_token_.GetId() == Token::kSubscriptStart);
 
-  if (next_token_.GetId() == Token::kScopeStart) {
+    while (next_token_.GetId() == Token::kSubscriptStart) {
+      array_size_start_token = next_token_;
+      ConsumeNextToken();
+      AssertNextToken(Token::kSubscriptEnd);
+      array_size_end_token = next_token_;
+      ConsumeNextToken();
+      array_size.reset(new UnboundedArraySizeNode(
+          array_size_start_token, array_size_end_token));
+      array_sizes.push_back(move(array_size));
+    }
+
+    AssertNextToken(Token::kScopeStart);
     const TokenInfo values_start_token = next_token_;
     ConsumeNextToken();
     vector<TokenInfo> value_separator_tokens;
     vector< unique_ptr<ExprNode> > array_values;
 
-    while (true) {
-      array_values.push_back(ParseExpr());
+    if (next_token_.GetId() != Token::kScopeEnd) {
+      bool stop = false;
 
-      switch (next_token_.GetId()) {
-        case Token::kSeparator: {
-          value_separator_tokens.push_back(next_token_);
-          ConsumeNextToken();
-          break;
-        }
-        case Token::kScopeEnd: {
-          const TokenInfo values_end_token = next_token_;
-          ConsumeNextToken();
-          return unique_ptr<ExprNode>(new ArrayAllocWithInitNode(
-              alloc_token,
-              move(data_type),
-              move(array_sizes),
-              values_start_token,
-              move(array_values),
-              value_separator_tokens,
-              values_end_token));
-        }
-        default: {
-          UnexpectedToken();
+      while (!stop) {
+        array_values.push_back(ParseExpr());
+
+        switch (next_token_.GetId()) {
+          case Token::kSeparator: {
+            value_separator_tokens.push_back(next_token_);
+            ConsumeNextToken();
+            break;
+          }
+          case Token::kScopeEnd: {
+            stop = true;
+            break;
+          }
+          default: {
+            UnexpectedToken();
+          }
         }
       }
-    };
-  }
+    }
 
-  return unique_ptr<ExprNode>(new ArrayAllocWithoutInitNode(
-      alloc_token, move(data_type), move(array_sizes)));
+    const TokenInfo values_end_token = next_token_;
+    ConsumeNextToken();
+    return unique_ptr<ExprNode>(new ArrayAllocWithInitNode(
+        alloc_token,
+        move(data_type),
+        move(array_sizes),
+        values_start_token,
+        move(array_values),
+        value_separator_tokens,
+        values_end_token));
+  } else {
+    unique_ptr<ExprNode> array_size_value = ParseExpr();
+    AssertNextToken(Token::kSubscriptEnd);
+    TokenInfo array_size_end_token = next_token_;
+    ConsumeNextToken();
+    unique_ptr<BoundedArraySizeNode> array_size(new BoundedArraySizeNode(
+        array_size_start_token,
+        move(array_size_value),
+        array_size_end_token));
+    vector< unique_ptr<BoundedArraySizeNode> > array_sizes;
+    array_sizes.push_back(move(array_size));
+
+    while (next_token_.GetId() == Token::kSubscriptStart) {
+      array_size_start_token = next_token_;
+      ConsumeNextToken();
+      array_size_value = ParseExpr();
+      AssertNextToken(Token::kSubscriptEnd);
+      array_size_end_token = next_token_;
+      ConsumeNextToken();
+      array_size.reset(new BoundedArraySizeNode(
+          array_size_start_token,
+          move(array_size_value),
+          array_size_end_token));
+      array_sizes.push_back(move(array_size));
+    }
+
+    return unique_ptr<ExprNode>(new ArrayAllocWithoutInitNode(
+        alloc_token, move(data_type), move(array_sizes)));
+  }
 }
 
 unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseIntDataType() {
