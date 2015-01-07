@@ -14,6 +14,7 @@
 #include "real_talk/parser/if_node.h"
 #include "real_talk/parser/array_alloc_node.h"
 #include "real_talk/parser/bounded_array_size_node.h"
+#include "real_talk/parser/subscript_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
@@ -38,9 +39,80 @@ using real_talk::parser::BranchNode;
 using real_talk::parser::IfNode;
 using real_talk::parser::ArrayAllocNode;
 using real_talk::parser::BoundedArraySizeNode;
+using real_talk::parser::SubscriptNode;
 
 namespace real_talk {
 namespace semantic {
+
+SubscriptWithIncompatibleIndexTypeError
+::SubscriptWithIncompatibleIndexTypeError(
+     const path &file_path,
+     const SubscriptNode &subscript,
+     unique_ptr<DataType> dest_data_type,
+     unique_ptr<DataType> src_data_type)
+    : file_path_(file_path),
+      subscript_(subscript),
+      dest_data_type_(move(dest_data_type)),
+      src_data_type_(move(src_data_type)) {
+  assert(dest_data_type_);
+  assert(src_data_type_);
+}
+
+const path &SubscriptWithIncompatibleIndexTypeError::GetFilePath() const {
+  return file_path_;
+}
+
+const SubscriptNode
+&SubscriptWithIncompatibleIndexTypeError::GetSubscript() const {
+  return subscript_;
+}
+
+const DataType
+&SubscriptWithIncompatibleIndexTypeError::GetDestDataType() const {
+  return *dest_data_type_;
+}
+
+const DataType
+&SubscriptWithIncompatibleIndexTypeError::GetSrcDataType() const {
+  return *src_data_type_;
+}
+
+void SubscriptWithIncompatibleIndexTypeError::Print(ostream &stream) const {
+  stream << "subscript=" << subscript_ << "; dest_type=" << *dest_data_type_
+         << "; src_type=" << *src_data_type_;
+}
+
+bool SubscriptWithIncompatibleIndexTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const SubscriptWithIncompatibleIndexTypeError &rhs =
+      static_cast<const SubscriptWithIncompatibleIndexTypeError&>(problem);
+  return subscript_ == rhs.subscript_
+      && *dest_data_type_ == *(rhs.dest_data_type_)
+      && *src_data_type_ == *(rhs.src_data_type_);
+}
+
+SubscriptWithNonArrayError::SubscriptWithNonArrayError(
+    const path &file_path, const SubscriptNode &subscript)
+    : file_path_(file_path), subscript_(subscript) {
+}
+
+const path &SubscriptWithNonArrayError::GetFilePath() const {
+  return file_path_;
+}
+
+const SubscriptNode &SubscriptWithNonArrayError::GetSubscript() const {
+  return subscript_;
+}
+
+void SubscriptWithNonArrayError::Print(ostream &stream) const {
+  stream << "subscript=" << subscript_;
+}
+
+bool SubscriptWithNonArrayError::IsEqual(const SemanticProblem &problem) const {
+  const SubscriptWithNonArrayError &rhs =
+      static_cast<const SubscriptWithNonArrayError&>(problem);
+  return subscript_ == rhs.subscript_;
+}
 
 ArrayAllocWithIncompatibleValueTypeError::
 ArrayAllocWithIncompatibleValueTypeError(

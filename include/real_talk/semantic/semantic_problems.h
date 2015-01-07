@@ -20,6 +20,44 @@ namespace semantic {
 
 class DataType;
 
+class SubscriptWithIncompatibleIndexTypeError: public SemanticError {
+ public:
+  SubscriptWithIncompatibleIndexTypeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::SubscriptNode &subscript,
+      std::unique_ptr<DataType> dest_data_type,
+      std::unique_ptr<DataType> src_data_type);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::SubscriptNode &GetSubscript() const;
+  const DataType &GetDestDataType() const;
+  const DataType &GetSrcDataType() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::SubscriptNode &subscript_;
+  std::unique_ptr<DataType> dest_data_type_;
+  std::unique_ptr<DataType> src_data_type_;
+};
+
+class SubscriptWithNonArrayError: public SemanticError {
+ public:
+  SubscriptWithNonArrayError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::SubscriptNode &subscript);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::SubscriptNode &GetSubscript() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::SubscriptNode &subscript_;
+};
+
 class ArrayAllocWithIncompatibleValueTypeError: public SemanticError {
  public:
   ArrayAllocWithIncompatibleValueTypeError(

@@ -1387,7 +1387,36 @@ void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode&) {
 void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode&) {
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitSubscript(const SubscriptNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitSubscript(
+    const SubscriptNode &subscript) {
+  subscript.GetOperand()->Accept(*this);
+  const DataType &operand_data_type =
+      GetExprDataType(subscript.GetOperand().get());
+  const ArrayDataType *array_data_type =
+      dynamic_cast<const ArrayDataType*>(&operand_data_type);
+  const bool is_operand_array = array_data_type != nullptr;
+
+  if (!is_operand_array) {
+    unique_ptr<SemanticError> error(
+        new SubscriptWithNonArrayError(GetCurrentFilePath(), subscript));
+    throw SemanticErrorException(move(error));
+  }
+
+  subscript.GetIndex()->Accept(*this);
+  const DataType &index_data_type = GetExprDataType(subscript.GetIndex().get());
+  unique_ptr<DataType> int_data_type(new IntDataType());
+
+  if (!IsTypeConvertible(*int_data_type, index_data_type)) {
+    unique_ptr<SemanticError> error(new SubscriptWithIncompatibleIndexTypeError(
+        GetCurrentFilePath(),
+        subscript,
+        move(int_data_type),
+        index_data_type.Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
+  ExprAnalysis expr_analysis(array_data_type->GetElementDataType().Clone());
+  expr_analyzes_.insert(make_pair(&subscript, move(expr_analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitSub(const SubNode&) {
