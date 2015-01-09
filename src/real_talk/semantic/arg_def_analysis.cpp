@@ -13,6 +13,10 @@ ArgDefAnalysis::ArgDefAnalysis(unique_ptr<DataType> data_type)
   assert(data_type_);
 }
 
+ValueType ArgDefAnalysis::GetValueType() const {
+  return ValueType::kLeft;
+}
+
 const DataType &ArgDefAnalysis::GetDataType() const {
   return *data_type_;
 }
@@ -23,7 +27,7 @@ bool ArgDefAnalysis::IsEqual(const DefAnalysis &analysis) const {
 }
 
 void ArgDefAnalysis::Print(ostream &stream) const {
-  stream << *data_type_;
+  stream << "data_type=" << *data_type_;
 }
 }
 }

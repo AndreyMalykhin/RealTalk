@@ -15,6 +15,7 @@
 #include "real_talk/parser/array_alloc_node.h"
 #include "real_talk/parser/bounded_array_size_node.h"
 #include "real_talk/parser/subscript_node.h"
+#include "real_talk/parser/id_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
@@ -40,9 +41,32 @@ using real_talk::parser::IfNode;
 using real_talk::parser::ArrayAllocNode;
 using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::SubscriptNode;
+using real_talk::parser::IdNode;
 
 namespace real_talk {
 namespace semantic {
+
+IdWithoutDefError::IdWithoutDefError(
+    const path &file_path, const IdNode &id)
+    : file_path_(file_path), id_(id) {
+}
+
+const path &IdWithoutDefError::GetFilePath() const {
+  return file_path_;
+}
+
+const IdNode &IdWithoutDefError::GetId() const {
+  return id_;
+}
+
+void IdWithoutDefError::Print(ostream &stream) const {
+  stream << "id=" << id_;
+}
+
+bool IdWithoutDefError::IsEqual(const SemanticProblem &problem) const {
+  const IdWithoutDefError &rhs = static_cast<const IdWithoutDefError&>(problem);
+  return id_ == rhs.id_;
+}
 
 SubscriptWithIncompatibleIndexTypeError
 ::SubscriptWithIncompatibleIndexTypeError(

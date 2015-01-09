@@ -20,6 +20,22 @@ namespace semantic {
 
 class DataType;
 
+class IdWithoutDefError: public SemanticError {
+ public:
+  IdWithoutDefError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::IdNode &id);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::IdNode &GetId() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::IdNode &id_;
+};
+
 class SubscriptWithIncompatibleIndexTypeError: public SemanticError {
  public:
   SubscriptWithIncompatibleIndexTypeError(

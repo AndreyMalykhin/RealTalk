@@ -17,6 +17,10 @@ VarDefAnalysis::VarDefAnalysis(
   assert(storage_);
 }
 
+ValueType VarDefAnalysis::GetValueType() const {
+  return ValueType::kLeft;
+}
+
 const DataType &VarDefAnalysis::GetDataType() const {
   return *data_type_;
 }

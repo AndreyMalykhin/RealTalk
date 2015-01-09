@@ -13,6 +13,10 @@ FuncDefAnalysis::FuncDefAnalysis(unique_ptr<FuncDataType> data_type)
   assert(data_type_);
 }
 
+ValueType FuncDefAnalysis::GetValueType() const {
+  return ValueType::kRight;
+}
+
 const FuncDataType &FuncDefAnalysis::GetDataType() const {
   return *data_type_;
 }
@@ -23,7 +27,7 @@ bool FuncDefAnalysis::IsEqual(const DefAnalysis &analysis) const {
 }
 
 void FuncDefAnalysis::Print(ostream &stream) const {
-  stream << *data_type_;
+  stream << "data_type=" << *data_type_;
 }
 }
 }

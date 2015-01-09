@@ -294,7 +294,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   void VisitReturn(const real_talk::parser::ReturnNode &return_node);
   std::unique_ptr<DataType> CreateDataType(
       const real_talk::parser::DataTypeNode &data_type_node);
-  const real_talk::parser::DefNode *GetIdDef(const std::string &id);
+  const ExprAnalysis &GetExprAnalysis(const real_talk::parser::ExprNode *expr);
   const DataType &GetExprDataType(const real_talk::parser::ExprNode *expr);
   const DataType &GetFuncReturnDataType(
       const real_talk::parser::FuncDefNode *func_def);
@@ -353,6 +353,10 @@ class SimpleSemanticAnalyzer::Impl::Scope {
 
   ~Scope() {
     scopes_stack_.pop_back();
+  }
+
+  const IdDefs &GetIdDefs() const {
+    return id_defs_;
   }
 
   IdDefs &GetIdDefs() {
@@ -1060,7 +1064,8 @@ void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode&) {
 
 void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &alloc_node) {
-  unique_ptr<DataType> array_data_type = VisitArrayAlloc(alloc_node);
+  unique_ptr<DataType> element_data_type = VisitArrayAlloc(alloc_node);
+  unique_ptr<DataType> &array_data_type = element_data_type;
   assert(!alloc_node.GetSizes().empty());
 
   for (const unique_ptr<BoundedArraySizeNode> &size: alloc_node.GetSizes()) {
@@ -1082,7 +1087,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
     }
   }
 
-  ExprAnalysis expr_analysis(move(array_data_type));
+  ExprAnalysis expr_analysis(move(array_data_type), ValueType::kRight);
   expr_analyzes_.insert(make_pair(&alloc_node, move(expr_analysis)));
 }
 
@@ -1121,7 +1126,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
     }
   }
 
-  ExprAnalysis expr_analysis(move(array_data_type));
+  ExprAnalysis expr_analysis(move(array_data_type), ValueType::kRight);
   expr_analyzes_.insert(make_pair(&alloc_node, move(expr_analysis)));
 }
 
@@ -1143,22 +1148,22 @@ unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
 void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
   assign_node.GetLeftOperand()->Accept(*this);
   assign_node.GetRightOperand()->Accept(*this);
-  auto left_operand_analysis_it =
-      expr_analyzes_.find(assign_node.GetLeftOperand().get());
-  assert(left_operand_analysis_it != expr_analyzes_.end());
-  auto right_operand_analysis_it =
-      expr_analyzes_.find(assign_node.GetRightOperand().get());
-  assert(right_operand_analysis_it != expr_analyzes_.end());
-  const ExprAnalysis &left_operand_analysis =
-      left_operand_analysis_it->second;
   const DataType &left_operand_data_type =
-      left_operand_analysis.GetDataType();
-  const ExprAnalysis &right_operand_analysis =
-      right_operand_analysis_it->second;
+      GetExprDataType(assign_node.GetLeftOperand().get());
   const DataType &right_operand_data_type =
-      right_operand_analysis.GetDataType();
-  assert(IsTypeConvertible(left_operand_data_type, right_operand_data_type));
-  ExprAnalysis assign_analysis(left_operand_data_type.Clone());
+      GetExprDataType(assign_node.GetRightOperand().get());
+
+  if (!IsTypeConvertible(left_operand_data_type, right_operand_data_type)) {
+    unique_ptr<SemanticError> error(new BinaryExprWithIncompatibleTypeError(
+        GetCurrentFilePath(),
+        assign_node,
+        left_operand_data_type.Clone(),
+        right_operand_data_type.Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
+  ExprAnalysis assign_analysis(left_operand_data_type.Clone(),
+                               ValueType::kLeft);
   expr_analyzes_.insert(make_pair(&assign_node, move(assign_analysis)));
 }
 
@@ -1179,7 +1184,8 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
     throw SemanticErrorException(move(error));
   }
 
-  ExprAnalysis expr_analysis(func_data_type->GetReturnDataType().Clone());
+  ExprAnalysis expr_analysis(func_data_type->GetReturnDataType().Clone(),
+                             ValueType::kRight);
   expr_analyzes_.insert(make_pair(&call_node, move(expr_analysis)));
   size_t expected_args_count = func_data_type->GetArgDataTypes().size();
   size_t actual_args_count = call_node.GetArgs().size();
@@ -1313,7 +1319,7 @@ void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
   equal_node.GetLeftOperand()->Accept(*this);
   equal_node.GetRightOperand()->Accept(*this);
   unique_ptr<DataType> equal_data_type(new BoolDataType());
-  ExprAnalysis equal_analysis(move(equal_data_type));
+  ExprAnalysis equal_analysis(move(equal_data_type), ValueType::kRight);
   expr_analyzes_.insert(make_pair(&equal_node, move(equal_analysis)));
   const DataType &left_operand_data_type =
       GetExprDataType(equal_node.GetLeftOperand().get());
@@ -1334,7 +1340,7 @@ void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
   less_node.GetLeftOperand()->Accept(*this);
   less_node.GetRightOperand()->Accept(*this);
   unique_ptr<DataType> less_data_type(new BoolDataType());
-  ExprAnalysis less_analysis(move(less_data_type));
+  ExprAnalysis less_analysis(move(less_data_type), ValueType::kRight);
   expr_analyzes_.insert(make_pair(&less_node, move(less_analysis)));
   const DataType &left_operand_data_type =
       GetExprDataType(less_node.GetLeftOperand().get());
@@ -1390,8 +1396,9 @@ void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode&) {
 void SimpleSemanticAnalyzer::Impl::VisitSubscript(
     const SubscriptNode &subscript) {
   subscript.GetOperand()->Accept(*this);
-  const DataType &operand_data_type =
-      GetExprDataType(subscript.GetOperand().get());
+  const ExprAnalysis &operand_expr_analysis =
+      GetExprAnalysis(subscript.GetOperand().get());
+  const DataType &operand_data_type = operand_expr_analysis.GetDataType();
   const ArrayDataType *array_data_type =
       dynamic_cast<const ArrayDataType*>(&operand_data_type);
   const bool is_operand_array = array_data_type != nullptr;
@@ -1415,7 +1422,9 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
     throw SemanticErrorException(move(error));
   }
 
-  ExprAnalysis expr_analysis(array_data_type->GetElementDataType().Clone());
+  const ValueType operand_value_type = operand_expr_analysis.GetValueType();
+  ExprAnalysis expr_analysis(array_data_type->GetElementDataType().Clone(),
+                             operand_value_type);
   expr_analyzes_.insert(make_pair(&subscript, move(expr_analysis)));
 }
 
@@ -1426,12 +1435,31 @@ void SimpleSemanticAnalyzer::Impl::VisitSum(const SumNode&) {
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
-  const DefNode *def_node = GetIdDef(id_node.GetNameToken().GetValue());
+  const DefNode *def_node = nullptr;
+  const string &id = id_node.GetNameToken().GetValue();
+
+  for (const Scope* scope: reverse(scopes_stack_)) {
+    const IdDefs &scope_id_defs = scope->GetIdDefs();
+    IdDefs::const_iterator scope_id_def_it = scope_id_defs.find(id);
+
+    if (scope_id_def_it != scope_id_defs.end()) {
+      def_node = scope_id_def_it->second;
+      break;
+    }
+  }
+
+  if (def_node == nullptr) {
+    unique_ptr<SemanticError> error(
+        new IdWithoutDefError(GetCurrentFilePath(), id_node));
+    throw SemanticErrorException(move(error));
+  }
+
   SemanticAnalysis::DefAnalyzes::const_iterator def_analysis_it =
       def_analyzes_.find(def_node);
   assert(def_analysis_it != def_analyzes_.end());
   const DefAnalysis &def_analysis = *(def_analysis_it->second);
-  ExprAnalysis expr_analysis(def_analysis.GetDataType().Clone());
+  ExprAnalysis expr_analysis(def_analysis.GetDataType().Clone(),
+                             def_analysis.GetValueType());
   expr_analyzes_.insert(make_pair(&id_node, move(expr_analysis)));
   const IdAnalysis id_analysis(def_node);
   id_analyzes_.insert(make_pair(&id_node, id_analysis));
@@ -1488,31 +1516,17 @@ unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::CreateDataType(
   return move(current_data_type_);
 }
 
-const DefNode *SimpleSemanticAnalyzer::Impl::GetIdDef(const string &id) {
-  const DefNode *def_node = nullptr;
-
-  for (Scope* scope: reverse(scopes_stack_)) {
-    const IdDefs &id_defs = scope->GetIdDefs();
-    IdDefs::const_iterator id_def_it = id_defs.find(id);
-
-    if (id_def_it != id_defs.end()) {
-      def_node = id_def_it->second;
-      break;
-    }
-  }
-
-  // TODO
-  assert(def_node);
-  return def_node;
-}
-
-const DataType &SimpleSemanticAnalyzer::Impl::GetExprDataType(
+const ExprAnalysis &SimpleSemanticAnalyzer::Impl::GetExprAnalysis(
     const ExprNode *expr) {
   SemanticAnalysis::ExprAnalyzes::const_iterator expr_analysis_it =
       expr_analyzes_.find(expr);
   assert(expr_analysis_it != expr_analyzes_.end());
-  const ExprAnalysis &expr_analysis = expr_analysis_it->second;
-  return expr_analysis.GetDataType();
+  return expr_analysis_it->second;
+}
+
+const DataType &SimpleSemanticAnalyzer::Impl::GetExprDataType(
+    const ExprNode *expr) {
+  return GetExprAnalysis(expr).GetDataType();
 }
 
 const DataType &SimpleSemanticAnalyzer::Impl::GetFuncReturnDataType(
@@ -1529,7 +1543,7 @@ void SimpleSemanticAnalyzer::Impl::AddLitAnalyzes(
     const LitNode *lit_node,
     unique_ptr<DataType> data_type,
     unique_ptr<Lit> lit) {
-  ExprAnalysis expr_analysis(move(data_type));
+  ExprAnalysis expr_analysis(move(data_type), ValueType::kRight);
   expr_analyzes_.insert(make_pair(lit_node, move(expr_analysis)));
   LitAnalysis lit_analysis(move(lit));
   lit_analyzes_.insert(make_pair(lit_node, move(lit_analysis)));

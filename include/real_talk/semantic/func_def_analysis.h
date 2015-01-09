@@ -13,6 +13,7 @@ class FuncDefAnalysis: public DefAnalysis {
  public:
   explicit FuncDefAnalysis(std::unique_ptr<FuncDataType> data_type);
   const FuncDataType &GetDataType() const override;
+  ValueType GetValueType() const override;
 
  private:
   virtual bool IsEqual(const DefAnalysis &rhs) const override;

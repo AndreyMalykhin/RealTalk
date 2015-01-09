@@ -15,6 +15,7 @@ class VarDefAnalysis: public DefAnalysis {
   VarDefAnalysis(std::unique_ptr<DataType> data_type,
                  std::unique_ptr<DataStorage> storage);
   const DataType &GetDataType() const override;
+  ValueType GetValueType() const override;
 
  private:
   virtual bool IsEqual(const DefAnalysis &rhs) const override;
