@@ -16,6 +16,7 @@
 #include "real_talk/parser/bounded_array_size_node.h"
 #include "real_talk/parser/subscript_node.h"
 #include "real_talk/parser/id_node.h"
+#include "real_talk/parser/assign_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
@@ -42,9 +43,34 @@ using real_talk::parser::ArrayAllocNode;
 using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::SubscriptNode;
 using real_talk::parser::IdNode;
+using real_talk::parser::AssignNode;
 
 namespace real_talk {
 namespace semantic {
+
+AssignWithRightValueAssigneeError::AssignWithRightValueAssigneeError(
+    const path &file_path, const AssignNode &assign)
+    : file_path_(file_path), assign_(assign) {
+}
+
+const path &AssignWithRightValueAssigneeError::GetFilePath() const {
+  return file_path_;
+}
+
+const AssignNode &AssignWithRightValueAssigneeError::GetAssign() const {
+  return assign_;
+}
+
+void AssignWithRightValueAssigneeError::Print(ostream &stream) const {
+  stream << "assign=" << assign_;
+}
+
+bool AssignWithRightValueAssigneeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const AssignWithRightValueAssigneeError &rhs =
+      static_cast<const AssignWithRightValueAssigneeError&>(problem);
+  return assign_ == rhs.assign_;
+}
 
 IdWithoutDefError::IdWithoutDefError(
     const path &file_path, const IdNode &id)

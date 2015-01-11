@@ -13,7 +13,7 @@ namespace semantic {
 class VarDefAnalysis: public DefAnalysis {
  public:
   VarDefAnalysis(std::unique_ptr<DataType> data_type,
-                 std::unique_ptr<DataStorage> storage);
+                 DataStorage storage);
   const DataType &GetDataType() const override;
   ValueType GetValueType() const override;
 
@@ -22,7 +22,7 @@ class VarDefAnalysis: public DefAnalysis {
   virtual void Print(std::ostream &stream) const override;
 
   std::unique_ptr<DataType> data_type_;
-  std::unique_ptr<DataStorage> storage_;
+  DataStorage storage_;
 };
 }
 }

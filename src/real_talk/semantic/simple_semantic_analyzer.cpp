@@ -85,8 +85,6 @@
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/arg_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
-#include "real_talk/semantic/global_data_storage.h"
-#include "real_talk/semantic/local_data_storage.h"
 #include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/data_type_visitor.h"
@@ -274,7 +272,10 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   class FuncScope;
   class LoopScope;
   class SemanticErrorException;
+  class DataTypeQuery;
   class IsVoidDataType;
+  class IsFuncDataType;
+  class IsArrayDataType;
   class IsDataTypeSupportedByLess;
   class IsDataTypeSupportedByFuncDef;
 
@@ -437,69 +438,59 @@ class SimpleSemanticAnalyzer::Impl::LoopScope {
   std::vector<LoopScope*> &scopes_stack_;
 };
 
-class SimpleSemanticAnalyzer::Impl::IsVoidDataType: public DataTypeVisitor {
+class SimpleSemanticAnalyzer::Impl::DataTypeQuery: protected DataTypeVisitor {
  public:
-  explicit IsVoidDataType(const DataType &data_type) {
+  bool Check(const DataType &data_type) {
     data_type.Accept(*this);
-  }
-
-  bool Check() const {
     return result;
   }
 
+ protected:
+  DataTypeQuery(): result(false) {}
+  virtual ~DataTypeQuery() {}
+  virtual void VisitArray(const ArrayDataType&) override {}
+  virtual void VisitFunc(const FuncDataType&) override {}
+  virtual void VisitBool(const BoolDataType&) override {}
+  virtual void VisitInt(const IntDataType&) override {}
+  virtual void VisitLong(const LongDataType&) override {}
+  virtual void VisitDouble(const DoubleDataType&) override {}
+  virtual void VisitChar(const CharDataType&) override {}
+  virtual void VisitString(const StringDataType&) override {}
+  virtual void VisitVoid(const VoidDataType&) override {}
+
+  bool result;
+};
+
+class SimpleSemanticAnalyzer::Impl::IsVoidDataType: public DataTypeQuery {
+ protected:
   virtual void VisitArray(const ArrayDataType &data_type) override {
     data_type.GetElementDataType().Accept(*this);
   }
 
-  virtual void VisitFunc(const FuncDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitBool(const BoolDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitInt(const IntDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitLong(const LongDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitDouble(const DoubleDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitChar(const CharDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitString(const StringDataType&) override {
-    result = false;
-  }
-
   virtual void VisitVoid(const VoidDataType&) override {
     result = true;
   }
+};
 
- private:
-  bool result;
+class SimpleSemanticAnalyzer::Impl::IsFuncDataType: public DataTypeQuery {
+ protected:
+  virtual void VisitFunc(const FuncDataType&) override {
+    result = true;
+  }
+};
+
+class SimpleSemanticAnalyzer::Impl::IsArrayDataType: public DataTypeQuery {
+ protected:
+  virtual void VisitArray(const ArrayDataType&) override {
+    result = true;
+  }
 };
 
 class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByFuncDef
-    : public DataTypeVisitor {
- public:
-  explicit IsDataTypeSupportedByFuncDef(const DataType &data_type) {
-    data_type.Accept(*this);
-  }
-
-  bool Check() const {
-    return result;
-  }
-
+    : public DataTypeQuery {
+ protected:
   virtual void VisitArray(const ArrayDataType &data_type) override {
-    result = !IsVoidDataType(data_type.GetElementDataType()).Check();
+    result = !IsVoidDataType().Check(data_type.GetElementDataType());
   }
 
   virtual void VisitFunc(const FuncDataType&) override {
@@ -533,34 +524,11 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByFuncDef
   virtual void VisitVoid(const VoidDataType&) override {
     result = true;
   }
-
- private:
-  bool result;
 };
 
 class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByLess
-    : public DataTypeVisitor {
- public:
-  explicit IsDataTypeSupportedByLess(const DataType &data_type) {
-    data_type.Accept(*this);
-  }
-
-  bool Check() const {
-    return result;
-  }
-
-  virtual void VisitArray(const ArrayDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitFunc(const FuncDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitBool(const BoolDataType&) override {
-    result = false;
-  }
-
+    : public DataTypeQuery {
+ protected:
   virtual void VisitInt(const IntDataType&) override {
     result = true;
   }
@@ -572,21 +540,6 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByLess
   virtual void VisitDouble(const DoubleDataType&) override {
     result = true;
   }
-
-  virtual void VisitChar(const CharDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitString(const StringDataType&) override {
-    result = false;
-  }
-
-  virtual void VisitVoid(const VoidDataType&) override {
-    result = false;
-  }
-
- private:
-  bool result;
 };
 
 SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(
@@ -785,18 +738,12 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
   unique_ptr<DataType> data_type_ptr =
       CreateDataType(*(var_def_node.GetDataType()));
   const DataType &data_type = *data_type_ptr;
-  unique_ptr<DataStorage> data_storage;
-
-  if (IsCurrentScopeGlobal()) {
-    data_storage.reset(new GlobalDataStorage());
-  } else {
-    data_storage.reset(new LocalDataStorage());
-  }
-
+  DataStorage data_storage =
+      IsCurrentScopeGlobal() ? DataStorage::kGlobal : DataStorage::kLocal;
   unique_ptr<DefAnalysis> def_analysis(
-      new VarDefAnalysis(move(data_type_ptr), move(data_storage)));
+      new VarDefAnalysis(move(data_type_ptr), data_storage));
   AddDefAnalyzes(var_def_node, move(def_analysis));
-  const bool is_void_data_type = IsVoidDataType(data_type).Check();
+  const bool is_void_data_type = IsVoidDataType().Check(data_type);
 
   if (is_void_data_type) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
@@ -813,7 +760,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArgDef(const ArgDefNode &arg_def_node) {
   const DataType &data_type = *data_type_ptr;
   unique_ptr<DefAnalysis> def_analysis(new ArgDefAnalysis(move(data_type_ptr)));
   AddDefAnalyzes(arg_def_node, move(def_analysis));
-  const bool is_void_data_type = IsVoidDataType(data_type).Check();
+  const bool is_void_data_type = IsVoidDataType().Check(data_type);
 
   if (is_void_data_type) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
@@ -852,7 +799,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
   }
 
   const bool is_return_data_type_supported =
-      IsDataTypeSupportedByFuncDef(return_data_type).Check();
+      IsDataTypeSupportedByFuncDef().Check(return_data_type);
 
   if (!is_return_data_type_supported) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
@@ -1147,9 +1094,18 @@ unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
 
 void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
   assign_node.GetLeftOperand()->Accept(*this);
+  const ExprAnalysis &left_operand_expr_analysis =
+      GetExprAnalysis(assign_node.GetLeftOperand().get());
+
+  if (left_operand_expr_analysis.GetValueType() == ValueType::kRight) {
+    unique_ptr<SemanticError> error(new AssignWithRightValueAssigneeError(
+        GetCurrentFilePath(), assign_node));
+    throw SemanticErrorException(move(error));
+  }
+
   assign_node.GetRightOperand()->Accept(*this);
   const DataType &left_operand_data_type =
-      GetExprDataType(assign_node.GetLeftOperand().get());
+      left_operand_expr_analysis.GetDataType();
   const DataType &right_operand_data_type =
       GetExprDataType(assign_node.GetRightOperand().get());
 
@@ -1174,20 +1130,19 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
   call_node.GetOperand()->Accept(*this);
   const DataType &operand_data_type =
       GetExprDataType(call_node.GetOperand().get());
-  const FuncDataType *func_data_type =
-      dynamic_cast<const FuncDataType*>(&operand_data_type);
-  const bool is_operand_func = func_data_type != nullptr;
 
-  if (!is_operand_func) {
+  if (!IsFuncDataType().Check(operand_data_type)) {
     unique_ptr<SemanticError> error(
         new CallWithNonFuncError(GetCurrentFilePath(), call_node));
     throw SemanticErrorException(move(error));
   }
 
-  ExprAnalysis expr_analysis(func_data_type->GetReturnDataType().Clone(),
+  const FuncDataType &func_data_type =
+      static_cast<const FuncDataType&>(operand_data_type);
+  ExprAnalysis expr_analysis(func_data_type.GetReturnDataType().Clone(),
                              ValueType::kRight);
   expr_analyzes_.insert(make_pair(&call_node, move(expr_analysis)));
-  size_t expected_args_count = func_data_type->GetArgDataTypes().size();
+  size_t expected_args_count = func_data_type.GetArgDataTypes().size();
   size_t actual_args_count = call_node.GetArgs().size();
 
   if (expected_args_count != actual_args_count) {
@@ -1204,7 +1159,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
       call_node.GetArgs().begin();
 
   for (const unique_ptr<DataType> &arg_def_data_type_ptr:
-           func_data_type->GetArgDataTypes()) {
+           func_data_type.GetArgDataTypes()) {
     const ExprNode &call_arg = **call_arg_it;
     call_arg.Accept(*this);
     const DataType &call_arg_data_type = GetExprDataType(&call_arg);
@@ -1318,9 +1273,6 @@ void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
 void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
   equal_node.GetLeftOperand()->Accept(*this);
   equal_node.GetRightOperand()->Accept(*this);
-  unique_ptr<DataType> equal_data_type(new BoolDataType());
-  ExprAnalysis equal_analysis(move(equal_data_type), ValueType::kRight);
-  expr_analyzes_.insert(make_pair(&equal_node, move(equal_analysis)));
   const DataType &left_operand_data_type =
       GetExprDataType(equal_node.GetLeftOperand().get());
   const DataType &right_operand_data_type =
@@ -1334,6 +1286,19 @@ void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
         right_operand_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
+
+  if (IsFuncDataType().Check(left_operand_data_type)) {
+    unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
+        GetCurrentFilePath(),
+        equal_node,
+        left_operand_data_type.Clone(),
+        right_operand_data_type.Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
+  unique_ptr<DataType> equal_data_type(new BoolDataType());
+  ExprAnalysis equal_analysis(move(equal_data_type), ValueType::kRight);
+  expr_analyzes_.insert(make_pair(&equal_node, move(equal_analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
@@ -1356,10 +1321,7 @@ void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
     throw SemanticErrorException(move(error));
   }
 
-  const bool is_data_type_supported =
-      IsDataTypeSupportedByLess(left_operand_data_type).Check();
-
-  if (!is_data_type_supported) {
+  if (!IsDataTypeSupportedByLess().Check(left_operand_data_type)) {
     unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
         GetCurrentFilePath(),
         less_node,
@@ -1399,11 +1361,8 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
   const ExprAnalysis &operand_expr_analysis =
       GetExprAnalysis(subscript.GetOperand().get());
   const DataType &operand_data_type = operand_expr_analysis.GetDataType();
-  const ArrayDataType *array_data_type =
-      dynamic_cast<const ArrayDataType*>(&operand_data_type);
-  const bool is_operand_array = array_data_type != nullptr;
 
-  if (!is_operand_array) {
+  if (!IsArrayDataType().Check(operand_data_type)) {
     unique_ptr<SemanticError> error(
         new SubscriptWithNonArrayError(GetCurrentFilePath(), subscript));
     throw SemanticErrorException(move(error));
@@ -1422,8 +1381,10 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
     throw SemanticErrorException(move(error));
   }
 
+  const ArrayDataType &array_data_type =
+      static_cast<const ArrayDataType&>(operand_data_type);
   const ValueType operand_value_type = operand_expr_analysis.GetValueType();
-  ExprAnalysis expr_analysis(array_data_type->GetElementDataType().Clone(),
+  ExprAnalysis expr_analysis(array_data_type.GetElementDataType().Clone(),
                              operand_value_type);
   expr_analyzes_.insert(make_pair(&subscript, move(expr_analysis)));
 }

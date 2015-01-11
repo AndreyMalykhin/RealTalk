@@ -10,11 +10,10 @@ namespace semantic {
 
 VarDefAnalysis::VarDefAnalysis(
     unique_ptr<DataType> data_type,
-    unique_ptr<DataStorage> storage)
+    DataStorage storage)
     : data_type_(move(data_type)),
-      storage_(move(storage)) {
+      storage_(storage) {
   assert(data_type_);
-  assert(storage_);
 }
 
 ValueType VarDefAnalysis::GetValueType() const {
@@ -27,11 +26,11 @@ const DataType &VarDefAnalysis::GetDataType() const {
 
 bool VarDefAnalysis::IsEqual(const DefAnalysis &analysis) const {
   const VarDefAnalysis &rhs = static_cast<const VarDefAnalysis&>(analysis);
-  return *data_type_ == *(rhs.data_type_) && *storage_ == *(rhs.storage_);
+  return *data_type_ == *(rhs.data_type_) && storage_ == rhs.storage_;
 }
 
 void VarDefAnalysis::Print(ostream &stream) const {
-  stream << *storage_ << ' ' << *data_type_;
+  stream << "storage=" << storage_ << "; data_type=" << *data_type_;
 }
 }
 }

@@ -12,8 +12,8 @@ namespace semantic {
 
 class ExprAnalysis {
  public:
-  explicit ExprAnalysis(std::unique_ptr<DataType> data_type,
-                        ValueType value_type);
+  ExprAnalysis(std::unique_ptr<DataType> data_type,
+               ValueType value_type);
   const DataType &GetDataType() const;
   ValueType GetValueType() const;
   friend bool operator==(const ExprAnalysis &lhs,

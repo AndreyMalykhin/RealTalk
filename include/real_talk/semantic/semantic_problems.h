@@ -20,6 +20,22 @@ namespace semantic {
 
 class DataType;
 
+class AssignWithRightValueAssigneeError: public SemanticError {
+ public:
+  AssignWithRightValueAssigneeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::AssignNode &assign);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::AssignNode &GetAssign() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::AssignNode &assign_;
+};
+
 class IdWithoutDefError: public SemanticError {
  public:
   IdWithoutDefError(
