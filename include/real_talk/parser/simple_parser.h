@@ -63,8 +63,10 @@ class SimpleParser: public Parser {
       real_talk::lexer::Token until_token);
   std::unique_ptr<StmtNode> ParseStmt();
   std::unique_ptr<StmtNode> ParseDef(
+      const std::vector<real_talk::lexer::TokenInfo> &modifier_tokens,
       std::unique_ptr<PrimitiveDataTypeNode> primitive_data_type);
   std::unique_ptr<StmtNode> ParseFuncDef(
+      const std::vector<real_talk::lexer::TokenInfo> &modifier_tokens,
       std::unique_ptr<DataTypeNode> return_data_type,
       const real_talk::lexer::TokenInfo &func_name_token);
   std::unique_ptr<StmtNode> ParseExprStmt();
@@ -90,6 +92,7 @@ class SimpleParser: public Parser {
   std::unique_ptr<PrimitiveDataTypeNode> ParseStringDataType();
   std::unique_ptr<PrimitiveDataTypeNode> ParseBoolDataType();
   std::unique_ptr<PrimitiveDataTypeNode> ParseVoidDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParsePrimitiveDataType();
   std::unique_ptr<DataTypeNode> ParseDataType(
       std::unique_ptr<PrimitiveDataTypeNode> primitive_data_type);
   std::unique_ptr<ArgDefNode> ParseArgDef();

@@ -8,8 +8,9 @@ using std::ostream;
 namespace real_talk {
 namespace semantic {
 
-FuncDefAnalysis::FuncDefAnalysis(unique_ptr<FuncDataType> data_type)
-    : data_type_(move(data_type)) {
+FuncDefAnalysis::FuncDefAnalysis(
+    unique_ptr<FuncDataType> data_type, bool is_native)
+    : data_type_(move(data_type)), is_native_(is_native) {
   assert(data_type_);
 }
 
@@ -23,11 +24,11 @@ const FuncDataType &FuncDefAnalysis::GetDataType() const {
 
 bool FuncDefAnalysis::IsEqual(const DefAnalysis &analysis) const {
   const FuncDefAnalysis &rhs = static_cast<const FuncDefAnalysis&>(analysis);
-  return *data_type_ == *(rhs.data_type_);
+  return *data_type_ == *(rhs.data_type_) && is_native_ == rhs.is_native_;
 }
 
 void FuncDefAnalysis::Print(ostream &stream) const {
-  stream << "data_type=" << *data_type_;
+  stream << "data_type=" << *data_type_ << "; native=" << is_native_;
 }
 }
 }

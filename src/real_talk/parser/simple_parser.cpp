@@ -18,7 +18,7 @@
 #include "real_talk/parser/div_node.h"
 #include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
-#include "real_talk/parser/func_def_node.h"
+#include "real_talk/parser/func_def_with_body_node.h"
 #include "real_talk/parser/arg_def_node.h"
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/expr_node.h"
@@ -115,19 +115,25 @@ shared_ptr<ProgramNode> SimpleParser::Parse() {
 unique_ptr<StmtNode> SimpleParser::ParseStmt() {
   switch (next_token_.GetId()) {
     case Token::kIntType:
-      return ParseDef(ParseIntDataType());
+      return ParseDef(vector<TokenInfo>(), ParseIntDataType());
     case Token::kCharType:
-      return ParseDef(ParseCharDataType());
+      return ParseDef(vector<TokenInfo>(), ParseCharDataType());
     case Token::kLongType:
-      return ParseDef(ParseLongDataType());
+      return ParseDef(vector<TokenInfo>(), ParseLongDataType());
     case Token::kBoolType:
-      return ParseDef(ParseBoolDataType());
+      return ParseDef(vector<TokenInfo>(), ParseBoolDataType());
     case Token::kDoubleType:
-      return ParseDef(ParseDoubleDataType());
+      return ParseDef(vector<TokenInfo>(), ParseDoubleDataType());
     case Token::kStringType:
-      return ParseDef(ParseStringDataType());
+      return ParseDef(vector<TokenInfo>(), ParseStringDataType());
     case Token::kVoidType:
-      return ParseDef(ParseVoidDataType());
+      return ParseDef(vector<TokenInfo>(), ParseVoidDataType());
+    case Token::kNative: {
+      const TokenInfo native_token = next_token_;
+      ConsumeNextToken();
+      const vector<TokenInfo> modifier_tokens = {native_token};
+      return ParseDef(modifier_tokens, ParsePrimitiveDataType());
+    }
     case Token::kWhile:
       return ParsePreTestLoop();
     case Token::kIf:
@@ -275,10 +281,15 @@ unique_ptr<StmtNode> SimpleParser::ParseExprStmt() {
 }
 
 unique_ptr<StmtNode> SimpleParser::ParseDef(
+    const vector<TokenInfo> &modifier_tokens,
     unique_ptr<PrimitiveDataTypeNode> primitive_data_type) {
   unique_ptr<DataTypeNode> full_data_type =
       ParseDataType(move(primitive_data_type));
   const TokenInfo &name_token = ParseName();
+
+  if (!modifier_tokens.empty()) {
+    return ParseFuncDef(modifier_tokens, move(full_data_type), name_token);
+  }
 
   switch (next_token_.GetId()) {
     case Token::kStmtEnd: {
@@ -302,7 +313,7 @@ unique_ptr<StmtNode> SimpleParser::ParseDef(
           end_token));
     }
     case Token::kGroupStart: {
-      return ParseFuncDef(move(full_data_type), name_token);
+      return ParseFuncDef(modifier_tokens, move(full_data_type), name_token);
     }
     default: {
       UnexpectedToken();
@@ -314,6 +325,7 @@ unique_ptr<StmtNode> SimpleParser::ParseDef(
 }
 
 unique_ptr<StmtNode> SimpleParser::ParseFuncDef(
+    const vector<TokenInfo> &modifier_tokens,
     unique_ptr<DataTypeNode> return_data_type,
     const TokenInfo &func_name_token) {
   const TokenInfo args_start_token = next_token_;
@@ -338,7 +350,8 @@ unique_ptr<StmtNode> SimpleParser::ParseFuncDef(
   const TokenInfo args_end_token = next_token_;
   ConsumeNextToken();
   unique_ptr<ScopeNode> body = ParseScope();
-  return unique_ptr<StmtNode>(new FuncDefNode(
+  return unique_ptr<StmtNode>(new FuncDefWithBodyNode(
+      modifier_tokens,
       move(return_data_type),
       func_name_token,
       args_start_token,
@@ -360,34 +373,8 @@ unique_ptr<ScopeNode> SimpleParser::ParseScope() {
 }
 
 unique_ptr<ArgDefNode> SimpleParser::ParseArgDef() {
-  unique_ptr<PrimitiveDataTypeNode> primitive_data_type;
-
-  switch (next_token_.GetId()) {
-    case Token::kIntType:
-      primitive_data_type = ParseIntDataType();
-      break;
-    case Token::kCharType:
-      primitive_data_type = ParseCharDataType();
-      break;
-    case Token::kLongType:
-      primitive_data_type = ParseLongDataType();
-      break;
-    case Token::kBoolType:
-      primitive_data_type = ParseBoolDataType();
-      break;
-    case Token::kDoubleType:
-      primitive_data_type = ParseDoubleDataType();
-      break;
-    case Token::kStringType:
-      primitive_data_type = ParseStringDataType();
-      break;
-    case Token::kVoidType:
-      primitive_data_type = ParseVoidDataType();
-      break;
-    default:
-      UnexpectedToken();
-  }
-
+  unique_ptr<PrimitiveDataTypeNode> primitive_data_type =
+      ParsePrimitiveDataType();
   unique_ptr<DataTypeNode> full_data_type =
       ParseDataType(move(primitive_data_type));
   const TokenInfo &name_token = ParseName();
@@ -835,34 +822,7 @@ unique_ptr<ExprNode> SimpleParser::ParseBool() {
 unique_ptr<ExprNode> SimpleParser::ParseArrayAlloc() {
   const TokenInfo alloc_token = next_token_;
   ConsumeNextToken();
-  unique_ptr<PrimitiveDataTypeNode> data_type;
-
-  switch (next_token_.GetId()) {
-    case Token::kIntType:
-      data_type = ParseIntDataType();
-      break;
-    case Token::kCharType:
-      data_type = ParseCharDataType();
-      break;
-    case Token::kLongType:
-      data_type = ParseLongDataType();
-      break;
-    case Token::kBoolType:
-      data_type = ParseBoolDataType();
-      break;
-    case Token::kDoubleType:
-      data_type = ParseDoubleDataType();
-      break;
-    case Token::kStringType:
-      data_type = ParseStringDataType();
-      break;
-    case Token::kVoidType:
-      data_type = ParseVoidDataType();
-      break;
-    default:
-      UnexpectedToken();
-  }
-
+  unique_ptr<PrimitiveDataTypeNode> data_type = ParsePrimitiveDataType();
   AssertNextToken(Token::kSubscriptStart);
   TokenInfo array_size_start_token = next_token_;
   ConsumeNextToken();
@@ -1002,6 +962,29 @@ unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseVoidDataType() {
       new VoidDataTypeNode(next_token_));
   ConsumeNextToken();
   return data_type;
+}
+
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParsePrimitiveDataType() {
+  switch (next_token_.GetId()) {
+    case Token::kIntType:
+      return ParseIntDataType();
+    case Token::kCharType:
+      return ParseCharDataType();
+    case Token::kLongType:
+      return ParseLongDataType();
+    case Token::kBoolType:
+      return ParseBoolDataType();
+    case Token::kDoubleType:
+      return ParseDoubleDataType();
+    case Token::kStringType:
+      return ParseStringDataType();
+    case Token::kVoidType:
+      return ParseVoidDataType();
+    default:
+      UnexpectedToken();
+  }
+
+  assert(false);
 }
 
 unique_ptr<DataTypeNode> SimpleParser::ParseDataType(

@@ -31,7 +31,8 @@
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
-#include "real_talk/parser/func_def_node.h"
+#include "real_talk/parser/func_def_with_body_node.h"
+#include "real_talk/parser/func_def_without_body_node.h"
 #include "real_talk/parser/arg_def_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/array_alloc_without_init_node.h"
@@ -104,7 +105,8 @@ using real_talk::parser::DivNode;
 using real_talk::parser::ProgramNode;
 using real_talk::parser::VarDefWithInitNode;
 using real_talk::parser::VarDefWithoutInitNode;
-using real_talk::parser::FuncDefNode;
+using real_talk::parser::FuncDefWithBodyNode;
+using real_talk::parser::FuncDefWithoutBodyNode;
 using real_talk::parser::ArgDefNode;
 using real_talk::parser::ArrayAllocWithInitNode;
 using real_talk::parser::ArrayAllocWithoutInitNode;
@@ -2034,7 +2036,7 @@ TEST_F(SimpleParserTest, ArrayAllocWithInit) {
   }
 }
 
-TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
+TEST_F(SimpleParserTest, FuncDefWithBodyAndModifiersAndArgs) {
   struct TestData {
     TestDataTypeNode return_data_type;
     TestDataTypeNode arg_data_type1;
@@ -2075,13 +2077,15 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
         TokenInfo(Token::kLongType, "long", UINT32_C(1), UINT32_C(2));
     TestDataTypeNode test_return_data_type = {
       return_data_type_token,
-      unique_ptr<PrimitiveDataTypeNode>(new LongDataTypeNode(return_data_type_token))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new LongDataTypeNode(return_data_type_token))
     };
     TokenInfo arg_data_type_token1 =
         TokenInfo(Token::kLongType, "long", UINT32_C(7), UINT32_C(8));
     TestDataTypeNode test_arg_data_type1 = {
       arg_data_type_token1,
-      unique_ptr<PrimitiveDataTypeNode>(new LongDataTypeNode(arg_data_type_token1))
+      unique_ptr<PrimitiveDataTypeNode>(
+          new LongDataTypeNode(arg_data_type_token1))
     };
     TokenInfo arg_data_type_token2 =
         TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(14));
@@ -2210,49 +2214,52 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
 
   for (TestData &test_data: test_data_suits) {
     vector<TokenInfo> tokens = {
+      TokenInfo(Token::kNative, "native", UINT32_C(0), UINT32_C(0)),
       test_data.return_data_type.token,
-      TokenInfo(Token::kName, "myFunc", UINT32_C(3), UINT32_C(4)),
-      TokenInfo(Token::kGroupStart, "(", UINT32_C(5), UINT32_C(6)),
+      TokenInfo(Token::kName, "myFunc", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(3), UINT32_C(3)),
       test_data.arg_data_type1.token,
-      TokenInfo(Token::kName, "arg1", UINT32_C(9), UINT32_C(10)),
-      TokenInfo(Token::kSeparator, ",", UINT32_C(11), UINT32_C(12)),
+      TokenInfo(Token::kName, "arg1", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kSeparator, ",", UINT32_C(6), UINT32_C(6)),
       test_data.arg_data_type2.token,
-      TokenInfo(Token::kName, "arg2", UINT32_C(15), UINT32_C(16)),
-      TokenInfo(Token::kGroupEnd, ")", UINT32_C(17), UINT32_C(18)),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(19), UINT32_C(20)),
-      TokenInfo(Token::kName, "arg1", UINT32_C(23), UINT32_C(24)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(25), UINT32_C(26)),
-      TokenInfo(Token::kName, "arg2", UINT32_C(29), UINT32_C(30)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(31), UINT32_C(32)),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(33), UINT32_C(34))
+      TokenInfo(Token::kName, "arg2", UINT32_C(8), UINT32_C(8)),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(10), UINT32_C(10)),
+      TokenInfo(Token::kName, "arg1", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)),
+      TokenInfo(Token::kName, "arg2", UINT32_C(13), UINT32_C(13)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(14), UINT32_C(14)),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(15), UINT32_C(15))
     };
+    const vector<TokenInfo> modifier_tokens = {tokens[0]};
     unique_ptr<DataTypeNode> return_data_type(
         move(test_data.return_data_type.node));
-    const TokenInfo func_name_token = tokens[1];
-    const TokenInfo args_start_token = tokens[2];
+    const TokenInfo func_name_token = tokens[2];
+    const TokenInfo args_start_token = tokens[3];
     vector< unique_ptr<ArgDefNode> > args;
     unique_ptr<ArgDefNode> arg1(new ArgDefNode(
-        move(test_data.arg_data_type1.node), tokens[4]));
+        move(test_data.arg_data_type1.node), tokens[5]));
     args.push_back(move(arg1));
     unique_ptr<ArgDefNode> arg2(new ArgDefNode(
-        move(test_data.arg_data_type2.node), tokens[7]));
+        move(test_data.arg_data_type2.node), tokens[8]));
     args.push_back(move(arg2));
-    const vector<TokenInfo> arg_separator_tokens = {tokens[5]};
-    const TokenInfo args_end_token = tokens[8];
-    const TokenInfo body_start_token = tokens[9];
+    const vector<TokenInfo> arg_separator_tokens = {tokens[6]};
+    const TokenInfo args_end_token = tokens[9];
+    const TokenInfo body_start_token = tokens[10];
     vector< unique_ptr<StmtNode> > body_stmts;
-    unique_ptr<ExprNode> id1(new IdNode(tokens[10]));
+    unique_ptr<ExprNode> id1(new IdNode(tokens[11]));
     unique_ptr<StmtNode> body_stmt1(
-        new ExprStmtNode(move(id1), tokens[11]));
+        new ExprStmtNode(move(id1), tokens[12]));
     body_stmts.push_back(move(body_stmt1));
-    unique_ptr<ExprNode> id2(new IdNode(tokens[12]));
+    unique_ptr<ExprNode> id2(new IdNode(tokens[13]));
     unique_ptr<StmtNode> body_stmt2(
-        new ExprStmtNode(move(id2), tokens[13]));
+        new ExprStmtNode(move(id2), tokens[14]));
     body_stmts.push_back(move(body_stmt2));
-    const TokenInfo body_end_token = tokens[14];
+    const TokenInfo body_end_token = tokens[15];
     unique_ptr<ScopeNode> body(
         new ScopeNode(body_start_token, move(body_stmts), body_end_token));
-    unique_ptr<StmtNode> func_def1(new FuncDefNode(
+    unique_ptr<StmtNode> func_def1(new FuncDefWithBodyNode(
+        modifier_tokens,
         move(return_data_type),
         func_name_token,
         args_start_token,
@@ -2266,7 +2273,7 @@ TEST_F(SimpleParserTest, FuncDefWithArgsAndBody) {
   }
 }
 
-TEST_F(SimpleParserTest, FuncDefWithoutArgsAndBody) {
+TEST_F(SimpleParserTest, FuncDefWithBodyWithoutModifiersAndArgs) {
   for (TestDataTypeNode &test_data_type: GetTestDataTypes()) {
     vector<TokenInfo> tokens = {
       test_data_type.token,
@@ -2276,6 +2283,7 @@ TEST_F(SimpleParserTest, FuncDefWithoutArgsAndBody) {
       TokenInfo(Token::kScopeStart, "{", UINT32_C(19), UINT32_C(20)),
       TokenInfo(Token::kScopeEnd, "}", UINT32_C(33), UINT32_C(34))
     };
+    const vector<TokenInfo> modifier_tokens;
     unique_ptr<DataTypeNode> return_data_type(move(test_data_type.node));
     const TokenInfo name_token = tokens[1];
     const TokenInfo args_start_token = tokens[2];
@@ -2285,7 +2293,8 @@ TEST_F(SimpleParserTest, FuncDefWithoutArgsAndBody) {
     vector< unique_ptr<StmtNode> > body_stmts;
     unique_ptr<ScopeNode> body(
         new ScopeNode(tokens[4], move(body_stmts), tokens[5]));
-    unique_ptr<StmtNode> func_def1(new FuncDefNode(
+    unique_ptr<StmtNode> func_def1(new FuncDefWithBodyNode(
+        modifier_tokens,
         move(return_data_type),
         name_token,
         args_start_token,
@@ -2293,6 +2302,226 @@ TEST_F(SimpleParserTest, FuncDefWithoutArgsAndBody) {
         arg_separator_tokens,
         args_end_token,
         move(body)));
+    TestNode<StmtNode> test_stmt = {tokens, move(func_def1)};
+
+    TestParse(StmtToProgram(test_stmt));
+  }
+}
+
+TEST_F(SimpleParserTest, FuncDefWithoutBodyWithModifiersAndArgs) {
+  struct TestData {
+    TestDataTypeNode return_data_type;
+    TestDataTypeNode arg_data_type1;
+    TestDataTypeNode arg_data_type2;
+  };
+  vector<TestData> test_data_suits;
+
+  {
+    TokenInfo return_data_type_token =
+        TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(2));
+    TestDataTypeNode test_return_data_type = {
+      return_data_type_token,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new IntDataTypeNode(return_data_type_token))
+    };
+    TokenInfo arg_data_type_token1 =
+        TokenInfo(Token::kIntType, "int", UINT32_C(7), UINT32_C(8));
+    TestDataTypeNode test_arg_data_type1 = {
+      arg_data_type_token1,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new IntDataTypeNode(arg_data_type_token1))
+    };
+    TokenInfo arg_data_type_token2 =
+        TokenInfo(Token::kIntType, "int", UINT32_C(13), UINT32_C(14));
+    TestDataTypeNode test_arg_data_type2 = {
+      arg_data_type_token2,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new IntDataTypeNode(arg_data_type_token2))
+    };
+    TestData test_data = {move(test_return_data_type),
+                          move(test_arg_data_type1),
+                          move(test_arg_data_type2)};
+    test_data_suits.push_back(move(test_data));
+  }
+
+  {
+    TokenInfo return_data_type_token =
+        TokenInfo(Token::kLongType, "long", UINT32_C(1), UINT32_C(2));
+    TestDataTypeNode test_return_data_type = {
+      return_data_type_token,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new LongDataTypeNode(return_data_type_token))
+    };
+    TokenInfo arg_data_type_token1 =
+        TokenInfo(Token::kLongType, "long", UINT32_C(7), UINT32_C(8));
+    TestDataTypeNode test_arg_data_type1 = {
+      arg_data_type_token1,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new LongDataTypeNode(arg_data_type_token1))
+    };
+    TokenInfo arg_data_type_token2 =
+        TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(14));
+    TestDataTypeNode test_arg_data_type2 = {
+      arg_data_type_token2,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new LongDataTypeNode(arg_data_type_token2))
+    };
+    TestData test_data = {move(test_return_data_type),
+                          move(test_arg_data_type1),
+                          move(test_arg_data_type2)};
+    test_data_suits.push_back(move(test_data));
+  }
+
+  {
+    TokenInfo return_data_type_token =
+        TokenInfo(Token::kDoubleType, "double", UINT32_C(1), UINT32_C(2));
+    TestDataTypeNode test_return_data_type = {
+      return_data_type_token,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new DoubleDataTypeNode(return_data_type_token))
+    };
+    TokenInfo arg_data_type_token1 =
+        TokenInfo(Token::kDoubleType, "double", UINT32_C(7), UINT32_C(8));
+    TestDataTypeNode test_arg_data_type1 = {
+      arg_data_type_token1,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new DoubleDataTypeNode(arg_data_type_token1))
+    };
+    TokenInfo arg_data_type_token2 =
+        TokenInfo(Token::kDoubleType, "double", UINT32_C(13), UINT32_C(14));
+    TestDataTypeNode test_arg_data_type2 = {
+      arg_data_type_token2,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new DoubleDataTypeNode(arg_data_type_token2))
+    };
+    TestData test_data = {move(test_return_data_type),
+                          move(test_arg_data_type1),
+                          move(test_arg_data_type2)};
+    test_data_suits.push_back(move(test_data));
+  }
+
+  {
+    TokenInfo return_data_type_token =
+        TokenInfo(Token::kBoolType, "bool", UINT32_C(1), UINT32_C(2));
+    TestDataTypeNode test_return_data_type = {
+      return_data_type_token,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new BoolDataTypeNode(return_data_type_token))
+    };
+    TokenInfo arg_data_type_token1 =
+        TokenInfo(Token::kBoolType, "bool", UINT32_C(7), UINT32_C(8));
+    TestDataTypeNode test_arg_data_type1 = {
+      arg_data_type_token1,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new BoolDataTypeNode(arg_data_type_token1))
+    };
+    TokenInfo arg_data_type_token2 =
+        TokenInfo(Token::kBoolType, "bool", UINT32_C(13), UINT32_C(14));
+    TestDataTypeNode test_arg_data_type2 = {
+      arg_data_type_token2,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new BoolDataTypeNode(arg_data_type_token2))
+    };
+    TestData test_data = {move(test_return_data_type),
+                          move(test_arg_data_type1),
+                          move(test_arg_data_type2)};
+    test_data_suits.push_back(move(test_data));
+  }
+
+  {
+    TokenInfo return_data_type_token =
+        TokenInfo(Token::kCharType, "char", UINT32_C(1), UINT32_C(2));
+    TestDataTypeNode test_return_data_type = {
+      return_data_type_token,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new CharDataTypeNode(return_data_type_token))
+    };
+    TokenInfo arg_data_type_token1 =
+        TokenInfo(Token::kCharType, "char", UINT32_C(7), UINT32_C(8));
+    TestDataTypeNode test_arg_data_type1 = {
+      arg_data_type_token1,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new CharDataTypeNode(arg_data_type_token1))
+    };
+    TokenInfo arg_data_type_token2 =
+        TokenInfo(Token::kCharType, "char", UINT32_C(13), UINT32_C(14));
+    TestDataTypeNode test_arg_data_type2 = {
+      arg_data_type_token2,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new CharDataTypeNode(arg_data_type_token2))
+    };
+    TestData test_data = {move(test_return_data_type),
+                          move(test_arg_data_type1),
+                          move(test_arg_data_type2)};
+    test_data_suits.push_back(move(test_data));
+  }
+
+  {
+    TokenInfo return_data_type_token =
+        TokenInfo(Token::kStringType, "string", UINT32_C(1), UINT32_C(2));
+    TestDataTypeNode test_return_data_type = {
+      return_data_type_token,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new StringDataTypeNode(return_data_type_token))
+    };
+    TokenInfo arg_data_type_token1 =
+        TokenInfo(Token::kStringType, "string", UINT32_C(7), UINT32_C(8));
+    TestDataTypeNode test_arg_data_type1 = {
+      arg_data_type_token1,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new StringDataTypeNode(arg_data_type_token1))
+    };
+    TokenInfo arg_data_type_token2 =
+        TokenInfo(Token::kStringType, "string", UINT32_C(13), UINT32_C(14));
+    TestDataTypeNode test_arg_data_type2 = {
+      arg_data_type_token2,
+      unique_ptr<PrimitiveDataTypeNode>(
+          new StringDataTypeNode(arg_data_type_token2))
+    };
+    TestData test_data = {move(test_return_data_type),
+                          move(test_arg_data_type1),
+                          move(test_arg_data_type2)};
+    test_data_suits.push_back(move(test_data));
+  }
+
+  for (TestData &test_data: test_data_suits) {
+    vector<TokenInfo> tokens = {
+      TokenInfo(Token::kNative, "native", UINT32_C(0), UINT32_C(0)),
+      test_data.return_data_type.token,
+      TokenInfo(Token::kName, "myFunc", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(3), UINT32_C(3)),
+      test_data.arg_data_type1.token,
+      TokenInfo(Token::kName, "arg1", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kSeparator, ",", UINT32_C(6), UINT32_C(6)),
+      test_data.arg_data_type2.token,
+      TokenInfo(Token::kName, "arg2", UINT32_C(8), UINT32_C(8)),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10))
+    };
+    const vector<TokenInfo> modifier_tokens = {tokens[0]};
+    unique_ptr<DataTypeNode> return_data_type(
+        move(test_data.return_data_type.node));
+    const TokenInfo func_name_token = tokens[2];
+    const TokenInfo args_start_token = tokens[3];
+    vector< unique_ptr<ArgDefNode> > args;
+    unique_ptr<ArgDefNode> arg1(new ArgDefNode(
+        move(test_data.arg_data_type1.node), tokens[5]));
+    args.push_back(move(arg1));
+    unique_ptr<ArgDefNode> arg2(new ArgDefNode(
+        move(test_data.arg_data_type2.node), tokens[8]));
+    args.push_back(move(arg2));
+    const vector<TokenInfo> arg_separator_tokens = {tokens[6]};
+    const TokenInfo args_end_token = tokens[9];
+    const TokenInfo end_token = tokens[10];
+    unique_ptr<StmtNode> func_def1(new FuncDefWithoutBodyNode(
+        modifier_tokens,
+        move(return_data_type),
+        func_name_token,
+        args_start_token,
+        move(args),
+        arg_separator_tokens,
+        args_end_token,
+        end_token));
     TestNode<StmtNode> test_stmt = {tokens, move(func_def1)};
 
     TestParse(StmtToProgram(test_stmt));
@@ -3870,6 +4099,25 @@ TEST_F(SimpleParserTest, ContinueWithoutEndIsInvalid) {
   }
 }
 
+TEST_F(SimpleParserTest, FuncDefWithoutDataTypeIsInvalid) {
+  vector<MailformedTestTokens> mailformed_token_suits;
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kNative, "native", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kFileEnd, "", UINT32_C(2), UINT32_C(2))
+    };
+    const TokenInfo &unexpected_token = tokens[1];
+    const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
+    mailformed_token_suits.push_back(mailformed_tokens);
+  }
+
+  for (const MailformedTestTokens &mailformed_tokens: mailformed_token_suits) {
+    TestFailingParse(mailformed_tokens);
+  }
+}
+
 TEST_F(SimpleParserTest, FuncDefWithoutArgsIsInvalid) {
   vector<MailformedTestTokens> mailformed_token_suits;
 
@@ -3896,6 +4144,41 @@ TEST_F(SimpleParserTest, FuncDefWithoutArgsIsInvalid) {
       TokenInfo(Token::kFileEnd, "", UINT32_C(5), UINT32_C(5))
     };
     const TokenInfo &unexpected_token = tokens[3];
+    const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
+    mailformed_token_suits.push_back(mailformed_tokens);
+  }
+
+  for (const MailformedTestTokens &mailformed_tokens: mailformed_token_suits) {
+    TestFailingParse(mailformed_tokens);
+  }
+}
+
+TEST_F(SimpleParserTest, FuncDefWithoutEndIsInvalid) {
+  vector<MailformedTestTokens> mailformed_token_suits;
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kFileEnd, "", UINT32_C(4), UINT32_C(4))
+    };
+    const TokenInfo &unexpected_token = tokens[4];
+    const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
+    mailformed_token_suits.push_back(mailformed_tokens);
+  }
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kFileEnd, "", UINT32_C(5), UINT32_C(5))
+    };
+    const TokenInfo &unexpected_token = tokens[5];
     const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
     mailformed_token_suits.push_back(mailformed_tokens);
   }
@@ -3944,41 +4227,6 @@ TEST_F(SimpleParserTest, ArgDefWithoutNameIsInvalid) {
       TokenInfo(Token::kFileEnd, "", UINT32_C(7), UINT32_C(7))
     };
     const TokenInfo &unexpected_token = tokens[4];
-    const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
-    mailformed_token_suits.push_back(mailformed_tokens);
-  }
-
-  for (const MailformedTestTokens &mailformed_tokens: mailformed_token_suits) {
-    TestFailingParse(mailformed_tokens);
-  }
-}
-
-TEST_F(SimpleParserTest, FuncDefWithoutBodyIsInvalid) {
-  vector<MailformedTestTokens> mailformed_token_suits;
-
-  {
-    const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0)),
-      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kFileEnd, "", UINT32_C(4), UINT32_C(4))
-    };
-    const TokenInfo &unexpected_token = tokens[4];
-    const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
-    mailformed_token_suits.push_back(mailformed_tokens);
-  }
-
-  {
-    const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0)),
-      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kFileEnd, "", UINT32_C(5), UINT32_C(5))
-    };
-    const TokenInfo &unexpected_token = tokens[5];
     const MailformedTestTokens mailformed_tokens = {tokens, unexpected_token};
     mailformed_token_suits.push_back(mailformed_tokens);
   }

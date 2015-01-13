@@ -1,7 +1,8 @@
 
 #include <cassert>
 #include "real_talk/parser/var_def_with_init_node.h"
-#include "real_talk/parser/func_def_node.h"
+#include "real_talk/parser/func_def_with_body_node.h"
+#include "real_talk/parser/func_def_without_body_node.h"
 #include "real_talk/parser/call_node.h"
 #include "real_talk/parser/pre_test_loop_node.h"
 #include "real_talk/parser/binary_expr_node.h"
@@ -29,6 +30,8 @@ using real_talk::parser::Node;
 using real_talk::parser::DefNode;
 using real_talk::parser::CallNode;
 using real_talk::parser::BinaryExprNode;
+using real_talk::parser::FuncDefWithBodyNode;
+using real_talk::parser::FuncDefWithoutBodyNode;
 using real_talk::parser::FuncDefNode;
 using real_talk::parser::ReturnValueNode;
 using real_talk::parser::ReturnWithoutValueNode;
@@ -951,6 +954,54 @@ void DuplicateDefError::Print(std::ostream &stream) const {
 bool DuplicateDefError::IsEqual(const SemanticProblem &problem) const {
   const DuplicateDefError &rhs = static_cast<const DuplicateDefError&>(problem);
   return def_ == rhs.def_;
+}
+
+FuncDefWithoutBodyNotNativeError::FuncDefWithoutBodyNotNativeError(
+    const path &file_path, const FuncDefWithoutBodyNode &def)
+    : file_path_(file_path), def_(def) {
+}
+
+const path &FuncDefWithoutBodyNotNativeError::GetFilePath() const {
+  return file_path_;
+}
+
+const FuncDefWithoutBodyNode &FuncDefWithoutBodyNotNativeError::GetDef() const {
+  return def_;
+}
+
+void FuncDefWithoutBodyNotNativeError::Print(ostream &stream) const {
+  stream << "def=" << static_cast<const Node&>(def_);
+}
+
+bool FuncDefWithoutBodyNotNativeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const FuncDefWithoutBodyNotNativeError &rhs =
+      static_cast<const FuncDefWithoutBodyNotNativeError&>(problem);
+  return def_ == static_cast<const Node&>(rhs.def_);
+}
+
+FuncDefWithBodyIsNativeError::FuncDefWithBodyIsNativeError(
+    const path &file_path, const FuncDefWithBodyNode &def)
+    : file_path_(file_path), def_(def) {
+}
+
+const path &FuncDefWithBodyIsNativeError::GetFilePath() const {
+  return file_path_;
+}
+
+const FuncDefWithBodyNode &FuncDefWithBodyIsNativeError::GetDef() const {
+  return def_;
+}
+
+void FuncDefWithBodyIsNativeError::Print(ostream &stream) const {
+  stream << "def=" << static_cast<const Node&>(def_);
+}
+
+bool FuncDefWithBodyIsNativeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const FuncDefWithBodyIsNativeError &rhs =
+      static_cast<const FuncDefWithBodyIsNativeError&>(problem);
+  return def_ == static_cast<const Node&>(rhs.def_);
 }
 
 FuncDefWithinNonGlobalScope::FuncDefWithinNonGlobalScope(

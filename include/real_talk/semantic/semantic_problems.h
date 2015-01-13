@@ -522,6 +522,38 @@ class DuplicateDefError: public SemanticError {
   const real_talk::parser::DefNode &def_;
 };
 
+class FuncDefWithoutBodyNotNativeError: public SemanticError {
+ public:
+  FuncDefWithoutBodyNotNativeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::FuncDefWithoutBodyNode &def);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::FuncDefWithoutBodyNode &GetDef() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::FuncDefWithoutBodyNode &def_;
+};
+
+class FuncDefWithBodyIsNativeError: public SemanticError {
+ public:
+  FuncDefWithBodyIsNativeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::FuncDefWithBodyNode &def);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::FuncDefWithBodyNode &GetDef() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::FuncDefWithBodyNode &def_;
+};
+
 class FuncDefWithinNonGlobalScope: public SemanticError {
  public:
   FuncDefWithinNonGlobalScope(

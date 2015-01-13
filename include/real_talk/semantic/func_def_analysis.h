@@ -11,7 +11,7 @@ namespace semantic {
 
 class FuncDefAnalysis: public DefAnalysis {
  public:
-  explicit FuncDefAnalysis(std::unique_ptr<FuncDataType> data_type);
+  FuncDefAnalysis(std::unique_ptr<FuncDataType> data_type, bool is_native);
   const FuncDataType &GetDataType() const override;
   ValueType GetValueType() const override;
 
@@ -20,6 +20,7 @@ class FuncDefAnalysis: public DefAnalysis {
   virtual void Print(std::ostream &stream) const override;
 
   std::unique_ptr<FuncDataType> data_type_;
+  bool is_native_;
 };
 }
 }

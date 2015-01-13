@@ -57,6 +57,7 @@ enum class Token: std::uint8_t {
   kScopeStart,
   kScopeEnd,
   kSeparator,
+  kNative,
   kStmtEnd,
   kFileEnd
 };

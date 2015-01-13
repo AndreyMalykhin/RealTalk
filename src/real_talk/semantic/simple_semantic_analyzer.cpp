@@ -2,6 +2,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/format.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <unordered_set>
 #include <unordered_map>
 #include <cassert>
 #include <vector>
@@ -26,7 +27,8 @@
 #include "real_talk/parser/div_node.h"
 #include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
-#include "real_talk/parser/func_def_node.h"
+#include "real_talk/parser/func_def_with_body_node.h"
+#include "real_talk/parser/func_def_without_body_node.h"
 #include "real_talk/parser/arg_def_node.h"
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/expr_node.h"
@@ -95,6 +97,7 @@ using std::string;
 using std::unique_ptr;
 using std::shared_ptr;
 using std::unordered_map;
+using std::unordered_set;
 using std::runtime_error;
 using std::pair;
 using std::make_pair;
@@ -105,6 +108,7 @@ using boost::adaptors::reverse;
 using boost::filesystem::path;
 using boost::filesystem::filesystem_error;
 using real_talk::lexer::Token;
+using real_talk::lexer::TokenInfo;
 using real_talk::lexer::UnexpectedCharError;
 using real_talk::parser::ExprNode;
 using real_talk::parser::StmtNode;
@@ -121,7 +125,8 @@ using real_talk::parser::DivNode;
 using real_talk::parser::DoubleNode;
 using real_talk::parser::EqualNode;
 using real_talk::parser::ExprStmtNode;
-using real_talk::parser::FuncDefNode;
+using real_talk::parser::FuncDefWithBodyNode;
+using real_talk::parser::FuncDefWithoutBodyNode;
 using real_talk::parser::GreaterNode;
 using real_talk::parser::GreaterOrEqualNode;
 using real_talk::parser::IfElseIfElseNode;
@@ -170,6 +175,7 @@ using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::UnboundedArraySizeNode;
 using real_talk::parser::ArrayAllocNode;
 using real_talk::parser::UnexpectedTokenError;
+using real_talk::parser::FuncDefNode;
 using real_talk::util::FileNotFoundError;
 using real_talk::util::IOError;
 
@@ -203,8 +209,10 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   virtual void VisitEqual(const real_talk::parser::EqualNode &node) override;
   virtual void VisitExprStmt(
       const real_talk::parser::ExprStmtNode &node) override;
-  virtual void VisitFuncDef(
-      const real_talk::parser::FuncDefNode &node) override;
+  virtual void VisitFuncDefWithBody(
+      const real_talk::parser::FuncDefWithBodyNode &node) override;
+  virtual void VisitFuncDefWithoutBody(
+      const real_talk::parser::FuncDefWithoutBodyNode &node) override;
   virtual void VisitGreater(
       const real_talk::parser::GreaterNode &node) override;
   virtual void VisitGreaterOrEqual(
@@ -277,7 +285,9 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   class IsFuncDataType;
   class IsArrayDataType;
   class IsDataTypeSupportedByLess;
+  class IsDataTypeSupportedByEqual;
   class IsDataTypeSupportedByFuncDef;
+  class IsDataTypeSupportedByVarDef;
 
   typedef std::unordered_map<std::string,
                              const real_talk::parser::DefNode*> IdDefs;
@@ -292,6 +302,9 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
       const real_talk::parser::ArrayAllocNode &array_alloc_node);
   const DataType &VisitVarDef(
       const real_talk::parser::VarDefNode &var_def_node);
+  void VisitFuncDef(const real_talk::parser::FuncDefNode &func_def_node,
+                    bool &is_func_native,
+                    std::unique_ptr<DataType> &return_data_type);
   void VisitReturn(const real_talk::parser::ReturnNode &return_node);
   std::unique_ptr<DataType> CreateDataType(
       const real_talk::parser::DataTypeNode &data_type_node);
@@ -493,53 +506,51 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByFuncDef
     result = !IsVoidDataType().Check(data_type.GetElementDataType());
   }
 
-  virtual void VisitFunc(const FuncDataType&) override {
-    result = true;
+  virtual void VisitBool(const BoolDataType&) override {result = true;}
+  virtual void VisitInt(const IntDataType&) override {result = true;}
+  virtual void VisitLong(const LongDataType&) override {result = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result = true;}
+  virtual void VisitChar(const CharDataType&) override {result = true;}
+  virtual void VisitString(const StringDataType&) override {result = true;}
+  virtual void VisitVoid(const VoidDataType&) override {result = true;}
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByVarDef
+    : public DataTypeQuery {
+ protected:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    result = !IsVoidDataType().Check(data_type.GetElementDataType());
   }
 
-  virtual void VisitBool(const BoolDataType&) override {
-    result = true;
-  }
-
-  virtual void VisitInt(const IntDataType&) override {
-    result = true;
-  }
-
-  virtual void VisitLong(const LongDataType&) override {
-    result = true;
-  }
-
-  virtual void VisitDouble(const DoubleDataType&) override {
-    result = true;
-  }
-
-  virtual void VisitChar(const CharDataType&) override {
-    result = true;
-  }
-
-  virtual void VisitString(const StringDataType&) override {
-    result = true;
-  }
-
-  virtual void VisitVoid(const VoidDataType&) override {
-    result = true;
-  }
+  virtual void VisitBool(const BoolDataType&) override {result = true;}
+  virtual void VisitInt(const IntDataType&) override {result = true;}
+  virtual void VisitLong(const LongDataType&) override {result = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result = true;}
+  virtual void VisitChar(const CharDataType&) override {result = true;}
+  virtual void VisitString(const StringDataType&) override {result = true;}
 };
 
 class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByLess
     : public DataTypeQuery {
  protected:
-  virtual void VisitInt(const IntDataType&) override {
-    result = true;
+  virtual void VisitInt(const IntDataType&) override {result = true;}
+  virtual void VisitLong(const LongDataType&) override {result = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result = true;}
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByEqual
+    : public DataTypeQuery {
+ protected:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    result = IsVoidDataType().Check(data_type);
   }
 
-  virtual void VisitLong(const LongDataType&) override {
-    result = true;
-  }
-
-  virtual void VisitDouble(const DoubleDataType&) override {
-    result = true;
-  }
+  virtual void VisitBool(const BoolDataType&) override {result = true;}
+  virtual void VisitInt(const IntDataType&) override {result = true;}
+  virtual void VisitLong(const LongDataType&) override {result = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result = true;}
+  virtual void VisitChar(const CharDataType&) override {result = true;}
+  virtual void VisitString(const StringDataType&) override {result = true;}
 };
 
 SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(
@@ -743,9 +754,12 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
   unique_ptr<DefAnalysis> def_analysis(
       new VarDefAnalysis(move(data_type_ptr), data_storage));
   AddDefAnalyzes(var_def_node, move(def_analysis));
-  const bool is_void_data_type = IsVoidDataType().Check(data_type);
 
-  if (is_void_data_type) {
+  if (IsWithinImportProgram()) {
+    return data_type;
+  }
+
+  if (!IsDataTypeSupportedByVarDef().Check(data_type)) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
         GetCurrentFilePath(), var_def_node, data_type.Clone()));
     throw SemanticErrorException(move(error));
@@ -760,55 +774,28 @@ void SimpleSemanticAnalyzer::Impl::VisitArgDef(const ArgDefNode &arg_def_node) {
   const DataType &data_type = *data_type_ptr;
   unique_ptr<DefAnalysis> def_analysis(new ArgDefAnalysis(move(data_type_ptr)));
   AddDefAnalyzes(arg_def_node, move(def_analysis));
-  const bool is_void_data_type = IsVoidDataType().Check(data_type);
 
-  if (is_void_data_type) {
+  if (!IsDataTypeSupportedByVarDef().Check(data_type)) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
         GetCurrentFilePath(), arg_def_node, data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
-    const FuncDefNode &func_def_node) {
-  if (!IsWithinImportProgram()) {
-    ++non_import_stmts_count_;
-  }
-
-  unique_ptr<DataType> return_data_type_ptr =
-      CreateDataType(*(func_def_node.GetDataType()));
-  const DataType &return_data_type = *return_data_type_ptr;
-  vector< unique_ptr<DataType> > arg_data_types;
-
-  for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
-    unique_ptr<DataType> arg_data_type =
-        CreateDataType(*(arg_def_node->GetDataType()));
-    arg_data_types.push_back(move(arg_data_type));
-  }
-
-  unique_ptr<FuncDataType> func_data_type(
-      new FuncDataType(move(return_data_type_ptr), move(arg_data_types)));
-  unique_ptr<DefAnalysis> def_analysis(
-      new FuncDefAnalysis(move(func_data_type)));
-  AddDefAnalyzes(func_def_node, move(def_analysis));
-
-  if (!IsCurrentScopeGlobal()) {
-    unique_ptr<SemanticError> error(
-        new FuncDefWithinNonGlobalScope(GetCurrentFilePath(), func_def_node));
-    throw SemanticErrorException(move(error));
-  }
-
-  const bool is_return_data_type_supported =
-      IsDataTypeSupportedByFuncDef().Check(return_data_type);
-
-  if (!is_return_data_type_supported) {
-    unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
-        GetCurrentFilePath(), func_def_node, return_data_type.Clone()));
-    throw SemanticErrorException(move(error));
-  }
+void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithBody(
+    const FuncDefWithBodyNode &func_def_node) {
+  bool is_func_native;
+  unique_ptr<DataType> return_data_type;
+  VisitFuncDef(func_def_node, is_func_native, return_data_type);
 
   if (IsWithinImportProgram()) {
     return;
+  }
+
+  if (is_func_native) {
+    unique_ptr<SemanticError> error(new FuncDefWithBodyIsNativeError(
+        GetCurrentFilePath(), func_def_node));
+    throw SemanticErrorException(move(error));
   }
 
   FuncScope func_scope(func_scopes_stack_, func_def_node);
@@ -822,9 +809,85 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
     stmt->Accept(*this);
   }
 
-  if (return_data_type != VoidDataType() && !func_scope.HasReturnValue()) {
+  if (*return_data_type != VoidDataType() && !func_scope.HasReturnValue()) {
     unique_ptr<SemanticError> error(new FuncDefWithoutReturnValueError(
         GetCurrentFilePath(), func_def_node));
+    throw SemanticErrorException(move(error));
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithoutBody(
+    const FuncDefWithoutBodyNode &func_def_node) {
+  bool is_func_native;
+  unique_ptr<DataType> return_data_type;
+  VisitFuncDef(func_def_node, is_func_native, return_data_type);
+
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  if (!is_func_native) {
+    unique_ptr<SemanticError> error(new FuncDefWithoutBodyNotNativeError(
+        GetCurrentFilePath(), func_def_node));
+    throw SemanticErrorException(move(error));
+  }
+
+  FuncScope func_scope(func_scopes_stack_, func_def_node);
+  Scope scope(scopes_stack_);
+
+  for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
+    arg_def_node->Accept(*this);
+  }
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
+    const FuncDefNode &func_def_node,
+    bool &is_func_native,
+    unique_ptr<DataType> &return_data_type) {
+  if (!IsWithinImportProgram()) {
+    ++non_import_stmts_count_;
+  }
+
+  return_data_type = CreateDataType(*(func_def_node.GetDataType()));
+  vector< unique_ptr<DataType> > arg_data_types;
+
+  for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
+    unique_ptr<DataType> arg_data_type =
+        CreateDataType(*(arg_def_node->GetDataType()));
+    arg_data_types.push_back(move(arg_data_type));
+  }
+
+  unique_ptr<FuncDataType> func_data_type(
+      new FuncDataType(return_data_type->Clone(), move(arg_data_types)));
+  unordered_set<Token> modifier_tokens;
+
+  for (const TokenInfo &modifier_token: func_def_node.GetModifierTokens()) {
+    const bool is_duplicate_modifier =
+        !modifier_tokens.insert(modifier_token.GetId()).second;
+    assert(!is_duplicate_modifier);
+  }
+
+  is_func_native = modifier_tokens.count(Token::kNative) != 0;
+  unique_ptr<DefAnalysis> def_analysis(
+      new FuncDefAnalysis(move(func_data_type), is_func_native));
+  AddDefAnalyzes(func_def_node, move(def_analysis));
+
+  if (IsWithinImportProgram()) {
+    return;
+  }
+
+  if (!IsCurrentScopeGlobal()) {
+    unique_ptr<SemanticError> error(
+        new FuncDefWithinNonGlobalScope(GetCurrentFilePath(), func_def_node));
+    throw SemanticErrorException(move(error));
+  }
+
+  const bool is_return_data_type_supported =
+      IsDataTypeSupportedByFuncDef().Check(*return_data_type);
+
+  if (!is_return_data_type_supported) {
+    unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
+        GetCurrentFilePath(), func_def_node, return_data_type->Clone()));
     throw SemanticErrorException(move(error));
   }
 }
@@ -1287,7 +1350,7 @@ void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
     throw SemanticErrorException(move(error));
   }
 
-  if (IsFuncDataType().Check(left_operand_data_type)) {
+  if (!IsDataTypeSupportedByEqual().Check(left_operand_data_type)) {
     unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
         GetCurrentFilePath(),
         equal_node,

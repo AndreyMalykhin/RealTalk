@@ -1490,6 +1490,33 @@ TEST_F(SimpleLexerTest, ReturnToken) {
   }
 }
 
+TEST_F(SimpleLexerTest, NativeToken) {
+  vector<TestTokens> test_token_suites;
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kNative, "somewhere", UINT32_C(0), UINT32_C(0))
+    };
+    string code = "somewhere";
+    TestTokens test_tokens = {code, tokens};
+    test_token_suites.push_back(test_tokens);
+  }
+
+  {
+    const vector<TokenInfo> tokens = {
+      TokenInfo(Token::kNative, "somewhere", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kNative, "somewhere", UINT32_C(0), UINT32_C(10))
+    };
+    string code = "somewhere somewhere";
+    TestTokens test_tokens = {code, tokens};
+    test_token_suites.push_back(test_tokens);
+  }
+
+  for (const TestTokens &test_tokens: test_token_suites) {
+    TestGetNextToken(test_tokens);
+  }
+}
+
 TEST_F(SimpleLexerTest, SpaceIsIgnored) {
   vector<TestTokens> test_token_suites;
 
