@@ -542,7 +542,7 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByEqual
     : public DataTypeQuery {
  protected:
   virtual void VisitArray(const ArrayDataType &data_type) override {
-    result = IsVoidDataType().Check(data_type);
+    result = !IsVoidDataType().Check(data_type);
   }
 
   virtual void VisitBool(const BoolDataType&) override {result = true;}
@@ -1367,9 +1367,6 @@ void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
 void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
   less_node.GetLeftOperand()->Accept(*this);
   less_node.GetRightOperand()->Accept(*this);
-  unique_ptr<DataType> less_data_type(new BoolDataType());
-  ExprAnalysis less_analysis(move(less_data_type), ValueType::kRight);
-  expr_analyzes_.insert(make_pair(&less_node, move(less_analysis)));
   const DataType &left_operand_data_type =
       GetExprDataType(less_node.GetLeftOperand().get());
   const DataType &right_operand_data_type =
@@ -1392,6 +1389,10 @@ void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
         right_operand_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
+
+  unique_ptr<DataType> less_data_type(new BoolDataType());
+  ExprAnalysis less_analysis(move(less_data_type), ValueType::kRight);
+  expr_analyzes_.insert(make_pair(&less_node, move(less_analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitLessOrEqual(const LessOrEqualNode&) {

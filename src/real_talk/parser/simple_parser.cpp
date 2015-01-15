@@ -19,6 +19,7 @@
 #include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
 #include "real_talk/parser/func_def_with_body_node.h"
+#include "real_talk/parser/func_def_without_body_node.h"
 #include "real_talk/parser/arg_def_node.h"
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/expr_node.h"
@@ -349,6 +350,21 @@ unique_ptr<StmtNode> SimpleParser::ParseFuncDef(
   AssertNextToken(Token::kGroupEnd);
   const TokenInfo args_end_token = next_token_;
   ConsumeNextToken();
+
+  if (next_token_.GetId() == Token::kStmtEnd) {
+    const TokenInfo end_token = next_token_;
+    ConsumeNextToken();
+    return unique_ptr<StmtNode>(new FuncDefWithoutBodyNode(
+        modifier_tokens,
+        move(return_data_type),
+        func_name_token,
+        args_start_token,
+        move(args),
+        arg_separator_tokens,
+        args_end_token,
+        end_token));
+  }
+
   unique_ptr<ScopeNode> body = ParseScope();
   return unique_ptr<StmtNode>(new FuncDefWithBodyNode(
       modifier_tokens,

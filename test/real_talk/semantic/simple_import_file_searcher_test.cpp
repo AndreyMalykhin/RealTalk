@@ -1,10 +1,12 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <vector>
 #include "real_talk/test/test_config.h"
 #include "real_talk/util/errors.h"
 #include "real_talk/semantic/simple_import_file_searcher.h"
 
+using std::vector;
 using boost::filesystem::path;
 using boost::filesystem::current_path;
 using testing::Test;
@@ -24,17 +26,19 @@ class SimpleImportFileSearcherTest: public Test {
 };
 
 TEST_F(SimpleImportFileSearcherTest, Search) {
-  SimpleImportFileSearcher searcher;
-  path relative_file_path(TestConfig::GetResourceDir() / "." / "program.rt");
+  path relative_file_path("./program.rt");
   path expected_absolute_file_path(
       current_path() / TestConfig::GetResourceDir() / "program.rt");
+  vector<path> dirs = {TestConfig::GetResourceDir()};
+  SimpleImportFileSearcher searcher(dirs);
 
   path actual_absolute_file_path = searcher.Search(relative_file_path);
   ASSERT_EQ(expected_absolute_file_path, actual_absolute_file_path);
 }
 
 TEST_F(SimpleImportFileSearcherTest, SearchFailsIfFileNotExists) {
-  SimpleImportFileSearcher searcher;
+  vector<path> dirs = {path(".")};
+  SimpleImportFileSearcher searcher(dirs);
   path relative_file_path("i_am_not_here.rt");
 
   try {
