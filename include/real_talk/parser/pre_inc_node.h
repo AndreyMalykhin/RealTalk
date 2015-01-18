@@ -2,29 +2,26 @@
 #ifndef _REAL_TALK_PARSER_PRE_INC_NODE_H_
 #define _REAL_TALK_PARSER_PRE_INC_NODE_H_
 
-#include <memory>
-#include "real_talk/parser/expr_node.h"
-#include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/unary_expr_node.h"
+#include "real_talk/parser/base_unary_expr_node.h"
 
 namespace real_talk {
 namespace parser {
 
-class PreIncNode: public ExprNode {
+class PreIncNode: public UnaryExprNode {
  public:
   PreIncNode(
-      const real_talk::lexer::TokenInfo &token,
+      const real_talk::lexer::TokenInfo &op_token,
       std::unique_ptr<ExprNode> operand)
-      : token_(token),
-        operand_(move(operand)) {
-    assert(operand_);
+      : unary_expr_(op_token, move(operand)) {
   }
 
-  const real_talk::lexer::TokenInfo &GetToken() const {
-    return token_;
+  virtual const real_talk::lexer::TokenInfo &GetOpToken() const override {
+    return unary_expr_.GetOpToken();
   }
 
-  const std::unique_ptr<ExprNode> &GetOperand() const {
-    return operand_;
+  virtual const std::unique_ptr<ExprNode> &GetOperand() const override {
+    return unary_expr_.GetOperand();
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {
@@ -33,17 +30,16 @@ class PreIncNode: public ExprNode {
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    const PreIncNode &pre_inc_node = static_cast<const PreIncNode&>(node);
-    return token_ == pre_inc_node.token_
-        && *operand_ == *(pre_inc_node.operand_);
+    const PreIncNode &rhs = static_cast<const PreIncNode&>(node);
+    return unary_expr_ == rhs.unary_expr_;
   }
 
   virtual void Print(std::ostream &stream) const override {
-    stream << token_.GetValue() << *operand_;
+    stream << unary_expr_.GetOpToken().GetValue()
+           << *(unary_expr_.GetOperand());
   }
 
-  real_talk::lexer::TokenInfo token_;
-  std::unique_ptr<ExprNode> operand_;
+  BaseUnaryExprNode unary_expr_;
 };
 }
 }

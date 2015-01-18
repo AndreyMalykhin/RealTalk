@@ -17,6 +17,7 @@
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/continue_node.h"
 #include "real_talk/parser/break_node.h"
+#include "real_talk/parser/not_node.h"
 #include "real_talk/parser/pre_test_loop_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
 #include "real_talk/parser/var_def_with_init_node.h"
@@ -74,7 +75,6 @@
 #include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/semantic_problems.h"
-#include "real_talk/semantic/data_type_converter.h"
 
 using std::vector;
 using std::string;
@@ -148,6 +148,7 @@ using real_talk::parser::PreTestLoopNode;
 using real_talk::parser::ContinueNode;
 using real_talk::parser::BreakNode;
 using real_talk::parser::SubscriptNode;
+using real_talk::parser::NotNode;
 using real_talk::util::FileNotFoundError;
 using real_talk::util::IOError;
 
@@ -178,12 +179,6 @@ struct TestLitParses {
   vector< TestLitParse<char> > chars;
 };
 
-struct TestDataTypeConversion {
-  DataType *dest;
-  DataType *src;
-  bool is_convertable;
-};
-
 struct TestImportFileSearch {
   path relative_file_path;
   path absolute_file_path;
@@ -201,7 +196,6 @@ struct TestProgram {
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses;
-  vector<TestDataTypeConversion> test_data_type_conversions;
 };
 
 class LitParserMock: public LitParser {
@@ -222,12 +216,6 @@ class FileParserMock: public FileParser {
 class ImportFileSearcherMock: public ImportFileSearcher {
  public:
   MOCK_CONST_METHOD1(Search, path(const path&));
-};
-
-class DataTypeConverterMock: public DataTypeConverter {
- public:
-  MOCK_CONST_METHOD2(IsConvertable, bool(const DataType&,
-                                         const DataType&));
 };
 
 class SimpleSemanticAnalyzerTest: public Test {
@@ -315,28 +303,13 @@ class SimpleSemanticAnalyzerTest: public Test {
           .RetiresOnSaturation();
     }
 
-    DataTypeConverterMock *data_type_converter_mock =
-        new DataTypeConverterMock();
-    unique_ptr<DataTypeConverter> data_type_converter(data_type_converter_mock);
-
-    for (const TestDataTypeConversion &test_data_type_conversion:
-             test_program.test_data_type_conversions) {
-      EXPECT_CALL(*data_type_converter_mock,
-                  IsConvertable(Eq(ByRef(*(test_data_type_conversion.dest))),
-                                Eq(ByRef(*(test_data_type_conversion.src)))))
-          .Times(1)
-          .WillOnce(Return(test_data_type_conversion.is_convertable))
-          .RetiresOnSaturation();
-    }
-
     unique_ptr<LitParser> lit_parser =
         CreateLitParserMock(test_program.test_lit_parses);
     SimpleSemanticAnalyzer analyzer(test_program.node,
                                     test_program.file_path,
                                     *file_parser,
                                     *import_file_searcher,
-                                    *lit_parser,
-                                    *data_type_converter);
+                                    *lit_parser);
     SemanticAnalysis actual_analysis = analyzer.Analyze();
     ASSERT_EQ(test_program.analysis, actual_analysis);
   }
@@ -440,15 +413,13 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
                               id_analyzes);
     vector<TestFileParse> test_file_parses;
     vector<TestImportFileSearch> test_import_file_searches;
-    vector<TestDataTypeConversion> test_data_type_conversions;
     path program_file_path;
     TestProgram test_program = {program_node,
                                 program_file_path,
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_data.test_lit_parses,
-                                test_data_type_conversions};
+                                test_data.test_lit_parses};
 
     TestAnalyze(test_program);
   }
@@ -649,15 +620,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
     TestLitParses test_lit_parses = {};
     vector<TestFileParse> test_file_parses;
     vector<TestImportFileSearch> test_import_file_searches;
-    vector<TestDataTypeConversion> test_data_type_conversions;
     path program_file_path;
     TestProgram test_program = {test_data.program_node,
                                 program_file_path,
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_lit_parses,
-                                test_data_type_conversions};
+                                test_lit_parses};
 
     TestAnalyze(test_program);
   }
@@ -726,15 +695,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
     TestLitParses test_lit_parses = {};
     vector<TestFileParse> test_file_parses;
     vector<TestImportFileSearch> test_import_file_searches;
-    vector<TestDataTypeConversion> test_data_type_conversions;
     path program_file_path;
     TestProgram test_program = {program_node,
                                 program_file_path,
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_lit_parses,
-                                test_data_type_conversions};
+                                test_lit_parses};
 
     TestAnalyze(test_program);
   }
@@ -776,14 +743,6 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithInit) {
   LitAnalysis lit_analysis(unique_ptr<Lit>(new IntLit(INT32_C(7))));
   lit_analyzes.insert(make_pair(value_node, move(lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = var_data_type_ptr;
-  DataType *src_data_type = value_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::IdAnalyzes id_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
@@ -801,14 +760,13 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithInit) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest,
-       VarDefWithInitUsingIncompatibleDataTypeIsInvalid) {
+       VarDefWithInitUsingIncompatibleValueDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
@@ -848,20 +806,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
-  unique_ptr<SemanticProblem> problem(new InitWithIncompatibleTypeError(
+  unique_ptr<SemanticProblem> problem(new VarDefWithIncompatibleValueTypeError(
       program_file_path,
       *var_def_node_ptr,
       var_data_type_ptr->Clone(),
       value_data_type_ptr->Clone()));
   problems.push_back(move(problem));
-
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = var_data_type_ptr;
-  DataType *src_data_type = value_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
 
   SemanticAnalysis::IdAnalyzes id_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
@@ -878,8 +828,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -953,15 +902,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               id_analyzes);
     vector<TestFileParse> test_file_parses;
     vector<TestImportFileSearch> test_import_file_searches;
-    vector<TestDataTypeConversion> test_data_type_conversions;
     TestLitParses test_lit_parses = {};
     TestProgram test_program = {program_node,
                                 program_file_path,
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_lit_parses,
-                                test_data_type_conversions};
+                                test_lit_parses};
 
     TestAnalyze(test_program);
   }
@@ -976,7 +923,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
     SemanticAnalysis::LitAnalyzes lit_analyzes;
     vector< unique_ptr<SemanticProblem> > problems;
     TestLitParses test_lit_parses;
-    vector<TestDataTypeConversion> test_data_type_conversions;
   };
   vector<TestData> test_data_suits;
 
@@ -1047,21 +993,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
     TestLitParses test_lit_parses = {};
     test_lit_parses.ints = {{"1", INT32_C(1)}};
 
-    vector<TestDataTypeConversion> test_data_type_conversions;
-    DataType *dest_data_type = var_data_type_ptr1;
-    DataType *src_data_type = var_value_data_type_ptr1;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-
     TestData test_data = {program_node,
                           move(def_analyzes),
                           move(expr_analyzes),
                           move(lit_analyzes),
                           move(problems),
-                          test_lit_parses,
-                          test_data_type_conversions};
+                          test_lit_parses};
     test_data_suits.push_back(move(test_data));
   }
 
@@ -1082,8 +1019,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_data.test_lit_parses,
-                                test_data.test_data_type_conversions};
+                                test_data.test_lit_parses};
 
     TestAnalyze(test_program);
   }
@@ -1159,14 +1095,6 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   IdAnalysis id_analysis(arg_def_node_ptr);
   id_analyzes.insert(make_pair(return_expr_node_ptr, id_analysis));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = func_return_data_type_ptr;
-  DataType *src_data_type = return_expr_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::LitAnalyzes lit_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
@@ -1185,8 +1113,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1238,15 +1165,13 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyWithoutArgsAndReturnValue) {
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1306,14 +1231,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1409,22 +1332,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
     TestLitParses test_lit_parses = {};
     vector<TestFileParse> test_file_parses;
     vector<TestImportFileSearch> test_import_file_searches;
-    vector<TestDataTypeConversion> test_data_type_conversions;
     path program_file_path;
     TestProgram test_program = {test_data.program_node,
                                 program_file_path,
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_lit_parses,
-                                test_data_type_conversions};
+                                test_lit_parses};
 
     TestAnalyze(test_program);
   }
 }
 
 TEST_F(SimpleSemanticAnalyzerTest,
-       FuncDefWithBodyUsingUnsupportedReturnDataTypeInvalid) {
+       FuncDefWithBodyUsingUnsupportedReturnDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
   unique_ptr<ScopeNode> body_node(new ScopeNode(
@@ -1484,14 +1405,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1577,15 +1496,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1643,15 +1560,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1712,7 +1627,6 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyWithArgsAndReturnValue) {
                             move(lit_analyzes),
                             import_analyzes,
                             id_analyzes);
-  vector<TestDataTypeConversion> test_data_type_conversions;
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
@@ -1722,8 +1636,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyWithArgsAndReturnValue) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1771,7 +1684,6 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyAndArgsAndReturnValue) {
                             move(lit_analyzes),
                             import_analyzes,
                             id_analyzes);
-  vector<TestDataTypeConversion> test_data_type_conversions;
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
@@ -1781,8 +1693,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyAndArgsAndReturnValue) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1834,14 +1745,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -1933,15 +1842,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
     TestLitParses test_lit_parses = {};
     vector<TestFileParse> test_file_parses;
     vector<TestImportFileSearch> test_import_file_searches;
-    vector<TestDataTypeConversion> test_data_type_conversions;
     path program_file_path;
     TestProgram test_program = {test_data.program_node,
                                 program_file_path,
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_lit_parses,
-                                test_data_type_conversions};
+                                test_lit_parses};
 
     TestAnalyze(test_program);
   }
@@ -2004,14 +1911,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -2092,15 +1997,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -2201,14 +2104,12 @@ TEST_F(SimpleSemanticAnalyzerTest, ArgDefWithUnsupportedDataTypeIsInvalid) {
     vector<TestFileParse> test_file_parses;
     vector<TestImportFileSearch> test_import_file_searches;
     TestLitParses test_lit_parses = {};
-    vector<TestDataTypeConversion> test_data_type_conversions;
     TestProgram test_program = {program_node,
                                 program_file_path,
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_lit_parses,
-                                test_data_type_conversions};
+                                test_lit_parses};
 
     TestAnalyze(test_program);
   }
@@ -2286,21 +2187,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IdAnalysis id_analysis(arg_def_node_ptr);
   id_analyzes.insert(make_pair(return_expr_node_ptr, id_analysis));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = func_return_data_type_ptr;
-  DataType *src_data_type = return_expr_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(new ReturnWithIncompatibleTypeError(
       program_file_path,
       *return_stmt_node_ptr,
-      dest_data_type->Clone(),
-      src_data_type->Clone()));
+      func_return_data_type_ptr->Clone(),
+      return_expr_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
   SemanticAnalysis::LitAnalyzes lit_analyzes;
@@ -2319,8 +2212,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -2358,15 +2250,13 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnValueNotWithinFuncIsInvalid) {
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -2424,15 +2314,13 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -2466,15 +2354,13 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValueNotWithinFuncIsInvalid) {
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -2539,15 +2425,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -2653,14 +2537,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   lit_analyzes.insert(
       make_pair(call_arg_node_ptr, move(call_arg_lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = arg_data_type_ptr;
-  DataType *src_data_type = call_arg_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
   SemanticAnalysis analysis(move(problems),
@@ -2677,13 +2553,12 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
 
-TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleDataTypeIsInvalid) {
+TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   vector< unique_ptr<ArgDefNode> > arg_def_nodes;
   unique_ptr<DataTypeNode> arg_data_type_node(new IntDataTypeNode(
@@ -2785,18 +2660,10 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleDataTypeIsInvalid) {
   lit_analyzes.insert(
       make_pair(call_arg_node_ptr, move(call_arg_lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = arg_def_data_type_ptr;
-  DataType *src_data_type = call_arg_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   size_t bad_arg_index = 0;
-  unique_ptr<SemanticProblem> problem(new CallWithIncompatibleTypeError(
+  unique_ptr<SemanticProblem> problem(new CallWithIncompatibleArgTypeError(
       program_file_path,
       *call_expr_node_ptr,
       bad_arg_index,
@@ -2818,8 +2685,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleDataTypeIsInvalid) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -2938,14 +2804,12 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
   TestLitParses test_lit_parses = {};
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -3008,7 +2872,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
                             import_analyzes,
                             id_analyzes);
   TestLitParses test_lit_parses = {};
-  vector<TestDataTypeConversion> test_data_type_conversions;
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestProgram test_program = {program_node,
@@ -3016,8 +2879,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -3123,27 +2985,6 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   IdAnalysis id_analysis2(var_def_node_ptr1);
   id_analyzes.insert(make_pair(if_cond_ptr2, id_analysis2));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-
-  {
-    DataType *dest_data_type = &bool_data_type;
-    DataType *src_data_type = if_cond_data_type_ptr1;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
-  {
-    DataType *dest_data_type = &bool_data_type;
-    DataType *src_data_type = if_cond_data_type_ptr2;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
   SemanticAnalysis::LitAnalyzes lit_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
@@ -3162,8 +3003,7 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -3235,22 +3075,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IdAnalysis id_analysis(func_def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr, id_analysis));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-  DataType *dest_data_type = &bool_data_type;
-  DataType *src_data_type = func_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
       program_file_path,
       *if_else_if_node_ptr,
       *if_node_ptr,
-      bool_data_type.Clone(),
+      unique_ptr<DataType>(new BoolDataType()),
       func_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
@@ -3270,8 +3101,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -3385,34 +3215,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IdAnalysis id_analysis2(func_def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr2, id_analysis2));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-
-  {
-    DataType *dest_data_type = &bool_data_type;
-    DataType *src_data_type = func_data_type_ptr;
-    bool is_data_type_convertable = false;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
-  {
-    DataType *dest_data_type = &bool_data_type;
-    DataType *src_data_type = var_data_type_ptr;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
       program_file_path,
       *if_else_if_node_ptr,
       *if_node_ptr2,
-      bool_data_type.Clone(),
+      unique_ptr<DataType>(new BoolDataType()),
       func_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
@@ -3432,8 +3241,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -3560,27 +3368,6 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
   IdAnalysis id_analysis2(var_def_node_ptr1);
   id_analyzes.insert(make_pair(if_cond_ptr2, id_analysis2));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-
-  {
-    DataType *dest_data_type = &bool_data_type;
-    DataType *src_data_type = if_cond_data_type_ptr1;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
-  {
-    DataType *dest_data_type = &bool_data_type;
-    DataType *src_data_type = if_cond_data_type_ptr2;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
   SemanticAnalysis::LitAnalyzes lit_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
@@ -3599,8 +3386,7 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -3679,22 +3465,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IdAnalysis id_analysis(func_def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr, id_analysis));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-  DataType *dest_data_type = &bool_data_type;
-  DataType *src_data_type = func_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
       program_file_path,
       *if_else_if_else_node_ptr,
       *if_node_ptr,
-      bool_data_type.Clone(),
+      unique_ptr<DataType>(new BoolDataType()),
       func_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
@@ -3714,8 +3491,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -3836,34 +3612,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IdAnalysis id_analysis2(func_def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr2, id_analysis2));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-
-  {
-    DataType *dest_data_type = &bool_data_type;
-    DataType *src_data_type = func_data_type_ptr;
-    bool is_data_type_convertable = false;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
-  {
-    DataType *dest_data_type = &bool_data_type;
-    DataType *src_data_type = var_data_type_ptr;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
       program_file_path,
       *if_else_if_else_node_ptr,
       *if_node_ptr2,
-      bool_data_type.Clone(),
+      unique_ptr<DataType>(new BoolDataType()),
       func_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
@@ -3883,8 +3638,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -4152,7 +3906,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
 
   SemanticAnalysis::IdAnalyzes id_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
-  vector<TestDataTypeConversion> test_data_type_conversions;
   SemanticAnalysis analysis(move(problems),
                             move(def_analyzes),
                             move(expr_analyzes),
@@ -4164,8 +3917,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -4261,15 +4013,13 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportAfterAnyOtherStmtIsInvalid) {
                             move(lit_analyzes),
                             move(import_analyzes),
                             id_analyzes);
-  vector<TestDataTypeConversion> test_data_type_conversions;
   path main_program_file_path;
   TestProgram test_program = {main_program_node,
                               main_program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -4399,14 +4149,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
         .RetiresOnSaturation();
   }
 
-  unique_ptr<DataTypeConverter> data_type_converter(
-      new DataTypeConverterMock());
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
-                                  *lit_parser,
-                                  *data_type_converter);
+                                  *lit_parser);
   SemanticAnalysis actual_analysis = analyzer.Analyze();
   ASSERT_EQ(analysis, actual_analysis);
 }
@@ -4531,14 +4278,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
         .RetiresOnSaturation();
   }
 
-  unique_ptr<DataTypeConverter> data_type_converter(
-      new DataTypeConverterMock());
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
-                                  *lit_parser,
-                                  *data_type_converter);
+                                  *lit_parser);
   SemanticAnalysis actual_analysis = analyzer.Analyze();
   ASSERT_EQ(analysis, actual_analysis);
 }
@@ -4658,14 +4402,11 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileParseIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<DataTypeConverter> data_type_converter(
-      new DataTypeConverterMock());
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
-                                  *lit_parser,
-                                  *data_type_converter);
+                                  *lit_parser);
   SemanticAnalysis actual_analysis = analyzer.Analyze();
   ASSERT_EQ(analysis, actual_analysis);
 }
@@ -4767,15 +4508,12 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileSearchIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<DataTypeConverter> data_type_converter(
-      new DataTypeConverterMock());
   unique_ptr<FileParser> file_parser(new FileParserMock());
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
-                                  *lit_parser,
-                                  *data_type_converter);
+                                  *lit_parser);
   SemanticAnalysis actual_analysis = analyzer.Analyze();
   ASSERT_EQ(analysis, actual_analysis);
 }
@@ -4877,15 +4615,12 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithNotExistingFileIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<DataTypeConverter> data_type_converter(
-      new DataTypeConverterMock());
   unique_ptr<FileParser> file_parser(new FileParserMock());
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
-                                  *lit_parser,
-                                  *data_type_converter);
+                                  *lit_parser);
   SemanticAnalysis actual_analysis = analyzer.Analyze();
   ASSERT_EQ(analysis, actual_analysis);
 }
@@ -4947,15 +4682,6 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
   IdAnalysis id_analysis(var_def_node_ptr1);
   id_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-  DataType *dest_data_type = &bool_data_type;
-  DataType *src_data_type = id_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::LitAnalyzes lit_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
@@ -4974,8 +4700,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5043,22 +4768,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IdAnalysis id_analysis(func_def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-  DataType *dest_data_type = &bool_data_type;
-  DataType *src_data_type = id_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(new PreTestLoopWithIncompatibleTypeError(
       program_file_path,
       *loop_node_ptr,
-      dest_data_type->Clone(),
-      src_data_type->Clone()));
+      unique_ptr<DataType>(new BoolDataType()),
+      id_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
   SemanticAnalysis::LitAnalyzes lit_analyzes;
@@ -5077,8 +4793,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5132,15 +4847,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
   IdAnalysis id_analysis(var_def_node_ptr1);
   id_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-  DataType *dest_data_type = &bool_data_type;
-  DataType *src_data_type = id_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::LitAnalyzes lit_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
@@ -5159,8 +4865,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5194,14 +4899,12 @@ TEST_F(SimpleSemanticAnalyzerTest, ContinueNotWithinLoopIsInvalid) {
   TestLitParses test_lit_parses = {};
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5255,15 +4958,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
   IdAnalysis id_analysis(var_def_node_ptr1);
   id_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  BoolDataType bool_data_type;
-  DataType *dest_data_type = &bool_data_type;
-  DataType *src_data_type = id_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::LitAnalyzes lit_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
@@ -5282,8 +4976,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5317,14 +5010,12 @@ TEST_F(SimpleSemanticAnalyzerTest, BreakNotWithinLoopIsInvalid) {
   TestLitParses test_lit_parses = {};
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5388,14 +5079,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Assign) {
   LitAnalysis lit_analysis(move(lit));
   lit_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = id_data_type_ptr;
-  DataType *src_data_type = lit_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
   SemanticAnalysis analysis(move(problems),
@@ -5412,13 +5095,12 @@ TEST_F(SimpleSemanticAnalyzerTest, Assign) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
 
-TEST_F(SimpleSemanticAnalyzerTest, AssignWithIncompatibleDataTypeIsInvalid) {
+TEST_F(SimpleSemanticAnalyzerTest, AssignWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
@@ -5474,17 +5156,9 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithIncompatibleDataTypeIsInvalid) {
   LitAnalysis lit_analysis(move(lit));
   lit_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = id_data_type_ptr;
-  DataType *src_data_type = lit_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
-  unique_ptr<SemanticProblem> problem(new BinaryExprWithIncompatibleTypeError(
+  unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
       program_file_path,
       *assign_node_ptr,
       id_data_type_ptr->Clone(),
@@ -5505,8 +5179,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithIncompatibleDataTypeIsInvalid) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5560,7 +5233,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
                             move(lit_analyzes),
                             import_analyzes,
                             id_analyzes);
-  vector<TestDataTypeConversion> test_data_type_conversions;
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   TestProgram test_program = {program_node,
@@ -5568,8 +5240,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5618,14 +5289,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Less) {
   LitAnalysis lit_analysis2(move(lit2));
   lit_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = lit_data_type_ptr1;
-  DataType *src_data_type = lit_data_type_ptr2;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::DefAnalyzes def_analyzes;
   SemanticAnalysis::IdAnalyzes id_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
@@ -5644,88 +5307,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Less) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
-
-  TestAnalyze(test_program);
-}
-
-TEST_F(SimpleSemanticAnalyzerTest, LessWithIncompatibleDataTypeIsInvalid) {
-  vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr1 = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> lit_node1(lit_node_ptr1);
-  StringNode *lit_node_ptr2 = new StringNode(
-      TokenInfo(Token::kStringLit, "\"2\"", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<ExprNode> lit_node2(lit_node_ptr2);
-  LessNode *less_node_ptr = new LessNode(
-      TokenInfo(Token::kLessOp, "<", UINT32_C(1), UINT32_C(1)),
-      move(lit_node1),
-      move(lit_node2));
-  unique_ptr<ExprNode> less_node(less_node_ptr);
-  unique_ptr<StmtNode> less_stmt_node(new ExprStmtNode(
-      move(less_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
-  stmt_nodes.push_back(move(less_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
-
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)}};
-  test_lit_parses.strings = {{"\"2\"", "2"}};
-
-  SemanticAnalysis::ExprAnalyzes expr_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  ExprAnalysis lit_expr_analysis1(move(lit_data_type1), ValueType::kRight);
-  expr_analyzes.insert(make_pair(lit_node_ptr1, move(lit_expr_analysis1)));
-  StringDataType *lit_data_type_ptr2 = new StringDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  ExprAnalysis lit_expr_analysis2(move(lit_data_type2), ValueType::kRight);
-  expr_analyzes.insert(make_pair(lit_node_ptr2, move(lit_expr_analysis2)));
-
-  SemanticAnalysis::LitAnalyzes lit_analyzes;
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
-  LitAnalysis lit_analysis1(move(lit1));
-  lit_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
-  unique_ptr<Lit> lit2(new StringLit("2"));
-  LitAnalysis lit_analysis2(move(lit2));
-  lit_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
-
-  vector< unique_ptr<SemanticProblem> > problems;
-  path program_file_path;
-  unique_ptr<SemanticProblem> problem(new BinaryExprWithIncompatibleTypeError(
-      program_file_path,
-      *less_node_ptr,
-      lit_data_type_ptr1->Clone(),
-      lit_data_type_ptr2->Clone()));
-  problems.push_back(move(problem));
-
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = lit_data_type_ptr1;
-  DataType *src_data_type = lit_data_type_ptr2;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
-  SemanticAnalysis::DefAnalyzes def_analyzes;
-  SemanticAnalysis::IdAnalyzes id_analyzes;
-  SemanticAnalysis::ImportAnalyzes import_analyzes;
-  SemanticAnalysis analysis(move(problems),
-                            move(def_analyzes),
-                            move(expr_analyzes),
-                            move(lit_analyzes),
-                            import_analyzes,
-                            id_analyzes);
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
-                              move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -5741,14 +5323,6 @@ TEST_F(SimpleSemanticAnalyzerTest, LessWithUnsupportedDataTypesIsInvalid) {
     unique_ptr<DataTypeNode> var_data_type_node(new BoolDataTypeNode(
         TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
     unique_ptr<DataType> var_data_type(new BoolDataType());
-    TestData test_data = {move(var_data_type_node), move(var_data_type)};
-    test_data_suits.push_back(move(test_data));
-  }
-
-  {
-    unique_ptr<DataTypeNode> var_data_type_node(new CharDataTypeNode(
-        TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
-    unique_ptr<DataType> var_data_type(new CharDataType());
     TestData test_data = {move(var_data_type_node), move(var_data_type)};
     test_data_suits.push_back(move(test_data));
   }
@@ -5829,14 +5403,6 @@ TEST_F(SimpleSemanticAnalyzerTest, LessWithUnsupportedDataTypesIsInvalid) {
         test_data.var_data_type->Clone()));
     problems.push_back(move(problem));
 
-    vector<TestDataTypeConversion> test_data_type_conversions;
-    DataType *dest_data_type = test_data.var_data_type.get();
-    DataType *src_data_type = test_data.var_data_type.get();
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-
     SemanticAnalysis::LitAnalyzes lit_analyzes;
     SemanticAnalysis::ImportAnalyzes import_analyzes;
     SemanticAnalysis analysis(move(problems),
@@ -5853,8 +5419,7 @@ TEST_F(SimpleSemanticAnalyzerTest, LessWithUnsupportedDataTypesIsInvalid) {
                                 move(analysis),
                                 test_file_parses,
                                 test_import_file_searches,
-                                test_lit_parses,
-                                test_data_type_conversions};
+                                test_lit_parses};
 
     TestAnalyze(test_program);
   }
@@ -5904,14 +5469,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Equal) {
   LitAnalysis lit_analysis2(move(lit2));
   lit_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = lit_data_type_ptr1;
-  DataType *src_data_type = lit_data_type_ptr2;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::DefAnalyzes def_analyzes;
   SemanticAnalysis::IdAnalyzes id_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
@@ -5930,88 +5487,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Equal) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
-
-  TestAnalyze(test_program);
-}
-
-TEST_F(SimpleSemanticAnalyzerTest, EqualWithIncompatibleDataTypeIsInvalid) {
-  vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr1 = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> lit_node1(lit_node_ptr1);
-  StringNode *lit_node_ptr2 = new StringNode(
-      TokenInfo(Token::kStringLit, "\"2\"", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<ExprNode> lit_node2(lit_node_ptr2);
-  EqualNode *equal_node_ptr = new EqualNode(
-      TokenInfo(Token::kEqualOp, "==", UINT32_C(1), UINT32_C(1)),
-      move(lit_node1),
-      move(lit_node2));
-  unique_ptr<ExprNode> equal_node(equal_node_ptr);
-  unique_ptr<StmtNode> equal_stmt_node(new ExprStmtNode(
-      move(equal_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
-  stmt_nodes.push_back(move(equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
-
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)}};
-  test_lit_parses.strings = {{"\"2\"", "2"}};
-
-  SemanticAnalysis::ExprAnalyzes expr_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  ExprAnalysis lit_expr_analysis1(move(lit_data_type1), ValueType::kRight);
-  expr_analyzes.insert(make_pair(lit_node_ptr1, move(lit_expr_analysis1)));
-  StringDataType *lit_data_type_ptr2 = new StringDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  ExprAnalysis lit_expr_analysis2(move(lit_data_type2), ValueType::kRight);
-  expr_analyzes.insert(make_pair(lit_node_ptr2, move(lit_expr_analysis2)));
-
-  SemanticAnalysis::LitAnalyzes lit_analyzes;
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
-  LitAnalysis lit_analysis1(move(lit1));
-  lit_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
-  unique_ptr<Lit> lit2(new StringLit("2"));
-  LitAnalysis lit_analysis2(move(lit2));
-  lit_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
-
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = lit_data_type_ptr1;
-  DataType *src_data_type = lit_data_type_ptr2;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
-  vector< unique_ptr<SemanticProblem> > problems;
-  path program_file_path;
-  unique_ptr<SemanticProblem> problem(new BinaryExprWithIncompatibleTypeError(
-      program_file_path,
-      *equal_node_ptr,
-      lit_data_type_ptr1->Clone(),
-      lit_data_type_ptr2->Clone()));
-  problems.push_back(move(problem));
-
-  SemanticAnalysis::DefAnalyzes def_analyzes;
-  SemanticAnalysis::IdAnalyzes id_analyzes;
-  SemanticAnalysis::ImportAnalyzes import_analyzes;
-  SemanticAnalysis analysis(move(problems),
-                            move(def_analyzes),
-                            move(expr_analyzes),
-                            move(lit_analyzes),
-                            import_analyzes,
-                            id_analyzes);
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
-                              move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6075,14 +5551,6 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
   IdAnalysis id_analysis2(func_def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr2, id_analysis2));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  DataType *dest_data_type = &func_data_type;
-  DataType *src_data_type = &func_data_type;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
@@ -6108,8 +5576,7 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6158,15 +5625,6 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithoutInit) {
   LitAnalysis size_lit_analysis(move(size_lit));
   lit_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  IntDataType int_data_type;
-  DataType *dest_data_type = &int_data_type;
-  DataType *src_data_type = size_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::DefAnalyzes def_analyzes;
   SemanticAnalysis::IdAnalyzes id_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
@@ -6185,14 +5643,13 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithoutInit) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest,
-       ArrayAllocWithoutInitUsingIncompatibleSizeDataTypeIsInvalid) {
+       ArrayAllocWithoutInitUsingUnsupportedSizeDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
@@ -6232,23 +5689,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   LitAnalysis size_lit_analysis(move(size_lit));
   lit_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  IntDataType int_data_type;
-  DataType *dest_data_type = &int_data_type;
-  DataType *src_data_type = size_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(
-      new ArrayAllocWithIncompatibleSizeTypeError(
+      new ArrayAllocWithUnsupportedSizeTypeError(
           program_file_path,
           *alloc_node_ptr,
           *size_node_ptr,
-          int_data_type.Clone(),
           size_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
@@ -6268,8 +5715,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6318,7 +5764,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
                             move(lit_analyzes),
                             import_analyzes,
                             id_analyzes);
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestLitParses test_lit_parses = {};
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
@@ -6327,8 +5772,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6382,17 +5826,6 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
   LitAnalysis value_lit_analysis(move(value_lit));
   lit_analyzes.insert(make_pair(value_node_ptr, move(value_lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-
-  {
-    DataType *dest_data_type = element_data_type_ptr;
-    DataType *src_data_type = value_data_type_ptr;
-    bool is_data_type_convertable = true;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
   SemanticAnalysis::DefAnalyzes def_analyzes;
   SemanticAnalysis::IdAnalyzes id_analyzes;
   SemanticAnalysis::ImportAnalyzes import_analyzes;
@@ -6411,8 +5844,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6466,7 +5898,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
                             move(lit_analyzes),
                             import_analyzes,
                             id_analyzes);
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestLitParses test_lit_parses = {};
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
@@ -6475,8 +5906,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6525,18 +5955,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
   LitAnalysis value_lit_analysis(move(value_lit));
   lit_analyzes.insert(make_pair(value_node_ptr, move(value_lit_analysis)));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  IntDataType element_data_type;
-
-  {
-    DataType *dest_data_type = &element_data_type;
-    DataType *src_data_type = value_data_type_ptr;
-    bool is_data_type_convertable = false;
-    TestDataTypeConversion test_data_type_conversion =
-        {dest_data_type, src_data_type, is_data_type_convertable};
-    test_data_type_conversions.push_back(test_data_type_conversion);
-  }
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   size_t bad_value_index = 0;
@@ -6545,7 +5963,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
           program_file_path,
           *alloc_node_ptr,
           bad_value_index,
-          element_data_type.Clone(),
+          unique_ptr<DataType>(new IntDataType()),
           value_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
@@ -6565,8 +5983,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6644,15 +6061,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
   IdAnalysis id_analysis(var_def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr, id_analysis));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  IntDataType int_data_type;
-  DataType *dest_data_type = &int_data_type;
-  DataType *src_data_type = index_data_type_ptr;
-  bool is_data_type_convertable = true;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   SemanticAnalysis::ImportAnalyzes import_analyzes;
   vector< unique_ptr<SemanticProblem> > problems;
   SemanticAnalysis analysis(move(problems),
@@ -6669,8 +6077,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6737,20 +6144,18 @@ TEST_F(SimpleSemanticAnalyzerTest,
   vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
   vector<TestImportFileSearch> test_import_file_searches;
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest,
-       SubscriptWithIncompatibleIndexDataTypeIsInvalid) {
+       SubscriptWithUnsupportedIndexDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
@@ -6818,22 +6223,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IdAnalysis id_analysis(var_def_node_ptr);
   id_analyzes.insert(make_pair(id_node_ptr, id_analysis));
 
-  vector<TestDataTypeConversion> test_data_type_conversions;
-  IntDataType int_data_type;
-  DataType *dest_data_type = &int_data_type;
-  DataType *src_data_type = index_data_type_ptr;
-  bool is_data_type_convertable = false;
-  TestDataTypeConversion test_data_type_conversion =
-      {dest_data_type, src_data_type, is_data_type_convertable};
-  test_data_type_conversions.push_back(test_data_type_conversion);
-
   vector< unique_ptr<SemanticProblem> > problems;
   path program_file_path;
   unique_ptr<SemanticProblem> problem(
-      new SubscriptWithIncompatibleIndexTypeError(
+      new SubscriptWithUnsupportedIndexTypeError(
           program_file_path,
           *subscript_node_ptr,
-          int_data_type.Clone(),
           index_data_type_ptr->Clone()));
   problems.push_back(move(problem));
 
@@ -6851,8 +6246,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6901,7 +6295,6 @@ TEST_F(SimpleSemanticAnalyzerTest, Id) {
                             move(lit_analyzes),
                             import_analyzes,
                             id_analyzes);
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestLitParses test_lit_parses = {};
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
@@ -6911,8 +6304,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Id) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }
@@ -6945,7 +6337,6 @@ TEST_F(SimpleSemanticAnalyzerTest, IdWithoutDefIsInvalid) {
                             move(lit_analyzes),
                             import_analyzes,
                             id_analyzes);
-  vector<TestDataTypeConversion> test_data_type_conversions;
   TestLitParses test_lit_parses = {};
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
@@ -6954,8 +6345,140 @@ TEST_F(SimpleSemanticAnalyzerTest, IdWithoutDefIsInvalid) {
                               move(analysis),
                               test_file_parses,
                               test_import_file_searches,
-                              test_lit_parses,
-                              test_data_type_conversions};
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Not) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  BoolNode *lit_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<ExprNode> lit_node(lit_node_ptr);
+  NotNode *not_node_ptr = new NotNode(
+      TokenInfo(Token::kNotOp, "!", UINT32_C(0), UINT32_C(0)),
+      move(lit_node));
+  unique_ptr<ExprNode> not_node(not_node_ptr);
+  unique_ptr<StmtNode> not_stmt_node(new ExprStmtNode(
+      move(not_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
+  stmt_nodes.push_back(move(not_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  TestLitParses test_lit_parses = {};
+  test_lit_parses.bools = {{"false", false}};
+
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  unique_ptr<DataType> lit_data_type(new BoolDataType());
+  ExprAnalysis lit_expr_analysis(move(lit_data_type), ValueType::kRight);
+  expr_analyzes.insert(make_pair(lit_node_ptr, move(lit_expr_analysis)));
+  unique_ptr<DataType> not_data_type(new BoolDataType());
+  ExprAnalysis not_expr_analysis(move(not_data_type), ValueType::kRight);
+  expr_analyzes.insert(make_pair(not_node_ptr, move(not_expr_analysis)));
+
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  unique_ptr<Lit> lit(new BoolLit(false));
+  LitAnalysis lit_analysis(move(lit));
+  lit_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  vector< unique_ptr<SemanticProblem> > problems;
+  SemanticAnalysis analysis(move(problems),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<ScopeNode> body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(0), UINT32_C(0)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
+      TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
+  FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
+      vector<TokenInfo>(),
+      move(return_data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(0), UINT32_C(0)),
+      vector< unique_ptr<ArgDefNode> >(),
+      vector<TokenInfo>(),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(0), UINT32_C(0)),
+      move(body_node));
+  unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
+  stmt_nodes.push_back(move(func_def_node));
+
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
+  NotNode *not_node_ptr = new NotNode(
+      TokenInfo(Token::kNotOp, "!", UINT32_C(0), UINT32_C(0)),
+      move(id_node));
+  unique_ptr<ExprNode> not_node(not_node_ptr);
+  unique_ptr<StmtNode> not_stmt_node(new ExprStmtNode(
+      move(not_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
+  stmt_nodes.push_back(move(not_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::DefAnalyzes def_analyzes;
+  FuncDataType func_data_type(
+      unique_ptr<DataType>(new VoidDataType()),
+      vector< unique_ptr<DataType> >());
+  unique_ptr<DefAnalysis> func_def_analysis(new FuncDefAnalysis(
+      unique_ptr<FuncDataType>(
+          static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false));
+  def_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
+
+  SemanticAnalysis::IdAnalyzes id_analyzes;
+  IdAnalysis id_analysis(func_def_node_ptr);
+  id_analyzes.insert(make_pair(id_node_ptr, id_analysis));
+
+  SemanticAnalysis::ExprAnalyzes expr_analyzes;
+  unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  ExprAnalysis id_expr_analysis(move(id_data_type), ValueType::kRight);
+  expr_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
+
+  vector< unique_ptr<SemanticProblem> > problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new UnaryExprWithUnsupportedTypeError(
+      program_file_path, *not_node_ptr, func_data_type.Clone()));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::LitAnalyzes lit_analyzes;
+  SemanticAnalysis::ImportAnalyzes import_analyzes;
+  SemanticAnalysis analysis(move(problems),
+                            move(def_analyzes),
+                            move(expr_analyzes),
+                            move(lit_analyzes),
+                            import_analyzes,
+                            id_analyzes);
+  vector<TestFileParse> test_file_parses;
+  TestLitParses test_lit_parses = {};
+  vector<TestImportFileSearch> test_import_file_searches;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
 
   TestAnalyze(test_program);
 }

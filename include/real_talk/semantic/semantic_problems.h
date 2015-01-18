@@ -12,6 +12,7 @@ class VarDefNode;
 class BranchNode;
 class IfNode;
 class BinaryExprNode;
+class UnaryExprNode;
 class ArrayAllocNode;
 class BoundedArraySizeNode;
 }
@@ -52,17 +53,15 @@ class IdWithoutDefError: public SemanticError {
   const real_talk::parser::IdNode &id_;
 };
 
-class SubscriptWithIncompatibleIndexTypeError: public SemanticError {
+class SubscriptWithUnsupportedIndexTypeError: public SemanticError {
  public:
-  SubscriptWithIncompatibleIndexTypeError(
+  SubscriptWithUnsupportedIndexTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::SubscriptNode &subscript,
-      std::unique_ptr<DataType> dest_data_type,
-      std::unique_ptr<DataType> src_data_type);
+      std::unique_ptr<DataType> data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::SubscriptNode &GetSubscript() const;
-  const DataType &GetDestDataType() const;
-  const DataType &GetSrcDataType() const;
+  const DataType &GetDataType() const;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -70,8 +69,7 @@ class SubscriptWithIncompatibleIndexTypeError: public SemanticError {
 
   boost::filesystem::path file_path_;
   const real_talk::parser::SubscriptNode &subscript_;
-  std::unique_ptr<DataType> dest_data_type_;
-  std::unique_ptr<DataType> src_data_type_;
+  std::unique_ptr<DataType> data_type_;
 };
 
 class SubscriptWithNonArrayError: public SemanticError {
@@ -134,19 +132,17 @@ class ArrayAllocWithUnsupportedElementTypeError: public SemanticError {
   std::unique_ptr<DataType> data_type_;
 };
 
-class ArrayAllocWithIncompatibleSizeTypeError: public SemanticError {
+class ArrayAllocWithUnsupportedSizeTypeError: public SemanticError {
  public:
-  ArrayAllocWithIncompatibleSizeTypeError(
+  ArrayAllocWithUnsupportedSizeTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::ArrayAllocNode &alloc,
       const real_talk::parser::BoundedArraySizeNode &size,
-      std::unique_ptr<DataType> dest_data_type,
-      std::unique_ptr<DataType> src_data_type);
+      std::unique_ptr<DataType> data_type);
   virtual const boost::filesystem::path &GetFilePath() const override;
   const real_talk::parser::ArrayAllocNode &GetAlloc() const;
   const real_talk::parser::BoundedArraySizeNode &GetSize() const;
-  const DataType &GetDestDataType() const;
-  const DataType &GetSrcDataType() const;
+  const DataType &GetDataType() const;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -155,8 +151,7 @@ class ArrayAllocWithIncompatibleSizeTypeError: public SemanticError {
   boost::filesystem::path file_path_;
   const real_talk::parser::ArrayAllocNode &alloc_;
   const real_talk::parser::BoundedArraySizeNode &size_;
-  std::unique_ptr<DataType> dest_data_type_;
-  std::unique_ptr<DataType> src_data_type_;
+  std::unique_ptr<DataType> data_type_;
 };
 
 class IfWithIncompatibleTypeError: public SemanticError {
@@ -342,9 +337,9 @@ class ImportIsNotFirstStmtError: public SemanticError {
   const real_talk::parser::ImportNode &import_;
 };
 
-class InitWithIncompatibleTypeError: public SemanticError {
+class VarDefWithIncompatibleValueTypeError: public SemanticError {
  public:
-  InitWithIncompatibleTypeError(
+  VarDefWithIncompatibleValueTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::VarDefWithInitNode &var_def,
       std::unique_ptr<DataType> dest_data_type,
@@ -418,9 +413,9 @@ class ReturnWithIncompatibleTypeError: public SemanticError {
   std::unique_ptr<DataType> src_data_type_;
 };
 
-class CallWithIncompatibleTypeError: public SemanticError {
+class CallWithIncompatibleArgTypeError: public SemanticError {
  public:
-  CallWithIncompatibleTypeError(
+  CallWithIncompatibleArgTypeError(
       const boost::filesystem::path &file_path,
       const real_talk::parser::CallNode &call,
       size_t arg_index,
@@ -439,28 +434,6 @@ class CallWithIncompatibleTypeError: public SemanticError {
   boost::filesystem::path file_path_;
   const real_talk::parser::CallNode &call_;
   size_t arg_index_;
-  std::unique_ptr<DataType> dest_data_type_;
-  std::unique_ptr<DataType> src_data_type_;
-};
-
-class BinaryExprWithIncompatibleTypeError: public SemanticError {
- public:
-  BinaryExprWithIncompatibleTypeError(
-      const boost::filesystem::path &file_path,
-      const real_talk::parser::BinaryExprNode &expr,
-      std::unique_ptr<DataType> dest_data_type,
-      std::unique_ptr<DataType> src_data_type);
-  virtual const boost::filesystem::path &GetFilePath() const override;
-  const real_talk::parser::BinaryExprNode &GetExpr() const;
-  const DataType &GetDestDataType() const;
-  const DataType &GetSrcDataType() const;
-
- private:
-  virtual void Print(std::ostream &stream) const override;
-  virtual bool IsEqual(const SemanticProblem &rhs) const override;
-
-  boost::filesystem::path file_path_;
-  const real_talk::parser::BinaryExprNode &expr_;
   std::unique_ptr<DataType> dest_data_type_;
   std::unique_ptr<DataType> src_data_type_;
 };
@@ -485,6 +458,25 @@ class BinaryExprWithUnsupportedTypesError: public SemanticError {
   const real_talk::parser::BinaryExprNode &expr_;
   std::unique_ptr<DataType> left_operand_data_type_;
   std::unique_ptr<DataType> right_operand_data_type_;
+};
+
+class UnaryExprWithUnsupportedTypeError: public SemanticError {
+ public:
+  UnaryExprWithUnsupportedTypeError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::UnaryExprNode &expr,
+      std::unique_ptr<DataType> data_type);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::UnaryExprNode &GetExpr() const;
+  const DataType &GetDataType() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::UnaryExprNode &expr_;
+  std::unique_ptr<DataType> data_type_;
 };
 
 class DefWithUnsupportedTypeError: public SemanticError {

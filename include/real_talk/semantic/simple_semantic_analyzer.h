@@ -25,8 +25,7 @@ class SimpleSemanticAnalyzer {
       const boost::filesystem::path &absolute_file_path,
       const real_talk::parser::FileParser &file_parser,
       const ImportFileSearcher &import_file_searcher,
-      const LitParser &lit_parser,
-      const DataTypeConverter &data_type_converter);
+      const LitParser &lit_parser);
   ~SimpleSemanticAnalyzer();
   SemanticAnalysis Analyze();
 
