@@ -24,7 +24,7 @@ const DataType &VarDefAnalysis::GetDataType() const {
   return *data_type_;
 }
 
-bool VarDefAnalysis::IsEqual(const DefAnalysis &analysis) const {
+bool VarDefAnalysis::IsEqual(const NodeSemanticAnalysis &analysis) const {
   const VarDefAnalysis &rhs = static_cast<const VarDefAnalysis&>(analysis);
   return *data_type_ == *(rhs.data_type_) && storage_ == rhs.storage_;
 }

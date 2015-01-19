@@ -65,13 +65,6 @@ class BaseFuncDefNode final {
 
   friend bool operator==(const BaseFuncDefNode &lhs,
                          const BaseFuncDefNode &rhs) {
-    static auto args_comparator = [](
-        const std::unique_ptr<ArgDefNode> &lhs_arg,
-        const std::unique_ptr<ArgDefNode> &rhs_arg) {
-      return static_cast<const Node&>(*lhs_arg) ==
-      static_cast<const Node&>(*rhs_arg);
-    };
-
     return *(lhs.return_data_type_) == *(rhs.return_data_type_)
         && lhs.func_name_token_ == rhs.func_name_token_
         && lhs.args_start_token_ == rhs.args_start_token_
@@ -86,10 +79,9 @@ class BaseFuncDefNode final {
         && std::equal(lhs.arg_separator_tokens_.begin(),
                       lhs.arg_separator_tokens_.end(),
                       rhs.arg_separator_tokens_.begin())
-        && std::equal(lhs.args_.begin(),
-                      lhs.args_.end(),
-                      rhs.args_.begin(),
-                      args_comparator);
+        && std::equal(boost::make_indirect_iterator(lhs.args_.begin()),
+                      boost::make_indirect_iterator(lhs.args_.end()),
+                      boost::make_indirect_iterator(rhs.args_.begin()));
   }
 
   friend std::ostream &operator<<(std::ostream &stream,
@@ -108,12 +100,11 @@ class BaseFuncDefNode final {
       auto arg_separator_token_it = node.arg_separator_tokens_.begin();
 
       for (auto arg_it = node.args_.begin(); arg_it != last_arg_it; ++arg_it) {
-        stream << static_cast<const Node&>(**arg_it)
-               << arg_separator_token_it->GetValue() << ' ';
+        stream << **arg_it << arg_separator_token_it->GetValue() << ' ';
         ++arg_separator_token_it;
       }
 
-      stream << static_cast<const Node&>(**last_arg_it);
+      stream << **last_arg_it;
     }
 
     return stream << node.args_end_token_.GetValue();

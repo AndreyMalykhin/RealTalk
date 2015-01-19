@@ -4,7 +4,6 @@
 
 #include <memory>
 #include <vector>
-#include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/def_node.h"
 
 namespace real_talk {
@@ -18,7 +17,7 @@ namespace parser {
 class DataTypeNode;
 class ArgDefNode;
 
-class FuncDefNode: public StmtNode, public DefNode {
+class FuncDefNode: public DefNode {
  public:
   virtual const std::vector<real_talk::lexer::TokenInfo>
   &GetModifierTokens() const = 0;

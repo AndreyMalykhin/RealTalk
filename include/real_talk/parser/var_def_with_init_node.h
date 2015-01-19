@@ -6,7 +6,6 @@
 #include <string>
 #include <memory>
 #include "real_talk/lexer/token_info.h"
-#include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/expr_node.h"
 #include "real_talk/parser/var_def_node.h"
 #include "real_talk/parser/data_type_node.h"
@@ -15,7 +14,7 @@
 namespace real_talk {
 namespace parser {
 
-class VarDefWithInitNode: public StmtNode, public VarDefNode {
+class VarDefWithInitNode: public VarDefNode {
  public:
   VarDefWithInitNode(
       std::unique_ptr<DataTypeNode> data_type,
@@ -50,14 +49,8 @@ class VarDefWithInitNode: public StmtNode, public VarDefNode {
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    return DoIsEqual(static_cast<const VarDefWithInitNode&>(node));
-  }
-
-  virtual bool IsEqual(const DefNode &node) const override {
-    return DoIsEqual(static_cast<const VarDefWithInitNode&>(node));
-  }
-
-  bool DoIsEqual(const VarDefWithInitNode &rhs) const {
+    const VarDefWithInitNode &rhs =
+        static_cast<const VarDefWithInitNode&>(node);
     return *data_type_ == *(rhs.data_type_)
         && name_token_ == rhs.name_token_
         && assign_token_ == rhs.assign_token_

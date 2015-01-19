@@ -21,7 +21,7 @@ const DataType &ArgDefAnalysis::GetDataType() const {
   return *data_type_;
 }
 
-bool ArgDefAnalysis::IsEqual(const DefAnalysis &analysis) const {
+bool ArgDefAnalysis::IsEqual(const NodeSemanticAnalysis &analysis) const {
   const ArgDefAnalysis &rhs = static_cast<const ArgDefAnalysis&>(analysis);
   return *data_type_ == *(rhs.data_type_);
 }

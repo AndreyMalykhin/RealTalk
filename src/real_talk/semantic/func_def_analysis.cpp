@@ -22,7 +22,7 @@ const FuncDataType &FuncDefAnalysis::GetDataType() const {
   return *data_type_;
 }
 
-bool FuncDefAnalysis::IsEqual(const DefAnalysis &analysis) const {
+bool FuncDefAnalysis::IsEqual(const NodeSemanticAnalysis &analysis) const {
   const FuncDefAnalysis &rhs = static_cast<const FuncDefAnalysis&>(analysis);
   return *data_type_ == *(rhs.data_type_) && is_native_ == rhs.is_native_;
 }

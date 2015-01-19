@@ -14,11 +14,11 @@ class VarDefAnalysis: public DefAnalysis {
  public:
   VarDefAnalysis(std::unique_ptr<DataType> data_type,
                  DataStorage storage);
-  const DataType &GetDataType() const override;
-  ValueType GetValueType() const override;
+  virtual const DataType &GetDataType() const override;
+  virtual ValueType GetValueType() const override;
 
  private:
-  virtual bool IsEqual(const DefAnalysis &rhs) const override;
+  virtual bool IsEqual(const NodeSemanticAnalysis &rhs) const override;
   virtual void Print(std::ostream &stream) const override;
 
   std::unique_ptr<DataType> data_type_;

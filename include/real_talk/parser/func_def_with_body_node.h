@@ -76,14 +76,8 @@ class FuncDefWithBodyNode: public FuncDefNode {
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    return DoIsEqual(static_cast<const FuncDefWithBodyNode&>(node));
-  }
-
-  virtual bool IsEqual(const DefNode &node) const override {
-    return DoIsEqual(static_cast<const FuncDefWithBodyNode&>(node));
-  }
-
-  bool DoIsEqual(const FuncDefWithBodyNode &rhs) const {
+    const FuncDefWithBodyNode &rhs =
+        static_cast<const FuncDefWithBodyNode&>(node);
     return base_func_def_ == rhs.base_func_def_
         && *body_ == *(rhs.body_);
   }

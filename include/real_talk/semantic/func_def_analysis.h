@@ -12,11 +12,11 @@ namespace semantic {
 class FuncDefAnalysis: public DefAnalysis {
  public:
   FuncDefAnalysis(std::unique_ptr<FuncDataType> data_type, bool is_native);
-  const FuncDataType &GetDataType() const override;
-  ValueType GetValueType() const override;
+  virtual const FuncDataType &GetDataType() const override;
+  virtual ValueType GetValueType() const override;
 
  private:
-  virtual bool IsEqual(const DefAnalysis &rhs) const override;
+  virtual bool IsEqual(const NodeSemanticAnalysis &rhs) const override;
   virtual void Print(std::ostream &stream) const override;
 
   std::unique_ptr<FuncDataType> data_type_;

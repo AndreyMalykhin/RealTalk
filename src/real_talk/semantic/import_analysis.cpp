@@ -14,12 +14,13 @@ ImportAnalysis::ImportAnalysis(shared_ptr<ProgramNode> program)
   assert(program_);
 }
 
-bool operator==(const ImportAnalysis &lhs, const ImportAnalysis &rhs) {
-  return lhs.program_ == rhs.program_;
+bool ImportAnalysis::IsEqual(const NodeSemanticAnalysis &analysis) const {
+  const ImportAnalysis &rhs = static_cast<const ImportAnalysis&>(analysis);
+  return program_ == rhs.program_;
 }
 
-ostream &operator<<(ostream &stream, const ImportAnalysis &analysis) {
-  return stream << *(analysis.program_);
+void ImportAnalysis::Print(ostream &stream) const {
+  stream << "program=" << *program_;
 }
 }
 }

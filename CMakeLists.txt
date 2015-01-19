@@ -35,13 +35,14 @@ add_library(real_talk
   src/real_talk/semantic/char_lit.cpp
   src/real_talk/semantic/bool_lit.cpp
   src/real_talk/semantic/semantic_analysis.cpp
+  src/real_talk/semantic/node_semantic_analysis.cpp
   src/real_talk/semantic/semantic_problem.cpp
   src/real_talk/semantic/semantic_problems.cpp
-  src/real_talk/semantic/def_analysis.cpp
   src/real_talk/semantic/var_def_analysis.cpp
   src/real_talk/semantic/arg_def_analysis.cpp
   src/real_talk/semantic/func_def_analysis.cpp
-  src/real_talk/semantic/expr_analysis.cpp
+  src/real_talk/semantic/base_expr_analysis.cpp
+  src/real_talk/semantic/common_expr_analysis.cpp
   src/real_talk/semantic/lit_analysis.cpp
   src/real_talk/semantic/id_analysis.cpp
   src/real_talk/semantic/import_analysis.cpp

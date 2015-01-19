@@ -4,14 +4,13 @@
 
 #include <string>
 #include <memory>
-#include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/var_def_node.h"
 #include "real_talk/parser/data_type_node.h"
 
 namespace real_talk {
 namespace parser {
 
-class VarDefWithoutInitNode: public StmtNode, public VarDefNode {
+class VarDefWithoutInitNode: public VarDefNode {
  public:
   VarDefWithoutInitNode(
       std::unique_ptr<DataTypeNode> data_type,
@@ -37,14 +36,8 @@ class VarDefWithoutInitNode: public StmtNode, public VarDefNode {
 
  private:
   virtual bool IsEqual(const Node &node) const override {
-    return DoIsEqual(static_cast<const VarDefWithoutInitNode&>(node));
-  }
-
-  virtual bool IsEqual(const DefNode &node) const override {
-    return DoIsEqual(static_cast<const VarDefWithoutInitNode&>(node));
-  }
-
-  bool DoIsEqual(const VarDefWithoutInitNode &rhs) const {
+    const VarDefWithoutInitNode &rhs =
+        static_cast<const VarDefWithoutInitNode&>(node);
     return *data_type_ == *(rhs.data_type_)
         && name_token_ == rhs.name_token_
         && end_token_ == rhs.end_token_;
