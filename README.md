@@ -1,10 +1,44 @@
-#What u talkin bout ?
-- Procedural paradigm
+#Real talk? What u talkin bout?
+Talkin bout  educational-purpose programming language with:
+- Old school procedural paradigm
 - Static typing
 - C/Java-like gangsterish syntax
 - Compilation into bytecode, execution by virtual machine
 
-#Components
+#Aight, what u got?
+
+###Sup with control flow statements?
+- conditional (aka if/else if/else)
+- condition-controlled loop (aka while)
+- early exit from loop (aka break)
+- continuation with next iteration of loop (aka continue)
+- functions with arguments and return value
+
+###Sup with expressions?
+- arithmetical: addition, subtration, division, multiplication, pre increment, pre decrement, negation
+- logical: and, or, not
+- comparisons: equal, not equal, greater, greater or equal, less, less or equal
+- variable assignment
+- function call
+- array indexing
+- array allocation
+
+###Sup with other statements?
+- variable definition
+- import definitions from another file
+
+###Sup with data types?
+- 32-bit signed integer
+- 64-bit signed integer
+- double-precision floating point number
+- 1-byte ASCII character
+- sequence of characters
+- 1-byte boolean value
+- fixed size array of aforementioned data types
+
+#Under the hood
+
+###Components
     src
         real_talk
             lexer // source code tokenizer
@@ -13,11 +47,10 @@
             code // bytecode generator (TODO)
             vm // virtual machine (TODO)
 
-#Dependencies
+###Dependencies
 - C++11
 - libc++
 - Clang 6.0+
+- CMake 3.0.1+
 - Boost 1.56.0
 - Google Mock 1.7.0
-- CMake 3.0.1+
-- OSX 10.9+
