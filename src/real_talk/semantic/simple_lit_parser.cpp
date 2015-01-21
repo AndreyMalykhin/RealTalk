@@ -10,7 +10,6 @@
 
 using std::string;
 using std::out_of_range;
-using std::runtime_error;
 using boost::numeric_cast;
 using boost::numeric::bad_numeric_cast;
 using boost::format;
@@ -23,7 +22,9 @@ int32_t SimpleLitParser::ParseInt(const string &str) const {
   try {
     return numeric_cast<int32_t>(stol(str));
   } catch (const bad_numeric_cast&) {
-    throw out_of_range((format("Number %1% exceeds 32 bits") % str).str());
+    throw OutOfRange((format("Number %1% exceeds 32 bits") % str).str());
+  } catch (const out_of_range&) {
+    throw OutOfRange((format("Number %1% exceeds 32 bits") % str).str());
   }
 }
 
@@ -31,7 +32,9 @@ int64_t SimpleLitParser::ParseLong(const string &str) const {
   try {
     return numeric_cast<int64_t>(stoll(str));
   } catch (const bad_numeric_cast&) {
-    throw out_of_range((format("Number %1% exceeds 64 bits") % str).str());
+    throw OutOfRange((format("Number %1% exceeds 64 bits") % str).str());
+  } catch (const out_of_range&) {
+    throw OutOfRange((format("Number %1% exceeds 64 bits") % str).str());
   }
 }
 
@@ -39,7 +42,11 @@ double SimpleLitParser::ParseDouble(const string &str) const {
   try {
     return numeric_cast<double>(stod(str));
   } catch (const bad_numeric_cast&) {
-    throw out_of_range((format("Number %1% exceeds 64 bits") % str).str());
+    throw OutOfRange(
+        (format("Number %1% exceeds size of double") % str).str());
+  } catch (const out_of_range&) {
+    throw OutOfRange(
+        (format("Number %1% exceeds size of double") % str).str());
   }
 }
 
@@ -61,7 +68,8 @@ char SimpleLitParser::ParseChar(const string &str) const {
   const string &value = DoParseString(str);
 
   if (value.size() > 1) {
-    throw MultipleCharsError(str);
+    throw MultipleCharsError(
+        (format("Char %1% has multiple chars") % str).str());
   } else if (value.size() == 0) {
     return '\0';
   }
@@ -151,7 +159,7 @@ char SimpleLitParser::ParseHexValue(string::const_iterator &start_it,
   --str_it;
 
   if (hex_value_length == 0) {
-    throw EmptyHexValueError(str);
+    throw EmptyHexValueError((format("Hex value %1% is empty") % str).str());
   }
 
   const string &hex_value = str.substr(hex_value_start_pos, hex_value_length);
@@ -159,17 +167,12 @@ char SimpleLitParser::ParseHexValue(string::const_iterator &start_it,
   try {
     return numeric_cast<char>(stoi(hex_value, 0, 16));
   } catch (const bad_numeric_cast&) {
-    throw out_of_range(
+    throw OutOfRange(
+        (format("Hex value %1% exceeds 1 byte") % hex_value).str());
+  } catch (const out_of_range&) {
+    throw OutOfRange(
         (format("Hex value %1% exceeds 1 byte") % hex_value).str());
   }
-}
-
-MultipleCharsError::MultipleCharsError(const std::string &msg)
-    : runtime_error(msg) {
-}
-
-EmptyHexValueError::EmptyHexValueError(const std::string &msg)
-    : runtime_error(msg) {
 }
 }
 }

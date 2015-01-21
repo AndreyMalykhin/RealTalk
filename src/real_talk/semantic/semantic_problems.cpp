@@ -49,9 +49,58 @@ using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::SubscriptNode;
 using real_talk::parser::IdNode;
 using real_talk::parser::AssignNode;
+using real_talk::parser::StringNode;
 
 namespace real_talk {
 namespace semantic {
+
+StringWithOutOfRangeHexValueError::StringWithOutOfRangeHexValueError(
+    const path &file_path, const StringNode &str)
+    : file_path_(file_path), str_(str) {
+}
+
+const path &StringWithOutOfRangeHexValueError::GetFilePath() const {
+  return file_path_;
+}
+
+const StringNode &StringWithOutOfRangeHexValueError::GetString() const {
+  return str_;
+}
+
+void StringWithOutOfRangeHexValueError::Print(ostream &stream) const {
+  stream << "string=" << str_;
+}
+
+bool StringWithOutOfRangeHexValueError::IsEqual(
+    const SemanticProblem &problem) const {
+  const StringWithOutOfRangeHexValueError &rhs =
+      static_cast<const StringWithOutOfRangeHexValueError&>(problem);
+  return str_ == rhs.str_;
+}
+
+StringWithEmptyHexValueError::StringWithEmptyHexValueError(
+    const path &file_path, const StringNode &str)
+    : file_path_(file_path), str_(str) {
+}
+
+const path &StringWithEmptyHexValueError::GetFilePath() const {
+  return file_path_;
+}
+
+const StringNode &StringWithEmptyHexValueError::GetString() const {
+  return str_;
+}
+
+void StringWithEmptyHexValueError::Print(ostream &stream) const {
+  stream << "string=" << str_;
+}
+
+bool StringWithEmptyHexValueError::IsEqual(
+    const SemanticProblem &problem) const {
+  const StringWithEmptyHexValueError &rhs =
+      static_cast<const StringWithEmptyHexValueError&>(problem);
+  return str_ == rhs.str_;
+}
 
 UnaryExprWithUnsupportedTypeError::UnaryExprWithUnsupportedTypeError(
     const path &file_path,

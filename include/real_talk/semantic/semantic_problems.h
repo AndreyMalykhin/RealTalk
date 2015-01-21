@@ -15,11 +15,44 @@ class BinaryExprNode;
 class UnaryExprNode;
 class ArrayAllocNode;
 class BoundedArraySizeNode;
+class StringNode;
 }
 
 namespace semantic {
 
 class DataType;
+
+class StringWithOutOfRangeHexValueError: public SemanticError {
+ public:
+  StringWithOutOfRangeHexValueError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::StringNode &str);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::StringNode &GetString() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::StringNode &str_;
+};
+
+class StringWithEmptyHexValueError: public SemanticError {
+ public:
+  StringWithEmptyHexValueError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::StringNode &str);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::StringNode &GetString() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::StringNode &str_;
+};
 
 class AssignWithRightValueAssigneeError: public SemanticError {
  public:

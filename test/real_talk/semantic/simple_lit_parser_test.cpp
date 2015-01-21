@@ -8,7 +8,6 @@
 using std::vector;
 using std::string;
 using std::to_string;
-using std::out_of_range;
 using testing::Test;
 
 namespace real_talk {
@@ -121,7 +120,7 @@ TEST_F(SimpleLitParserTest, ParseIntFailsIfNumberExceeds32Bits) {
     try {
       lit_parser.ParseInt(str);
       FAIL() << "str=" << str;
-    } catch (const out_of_range&) {
+    } catch (const LitParser::OutOfRange&) {
     }
   }
 }
@@ -132,7 +131,7 @@ TEST_F(SimpleLitParserTest, ParseLongFailsIfNumberExceeds64Bits) {
   try {
     lit_parser.ParseLong("918446744073709551616");
     FAIL();
-  } catch (const out_of_range&) {
+  } catch (const LitParser::OutOfRange&) {
   }
 }
 
@@ -143,7 +142,7 @@ TEST_F(SimpleLitParserTest, ParseDoubleFailsIfNumberExceeds64Bits) {
   try {
     lit_parser.ParseDouble(str);
     FAIL() << "str=" << str;
-  } catch (const out_of_range&) {
+  } catch (const LitParser::OutOfRange&) {
   }
 }
 
@@ -153,7 +152,7 @@ TEST_F(SimpleLitParserTest, ParseCharFailsIfMultipleChars) {
   try {
     lit_parser.ParseChar("'ab'");
     FAIL();
-  } catch (const MultipleCharsError&) {
+  } catch (const LitParser::MultipleCharsError&) {
   }
 }
 
@@ -166,7 +165,7 @@ TEST_F(SimpleLitParserTest, ParseCharFailsIfHexValueIsEmpty) {
     try {
       lit_parser.ParseChar(str);
       FAIL();
-    } catch (const EmptyHexValueError&) {
+    } catch (const LitParser::EmptyHexValueError&) {
     }
   }
 }
@@ -180,7 +179,7 @@ TEST_F(SimpleLitParserTest, ParseCharFailsIfHexValueExceeds1Byte) {
     try {
       lit_parser.ParseChar(str);
       FAIL();
-    } catch (const out_of_range&) {
+    } catch (const LitParser::OutOfRange&) {
     }
   }
 }
@@ -194,7 +193,7 @@ TEST_F(SimpleLitParserTest, ParseStringFailsIfHexValueIsEmpty) {
     try {
       lit_parser.ParseString(str);
       FAIL();
-    } catch (const EmptyHexValueError&) {
+    } catch (const LitParser::EmptyHexValueError&) {
     }
   }
 }
@@ -208,7 +207,7 @@ TEST_F(SimpleLitParserTest, ParseStringFailsIfHexValueExceeds1Byte) {
     try {
       lit_parser.ParseString(str);
       FAIL();
-    } catch (const out_of_range&) {
+    } catch (const LitParser::OutOfRange&) {
     }
   }
 }

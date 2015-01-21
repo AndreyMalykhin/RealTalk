@@ -1516,9 +1516,14 @@ void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
 
   try {
     value = lit_parser_.ParseString(string_node.GetToken().GetValue());
-  } catch (...) {
-    // TODO
-    assert(false);
+  } catch (const LitParser::EmptyHexValueError&) {
+    unique_ptr<SemanticError> error(new StringWithEmptyHexValueError(
+        GetCurrentFilePath(), string_node));
+    throw SemanticErrorException(move(error));
+  } catch (const LitParser::OutOfRange&) {
+    unique_ptr<SemanticError> error(new StringWithOutOfRangeHexValueError(
+        GetCurrentFilePath(), string_node));
+    throw SemanticErrorException(move(error));
   }
 
   unique_ptr<DataType> data_type(new StringDataType());
