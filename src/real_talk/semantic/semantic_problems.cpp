@@ -19,6 +19,10 @@
 #include "real_talk/parser/subscript_node.h"
 #include "real_talk/parser/id_node.h"
 #include "real_talk/parser/assign_node.h"
+#include "real_talk/parser/char_node.h"
+#include "real_talk/parser/int_node.h"
+#include "real_talk/parser/long_node.h"
+#include "real_talk/parser/double_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
@@ -50,9 +54,157 @@ using real_talk::parser::SubscriptNode;
 using real_talk::parser::IdNode;
 using real_talk::parser::AssignNode;
 using real_talk::parser::StringNode;
+using real_talk::parser::CharNode;
+using real_talk::parser::IntNode;
+using real_talk::parser::LongNode;
+using real_talk::parser::DoubleNode;
 
 namespace real_talk {
 namespace semantic {
+
+DoubleWithOutOfRangeValueError::DoubleWithOutOfRangeValueError(
+    const path &file_path, const DoubleNode &double_node)
+    : file_path_(file_path), double_(double_node) {
+}
+
+const path &DoubleWithOutOfRangeValueError::GetFilePath() const {
+  return file_path_;
+}
+
+const DoubleNode &DoubleWithOutOfRangeValueError::GetDouble() const {
+  return double_;
+}
+
+void DoubleWithOutOfRangeValueError::Print(ostream &stream) const {
+  stream << "double=" << double_;
+}
+
+bool DoubleWithOutOfRangeValueError::IsEqual(
+    const SemanticProblem &problem) const {
+  const DoubleWithOutOfRangeValueError &rhs =
+      static_cast<const DoubleWithOutOfRangeValueError&>(problem);
+  return double_ == rhs.double_;
+}
+
+LongWithOutOfRangeValueError::LongWithOutOfRangeValueError(
+    const path &file_path, const LongNode &long_node)
+    : file_path_(file_path), long_(long_node) {
+}
+
+const path &LongWithOutOfRangeValueError::GetFilePath() const {
+  return file_path_;
+}
+
+const LongNode &LongWithOutOfRangeValueError::GetLong() const {
+  return long_;
+}
+
+void LongWithOutOfRangeValueError::Print(ostream &stream) const {
+  stream << "long=" << long_;
+}
+
+bool LongWithOutOfRangeValueError::IsEqual(
+    const SemanticProblem &problem) const {
+  const LongWithOutOfRangeValueError &rhs =
+      static_cast<const LongWithOutOfRangeValueError&>(problem);
+  return long_ == rhs.long_;
+}
+
+IntWithOutOfRangeValueError::IntWithOutOfRangeValueError(
+    const path &file_path, const IntNode &int_node)
+    : file_path_(file_path), int_(int_node) {
+}
+
+const path &IntWithOutOfRangeValueError::GetFilePath() const {
+  return file_path_;
+}
+
+const IntNode &IntWithOutOfRangeValueError::GetInt() const {
+  return int_;
+}
+
+void IntWithOutOfRangeValueError::Print(ostream &stream) const {
+  stream << "int=" << int_;
+}
+
+bool IntWithOutOfRangeValueError::IsEqual(
+    const SemanticProblem &problem) const {
+  const IntWithOutOfRangeValueError &rhs =
+      static_cast<const IntWithOutOfRangeValueError&>(problem);
+  return int_ == rhs.int_;
+}
+
+CharWithMultipleCharsError::CharWithMultipleCharsError(
+    const path &file_path, const CharNode &c)
+    : file_path_(file_path), c_(c) {
+}
+
+const path &CharWithMultipleCharsError::GetFilePath() const {
+  return file_path_;
+}
+
+const CharNode &CharWithMultipleCharsError::GetChar() const {
+  return c_;
+}
+
+void CharWithMultipleCharsError::Print(ostream &stream) const {
+  stream << "char=" << c_;
+}
+
+bool CharWithMultipleCharsError::IsEqual(
+    const SemanticProblem &problem) const {
+  const CharWithMultipleCharsError &rhs =
+      static_cast<const CharWithMultipleCharsError&>(problem);
+  return c_ == rhs.c_;
+}
+
+CharWithEmptyHexValueError::CharWithEmptyHexValueError(
+    const path &file_path, const CharNode &c)
+    : file_path_(file_path), c_(c) {
+}
+
+const path &CharWithEmptyHexValueError::GetFilePath() const {
+  return file_path_;
+}
+
+const CharNode &CharWithEmptyHexValueError::GetChar() const {
+  return c_;
+}
+
+void CharWithEmptyHexValueError::Print(ostream &stream) const {
+  stream << "char=" << c_;
+}
+
+bool CharWithEmptyHexValueError::IsEqual(
+    const SemanticProblem &problem) const {
+  const CharWithEmptyHexValueError &rhs =
+      static_cast<const CharWithEmptyHexValueError&>(problem);
+  return c_ == rhs.c_;
+}
+
+CharWithOutOfRangeHexValueError::CharWithOutOfRangeHexValueError(
+    const path &file_path, const CharNode &c)
+    : file_path_(file_path), c_(c) {
+}
+
+const path &CharWithOutOfRangeHexValueError::GetFilePath() const {
+  return file_path_;
+}
+
+const CharNode &CharWithOutOfRangeHexValueError::GetChar() const {
+  return c_;
+}
+
+void CharWithOutOfRangeHexValueError::Print(ostream &stream) const {
+  stream << "char=" << c_;
+}
+
+bool CharWithOutOfRangeHexValueError::IsEqual(
+    const SemanticProblem &problem) const {
+  const CharWithOutOfRangeHexValueError &rhs =
+      static_cast<const CharWithOutOfRangeHexValueError&>(problem);
+  return c_ == rhs.c_;
+}
 
 StringWithOutOfRangeHexValueError::StringWithOutOfRangeHexValueError(
     const path &file_path, const StringNode &str)

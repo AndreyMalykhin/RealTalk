@@ -67,6 +67,7 @@
 #include "real_talk/semantic/double_lit.h"
 #include "real_talk/semantic/bool_lit.h"
 #include "real_talk/semantic/string_lit.h"
+#include "real_talk/semantic/char_lit.h"
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
 #include "real_talk/semantic/arg_def_analysis.h"
@@ -82,6 +83,7 @@
 
 using std::vector;
 using std::string;
+using std::to_string;
 using std::unordered_map;
 using std::unique_ptr;
 using std::shared_ptr;
@@ -153,6 +155,7 @@ using real_talk::parser::ContinueNode;
 using real_talk::parser::BreakNode;
 using real_talk::parser::SubscriptNode;
 using real_talk::parser::NotNode;
+using real_talk::parser::CharNode;
 using real_talk::util::FileNotFoundError;
 using real_talk::util::IOError;
 
@@ -5899,6 +5902,481 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithOutOfRangeHexValueIsInvalid) {
                                   *lit_parser);
   SemanticAnalysis actual_analysis = analyzer.Analyze();
   ASSERT_EQ(expected_analysis, actual_analysis);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Char) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  CharNode *char_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> char_node(char_node_ptr);
+  unique_ptr<StmtNode> char_stmt_node(new ExprStmtNode(
+      move(char_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(char_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  TestLitParses test_lit_parses = {};
+  test_lit_parses.chars = {{"'a'", 'a'}};
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new CharDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
+  node_analyzes.insert(make_pair(char_node_ptr, move(lit_analysis)));
+
+  SemanticAnalysis::Problems problems;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, CharWithEmptyHexValueIsInvalid) {
+  struct FailingTestLitParse {
+    string str;
+    LitParser::EmptyHexValueError error;
+  };
+
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  CharNode *char_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'\\x'", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> char_node(char_node_ptr);
+  unique_ptr<StmtNode> char_stmt_node(new ExprStmtNode(
+      move(char_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(char_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(
+      new CharWithEmptyHexValueError(program_file_path, *char_node_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
+
+  vector<FailingTestLitParse> test_lit_parses =
+      {{"'\\x'", LitParser::EmptyHexValueError("test")}};
+  LitParserMock *lit_parser_mock = new LitParserMock();
+  unique_ptr<LitParser> lit_parser(lit_parser_mock);
+
+  for (const FailingTestLitParse &test_lit_parse: test_lit_parses) {
+    EXPECT_CALL(*lit_parser_mock, ParseChar(test_lit_parse.str))
+        .Times(1)
+        .WillOnce(Throw(test_lit_parse.error))
+        .RetiresOnSaturation();
+  }
+
+  unique_ptr<ImportFileSearcher> import_file_searcher(
+      new ImportFileSearcherMock());
+  unique_ptr<FileParser> file_parser(new FileParserMock());
+  SimpleSemanticAnalyzer analyzer(program_node,
+                                  program_file_path,
+                                  *file_parser,
+                                  *import_file_searcher,
+                                  *lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  ASSERT_EQ(expected_analysis, actual_analysis);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, CharWithOutOfRangeHexValueIsInvalid) {
+  struct FailingTestLitParse {
+    string str;
+    LitParser::OutOfRange error;
+  };
+
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  CharNode *char_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'\\xFFF'", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> char_node(char_node_ptr);
+  unique_ptr<StmtNode> char_stmt_node(new ExprStmtNode(
+      move(char_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(char_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new CharWithOutOfRangeHexValueError(
+      program_file_path, *char_node_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
+
+  vector<FailingTestLitParse> test_lit_parses =
+      {{"'\\xFFF'", LitParser::OutOfRange("test")}};
+  LitParserMock *lit_parser_mock = new LitParserMock();
+  unique_ptr<LitParser> lit_parser(lit_parser_mock);
+
+  for (const FailingTestLitParse &test_lit_parse: test_lit_parses) {
+    EXPECT_CALL(*lit_parser_mock, ParseChar(test_lit_parse.str))
+        .Times(1)
+        .WillOnce(Throw(test_lit_parse.error))
+        .RetiresOnSaturation();
+  }
+
+  unique_ptr<ImportFileSearcher> import_file_searcher(
+      new ImportFileSearcherMock());
+  unique_ptr<FileParser> file_parser(new FileParserMock());
+  SimpleSemanticAnalyzer analyzer(program_node,
+                                  program_file_path,
+                                  *file_parser,
+                                  *import_file_searcher,
+                                  *lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  ASSERT_EQ(expected_analysis, actual_analysis);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, CharWithMultipleCharsIsInvalid) {
+  struct FailingTestLitParse {
+    string str;
+    LitParser::MultipleCharsError error;
+  };
+
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  CharNode *char_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'ab'", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> char_node(char_node_ptr);
+  unique_ptr<StmtNode> char_stmt_node(new ExprStmtNode(
+      move(char_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(char_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new CharWithMultipleCharsError(
+      program_file_path, *char_node_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
+
+  vector<FailingTestLitParse> test_lit_parses =
+      {{"'ab'", LitParser::MultipleCharsError("test")}};
+  LitParserMock *lit_parser_mock = new LitParserMock();
+  unique_ptr<LitParser> lit_parser(lit_parser_mock);
+
+  for (const FailingTestLitParse &test_lit_parse: test_lit_parses) {
+    EXPECT_CALL(*lit_parser_mock, ParseChar(test_lit_parse.str))
+        .Times(1)
+        .WillOnce(Throw(test_lit_parse.error))
+        .RetiresOnSaturation();
+  }
+
+  unique_ptr<ImportFileSearcher> import_file_searcher(
+      new ImportFileSearcherMock());
+  unique_ptr<FileParser> file_parser(new FileParserMock());
+  SimpleSemanticAnalyzer analyzer(program_node,
+                                  program_file_path,
+                                  *file_parser,
+                                  *import_file_searcher,
+                                  *lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  ASSERT_EQ(expected_analysis, actual_analysis);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Int) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  IntNode *int_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> int_node(int_node_ptr);
+  unique_ptr<StmtNode> int_stmt_node(new ExprStmtNode(
+      move(int_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(int_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  TestLitParses test_lit_parses = {};
+  test_lit_parses.ints = {{"7", INT32_C(7)}};
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  node_analyzes.insert(make_pair(int_node_ptr, move(lit_analysis)));
+
+  SemanticAnalysis::Problems problems;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, IntWithOutOfRangeValueIsInvalid) {
+  struct FailingTestLitParse {
+    string str;
+    LitParser::OutOfRange error;
+  };
+
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  IntNode *int_node_ptr = new IntNode(TokenInfo(
+      Token::kIntLit, "18446744073709551616", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> int_node(int_node_ptr);
+  unique_ptr<StmtNode> int_stmt_node(new ExprStmtNode(
+      move(int_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(int_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new IntWithOutOfRangeValueError(
+      program_file_path, *int_node_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
+
+  vector<FailingTestLitParse> test_lit_parses =
+      {{"18446744073709551616", LitParser::OutOfRange("test")}};
+  LitParserMock *lit_parser_mock = new LitParserMock();
+  unique_ptr<LitParser> lit_parser(lit_parser_mock);
+
+  for (const FailingTestLitParse &test_lit_parse: test_lit_parses) {
+    EXPECT_CALL(*lit_parser_mock, ParseInt(test_lit_parse.str))
+        .Times(1)
+        .WillOnce(Throw(test_lit_parse.error))
+        .RetiresOnSaturation();
+  }
+
+  unique_ptr<ImportFileSearcher> import_file_searcher(
+      new ImportFileSearcherMock());
+  unique_ptr<FileParser> file_parser(new FileParserMock());
+  SimpleSemanticAnalyzer analyzer(program_node,
+                                  program_file_path,
+                                  *file_parser,
+                                  *import_file_searcher,
+                                  *lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  ASSERT_EQ(expected_analysis, actual_analysis);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Long) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  LongNode *long_node_ptr = new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> long_node(long_node_ptr);
+  unique_ptr<StmtNode> long_stmt_node(new ExprStmtNode(
+      move(long_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(long_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  TestLitParses test_lit_parses = {};
+  test_lit_parses.longs = {{"7L", INT64_C(7)}};
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new LongDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
+  node_analyzes.insert(make_pair(long_node_ptr, move(lit_analysis)));
+
+  SemanticAnalysis::Problems problems;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, LongWithOutOfRangeValueIsInvalid) {
+  struct FailingTestLitParse {
+    string str;
+    LitParser::OutOfRange error;
+  };
+
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  LongNode *long_node_ptr = new LongNode(TokenInfo(
+      Token::kLongLit, "918446744073709551616L", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> long_node(long_node_ptr);
+  unique_ptr<StmtNode> long_stmt_node(new ExprStmtNode(
+      move(long_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(long_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new LongWithOutOfRangeValueError(
+      program_file_path, *long_node_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
+
+  vector<FailingTestLitParse> test_lit_parses =
+      {{"918446744073709551616L", LitParser::OutOfRange("test")}};
+  LitParserMock *lit_parser_mock = new LitParserMock();
+  unique_ptr<LitParser> lit_parser(lit_parser_mock);
+
+  for (const FailingTestLitParse &test_lit_parse: test_lit_parses) {
+    EXPECT_CALL(*lit_parser_mock, ParseLong(test_lit_parse.str))
+        .Times(1)
+        .WillOnce(Throw(test_lit_parse.error))
+        .RetiresOnSaturation();
+  }
+
+  unique_ptr<ImportFileSearcher> import_file_searcher(
+      new ImportFileSearcherMock());
+  unique_ptr<FileParser> file_parser(new FileParserMock());
+  SimpleSemanticAnalyzer analyzer(program_node,
+                                  program_file_path,
+                                  *file_parser,
+                                  *import_file_searcher,
+                                  *lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  ASSERT_EQ(expected_analysis, actual_analysis);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Double) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  DoubleNode *double_node_ptr = new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> double_node(double_node_ptr);
+  unique_ptr<StmtNode> double_stmt_node(new ExprStmtNode(
+      move(double_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(double_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  TestLitParses test_lit_parses = {};
+  test_lit_parses.doubles = {{"7.7", 7.7}};
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new DoubleDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(7.7))));
+  node_analyzes.insert(make_pair(double_node_ptr, move(lit_analysis)));
+
+  SemanticAnalysis::Problems problems;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, DoubleWithOutOfRangeValueIsInvalid) {
+  struct FailingTestLitParse {
+    string str;
+    LitParser::OutOfRange error;
+  };
+
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  const string &double_str = "918446744073709551616" + to_string(1.79769e+308);
+  DoubleNode *double_node_ptr = new DoubleNode(TokenInfo(
+      Token::kDoubleLit, double_str, UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> double_node(double_node_ptr);
+  unique_ptr<StmtNode> double_stmt_node(new ExprStmtNode(
+      move(double_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(double_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new DoubleWithOutOfRangeValueError(
+      program_file_path, *double_node_ptr));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
+
+  vector<FailingTestLitParse> test_lit_parses =
+      {{double_str, LitParser::OutOfRange("test")}};
+  LitParserMock *lit_parser_mock = new LitParserMock();
+  unique_ptr<LitParser> lit_parser(lit_parser_mock);
+
+  for (const FailingTestLitParse &test_lit_parse: test_lit_parses) {
+    EXPECT_CALL(*lit_parser_mock, ParseDouble(test_lit_parse.str))
+        .Times(1)
+        .WillOnce(Throw(test_lit_parse.error))
+        .RetiresOnSaturation();
+  }
+
+  unique_ptr<ImportFileSearcher> import_file_searcher(
+      new ImportFileSearcherMock());
+  unique_ptr<FileParser> file_parser(new FileParserMock());
+  SimpleSemanticAnalyzer analyzer(program_node,
+                                  program_file_path,
+                                  *file_parser,
+                                  *import_file_searcher,
+                                  *lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  ASSERT_EQ(expected_analysis, actual_analysis);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, Bool) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  BoolNode *bool_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> bool_node(bool_node_ptr);
+  unique_ptr<StmtNode> bool_stmt_node(new ExprStmtNode(
+      move(bool_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  stmt_nodes.push_back(move(bool_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  TestLitParses test_lit_parses = {};
+  test_lit_parses.bools = {{"false", false}};
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(false))));
+  node_analyzes.insert(make_pair(bool_node_ptr, move(lit_analysis)));
+
+  SemanticAnalysis::Problems problems;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
 }
 }
 }

@@ -1456,9 +1456,10 @@ void SimpleSemanticAnalyzer::Impl::VisitInt(const IntNode &int_node) {
 
   try {
     value = lit_parser_.ParseInt(int_node.GetToken().GetValue());
-  } catch (...) {
-    // TODO
-    assert(false);
+  } catch (const LitParser::OutOfRange&) {
+    unique_ptr<SemanticError> error(new IntWithOutOfRangeValueError(
+        GetCurrentFilePath(), int_node));
+    throw SemanticErrorException(move(error));
   }
 
   unique_ptr<DataType> data_type(new IntDataType());
@@ -1471,9 +1472,10 @@ void SimpleSemanticAnalyzer::Impl::VisitLong(const LongNode &long_node) {
 
   try {
     value = lit_parser_.ParseLong(long_node.GetToken().GetValue());
-  } catch (...) {
-    // TODO
-    assert(false);
+  } catch (const LitParser::OutOfRange&) {
+    unique_ptr<SemanticError> error(new LongWithOutOfRangeValueError(
+        GetCurrentFilePath(), long_node));
+    throw SemanticErrorException(move(error));
   }
 
   unique_ptr<DataType> data_type(new LongDataType());
@@ -1486,9 +1488,10 @@ void SimpleSemanticAnalyzer::Impl::VisitDouble(const DoubleNode &double_node) {
 
   try {
     value = lit_parser_.ParseDouble(double_node.GetToken().GetValue());
-  } catch (...) {
-    // TODO
-    assert(false);
+  } catch (const LitParser::OutOfRange&) {
+    unique_ptr<SemanticError> error(new DoubleWithOutOfRangeValueError(
+        GetCurrentFilePath(), double_node));
+    throw SemanticErrorException(move(error));
   }
 
   unique_ptr<DataType> data_type(new DoubleDataType());
@@ -1501,9 +1504,18 @@ void SimpleSemanticAnalyzer::Impl::VisitChar(const CharNode &char_node) {
 
   try {
     value = lit_parser_.ParseChar(char_node.GetToken().GetValue());
-  } catch (...) {
-    // TODO
-    assert(false);
+  } catch (const LitParser::EmptyHexValueError&) {
+    unique_ptr<SemanticError> error(new CharWithEmptyHexValueError(
+        GetCurrentFilePath(), char_node));
+    throw SemanticErrorException(move(error));
+  } catch (const LitParser::OutOfRange&) {
+    unique_ptr<SemanticError> error(new CharWithOutOfRangeHexValueError(
+        GetCurrentFilePath(), char_node));
+    throw SemanticErrorException(move(error));
+  } catch (const LitParser::MultipleCharsError&) {
+    unique_ptr<SemanticError> error(new CharWithMultipleCharsError(
+        GetCurrentFilePath(), char_node));
+    throw SemanticErrorException(move(error));
   }
 
   unique_ptr<DataType> data_type(new CharDataType());

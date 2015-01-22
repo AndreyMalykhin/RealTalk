@@ -22,6 +22,102 @@ namespace semantic {
 
 class DataType;
 
+class DoubleWithOutOfRangeValueError: public SemanticError {
+ public:
+  DoubleWithOutOfRangeValueError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::DoubleNode &double_node);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::DoubleNode &GetDouble() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::DoubleNode &double_;
+};
+
+class LongWithOutOfRangeValueError: public SemanticError {
+ public:
+  LongWithOutOfRangeValueError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::LongNode &long_node);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::LongNode &GetLong() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::LongNode &long_;
+};
+
+class IntWithOutOfRangeValueError: public SemanticError {
+ public:
+  IntWithOutOfRangeValueError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::IntNode &int_node);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::IntNode &GetInt() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::IntNode &int_;
+};
+
+class CharWithMultipleCharsError: public SemanticError {
+ public:
+  CharWithMultipleCharsError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::CharNode &c);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::CharNode &GetChar() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::CharNode &c_;
+};
+
+class CharWithEmptyHexValueError: public SemanticError {
+ public:
+  CharWithEmptyHexValueError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::CharNode &c);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::CharNode &GetChar() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::CharNode &c_;
+};
+
+class CharWithOutOfRangeHexValueError: public SemanticError {
+ public:
+  CharWithOutOfRangeHexValueError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::CharNode &c);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::CharNode &GetChar() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::CharNode &c_;
+};
+
 class StringWithOutOfRangeHexValueError: public SemanticError {
  public:
   StringWithOutOfRangeHexValueError(

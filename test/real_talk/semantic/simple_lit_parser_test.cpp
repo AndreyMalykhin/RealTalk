@@ -129,7 +129,7 @@ TEST_F(SimpleLitParserTest, ParseLongFailsIfNumberExceeds64Bits) {
   SimpleLitParser lit_parser;
 
   try {
-    lit_parser.ParseLong("918446744073709551616");
+    lit_parser.ParseLong("918446744073709551616L");
     FAIL();
   } catch (const LitParser::OutOfRange&) {
   }
