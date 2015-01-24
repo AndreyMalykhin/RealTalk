@@ -182,13 +182,14 @@ using real_talk::parser::UnboundedArraySizeNode;
 using real_talk::parser::ArrayAllocNode;
 using real_talk::parser::UnexpectedTokenError;
 using real_talk::parser::FuncDefNode;
+using real_talk::parser::BinaryExprNode;
 using real_talk::util::FileNotFoundError;
 using real_talk::util::IOError;
 
 namespace real_talk {
 namespace semantic {
 
-class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
+class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
  public:
   Impl(
       std::shared_ptr<real_talk::parser::ProgramNode> program,
@@ -197,6 +198,8 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
       const ImportFileSearcher &import_file_searcher,
       const LitParser &lit_parser);
   SemanticAnalysis Analyze();
+
+ private:
   virtual void VisitAnd(const real_talk::parser::AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
       const real_talk::parser::ArrayAllocWithoutInitNode &node) override;
@@ -279,7 +282,6 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   virtual void VisitArgDef(
       const real_talk::parser::ArgDefNode &node) override;
 
- private:
   enum class DataTypeId: uint8_t;
   class Scope;
   class FileScope;
@@ -288,7 +290,7 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   class SemanticErrorException;
   class DataTypeQuery;
   class DataTypesSupportQuery;
-  class GetDataTypeId;
+  class DataTypeIdResolver;
   class IsVoidDataType;
   class IsFuncDataType;
   class IsArrayDataType;
@@ -296,7 +298,11 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
   class IsDataTypeSupportedByVarDef;
   class IsDataTypesSupportedByAssign;
   class IsDataTypesSupportedByLess;
+  class IsDataTypesSupportedByLessOrEqual;
+  class IsDataTypesSupportedByGreater;
+  class IsDataTypesSupportedByGreaterOrEqual;
   class IsDataTypesSupportedByEqual;
+  class IsDataTypesSupportedByNotEqual;
   class IsDataTypeSupportedBySubscriptIndex;
   class IsDataTypeSupportedByArrayAllocElement;
   class IsDataTypeSupportedByArrayAllocSize;
@@ -310,6 +316,11 @@ class SimpleSemanticAnalyzer::Impl: public real_talk::parser::NodeVisitor {
                              boost::hash<
                                boost::filesystem::path> > ImportPrograms;
 
+  void VisitBinaryExpr(
+      const real_talk::parser::BinaryExprNode &expr_node,
+      std::unique_ptr<DataType> expr_data_type,
+      ValueType expr_value_type,
+      const DataTypesSupportQuery &data_types_support_query);
   void VisitBranch(const real_talk::parser::BranchNode &branch_node);
   std::unique_ptr<DataType> VisitArrayAlloc(
       const real_talk::parser::ArrayAllocNode &array_alloc_node);
@@ -584,9 +595,10 @@ enum class SimpleSemanticAnalyzer::Impl::DataTypeId: uint8_t {
   kFunc
 };
 
-class SimpleSemanticAnalyzer::Impl::GetDataTypeId: private DataTypeVisitor {
+class SimpleSemanticAnalyzer::Impl::DataTypeIdResolver
+    : private DataTypeVisitor {
  public:
-  DataTypeId Get(const DataType &data_type) {
+  DataTypeId Resolve(const DataType &data_type) {
     data_type.Accept(*this);
     return id;
   }
@@ -637,8 +649,8 @@ class SimpleSemanticAnalyzer::Impl::DataTypesSupportQuery {
 
   bool Check(const DataType &lhs, const DataType &rhs) const {
     const SupportedDataTypes &supported_data_types = GetSupportedDataTypes();
-    DataTypeId lhs_id = GetDataTypeId().Get(lhs);
-    DataTypeId rhs_id = GetDataTypeId().Get(rhs);
+    DataTypeId lhs_id = DataTypeIdResolver().Resolve(lhs);
+    DataTypeId rhs_id = DataTypeIdResolver().Resolve(rhs);
     SupportedDataTypes::const_iterator support_checker_it =
         supported_data_types.find(make_pair(lhs_id, rhs_id));
 
@@ -699,7 +711,7 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByAssign
 
 class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByEqual
     : public DataTypesSupportQuery {
- private:
+ public:
   virtual const SupportedDataTypes &GetSupportedDataTypes() const override {
     static const SupportedDataTypes &supported_data_types =
         *new SupportedDataTypes({
@@ -721,6 +733,7 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByEqual
     return supported_data_types;
   }
 
+ private:
   static bool ArrayChecker(const DataType &lhs, const DataType &rhs) {
     return IsDataTypesSupportedByEqual().Check(
         static_cast<const ArrayDataType&>(lhs).GetElementDataType(),
@@ -728,10 +741,20 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByEqual
   }
 };
 
-class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByLess
+class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByNotEqual
     : public DataTypesSupportQuery {
  private:
-  const SupportedDataTypes &GetSupportedDataTypes() const {
+  virtual const SupportedDataTypes &GetSupportedDataTypes() const override {
+    return support_query_.GetSupportedDataTypes();
+  }
+
+  IsDataTypesSupportedByEqual support_query_;
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByLess
+    : public DataTypesSupportQuery {
+ public:
+  const SupportedDataTypes &GetSupportedDataTypes() const override {
     static const SupportedDataTypes &supported_data_types =
         *new SupportedDataTypes({
             {make_pair(DataTypeId::kInt, DataTypeId::kInt),
@@ -745,6 +768,36 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByLess
         });
     return supported_data_types;
   }
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByLessOrEqual
+    : public DataTypesSupportQuery {
+ private:
+  const SupportedDataTypes &GetSupportedDataTypes() const override {
+    return support_query_.GetSupportedDataTypes();
+  }
+
+  IsDataTypesSupportedByLess support_query_;
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByGreater
+    : public DataTypesSupportQuery {
+ private:
+  const SupportedDataTypes &GetSupportedDataTypes() const override {
+    return support_query_.GetSupportedDataTypes();
+  }
+
+  IsDataTypesSupportedByLess support_query_;
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypesSupportedByGreaterOrEqual
+    : public DataTypesSupportQuery {
+ private:
+  const SupportedDataTypes &GetSupportedDataTypes() const override {
+    return support_query_.GetSupportedDataTypes();
+  }
+
+  IsDataTypesSupportedByLess support_query_;
 };
 
 SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(
@@ -1261,9 +1314,6 @@ void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
   }
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode&) {
-}
-
 void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &alloc_node) {
   unique_ptr<DataType> element_data_type = VisitArrayAlloc(alloc_node);
@@ -1346,39 +1396,67 @@ unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
   return element_data_type;
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
-  assign_node.GetLeftOperand()->Accept(*this);
-  const CommonExprAnalysis &left_operand_expr_analysis =
-      GetExprAnalysis(assign_node.GetLeftOperand().get());
+void SimpleSemanticAnalyzer::Impl::VisitSubscript(
+    const SubscriptNode &subscript) {
+  subscript.GetOperand()->Accept(*this);
+  const CommonExprAnalysis &operand_expr_analysis =
+      GetExprAnalysis(subscript.GetOperand().get());
+  const DataType &operand_data_type = operand_expr_analysis.GetDataType();
 
-  if (left_operand_expr_analysis.GetValueType() == ValueType::kRight) {
-    unique_ptr<SemanticError> error(new AssignWithRightValueAssigneeError(
-        GetCurrentFilePath(), assign_node));
+  if (!IsArrayDataType().Check(operand_data_type)) {
+    unique_ptr<SemanticError> error(
+        new SubscriptWithNonArrayError(GetCurrentFilePath(), subscript));
     throw SemanticErrorException(move(error));
   }
 
-  assign_node.GetRightOperand()->Accept(*this);
-  const DataType &left_operand_data_type =
-      left_operand_expr_analysis.GetDataType();
-  const DataType &right_operand_data_type =
-      GetExprDataType(assign_node.GetRightOperand().get());
-  const bool is_data_types_supported = IsDataTypesSupportedByAssign().Check(
-      left_operand_data_type, right_operand_data_type);
+  subscript.GetIndex()->Accept(*this);
+  const DataType &index_data_type = GetExprDataType(subscript.GetIndex().get());
 
-  if (!is_data_types_supported) {
-    unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
+  if (!IsDataTypeSupportedBySubscriptIndex().Check(index_data_type)) {
+    unique_ptr<SemanticError> error(new SubscriptWithUnsupportedIndexTypeError(
         GetCurrentFilePath(),
-        assign_node,
-        left_operand_data_type.Clone(),
-        right_operand_data_type.Clone()));
+        subscript,
+        index_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 
-  AddExprAnalysis(
-      assign_node, left_operand_data_type.Clone(), ValueType::kLeft);
+  const ArrayDataType &array_data_type =
+      static_cast<const ArrayDataType&>(operand_data_type);
+  AddExprAnalysis(subscript,
+                  array_data_type.GetElementDataType().Clone(),
+                  operand_expr_analysis.GetValueType());
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitDiv(const DivNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
+  const DefNode *def_node = nullptr;
+  const string &id = id_node.GetNameToken().GetValue();
+
+  for (const Scope* scope: reverse(scopes_stack_)) {
+    const IdDefs &scope_id_defs = scope->GetIdDefs();
+    IdDefs::const_iterator scope_id_def_it = scope_id_defs.find(id);
+
+    if (scope_id_def_it != scope_id_defs.end()) {
+      def_node = scope_id_def_it->second;
+      break;
+    }
+  }
+
+  if (def_node == nullptr) {
+    unique_ptr<SemanticError> error(
+        new IdWithoutDefError(GetCurrentFilePath(), id_node));
+    throw SemanticErrorException(move(error));
+  }
+
+  SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
+      node_analyzes_.find(def_node);
+  assert(node_analysis_it != node_analyzes_.end());
+  const DefAnalysis &def_analysis =
+      static_cast<const DefAnalysis&>(*(node_analysis_it->second));
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      def_analysis.GetDataType().Clone(),
+      def_analysis.GetValueType(),
+      def_node));
+  node_analyzes_.insert(make_pair(&id_node, move(id_analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
@@ -1437,11 +1515,150 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
   }
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitGreater(const GreaterNode&) {
+void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
+  assign_node.GetLeftOperand()->Accept(*this);
+  const CommonExprAnalysis &left_operand_expr_analysis =
+      GetExprAnalysis(assign_node.GetLeftOperand().get());
+
+  if (left_operand_expr_analysis.GetValueType() == ValueType::kRight) {
+    unique_ptr<SemanticError> error(new AssignWithRightValueAssigneeError(
+        GetCurrentFilePath(), assign_node));
+    throw SemanticErrorException(move(error));
+  }
+
+  assign_node.GetRightOperand()->Accept(*this);
+  const DataType &left_operand_data_type =
+      left_operand_expr_analysis.GetDataType();
+  const DataType &right_operand_data_type =
+      GetExprDataType(assign_node.GetRightOperand().get());
+  const bool is_data_types_supported = IsDataTypesSupportedByAssign().Check(
+      left_operand_data_type, right_operand_data_type);
+
+  if (!is_data_types_supported) {
+    unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
+        GetCurrentFilePath(),
+        assign_node,
+        left_operand_data_type.Clone(),
+        right_operand_data_type.Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
+  AddExprAnalysis(
+      assign_node, left_operand_data_type.Clone(), ValueType::kLeft);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitDiv(const DivNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitGreater(
+    const GreaterNode &greater_node) {
+  VisitBinaryExpr(greater_node,
+                  unique_ptr<DataType>(new BoolDataType()),
+                  ValueType::kRight,
+                  IsDataTypesSupportedByGreater());
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitGreaterOrEqual(
-    const GreaterOrEqualNode&) {
+    const GreaterOrEqualNode &greater_or_equal_node) {
+    VisitBinaryExpr(greater_or_equal_node,
+                  unique_ptr<DataType>(new BoolDataType()),
+                  ValueType::kRight,
+                  IsDataTypesSupportedByGreaterOrEqual());
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
+  VisitBinaryExpr(equal_node,
+                  unique_ptr<DataType>(new BoolDataType()),
+                  ValueType::kRight,
+                  IsDataTypesSupportedByEqual());
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
+  VisitBinaryExpr(less_node,
+                  unique_ptr<DataType>(new BoolDataType()),
+                  ValueType::kRight,
+                  IsDataTypesSupportedByLess());
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitLessOrEqual(
+    const LessOrEqualNode &less_or_equal_node) {
+  VisitBinaryExpr(less_or_equal_node,
+                  unique_ptr<DataType>(new BoolDataType()),
+                  ValueType::kRight,
+                  IsDataTypesSupportedByLessOrEqual());
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitMul(const MulNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitOr(const OrNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitSub(const SubNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitSum(const SumNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitNotEqual(
+    const NotEqualNode &not_equal_node) {
+  VisitBinaryExpr(not_equal_node,
+                  unique_ptr<DataType>(new BoolDataType()),
+                  ValueType::kRight,
+                  IsDataTypesSupportedByNotEqual());
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitNot(const NotNode &not_node) {
+  not_node.GetOperand()->Accept(*this);
+  const DataType &operand_data_type =
+      GetExprDataType(not_node.GetOperand().get());
+
+  if (!IsDataTypeSupportedByNot().Check(operand_data_type)) {
+    unique_ptr<SemanticError> error(new UnaryExprWithUnsupportedTypeError(
+        GetCurrentFilePath(), not_node, operand_data_type.Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
+  unique_ptr<DataType> not_data_type(new BoolDataType());
+  AddExprAnalysis(not_node, move(not_data_type), ValueType::kRight);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitNegative(const NegativeNode&) {
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
+    const BinaryExprNode &expr_node,
+    unique_ptr<DataType> expr_data_type,
+    ValueType expr_value_type,
+    const DataTypesSupportQuery &data_types_support_query) {
+  expr_node.GetLeftOperand()->Accept(*this);
+  expr_node.GetRightOperand()->Accept(*this);
+  const DataType &left_operand_data_type =
+      GetExprDataType(expr_node.GetLeftOperand().get());
+  const DataType &right_operand_data_type =
+      GetExprDataType(expr_node.GetRightOperand().get());
+  const bool is_data_types_supported = data_types_support_query.Check(
+      left_operand_data_type, right_operand_data_type);
+
+  if (!is_data_types_supported) {
+    unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
+        GetCurrentFilePath(),
+        expr_node,
+        left_operand_data_type.Clone(),
+        right_operand_data_type.Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
+  AddExprAnalysis(expr_node, move(expr_data_type), expr_value_type);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBool(const BoolNode &bool_node) {
@@ -1541,157 +1758,6 @@ void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
   unique_ptr<DataType> data_type(new StringDataType());
   unique_ptr<Lit> lit(new StringLit(value));
   AddLitAnalysis(&string_node, move(data_type), move(lit));
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
-  equal_node.GetLeftOperand()->Accept(*this);
-  equal_node.GetRightOperand()->Accept(*this);
-  const DataType &left_operand_data_type =
-      GetExprDataType(equal_node.GetLeftOperand().get());
-  const DataType &right_operand_data_type =
-      GetExprDataType(equal_node.GetRightOperand().get());
-  const bool is_data_types_supported = IsDataTypesSupportedByEqual().Check(
-      left_operand_data_type, right_operand_data_type);
-
-  if (!is_data_types_supported) {
-    unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
-        GetCurrentFilePath(),
-        equal_node,
-        left_operand_data_type.Clone(),
-        right_operand_data_type.Clone()));
-    throw SemanticErrorException(move(error));
-  }
-
-  unique_ptr<DataType> equal_data_type(new BoolDataType());
-  AddExprAnalysis(equal_node, move(equal_data_type), ValueType::kRight);
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
-  less_node.GetLeftOperand()->Accept(*this);
-  less_node.GetRightOperand()->Accept(*this);
-  const DataType &left_operand_data_type =
-      GetExprDataType(less_node.GetLeftOperand().get());
-  const DataType &right_operand_data_type =
-      GetExprDataType(less_node.GetRightOperand().get());
-  const bool is_data_types_supported = IsDataTypesSupportedByLess().Check(
-      left_operand_data_type, right_operand_data_type);
-
-  if (!is_data_types_supported) {
-    unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
-        GetCurrentFilePath(),
-        less_node,
-        left_operand_data_type.Clone(),
-        right_operand_data_type.Clone()));
-    throw SemanticErrorException(move(error));
-  }
-
-  unique_ptr<DataType> less_data_type(new BoolDataType());
-  AddExprAnalysis(less_node, move(less_data_type), ValueType::kRight);
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitLessOrEqual(const LessOrEqualNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitMul(const MulNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitNegative(const NegativeNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitNotEqual(const NotEqualNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitNot(const NotNode &not_node) {
-  not_node.GetOperand()->Accept(*this);
-  const DataType &operand_data_type =
-      GetExprDataType(not_node.GetOperand().get());
-
-  if (!IsDataTypeSupportedByNot().Check(operand_data_type)) {
-    unique_ptr<SemanticError> error(new UnaryExprWithUnsupportedTypeError(
-        GetCurrentFilePath(), not_node, operand_data_type.Clone()));
-    throw SemanticErrorException(move(error));
-  }
-
-  unique_ptr<DataType> not_data_type(new BoolDataType());
-  AddExprAnalysis(not_node, move(not_data_type), ValueType::kRight);
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitOr(const OrNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitSubscript(
-    const SubscriptNode &subscript) {
-  subscript.GetOperand()->Accept(*this);
-  const CommonExprAnalysis &operand_expr_analysis =
-      GetExprAnalysis(subscript.GetOperand().get());
-  const DataType &operand_data_type = operand_expr_analysis.GetDataType();
-
-  if (!IsArrayDataType().Check(operand_data_type)) {
-    unique_ptr<SemanticError> error(
-        new SubscriptWithNonArrayError(GetCurrentFilePath(), subscript));
-    throw SemanticErrorException(move(error));
-  }
-
-  subscript.GetIndex()->Accept(*this);
-  const DataType &index_data_type = GetExprDataType(subscript.GetIndex().get());
-
-  if (!IsDataTypeSupportedBySubscriptIndex().Check(index_data_type)) {
-    unique_ptr<SemanticError> error(new SubscriptWithUnsupportedIndexTypeError(
-        GetCurrentFilePath(),
-        subscript,
-        index_data_type.Clone()));
-    throw SemanticErrorException(move(error));
-  }
-
-  const ArrayDataType &array_data_type =
-      static_cast<const ArrayDataType&>(operand_data_type);
-  AddExprAnalysis(subscript,
-                  array_data_type.GetElementDataType().Clone(),
-                  operand_expr_analysis.GetValueType());
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitSub(const SubNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitSum(const SumNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
-  const DefNode *def_node = nullptr;
-  const string &id = id_node.GetNameToken().GetValue();
-
-  for (const Scope* scope: reverse(scopes_stack_)) {
-    const IdDefs &scope_id_defs = scope->GetIdDefs();
-    IdDefs::const_iterator scope_id_def_it = scope_id_defs.find(id);
-
-    if (scope_id_def_it != scope_id_defs.end()) {
-      def_node = scope_id_def_it->second;
-      break;
-    }
-  }
-
-  if (def_node == nullptr) {
-    unique_ptr<SemanticError> error(
-        new IdWithoutDefError(GetCurrentFilePath(), id_node));
-    throw SemanticErrorException(move(error));
-  }
-
-  SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
-      node_analyzes_.find(def_node);
-  assert(node_analysis_it != node_analyzes_.end());
-  const DefAnalysis &def_analysis =
-      static_cast<const DefAnalysis&>(*(node_analysis_it->second));
-  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      def_analysis.GetDataType().Clone(),
-      def_analysis.GetValueType(),
-      def_node));
-  node_analyzes_.insert(make_pair(&id_node, move(id_analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitIntDataType(
