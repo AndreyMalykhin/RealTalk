@@ -1,20 +1,20 @@
-#Real talk? What u talkin bout?
-Talkin bout  educational-purpose programming language with:
+#Real talk? What you talking about?
+Educational-purpose programming language with:
 - Old school procedural paradigm
 - Static typing
 - C/Java-like gangsterish syntax
 - Compilation into bytecode, execution by virtual machine
 
-#Aight, what u got?
+#Alright, what you got?
 
-###Sup with control flow statements?
+###What's up with control flow statements?
 - conditional (aka if/else if/else)
 - condition-controlled loop (aka while)
 - early exit from loop (aka break)
 - continuation with next iteration of loop (aka continue)
 - functions with arguments and return value
 
-###Sup with expressions?
+###What's up with expressions?
 - arithmetical: addition, subtration, division, multiplication, pre increment, pre decrement, negation
 - logical: and, or, not
 - comparisons: equal, not equal, greater, greater or equal, less, less or equal
@@ -23,11 +23,11 @@ Talkin bout  educational-purpose programming language with:
 - array indexing
 - array allocation
 
-###Sup with other statements?
+###Some other statements?
 - variable definition
 - import definitions from another file
 
-###Sup with data types?
+###What's up with data types?
 - 32-bit signed integer
 - 64-bit signed integer
 - double-precision floating point number
