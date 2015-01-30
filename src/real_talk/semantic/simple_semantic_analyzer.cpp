@@ -183,6 +183,7 @@ using real_talk::parser::ArrayAllocNode;
 using real_talk::parser::UnexpectedTokenError;
 using real_talk::parser::FuncDefNode;
 using real_talk::parser::BinaryExprNode;
+using real_talk::parser::UnaryExprNode;
 using real_talk::util::FileNotFoundError;
 using real_talk::util::IOError;
 
@@ -288,16 +289,20 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   class FuncScope;
   class LoopScope;
   class SemanticErrorException;
-  class DataTypeQuery;
-  class BinaryDataTypeDeductor;
   class DataTypeIdResolver;
+  class DataTypeQuery;
   class IsVoidDataType;
   class IsDataTypeSupportedByFuncDef;
   class IsDataTypeSupportedByVarDef;
   class IsDataTypeSupportedBySubscriptIndex;
   class IsDataTypeSupportedByArrayAllocElement;
   class IsDataTypeSupportedByArrayAllocSize;
+  class BinaryDataTypeDeductor;
+  class UnaryDataTypeDeductor;
   class NotDataTypeDeductor;
+  class NegativeDataTypeDeductor;
+  class PreIncDataTypeDeductor;
+  class PreDecDataTypeDeductor;
   class SubscriptDataTypeDeductor;
   class CallDataTypeDeductor;
   class AssignDataTypeDeductor;
@@ -322,10 +327,13 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
                              boost::hash<
                                boost::filesystem::path> > ImportPrograms;
 
-  void VisitBinaryExpr(
-      const real_talk::parser::BinaryExprNode &expr_node,
-      ValueType expr_value_type,
-      const BinaryDataTypeDeductor &data_type_deductor);
+  void VisitBinaryExpr(const real_talk::parser::BinaryExprNode &expr_node,
+                       ValueType expr_value_type,
+                       const BinaryDataTypeDeductor &data_type_deductor);
+  void VisitUnaryExpr(const real_talk::parser::UnaryExprNode &expr_node,
+                      ValueType expr_value_type,
+                      UnaryDataTypeDeductor &data_type_deductor,
+                      const CommonExprAnalysis &operand_analysis);
   void VisitBranch(const real_talk::parser::BranchNode &branch_node);
   std::unique_ptr<DataType> VisitArrayAlloc(
       const real_talk::parser::ArrayAllocNode &array_alloc_node);
@@ -337,7 +345,8 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   void VisitReturn(const real_talk::parser::ReturnNode &return_node);
   std::unique_ptr<DataType> CreateDataType(
       const real_talk::parser::DataTypeNode &data_type_node);
-  const CommonExprAnalysis &GetExprAnalysis(const real_talk::parser::ExprNode *expr);
+  const CommonExprAnalysis &GetExprAnalysis(
+      const real_talk::parser::ExprNode *expr);
   const DataType &GetExprDataType(const real_talk::parser::ExprNode *expr);
   const DataType &GetFuncReturnDataType(
       const real_talk::parser::FuncDefNode *func_def);
@@ -571,7 +580,8 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedBySubscriptIndex
   virtual void VisitLong(const LongDataType&) override {result_ = true;}
 };
 
-class UnaryDataTypeDeductor: private DataTypeVisitor {
+class SimpleSemanticAnalyzer::Impl::UnaryDataTypeDeductor
+    : private DataTypeVisitor {
  public:
   virtual ~UnaryDataTypeDeductor() {}
 
@@ -600,6 +610,46 @@ class SimpleSemanticAnalyzer::Impl::NotDataTypeDeductor
  private:
   virtual void VisitBool(const BoolDataType&) override {
     result_data_type_.reset(new BoolDataType());
+  }
+};
+
+class SimpleSemanticAnalyzer::Impl::NegativeDataTypeDeductor
+    : public UnaryDataTypeDeductor {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    result_data_type_.reset(new IntDataType());
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    result_data_type_.reset(new LongDataType());
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    result_data_type_.reset(new DoubleDataType());
+  }
+};
+
+class SimpleSemanticAnalyzer::Impl::PreIncDataTypeDeductor
+    : public UnaryDataTypeDeductor {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    result_data_type_.reset(new IntDataType());
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    result_data_type_.reset(new LongDataType());
+  }
+};
+
+class SimpleSemanticAnalyzer::Impl::PreDecDataTypeDeductor
+    : public UnaryDataTypeDeductor {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    result_data_type_.reset(new IntDataType());
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    result_data_type_.reset(new LongDataType());
   }
 };
 
@@ -1790,27 +1840,63 @@ void SimpleSemanticAnalyzer::Impl::VisitSum(const SumNode &sum_node) {
 
 void SimpleSemanticAnalyzer::Impl::VisitNot(const NotNode &not_node) {
   not_node.GetOperand()->Accept(*this);
-  const DataType &operand_data_type =
-      GetExprDataType(not_node.GetOperand().get());
-  unique_ptr<DataType> not_data_type =
-      NotDataTypeDeductor().Deduct(operand_data_type);
+  const CommonExprAnalysis &operand_analysis =
+      GetExprAnalysis(not_node.GetOperand().get());
+  NotDataTypeDeductor data_type_deductor;
+  VisitUnaryExpr(
+      not_node, ValueType::kRight, data_type_deductor, operand_analysis);
+}
 
-  if (!not_data_type) {
+void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode &pre_dec_node) {
+  pre_dec_node.GetOperand()->Accept(*this);
+  const CommonExprAnalysis &operand_analysis =
+      GetExprAnalysis(pre_dec_node.GetOperand().get());
+  PreDecDataTypeDeductor data_type_deductor;
+  VisitUnaryExpr(pre_dec_node,
+                 operand_analysis.GetValueType(),
+                 data_type_deductor,
+                 operand_analysis);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode &pre_inc_node) {
+  pre_inc_node.GetOperand()->Accept(*this);
+  const CommonExprAnalysis &operand_analysis =
+      GetExprAnalysis(pre_inc_node.GetOperand().get());
+  PreIncDataTypeDeductor data_type_deductor;
+  VisitUnaryExpr(pre_inc_node,
+                 operand_analysis.GetValueType(),
+                 data_type_deductor,
+                 operand_analysis);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitNegative(
+    const NegativeNode &negative_node) {
+  negative_node.GetOperand()->Accept(*this);
+  const CommonExprAnalysis &operand_analysis =
+      GetExprAnalysis(negative_node.GetOperand().get());
+  NegativeDataTypeDeductor data_type_deductor;
+  VisitUnaryExpr(negative_node,
+                 operand_analysis.GetValueType(),
+                 data_type_deductor,
+                 operand_analysis);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitUnaryExpr(
+    const UnaryExprNode &expr_node,
+    ValueType expr_value_type,
+    UnaryDataTypeDeductor &data_type_deductor,
+    const CommonExprAnalysis &operand_analysis) {
+  const DataType &operand_data_type = operand_analysis.GetDataType();
+  unique_ptr<DataType> expr_data_type =
+      data_type_deductor.Deduct(operand_data_type);
+
+  if (!expr_data_type) {
     unique_ptr<SemanticError> error(new UnaryExprWithUnsupportedTypeError(
-        GetCurrentFilePath(), not_node, operand_data_type.Clone()));
+        GetCurrentFilePath(), expr_node, operand_data_type.Clone()));
     throw SemanticErrorException(move(error));
   }
 
-  AddExprAnalysis(not_node, move(not_data_type), ValueType::kRight);
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode&) {
-}
-
-void SimpleSemanticAnalyzer::Impl::VisitNegative(const NegativeNode&) {
+  AddExprAnalysis(expr_node, move(expr_data_type), expr_value_type);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
