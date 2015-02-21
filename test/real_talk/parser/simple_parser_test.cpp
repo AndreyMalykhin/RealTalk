@@ -138,7 +138,6 @@ using real_talk::parser::NegativeNode;
 using real_talk::parser::ReturnValueNode;
 using real_talk::parser::ReturnWithoutValueNode;
 using real_talk::parser::SimpleParser;
-using real_talk::parser::UnexpectedTokenError;
 
 namespace real_talk {
 namespace parser {
@@ -210,7 +209,7 @@ class SimpleParserTest: public Test {
       const shared_ptr<ProgramNode> program_node = parser.Parse();
       FAIL() << "expected_bad_token=" << mailformed_tokens.unexpected_token
              << "\nprogram:\n" << *program_node;
-    } catch (const UnexpectedTokenError &error) {
+    } catch (const Parser::UnexpectedTokenError &error) {
       ASSERT_EQ(mailformed_tokens.unexpected_token, error.GetToken());
     }
   }

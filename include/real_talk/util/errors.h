@@ -12,7 +12,7 @@ class IOError: public std::runtime_error {
   explicit IOError(const std::string &msg);
 };
 
-class FileNotFoundError: public std::runtime_error {
+class FileNotFoundError: public IOError {
  public:
   explicit FileNotFoundError(const std::string &msg);
 };

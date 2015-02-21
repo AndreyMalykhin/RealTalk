@@ -10,24 +10,28 @@
 namespace real_talk {
 namespace parser {
 
-class UnexpectedTokenError: public std::runtime_error {
- public:
-  UnexpectedTokenError(
-      const real_talk::lexer::TokenInfo &token,
-      const std::string &msg);
-  const real_talk::lexer::TokenInfo &GetToken() const;
-
- private:
-  real_talk::lexer::TokenInfo token_;
-};
-
 class Parser {
  public:
+  class UnexpectedTokenError: public std::runtime_error {
+   public:
+    UnexpectedTokenError(
+        const real_talk::lexer::TokenInfo &token,
+        const std::string &msg);
+    const real_talk::lexer::TokenInfo &GetToken() const;
+    friend bool operator==(const Parser::UnexpectedTokenError &lhs,
+                           const Parser::UnexpectedTokenError &rhs);
+    friend std::ostream &operator<<(
+        std::ostream &stream, const Parser::UnexpectedTokenError &error);
+
+   private:
+    real_talk::lexer::TokenInfo token_;
+  };
+
   virtual ~Parser() {}
 
   /**
-   * @throws real_talk::parser::UnexpectedTokenError
-   * @throws real_talk::lexer::UnexpectedCharError
+   * @throws real_talk::parser::Parser::UnexpectedTokenError
+   * @throws real_talk::lexer::Lexer::UnexpectedCharError
    * @throws real_talk::util::IOError
    */
   virtual std::shared_ptr<ProgramNode> Parse() = 0;

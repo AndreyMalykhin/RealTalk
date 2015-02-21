@@ -16,6 +16,6 @@ LitParser::EmptyHexValueError::EmptyHexValueError(const string &msg)
     : runtime_error(msg) {
 }
 
-LitParser::OutOfRange::OutOfRange(const string &msg): runtime_error(msg) {}
+LitParser::OutOfRangeError::OutOfRangeError(const string &msg): runtime_error(msg) {}
 }
 }

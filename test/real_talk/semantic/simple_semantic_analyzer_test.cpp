@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #include <unordered_map>
 #include <cstdint>
 #include <vector>
@@ -115,8 +116,9 @@ using testing::Eq;
 using testing::ByRef;
 using testing::Throw;
 using boost::filesystem::path;
+using boost::format;
+using real_talk::lexer::Lexer;
 using real_talk::lexer::TokenInfo;
-using real_talk::lexer::UnexpectedCharError;
 using real_talk::lexer::Token;
 using real_talk::parser::ProgramNode;
 using real_talk::parser::StmtNode;
@@ -162,7 +164,6 @@ using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::UnboundedArraySizeNode;
 using real_talk::parser::CallNode;
 using real_talk::parser::LessNode;
-using real_talk::parser::UnexpectedTokenError;
 using real_talk::parser::PreTestLoopNode;
 using real_talk::parser::ContinueNode;
 using real_talk::parser::BreakNode;
@@ -183,7 +184,6 @@ using real_talk::parser::NegativeNode;
 using real_talk::parser::PreIncNode;
 using real_talk::parser::PreDecNode;
 using real_talk::util::FileNotFoundError;
-using real_talk::util::IOError;
 
 namespace boost {
 namespace filesystem {
@@ -3688,11 +3688,10 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportAfterAnyOtherStmtIsInvalid) {
   TestAnalyze(test_program);
 }
 
-TEST_F(SimpleSemanticAnalyzerTest,
-       ImportWithUnexpectedCharErrorDuringFileParseIsInvalid) {
+TEST_F(SimpleSemanticAnalyzerTest, UnexpectedCharDuringImportFileParse) {
   struct FailingTestFileParse {
     path absolute_file_path;
-    UnexpectedCharError error;
+    Lexer::UnexpectedCharError error;
   };
 
   vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
@@ -3705,15 +3704,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
   unique_ptr<StmtNode> import_node(import_node_ptr);
   main_program_stmt_nodes.push_back(move(import_node));
-
-  unique_ptr<DataTypeNode> var_data_type_node1(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  VarDefWithoutInitNode *var_def_node_ptr1 = new VarDefWithoutInitNode(
-      move(var_data_type_node1),
-      TokenInfo(Token::kName, "var1", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> var_def_node1(var_def_node_ptr1);
-  main_program_stmt_nodes.push_back(move(var_def_node1));
   shared_ptr<ProgramNode> main_program_node(
       new ProgramNode(move(main_program_stmt_nodes)));
 
@@ -3728,40 +3718,24 @@ TEST_F(SimpleSemanticAnalyzerTest,
   char unexpected_char = '$';
   uint32_t unexpected_char_line = UINT32_C(7);
   uint32_t unexpected_char_column = UINT32_C(7);
-  UnexpectedCharError file_parse_error(
+  Lexer::UnexpectedCharError file_parse_error(
       unexpected_char, unexpected_char_line, unexpected_char_column, "test");
   FailingTestFileParse test_file_parse1 =
       {import_absolute_file_path, file_parse_error};
   test_file_parses.push_back(test_file_parse1);
 
+  string expected_msg =
+      (format("Unexpected char; char=%1%; line=%2%; column=%3%; file_path=%4%")
+       % unexpected_char
+       % unexpected_char_line
+       % unexpected_char_column
+       % import_absolute_file_path).str();
+  SimpleSemanticAnalyzer::UnexpectedCharError expected_error(
+      file_parse_error, import_absolute_file_path, expected_msg);
+
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
 
-  SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> var_data_type1(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis1(
-      new VarDefAnalysis(move(var_data_type1), DataStorage::kGlobal));
-  node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
-
-  unique_ptr<DataType> file_path_data_type(new StringDataType());
-  unique_ptr<Lit> file_path_lit(new StringLit("file.rt"));
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis(new LitAnalysis(
-      move(file_path_data_type), ValueType::kRight, move(file_path_lit)));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
-
-  SemanticAnalysis::Problems problems;
-  path main_program_file_path;
-  unique_ptr<SemanticProblem> problem(new ImportWithUnexpectedCharError(
-      main_program_file_path,
-      *import_node_ptr,
-      import_absolute_file_path,
-      unexpected_char,
-      unexpected_char_line,
-      unexpected_char_column));
-  problems.push_back(move(problem));
-
-  SemanticAnalysis analysis(move(problems), move(node_analyzes));
   ImportFileSearcherMock *import_file_searcher_mock =
       new ImportFileSearcherMock();
   unique_ptr<ImportFileSearcher> import_file_searcher(
@@ -3799,20 +3773,25 @@ TEST_F(SimpleSemanticAnalyzerTest,
         .RetiresOnSaturation();
   }
 
+  path main_program_file_path;
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
                                   *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
-  ASSERT_EQ(analysis, actual_analysis);
+
+  try {
+    analyzer.Analyze();
+    FAIL();
+  } catch (const SimpleSemanticAnalyzer::UnexpectedCharError &actual_error) {
+    ASSERT_EQ(expected_error, actual_error);
+  }
 }
 
-TEST_F(SimpleSemanticAnalyzerTest,
-       ImportWithUnexpectedTokenErrorDuringFileParseIsInvalid) {
+TEST_F(SimpleSemanticAnalyzerTest, UnexpectedTokenDuringImportFileParse) {
   struct FailingTestFileParse {
     path absolute_file_path;
-    UnexpectedTokenError error;
+    Parser::UnexpectedTokenError error;
   };
 
   vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
@@ -3825,15 +3804,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
   unique_ptr<StmtNode> import_node(import_node_ptr);
   main_program_stmt_nodes.push_back(move(import_node));
-
-  unique_ptr<DataTypeNode> var_data_type_node1(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  VarDefWithoutInitNode *var_def_node_ptr1 = new VarDefWithoutInitNode(
-      move(var_data_type_node1),
-      TokenInfo(Token::kName, "var1", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> var_def_node1(var_def_node_ptr1);
-  main_program_stmt_nodes.push_back(move(var_def_node1));
   shared_ptr<ProgramNode> main_program_node(
       new ProgramNode(move(main_program_stmt_nodes)));
 
@@ -3846,37 +3816,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   vector<FailingTestFileParse> test_file_parses;
   TokenInfo unexpected_token(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0));
-  UnexpectedTokenError file_parse_error(unexpected_token, "test");
+  Parser::UnexpectedTokenError file_parse_error(unexpected_token, "test");
   FailingTestFileParse test_file_parse1 =
       {import_absolute_file_path, file_parse_error};
   test_file_parses.push_back(test_file_parse1);
 
+  string expected_msg =
+      (format("Unexpected token; token=%1%; file_path=%2%")
+       % unexpected_token % import_absolute_file_path).str();
+  SimpleSemanticAnalyzer::UnexpectedTokenError expected_error(
+      file_parse_error, import_absolute_file_path, expected_msg);
+
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
 
-  SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> var_data_type1(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis1(
-      new VarDefAnalysis(move(var_data_type1), DataStorage::kGlobal));
-  node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
-
-  unique_ptr<DataType> file_path_data_type(new StringDataType());
-  unique_ptr<Lit> file_path_lit(new StringLit("file.rt"));
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis(new LitAnalysis(
-      move(file_path_data_type), ValueType::kRight, move(file_path_lit)));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
-
-  SemanticAnalysis::Problems problems;
-  path main_program_file_path;
-  unique_ptr<SemanticProblem> problem(new ImportWithUnexpectedTokenError(
-      main_program_file_path,
-      *import_node_ptr,
-      import_absolute_file_path,
-      unexpected_token));
-  problems.push_back(move(problem));
-
-  SemanticAnalysis analysis(move(problems), move(node_analyzes));
   ImportFileSearcherMock *import_file_searcher_mock =
       new ImportFileSearcherMock();
   unique_ptr<ImportFileSearcher> import_file_searcher(
@@ -3914,19 +3867,25 @@ TEST_F(SimpleSemanticAnalyzerTest,
         .RetiresOnSaturation();
   }
 
+  path main_program_file_path;
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
                                   *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
-  ASSERT_EQ(analysis, actual_analysis);
+
+  try {
+    analyzer.Analyze();
+    FAIL();
+  } catch (const SimpleSemanticAnalyzer::UnexpectedTokenError &actual_error) {
+    ASSERT_EQ(expected_error, actual_error);
+  }
 }
 
-TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileParseIsInvalid) {
+TEST_F(SimpleSemanticAnalyzerTest, IOErrorDuringImportFileParse) {
   struct FailingTestFileParse {
     path absolute_file_path;
-    IOError error;
+    util::IOError error;
   };
 
   vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
@@ -3939,15 +3898,6 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileParseIsInvalid) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
   unique_ptr<StmtNode> import_node(import_node_ptr);
   main_program_stmt_nodes.push_back(move(import_node));
-
-  unique_ptr<DataTypeNode> var_data_type_node1(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  VarDefWithoutInitNode *var_def_node_ptr1 = new VarDefWithoutInitNode(
-      move(var_data_type_node1),
-      TokenInfo(Token::kName, "var1", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> var_def_node1(var_def_node_ptr1);
-  main_program_stmt_nodes.push_back(move(var_def_node1));
   shared_ptr<ProgramNode> main_program_node(
       new ProgramNode(move(main_program_stmt_nodes)));
 
@@ -3959,34 +3909,19 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileParseIsInvalid) {
   test_import_file_searches.push_back(test_import_file_search1);
 
   vector<FailingTestFileParse> test_file_parses;
-  IOError file_parse_error("test");
+  util::IOError file_parse_error("test");
   FailingTestFileParse test_file_parse1 =
       {import_absolute_file_path, file_parse_error};
   test_file_parses.push_back(test_file_parse1);
 
+  string expected_msg = (format("IO error; file_path=%1%")
+                         % import_absolute_file_path).str();
+  SimpleSemanticAnalyzer::IOError expected_error(
+      import_absolute_file_path, expected_msg);
+
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
 
-  SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> var_data_type1(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis1(
-      new VarDefAnalysis(move(var_data_type1), DataStorage::kGlobal));
-  node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
-
-  unique_ptr<DataType> file_path_data_type(new StringDataType());
-  unique_ptr<Lit> file_path_lit(new StringLit("file.rt"));
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis(new LitAnalysis(
-      move(file_path_data_type), ValueType::kRight, move(file_path_lit)));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
-
-  SemanticAnalysis::Problems problems;
-  path main_program_file_path;
-  unique_ptr<SemanticProblem> problem(new ImportWithIOError(
-      main_program_file_path, *import_node_ptr, import_absolute_file_path));
-  problems.push_back(move(problem));
-
-  SemanticAnalysis analysis(move(problems), move(node_analyzes));
   ImportFileSearcherMock *import_file_searcher_mock =
       new ImportFileSearcherMock();
   unique_ptr<ImportFileSearcher> import_file_searcher(
@@ -4024,19 +3959,25 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileParseIsInvalid) {
         .RetiresOnSaturation();
   }
 
+  path main_program_file_path;
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
                                   *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
-  ASSERT_EQ(analysis, actual_analysis);
+
+  try {
+    analyzer.Analyze();
+    FAIL();
+  } catch (const SimpleSemanticAnalyzer::IOError &actual_error) {
+    ASSERT_EQ(expected_error, actual_error);
+  }
 }
 
-TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileSearchIsInvalid) {
+TEST_F(SimpleSemanticAnalyzerTest, IOErrorDuringImportFileSearch) {
   struct FailingTestImportFileSearch {
     path relative_file_path;
-    IOError error;
+    util::IOError error;
   };
 
   vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
@@ -4049,48 +3990,24 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileSearchIsInvalid) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
   unique_ptr<StmtNode> import_node(import_node_ptr);
   main_program_stmt_nodes.push_back(move(import_node));
-
-  unique_ptr<DataTypeNode> var_data_type_node1(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  VarDefWithoutInitNode *var_def_node_ptr1 = new VarDefWithoutInitNode(
-      move(var_data_type_node1),
-      TokenInfo(Token::kName, "var1", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> var_def_node1(var_def_node_ptr1);
-  main_program_stmt_nodes.push_back(move(var_def_node1));
   shared_ptr<ProgramNode> main_program_node(
       new ProgramNode(move(main_program_stmt_nodes)));
 
-  SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> var_data_type1(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis1(
-      new VarDefAnalysis(move(var_data_type1), DataStorage::kGlobal));
-  node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
-
-  unique_ptr<DataType> file_path_data_type(new StringDataType());
-  unique_ptr<Lit> file_path_lit(new StringLit("file.rt"));
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis(new LitAnalysis(
-      move(file_path_data_type), ValueType::kRight, move(file_path_lit)));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
-
-  SemanticAnalysis::Problems problems;
-  path main_program_file_path;
-  path import_relative_file_path("file.rt");
-  unique_ptr<SemanticProblem> problem(new ImportWithIOError(
-      main_program_file_path, *import_node_ptr, import_relative_file_path));
-  problems.push_back(move(problem));
-
   vector<FailingTestImportFileSearch> test_import_file_searches;
-  IOError import_file_search_error("test");
+  path import_relative_file_path("file.rt");
+  util::IOError import_file_search_error("test");
   FailingTestImportFileSearch test_import_file_search1 =
       {import_relative_file_path, import_file_search_error};
   test_import_file_searches.push_back(test_import_file_search1);
 
+  string expected_msg = (format("IO error; file_path=%1%")
+                         % import_relative_file_path).str();
+  SimpleSemanticAnalyzer::IOError expected_error(
+      import_relative_file_path, expected_msg);
+
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
 
-  SemanticAnalysis analysis(move(problems), move(node_analyzes));
   ImportFileSearcherMock *import_file_searcher_mock =
       new ImportFileSearcherMock();
   unique_ptr<ImportFileSearcher> import_file_searcher(
@@ -4117,16 +4034,22 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithIOErrorDuringFileSearchIsInvalid) {
   }
 
   unique_ptr<FileParser> file_parser(new FileParserMock());
+  path main_program_file_path;
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
                                   *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
-  ASSERT_EQ(analysis, actual_analysis);
+
+  try {
+    analyzer.Analyze();
+    FAIL();
+  } catch (const SimpleSemanticAnalyzer::IOError &actual_error) {
+    ASSERT_EQ(expected_error, actual_error);
+  }
 }
 
-TEST_F(SimpleSemanticAnalyzerTest, ImportWithNotExistingFileIsInvalid) {
+TEST_F(SimpleSemanticAnalyzerTest, FileNotFoundDuringImportFileSearch) {
   struct FailingTestImportFileSearch {
     path relative_file_path;
     FileNotFoundError error;
@@ -4142,48 +4065,24 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithNotExistingFileIsInvalid) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
   unique_ptr<StmtNode> import_node(import_node_ptr);
   main_program_stmt_nodes.push_back(move(import_node));
-
-  unique_ptr<DataTypeNode> var_data_type_node1(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  VarDefWithoutInitNode *var_def_node_ptr1 = new VarDefWithoutInitNode(
-      move(var_data_type_node1),
-      TokenInfo(Token::kName, "var1", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> var_def_node1(var_def_node_ptr1);
-  main_program_stmt_nodes.push_back(move(var_def_node1));
   shared_ptr<ProgramNode> main_program_node(
       new ProgramNode(move(main_program_stmt_nodes)));
 
-  SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> var_data_type1(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis1(
-      new VarDefAnalysis(move(var_data_type1), DataStorage::kGlobal));
-  node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
-
-  unique_ptr<DataType> file_path_data_type(new StringDataType());
-  unique_ptr<Lit> file_path_lit(new StringLit("file.rt"));
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis(new LitAnalysis(
-      move(file_path_data_type), ValueType::kRight, move(file_path_lit)));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
-
-  SemanticAnalysis::Problems problems;
-  path main_program_file_path;
-  path import_relative_file_path("file.rt");
-  unique_ptr<SemanticProblem> problem(new ImportWithNotExistingFileError(
-      main_program_file_path, *import_node_ptr, import_relative_file_path));
-  problems.push_back(move(problem));
-
   vector<FailingTestImportFileSearch> test_import_file_searches;
-  FileNotFoundError import_file_search_error("");
+  FileNotFoundError import_file_search_error("test");
+  path import_relative_file_path("file.rt");
   FailingTestImportFileSearch test_import_file_search1 =
       {import_relative_file_path, import_file_search_error};
   test_import_file_searches.push_back(test_import_file_search1);
 
+  string expected_msg = (format("IO error; file_path=%1%")
+                         % import_relative_file_path).str();
+  SimpleSemanticAnalyzer::IOError expected_error(
+      import_relative_file_path, expected_msg);
+
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
 
-  SemanticAnalysis analysis(move(problems), move(node_analyzes));
   ImportFileSearcherMock *import_file_searcher_mock =
       new ImportFileSearcherMock();
   unique_ptr<ImportFileSearcher> import_file_searcher(
@@ -4210,13 +4109,19 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportWithNotExistingFileIsInvalid) {
   }
 
   unique_ptr<FileParser> file_parser(new FileParserMock());
+  path main_program_file_path;
   SimpleSemanticAnalyzer analyzer(main_program_node,
                                   main_program_file_path,
                                   *file_parser,
                                   *import_file_searcher,
                                   *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
-  ASSERT_EQ(analysis, actual_analysis);
+
+  try {
+    analyzer.Analyze();
+    FAIL();
+  } catch (const SimpleSemanticAnalyzer::IOError &actual_error) {
+    ASSERT_EQ(expected_error, actual_error);
+  }
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
@@ -4592,7 +4497,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Assign) {
 
   unique_ptr<DataType> assign_data_type(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> assign_expr_analysis(
-      new CommonExprAnalysis(move(assign_data_type), ValueType::kLeft));
+      new CommonExprAnalysis(move(assign_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(assign_node_ptr, move(assign_expr_analysis)));
 
   IntDataType *id_data_type_ptr = new IntDataType();
@@ -7593,7 +7498,7 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithEmptyHexValueIsInvalid) {
 TEST_F(SimpleSemanticAnalyzerTest, StringWithOutOfRangeHexValueIsInvalid) {
   struct FailingTestLitParse {
     string str;
-    LitParser::OutOfRange error;
+    LitParser::OutOfRangeError error;
   };
 
   vector< unique_ptr<StmtNode> > stmt_nodes;
@@ -7616,7 +7521,7 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithOutOfRangeHexValueIsInvalid) {
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
 
   vector<FailingTestLitParse> test_lit_parses =
-      {{"\"\\xFFF\"", LitParser::OutOfRange("test")}};
+      {{"\"\\xFFF\"", LitParser::OutOfRangeError("test")}};
   LitParserMock *lit_parser_mock = new LitParserMock();
   unique_ptr<LitParser> lit_parser(lit_parser_mock);
 
@@ -7727,7 +7632,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithEmptyHexValueIsInvalid) {
 TEST_F(SimpleSemanticAnalyzerTest, CharWithOutOfRangeHexValueIsInvalid) {
   struct FailingTestLitParse {
     string str;
-    LitParser::OutOfRange error;
+    LitParser::OutOfRangeError error;
   };
 
   vector< unique_ptr<StmtNode> > stmt_nodes;
@@ -7750,7 +7655,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithOutOfRangeHexValueIsInvalid) {
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
 
   vector<FailingTestLitParse> test_lit_parses =
-      {{"'\\xFFF'", LitParser::OutOfRange("test")}};
+      {{"'\\xFFF'", LitParser::OutOfRangeError("test")}};
   LitParserMock *lit_parser_mock = new LitParserMock();
   unique_ptr<LitParser> lit_parser(lit_parser_mock);
 
@@ -7861,7 +7766,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Int) {
 TEST_F(SimpleSemanticAnalyzerTest, IntWithOutOfRangeValueIsInvalid) {
   struct FailingTestLitParse {
     string str;
-    LitParser::OutOfRange error;
+    LitParser::OutOfRangeError error;
   };
 
   vector< unique_ptr<StmtNode> > stmt_nodes;
@@ -7884,7 +7789,7 @@ TEST_F(SimpleSemanticAnalyzerTest, IntWithOutOfRangeValueIsInvalid) {
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
 
   vector<FailingTestLitParse> test_lit_parses =
-      {{"18446744073709551616", LitParser::OutOfRange("test")}};
+      {{"18446744073709551616", LitParser::OutOfRangeError("test")}};
   LitParserMock *lit_parser_mock = new LitParserMock();
   unique_ptr<LitParser> lit_parser(lit_parser_mock);
 
@@ -7946,7 +7851,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Long) {
 TEST_F(SimpleSemanticAnalyzerTest, LongWithOutOfRangeValueIsInvalid) {
   struct FailingTestLitParse {
     string str;
-    LitParser::OutOfRange error;
+    LitParser::OutOfRangeError error;
   };
 
   vector< unique_ptr<StmtNode> > stmt_nodes;
@@ -7969,7 +7874,7 @@ TEST_F(SimpleSemanticAnalyzerTest, LongWithOutOfRangeValueIsInvalid) {
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
 
   vector<FailingTestLitParse> test_lit_parses =
-      {{"918446744073709551616L", LitParser::OutOfRange("test")}};
+      {{"918446744073709551616L", LitParser::OutOfRangeError("test")}};
   LitParserMock *lit_parser_mock = new LitParserMock();
   unique_ptr<LitParser> lit_parser(lit_parser_mock);
 
@@ -8031,7 +7936,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Double) {
 TEST_F(SimpleSemanticAnalyzerTest, DoubleWithOutOfRangeValueIsInvalid) {
   struct FailingTestLitParse {
     string str;
-    LitParser::OutOfRange error;
+    LitParser::OutOfRangeError error;
   };
 
   vector< unique_ptr<StmtNode> > stmt_nodes;
@@ -8055,7 +7960,7 @@ TEST_F(SimpleSemanticAnalyzerTest, DoubleWithOutOfRangeValueIsInvalid) {
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
 
   vector<FailingTestLitParse> test_lit_parses =
-      {{double_str, LitParser::OutOfRange("test")}};
+      {{double_str, LitParser::OutOfRangeError("test")}};
   LitParserMock *lit_parser_mock = new LitParserMock();
   unique_ptr<LitParser> lit_parser(lit_parser_mock);
 

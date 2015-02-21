@@ -69,7 +69,7 @@ class SimpleLexerTest: public Test {
              << "expected_bad_char_column_number="
              << mailformed_token.unexpected_char_column_number
              << "; actual_token=" << actual_token;
-    } catch (const UnexpectedCharError &error) {
+    } catch (const Lexer::UnexpectedCharError &error) {
       ASSERT_EQ(mailformed_token.unexpected_char, error.GetChar());
       ASSERT_EQ(mailformed_token.unexpected_char_line_number,
                 error.GetLineNumber());

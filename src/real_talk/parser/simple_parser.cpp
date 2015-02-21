@@ -1,10 +1,15 @@
 
+#include <boost/functional/hash.hpp>
 #include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
+#include <unordered_map>
+#include <cstdint>
 #include <cassert>
 #include <vector>
 #include <stack>
 #include <string>
+#include <stdexcept>
+#include <utility>
+#include "real_talk/lexer/lexer.h"
 #include "real_talk/parser/simple_parser.h"
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/sum_node.h"
@@ -71,7 +76,6 @@ using std::stack;
 using std::runtime_error;
 using std::make_pair;
 using boost::format;
-using boost::lexical_cast;
 using real_talk::lexer::Lexer;
 using real_talk::lexer::Token;
 using real_talk::lexer::TokenInfo;
@@ -79,7 +83,108 @@ using real_talk::lexer::TokenInfo;
 namespace real_talk {
 namespace parser {
 
-const SimpleParser::OpPrios &SimpleParser::kOpPrios =
+class SimpleParser::Impl {
+ public:
+  explicit Impl(std::unique_ptr<real_talk::lexer::Lexer> lexer);
+  std::shared_ptr<ProgramNode> Parse();
+
+ private:
+  struct ExprState;
+
+  enum class OpAssoc: std::uint8_t {
+    kLeftToRight = UINT8_C(1),
+    kRightToLeft
+  };
+
+  struct Op {
+    std::vector<real_talk::lexer::TokenInfo> tokens;
+    std::vector< std::unique_ptr<ExprNode> > args;
+    std::uint8_t prio;
+    OpAssoc assoc;
+  };
+
+  typedef ExprState (SimpleParser::Impl::*ExprStateHandler)(
+      std::stack<Op> &operators,
+      std::stack< std::unique_ptr<ExprNode> > &operands);
+  typedef std::pair<real_talk::lexer::Token, OpAssoc> OpPriosKey;
+  typedef std::unordered_map<OpPriosKey,
+                             std::uint8_t,
+                             boost::hash<OpPriosKey> > OpPrios;
+
+  struct ExprState {
+    ExprStateHandler handler;
+  };
+
+  std::vector< std::unique_ptr<StmtNode> > ParseStmts(
+      real_talk::lexer::Token until_token);
+  std::unique_ptr<StmtNode> ParseStmt();
+  std::unique_ptr<StmtNode> ParseDef(
+      const std::vector<real_talk::lexer::TokenInfo> &modifier_tokens,
+      std::unique_ptr<PrimitiveDataTypeNode> primitive_data_type);
+  std::unique_ptr<StmtNode> ParseFuncDef(
+      const std::vector<real_talk::lexer::TokenInfo> &modifier_tokens,
+      std::unique_ptr<DataTypeNode> return_data_type,
+      const real_talk::lexer::TokenInfo &func_name_token);
+  std::unique_ptr<StmtNode> ParseExprStmt();
+  std::unique_ptr<StmtNode> ParsePreTestLoop();
+  std::unique_ptr<StmtNode> ParseIf();
+  std::unique_ptr<StmtNode> ParseImport();
+  std::unique_ptr<StmtNode> ParseBreak();
+  std::unique_ptr<StmtNode> ParseContinue();
+  std::unique_ptr<StmtNode> ParseReturn();
+  std::unique_ptr<ExprNode> ParseExpr();
+  std::unique_ptr<ExprNode> ParseArrayAlloc();
+  std::unique_ptr<ExprNode> ParseId();
+  std::unique_ptr<ExprNode> ParseInt();
+  std::unique_ptr<ExprNode> ParseLong();
+  std::unique_ptr<ExprNode> ParseChar();
+  std::unique_ptr<ExprNode> ParseString();
+  std::unique_ptr<ExprNode> ParseDouble();
+  std::unique_ptr<ExprNode> ParseBool();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseIntDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseLongDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseDoubleDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseCharDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseStringDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseBoolDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParseVoidDataType();
+  std::unique_ptr<PrimitiveDataTypeNode> ParsePrimitiveDataType();
+  std::unique_ptr<DataTypeNode> ParseDataType(
+      std::unique_ptr<PrimitiveDataTypeNode> primitive_data_type);
+  std::unique_ptr<ArgDefNode> ParseArgDef();
+  std::unique_ptr<IfNode> DoParseIf();
+  std::unique_ptr<ScopeNode> ParseScope();
+
+  real_talk::lexer::TokenInfo ParseName();
+  Op ParseCall();
+  Op ParseSubscript();
+  ExprState BeforeExprState(std::stack<Op> &operators,
+                            std::stack< std::unique_ptr<ExprNode> > &operands);
+  ExprState AfterExprState(std::stack<Op> &operators,
+                           std::stack< std::unique_ptr<ExprNode> > &operands);
+  template<typename TExprNode> std::unique_ptr<ExprNode> CreateBinaryExpr(
+        std::stack< std::unique_ptr<ExprNode> > &operands, Op op);
+  template<typename TExprNode> std::unique_ptr<ExprNode> CreateUnaryExpr(
+      std::stack< std::unique_ptr<ExprNode> > &operands, Op op);
+  std::unique_ptr<ExprNode> CreateSubscriptExpr(
+      std::stack< std::unique_ptr<ExprNode> > &operands, Op op);
+  std::unique_ptr<ExprNode> CreateCallExpr(
+      std::stack< std::unique_ptr<ExprNode> > &operands, Op op);
+  void ReduceExpr(std::stack<Op> &operators,
+                  std::stack< std::unique_ptr<ExprNode> > &operands,
+                  std::uint8_t next_op_prio,
+                  OpAssoc next_op_assoc);
+  std::uint8_t GetOpPrio(real_talk::lexer::Token op_token, OpAssoc op_assoc);
+  void ConsumeNextToken();
+  void AssertNextToken(real_talk::lexer::Token token);
+  void UnexpectedToken();
+
+  static const OpPrios &kOpPrios;
+  std::unique_ptr<real_talk::lexer::Lexer> lexer_;
+  real_talk::lexer::TokenInfo next_token_;
+};
+
+const SimpleParser::Impl::OpPrios &SimpleParser::Impl::kOpPrios =
     *new OpPrios({
         {{Token::kGroupStart, OpAssoc::kLeftToRight}, UINT8_C(9)},
         {{Token::kSubscriptStart, OpAssoc::kLeftToRight}, UINT8_C(9)},
@@ -103,17 +208,28 @@ const SimpleParser::OpPrios &SimpleParser::kOpPrios =
     });
 
 SimpleParser::SimpleParser(unique_ptr<Lexer> lexer)
-    : lexer_(move(lexer)),
-      next_token_(TokenInfo(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0))) {
+    : impl_(new Impl(move(lexer))) {
 }
 
+SimpleParser::~SimpleParser() {}
+
 shared_ptr<ProgramNode> SimpleParser::Parse() {
+  return impl_->Parse();
+}
+
+SimpleParser::Impl::Impl(unique_ptr<Lexer> lexer)
+    : lexer_(move(lexer)),
+      next_token_(TokenInfo(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0))) {
+  assert(lexer_);
+}
+
+shared_ptr<ProgramNode> SimpleParser::Impl::Parse() {
   ConsumeNextToken();
   vector< unique_ptr<StmtNode> > stmts = ParseStmts(Token::kFileEnd);
   return shared_ptr<ProgramNode>(new ProgramNode(move(stmts)));
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseStmt() {
+unique_ptr<StmtNode> SimpleParser::Impl::ParseStmt() {
   switch (next_token_.GetId()) {
     case Token::kIntType:
       return ParseDef(vector<TokenInfo>(), ParseIntDataType());
@@ -155,7 +271,7 @@ unique_ptr<StmtNode> SimpleParser::ParseStmt() {
   return unique_ptr<StmtNode>();
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseReturn() {
+unique_ptr<StmtNode> SimpleParser::Impl::ParseReturn() {
   const TokenInfo start_token = next_token_;
   ConsumeNextToken();
 
@@ -174,7 +290,7 @@ unique_ptr<StmtNode> SimpleParser::ParseReturn() {
       new ReturnValueNode(start_token, move(value), end_token));
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseContinue() {
+unique_ptr<StmtNode> SimpleParser::Impl::ParseContinue() {
   const TokenInfo start_token = next_token_;
   ConsumeNextToken();
   AssertNextToken(Token::kStmtEnd);
@@ -183,7 +299,7 @@ unique_ptr<StmtNode> SimpleParser::ParseContinue() {
   return unique_ptr<StmtNode>(new ContinueNode(start_token, end_token));
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseBreak() {
+unique_ptr<StmtNode> SimpleParser::Impl::ParseBreak() {
   const TokenInfo start_token = next_token_;
   ConsumeNextToken();
   AssertNextToken(Token::kStmtEnd);
@@ -192,7 +308,7 @@ unique_ptr<StmtNode> SimpleParser::ParseBreak() {
   return unique_ptr<StmtNode>(new BreakNode(start_token, end_token));
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseImport() {
+unique_ptr<StmtNode> SimpleParser::Impl::ParseImport() {
   const TokenInfo start_token = next_token_;
   ConsumeNextToken();
   AssertNextToken(Token::kStringLit);
@@ -205,7 +321,7 @@ unique_ptr<StmtNode> SimpleParser::ParseImport() {
       new ImportNode(start_token, move(file_path), end_token));
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseIf() {
+unique_ptr<StmtNode> SimpleParser::Impl::ParseIf() {
   unique_ptr<IfNode> first_if_node = DoParseIf();
   vector< unique_ptr<ElseIfNode> > else_ifs;
 
@@ -239,7 +355,7 @@ unique_ptr<StmtNode> SimpleParser::ParseIf() {
       new IfElseIfNode(move(first_if_node), move(else_ifs)));
 }
 
-unique_ptr<IfNode> SimpleParser::DoParseIf() {
+unique_ptr<IfNode> SimpleParser::Impl::DoParseIf() {
   const TokenInfo start_token = next_token_;
   ConsumeNextToken();
   AssertNextToken(Token::kGroupStart);
@@ -254,7 +370,7 @@ unique_ptr<IfNode> SimpleParser::DoParseIf() {
       start_token, cond_start_token, move(cond), cond_end_token, move(body)));
 }
 
-unique_ptr<StmtNode> SimpleParser::ParsePreTestLoop() {
+unique_ptr<StmtNode> SimpleParser::Impl::ParsePreTestLoop() {
   const TokenInfo start_token = next_token_;
   ConsumeNextToken();
   AssertNextToken(Token::kGroupStart);
@@ -273,7 +389,7 @@ unique_ptr<StmtNode> SimpleParser::ParsePreTestLoop() {
       move(body)));
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseExprStmt() {
+unique_ptr<StmtNode> SimpleParser::Impl::ParseExprStmt() {
   unique_ptr<ExprNode> expr = ParseExpr();
   AssertNextToken(Token::kStmtEnd);
   const TokenInfo end_token = next_token_;
@@ -281,7 +397,7 @@ unique_ptr<StmtNode> SimpleParser::ParseExprStmt() {
   return unique_ptr<StmtNode>(new ExprStmtNode(move(expr), end_token));
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseDef(
+unique_ptr<StmtNode> SimpleParser::Impl::ParseDef(
     const vector<TokenInfo> &modifier_tokens,
     unique_ptr<PrimitiveDataTypeNode> primitive_data_type) {
   unique_ptr<DataTypeNode> full_data_type =
@@ -325,7 +441,7 @@ unique_ptr<StmtNode> SimpleParser::ParseDef(
   return unique_ptr<StmtNode>();
 }
 
-unique_ptr<StmtNode> SimpleParser::ParseFuncDef(
+unique_ptr<StmtNode> SimpleParser::Impl::ParseFuncDef(
     const vector<TokenInfo> &modifier_tokens,
     unique_ptr<DataTypeNode> return_data_type,
     const TokenInfo &func_name_token) {
@@ -377,7 +493,7 @@ unique_ptr<StmtNode> SimpleParser::ParseFuncDef(
       move(body)));
 }
 
-unique_ptr<ScopeNode> SimpleParser::ParseScope() {
+unique_ptr<ScopeNode> SimpleParser::Impl::ParseScope() {
   AssertNextToken(Token::kScopeStart);
   const TokenInfo start_token = next_token_;
   ConsumeNextToken();
@@ -388,7 +504,7 @@ unique_ptr<ScopeNode> SimpleParser::ParseScope() {
       new ScopeNode(start_token, move(stmts), end_token));
 }
 
-unique_ptr<ArgDefNode> SimpleParser::ParseArgDef() {
+unique_ptr<ArgDefNode> SimpleParser::Impl::ParseArgDef() {
   unique_ptr<PrimitiveDataTypeNode> primitive_data_type =
       ParsePrimitiveDataType();
   unique_ptr<DataTypeNode> full_data_type =
@@ -398,7 +514,7 @@ unique_ptr<ArgDefNode> SimpleParser::ParseArgDef() {
       new ArgDefNode(move(full_data_type), name_token));
 }
 
-vector< unique_ptr<StmtNode> > SimpleParser::ParseStmts(Token until_token) {
+vector< unique_ptr<StmtNode> > SimpleParser::Impl::ParseStmts(Token until_token) {
   vector< unique_ptr<StmtNode> > stmts;
 
   while (next_token_.GetId() != until_token) {
@@ -408,10 +524,10 @@ vector< unique_ptr<StmtNode> > SimpleParser::ParseStmts(Token until_token) {
   return stmts;
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseExpr() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseExpr() {
   stack<Op> operators;
   stack< unique_ptr<ExprNode> > operands;
-  ExprState next_state = {&SimpleParser::BeforeExprState};
+  ExprState next_state = {&SimpleParser::Impl::BeforeExprState};
 
   do {
     next_state = (this->*next_state.handler)(operators, operands);
@@ -422,7 +538,7 @@ unique_ptr<ExprNode> SimpleParser::ParseExpr() {
   return move(operands.top());
 }
 
-SimpleParser::ExprState SimpleParser::BeforeExprState(
+SimpleParser::Impl::ExprState SimpleParser::Impl::BeforeExprState(
     stack<Op> &operators,
     stack< unique_ptr<ExprNode> > &operands) {
   ExprState next_state;
@@ -430,43 +546,43 @@ SimpleParser::ExprState SimpleParser::BeforeExprState(
   switch (next_token_.GetId()) {
     case Token::kName: {
       operands.push(ParseId());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kStringLit: {
       operands.push(ParseString());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kCharLit: {
       operands.push(ParseChar());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kIntLit: {
       operands.push(ParseInt());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kLongLit: {
       operands.push(ParseLong());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kDoubleLit: {
       operands.push(ParseDouble());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kBoolTrueLit:
     case Token::kBoolFalseLit: {
       operands.push(ParseBool());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kNew: {
       operands.push(ParseArrayAlloc());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kGroupStart: {
@@ -474,7 +590,7 @@ SimpleParser::ExprState SimpleParser::BeforeExprState(
       operands.push(ParseExpr());
       AssertNextToken(Token::kGroupEnd);
       ConsumeNextToken();
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kSubOp:
@@ -490,7 +606,7 @@ SimpleParser::ExprState SimpleParser::BeforeExprState(
       vector< unique_ptr<ExprNode> > op_args;
       Op op = {op_tokens, move(op_args), next_op_prio, next_op_assoc};
       operators.push(move(op));
-      next_state.handler = &SimpleParser::BeforeExprState;
+      next_state.handler = &SimpleParser::Impl::BeforeExprState;
       break;
     }
     default: {
@@ -501,7 +617,7 @@ SimpleParser::ExprState SimpleParser::BeforeExprState(
   return next_state;
 }
 
-SimpleParser::ExprState SimpleParser::AfterExprState(
+SimpleParser::Impl::ExprState SimpleParser::Impl::AfterExprState(
     stack<Op> &operators,
     stack< unique_ptr<ExprNode> > &operands) {
   ExprState next_state;
@@ -513,7 +629,7 @@ SimpleParser::ExprState SimpleParser::AfterExprState(
           GetOpPrio(next_token_.GetId(), next_op_assoc);
       ReduceExpr(operators, operands, next_op_prio, next_op_assoc);
       operators.push(ParseCall());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kSubscriptStart: {
@@ -522,7 +638,7 @@ SimpleParser::ExprState SimpleParser::AfterExprState(
           GetOpPrio(next_token_.GetId(), next_op_assoc);
       ReduceExpr(operators, operands, next_op_prio, next_op_assoc);
       operators.push(ParseSubscript());
-      next_state.handler = &SimpleParser::AfterExprState;
+      next_state.handler = &SimpleParser::Impl::AfterExprState;
       break;
     }
     case Token::kAssignOp: {
@@ -535,7 +651,7 @@ SimpleParser::ExprState SimpleParser::AfterExprState(
       vector< unique_ptr<ExprNode> > op_args;
       Op op = {op_tokens, move(op_args), next_op_prio, next_op_assoc};
       operators.push(move(op));
-      next_state.handler = &SimpleParser::BeforeExprState;
+      next_state.handler = &SimpleParser::Impl::BeforeExprState;
       break;
     }
     case Token::kAndOp:
@@ -559,7 +675,7 @@ SimpleParser::ExprState SimpleParser::AfterExprState(
       vector< unique_ptr<ExprNode> > op_args;
       Op op = {op_tokens, move(op_args), next_op_prio, next_op_assoc};
       operators.push(move(op));
-      next_state.handler = &SimpleParser::BeforeExprState;
+      next_state.handler = &SimpleParser::Impl::BeforeExprState;
       break;
     }
     default: {
@@ -574,13 +690,13 @@ SimpleParser::ExprState SimpleParser::AfterExprState(
   return next_state;
 }
 
-uint8_t SimpleParser::GetOpPrio(Token op_token, OpAssoc op_assoc) {
+uint8_t SimpleParser::Impl::GetOpPrio(Token op_token, OpAssoc op_assoc) {
   auto op_prio_it = kOpPrios.find(make_pair(op_token, op_assoc));
   assert(op_prio_it != kOpPrios.end());
   return op_prio_it->second;
 }
 
-void SimpleParser::ReduceExpr(stack<Op> &operators,
+void SimpleParser::Impl::ReduceExpr(stack<Op> &operators,
                               stack< unique_ptr<ExprNode> > &operands,
                               uint8_t next_op_prio,
                               OpAssoc next_op_assoc) {
@@ -693,7 +809,8 @@ void SimpleParser::ReduceExpr(stack<Op> &operators,
 }
 
 template<typename TExprNode> unique_ptr<ExprNode>
-SimpleParser::CreateBinaryExpr(stack< unique_ptr<ExprNode> > &operands, Op op) {
+SimpleParser::Impl::CreateBinaryExpr(
+    stack< unique_ptr<ExprNode> > &operands, Op op) {
   assert(operands.size() >= 2);
   unique_ptr<ExprNode> right_operand(move(operands.top()));
   operands.pop();
@@ -705,7 +822,8 @@ SimpleParser::CreateBinaryExpr(stack< unique_ptr<ExprNode> > &operands, Op op) {
 }
 
 template<typename TExprNode> unique_ptr<ExprNode>
-SimpleParser::CreateUnaryExpr(stack< unique_ptr<ExprNode> > &operands, Op op) {
+SimpleParser::Impl::CreateUnaryExpr(
+    stack< unique_ptr<ExprNode> > &operands, Op op) {
   assert(operands.size() >= 1);
   unique_ptr<ExprNode> operand(move(operands.top()));
   operands.pop();
@@ -713,7 +831,7 @@ SimpleParser::CreateUnaryExpr(stack< unique_ptr<ExprNode> > &operands, Op op) {
   return unique_ptr<ExprNode>(new TExprNode(op.tokens.front(), move(operand)));
 }
 
-unique_ptr<ExprNode> SimpleParser::CreateSubscriptExpr(
+unique_ptr<ExprNode> SimpleParser::Impl::CreateSubscriptExpr(
     stack< unique_ptr<ExprNode> > &operands, Op op) {
   assert(operands.size() >= 1);
   unique_ptr<ExprNode> operand(move(operands.top()));
@@ -727,7 +845,7 @@ unique_ptr<ExprNode> SimpleParser::CreateSubscriptExpr(
       new SubscriptNode(start_token, end_token, move(operand), move(index)));
 }
 
-unique_ptr<ExprNode> SimpleParser::CreateCallExpr(
+unique_ptr<ExprNode> SimpleParser::Impl::CreateCallExpr(
     stack< unique_ptr<ExprNode> > &operands, Op op) {
   assert(operands.size() >= 1);
   unique_ptr<ExprNode> operand(move(operands.top()));
@@ -745,7 +863,7 @@ unique_ptr<ExprNode> SimpleParser::CreateCallExpr(
       end_token));
 }
 
-SimpleParser::Op SimpleParser::ParseCall() {
+SimpleParser::Impl::Op SimpleParser::Impl::ParseCall() {
   vector<TokenInfo> op_tokens;
   op_tokens.push_back(next_token_);
   ConsumeNextToken();
@@ -775,7 +893,7 @@ SimpleParser::Op SimpleParser::ParseCall() {
   return op;
 }
 
-SimpleParser::Op SimpleParser::ParseSubscript() {
+SimpleParser::Impl::Op SimpleParser::Impl::ParseSubscript() {
   vector<TokenInfo> op_tokens;
   op_tokens.push_back(next_token_);
   ConsumeNextToken();
@@ -793,49 +911,49 @@ SimpleParser::Op SimpleParser::ParseSubscript() {
   return op;
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseId() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseId() {
   const TokenInfo var_name_token = next_token_;
   ConsumeNextToken();
   return unique_ptr<ExprNode>(new IdNode(var_name_token));
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseChar() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseChar() {
   const TokenInfo token = next_token_;
   ConsumeNextToken();
   return unique_ptr<ExprNode>(new CharNode(token));
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseString() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseString() {
   const TokenInfo token = next_token_;
   ConsumeNextToken();
   return unique_ptr<ExprNode>(new StringNode(token));
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseInt() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseInt() {
   const TokenInfo token = next_token_;
   ConsumeNextToken();
   return unique_ptr<ExprNode>(new IntNode(token));
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseLong() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseLong() {
   const TokenInfo token = next_token_;
   ConsumeNextToken();
   return unique_ptr<ExprNode>(new LongNode(token));
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseDouble() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseDouble() {
   const TokenInfo token = next_token_;
   ConsumeNextToken();
   return unique_ptr<ExprNode>(new DoubleNode(token));
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseBool() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseBool() {
   const TokenInfo token = next_token_;
   ConsumeNextToken();
   return unique_ptr<ExprNode>(new BoolNode(token));
 }
 
-unique_ptr<ExprNode> SimpleParser::ParseArrayAlloc() {
+unique_ptr<ExprNode> SimpleParser::Impl::ParseArrayAlloc() {
   const TokenInfo alloc_token = next_token_;
   ConsumeNextToken();
   unique_ptr<PrimitiveDataTypeNode> data_type = ParsePrimitiveDataType();
@@ -932,55 +1050,55 @@ unique_ptr<ExprNode> SimpleParser::ParseArrayAlloc() {
   }
 }
 
-unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseIntDataType() {
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParseIntDataType() {
   unique_ptr<PrimitiveDataTypeNode> data_type(new IntDataTypeNode(next_token_));
   ConsumeNextToken();
   return data_type;
 }
 
-unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseLongDataType() {
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParseLongDataType() {
   unique_ptr<PrimitiveDataTypeNode> data_type(
       new LongDataTypeNode(next_token_));
   ConsumeNextToken();
   return data_type;
 }
 
-unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseDoubleDataType() {
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParseDoubleDataType() {
   unique_ptr<PrimitiveDataTypeNode> data_type(
       new DoubleDataTypeNode(next_token_));
   ConsumeNextToken();
   return data_type;
 }
 
-unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseCharDataType() {
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParseCharDataType() {
   unique_ptr<PrimitiveDataTypeNode> data_type(
       new CharDataTypeNode(next_token_));
   ConsumeNextToken();
   return data_type;
 }
 
-unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseStringDataType() {
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParseStringDataType() {
   unique_ptr<PrimitiveDataTypeNode> data_type(
       new StringDataTypeNode(next_token_));
   ConsumeNextToken();
   return data_type;
 }
 
-unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseBoolDataType() {
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParseBoolDataType() {
   unique_ptr<PrimitiveDataTypeNode> data_type(
       new BoolDataTypeNode(next_token_));
   ConsumeNextToken();
   return data_type;
 }
 
-unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParseVoidDataType() {
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParseVoidDataType() {
   unique_ptr<PrimitiveDataTypeNode> data_type(
       new VoidDataTypeNode(next_token_));
   ConsumeNextToken();
   return data_type;
 }
 
-unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParsePrimitiveDataType() {
+unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParsePrimitiveDataType() {
   switch (next_token_.GetId()) {
     case Token::kIntType:
       return ParseIntDataType();
@@ -1003,7 +1121,7 @@ unique_ptr<PrimitiveDataTypeNode> SimpleParser::ParsePrimitiveDataType() {
   assert(false);
 }
 
-unique_ptr<DataTypeNode> SimpleParser::ParseDataType(
+unique_ptr<DataTypeNode> SimpleParser::Impl::ParseDataType(
     unique_ptr<PrimitiveDataTypeNode> primitive_data_type) {
   unique_ptr<DataTypeNode> data_type(move(primitive_data_type));
 
@@ -1020,30 +1138,25 @@ unique_ptr<DataTypeNode> SimpleParser::ParseDataType(
   return data_type;
 }
 
-TokenInfo SimpleParser::ParseName() {
+TokenInfo SimpleParser::Impl::ParseName() {
   AssertNextToken(Token::kName);
   const TokenInfo name = next_token_;
   ConsumeNextToken();
   return name;
 }
 
-void SimpleParser::AssertNextToken(Token token) {
+void SimpleParser::Impl::AssertNextToken(Token token) {
   if (next_token_.GetId() != token) {
     UnexpectedToken();
   }
 }
 
-void SimpleParser::ConsumeNextToken() {
+void SimpleParser::Impl::ConsumeNextToken() {
   next_token_ = lexer_->GetNextToken();
 }
 
-void SimpleParser::UnexpectedToken() {
-  const string &msg =
-      (format("Unexpected token; id=%1%; value=%2%; line=%3%; column=%4%")
-       % static_cast<uint32_t>(next_token_.GetId())
-       % next_token_.GetValue()
-       % next_token_.GetLine()
-       % next_token_.GetColumn()).str();
+void SimpleParser::Impl::UnexpectedToken() {
+  const string &msg = (format("Unexpected token: %1%") % next_token_).str();
   throw UnexpectedTokenError(next_token_, msg);
 }
 }

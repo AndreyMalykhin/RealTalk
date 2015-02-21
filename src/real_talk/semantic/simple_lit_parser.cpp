@@ -22,9 +22,9 @@ int32_t SimpleLitParser::ParseInt(const string &str) const {
   try {
     return numeric_cast<int32_t>(stol(str));
   } catch (const bad_numeric_cast&) {
-    throw OutOfRange((format("Number %1% exceeds 32 bits") % str).str());
+    throw OutOfRangeError((format("Number %1% exceeds 32 bits") % str).str());
   } catch (const out_of_range&) {
-    throw OutOfRange((format("Number %1% exceeds 32 bits") % str).str());
+    throw OutOfRangeError((format("Number %1% exceeds 32 bits") % str).str());
   }
 }
 
@@ -32,9 +32,9 @@ int64_t SimpleLitParser::ParseLong(const string &str) const {
   try {
     return numeric_cast<int64_t>(stoll(str));
   } catch (const bad_numeric_cast&) {
-    throw OutOfRange((format("Number %1% exceeds 64 bits") % str).str());
+    throw OutOfRangeError((format("Number %1% exceeds 64 bits") % str).str());
   } catch (const out_of_range&) {
-    throw OutOfRange((format("Number %1% exceeds 64 bits") % str).str());
+    throw OutOfRangeError((format("Number %1% exceeds 64 bits") % str).str());
   }
 }
 
@@ -42,10 +42,10 @@ double SimpleLitParser::ParseDouble(const string &str) const {
   try {
     return numeric_cast<double>(stod(str));
   } catch (const bad_numeric_cast&) {
-    throw OutOfRange(
+    throw OutOfRangeError(
         (format("Number %1% exceeds size of double") % str).str());
   } catch (const out_of_range&) {
-    throw OutOfRange(
+    throw OutOfRangeError(
         (format("Number %1% exceeds size of double") % str).str());
   }
 }
@@ -167,10 +167,10 @@ char SimpleLitParser::ParseHexValue(string::const_iterator &start_it,
   try {
     return numeric_cast<char>(stoi(hex_value, 0, 16));
   } catch (const bad_numeric_cast&) {
-    throw OutOfRange(
+    throw OutOfRangeError(
         (format("Hex value %1% exceeds 1 byte") % hex_value).str());
   } catch (const out_of_range&) {
-    throw OutOfRange(
+    throw OutOfRangeError(
         (format("Hex value %1% exceeds 1 byte") % hex_value).str());
   }
 }

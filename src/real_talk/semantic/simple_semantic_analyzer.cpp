@@ -108,14 +108,16 @@ using std::pair;
 using std::make_pair;
 using std::move;
 using std::exception;
+using std::ostream;
 using boost::format;
 using boost::adaptors::reverse;
 using boost::filesystem::path;
 using boost::filesystem::filesystem_error;
 using boost::hash;
+using real_talk::lexer::Lexer;
 using real_talk::lexer::Token;
 using real_talk::lexer::TokenInfo;
-using real_talk::lexer::UnexpectedCharError;
+using real_talk::parser::Parser;
 using real_talk::parser::ExprNode;
 using real_talk::parser::StmtNode;
 using real_talk::parser::AndNode;
@@ -180,12 +182,10 @@ using real_talk::parser::FileParser;
 using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::UnboundedArraySizeNode;
 using real_talk::parser::ArrayAllocNode;
-using real_talk::parser::UnexpectedTokenError;
 using real_talk::parser::FuncDefNode;
 using real_talk::parser::BinaryExprNode;
 using real_talk::parser::UnaryExprNode;
 using real_talk::util::FileNotFoundError;
-using real_talk::util::IOError;
 
 namespace real_talk {
 namespace semantic {
@@ -580,11 +580,74 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedBySubscriptIndex
   virtual void VisitLong(const LongDataType&) override {result_ = true;}
 };
 
+enum class SimpleSemanticAnalyzer::Impl::DataTypeId: uint8_t {
+  kInt = UINT8_C(1),
+  kLong,
+  kDouble,
+  kBool,
+  kChar,
+  kString,
+  kVoid,
+  kArray,
+  kFunc
+};
+
+class SimpleSemanticAnalyzer::Impl::DataTypeIdResolver
+    : private DataTypeVisitor {
+ public:
+  DataTypeId Resolve(const DataType &data_type) {
+    data_type.Accept(*this);
+    return id_;
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    id_ = DataTypeId::kArray;
+  }
+
+  virtual void VisitFunc(const FuncDataType&) override {
+    id_ = DataTypeId::kFunc;
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    id_ = DataTypeId::kBool;
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    id_ = DataTypeId::kInt;
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    id_ = DataTypeId::kLong;
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    id_ = DataTypeId::kDouble;
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    id_ = DataTypeId::kChar;
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    id_ = DataTypeId::kString;
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {
+    id_ = DataTypeId::kVoid;
+  }
+
+  DataTypeId id_;
+};
+
 class SimpleSemanticAnalyzer::Impl::UnaryDataTypeDeductor
     : private DataTypeVisitor {
  public:
   virtual ~UnaryDataTypeDeductor() {}
 
+  /**
+   * @return nullptr if data type is not supported
+   */
   unique_ptr<DataType> Deduct(const DataType &data_type) {
     data_type.Accept(*this);
     return move(result_data_type_);
@@ -669,74 +732,17 @@ class SimpleSemanticAnalyzer::Impl::CallDataTypeDeductor
   }
 };
 
-enum class SimpleSemanticAnalyzer::Impl::DataTypeId: uint8_t {
-  kInt = UINT8_C(1),
-  kLong,
-  kDouble,
-  kBool,
-  kChar,
-  kString,
-  kVoid,
-  kArray,
-  kFunc
-};
-
-class SimpleSemanticAnalyzer::Impl::DataTypeIdResolver
-    : private DataTypeVisitor {
- public:
-  DataTypeId Resolve(const DataType &data_type) {
-    data_type.Accept(*this);
-    return id_;
-  }
-
- private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    id_ = DataTypeId::kArray;
-  }
-
-  virtual void VisitFunc(const FuncDataType&) override {
-    id_ = DataTypeId::kFunc;
-  }
-
-  virtual void VisitBool(const BoolDataType&) override {
-    id_ = DataTypeId::kBool;
-  }
-
-  virtual void VisitInt(const IntDataType&) override {
-    id_ = DataTypeId::kInt;
-  }
-
-  virtual void VisitLong(const LongDataType&) override {
-    id_ = DataTypeId::kLong;
-  }
-
-  virtual void VisitDouble(const DoubleDataType&) override {
-    id_ = DataTypeId::kDouble;
-  }
-
-  virtual void VisitChar(const CharDataType&) override {
-    id_ = DataTypeId::kChar;
-  }
-
-  virtual void VisitString(const StringDataType&) override {
-    id_ = DataTypeId::kString;
-  }
-
-  virtual void VisitVoid(const VoidDataType&) override {
-    id_ = DataTypeId::kVoid;
-  }
-
-  DataTypeId id_;
-};
-
 class SimpleSemanticAnalyzer::Impl::BinaryDataTypeDeductor {
  public:
   virtual ~BinaryDataTypeDeductor() {}
 
+  /**
+   * @return nullptr if data types are not supported
+   */
   unique_ptr<DataType> Deduct(const DataType &lhs, const DataType &rhs) const {
     const Workers &workers = GetWorkers();
-    DataTypeId lhs_id = DataTypeIdResolver().Resolve(lhs);
-    DataTypeId rhs_id = DataTypeIdResolver().Resolve(rhs);
+    const DataTypeId lhs_id = DataTypeIdResolver().Resolve(lhs);
+    const DataTypeId rhs_id = DataTypeIdResolver().Resolve(rhs);
     Workers::const_iterator worker_it =
         workers.find(make_pair(lhs_id, rhs_id));
 
@@ -1492,14 +1498,10 @@ void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
 
   try {
     absolute_file_path = import_file_searcher_.Search(relative_file_path);
-  } catch (const FileNotFoundError&) {
-    unique_ptr<SemanticError> error(new ImportWithNotExistingFileError(
-        GetCurrentFilePath(), import_node, relative_file_path));
-    throw SemanticErrorException(move(error));
-  } catch (const IOError&) {
-    unique_ptr<SemanticError> error(new ImportWithIOError(
-        GetCurrentFilePath(), import_node, relative_file_path));
-    throw SemanticErrorException(move(error));
+  } catch (const util::IOError&) {
+    const string msg = (format("IO error; file_path=%1%")
+                        % relative_file_path).str();
+    throw SimpleSemanticAnalyzer::IOError(relative_file_path, msg);
   }
 
   ImportPrograms::const_iterator import_program_it =
@@ -1513,23 +1515,23 @@ void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
   } else {
     try {
       program = file_parser_.Parse(absolute_file_path);
-    } catch (const IOError&) {
-      unique_ptr<SemanticError> error(new ImportWithIOError(
-          GetCurrentFilePath(), import_node, absolute_file_path));
-      throw SemanticErrorException(move(error));
-    } catch (const UnexpectedTokenError &e) {
-      unique_ptr<SemanticError> error(new ImportWithUnexpectedTokenError(
-          GetCurrentFilePath(), import_node, absolute_file_path, e.GetToken()));
-      throw SemanticErrorException(move(error));
-    } catch (const UnexpectedCharError &e) {
-      unique_ptr<SemanticError> error(new ImportWithUnexpectedCharError(
-          GetCurrentFilePath(),
-          import_node,
-          absolute_file_path,
-          e.GetChar(),
-          e.GetLineNumber(),
-          e.GetColumnNumber()));
-      throw SemanticErrorException(move(error));
+    } catch (const util::IOError&) {
+      const string msg = (format("IO error; file_path=%1%")
+                          % absolute_file_path).str();
+      throw SimpleSemanticAnalyzer::IOError(absolute_file_path, msg);
+    } catch (const Parser::UnexpectedTokenError &e) {
+      const string msg = (format("Unexpected token; token=%1%; file_path=%2%")
+                          % e.GetToken() % absolute_file_path).str();
+      throw SimpleSemanticAnalyzer::UnexpectedTokenError(
+          e, absolute_file_path, msg);
+    } catch (const Lexer::UnexpectedCharError &e) {
+      const string msg = (format("Unexpected char; char=%1%; line=%2%; column=%3%; file_path=%4%")
+                          % e.GetChar()
+                          % e.GetLineNumber()
+                          % e.GetColumnNumber()
+                          % absolute_file_path).str();
+      throw SimpleSemanticAnalyzer::UnexpectedCharError(
+          e, absolute_file_path, msg);
     }
 
     import_programs_.insert(make_pair(absolute_file_path, program));
@@ -1779,7 +1781,7 @@ void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
   }
 
   AddExprAnalysis(
-      assign_node, move(assign_data_type), ValueType::kLeft);
+      assign_node, move(assign_data_type), ValueType::kRight);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode &and_node) {
@@ -1936,7 +1938,7 @@ void SimpleSemanticAnalyzer::Impl::VisitInt(const IntNode &int_node) {
 
   try {
     value = lit_parser_.ParseInt(int_node.GetToken().GetValue());
-  } catch (const LitParser::OutOfRange&) {
+  } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(new IntWithOutOfRangeValueError(
         GetCurrentFilePath(), int_node));
     throw SemanticErrorException(move(error));
@@ -1952,7 +1954,7 @@ void SimpleSemanticAnalyzer::Impl::VisitLong(const LongNode &long_node) {
 
   try {
     value = lit_parser_.ParseLong(long_node.GetToken().GetValue());
-  } catch (const LitParser::OutOfRange&) {
+  } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(new LongWithOutOfRangeValueError(
         GetCurrentFilePath(), long_node));
     throw SemanticErrorException(move(error));
@@ -1968,7 +1970,7 @@ void SimpleSemanticAnalyzer::Impl::VisitDouble(const DoubleNode &double_node) {
 
   try {
     value = lit_parser_.ParseDouble(double_node.GetToken().GetValue());
-  } catch (const LitParser::OutOfRange&) {
+  } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(new DoubleWithOutOfRangeValueError(
         GetCurrentFilePath(), double_node));
     throw SemanticErrorException(move(error));
@@ -1988,7 +1990,7 @@ void SimpleSemanticAnalyzer::Impl::VisitChar(const CharNode &char_node) {
     unique_ptr<SemanticError> error(new CharWithEmptyHexValueError(
         GetCurrentFilePath(), char_node));
     throw SemanticErrorException(move(error));
-  } catch (const LitParser::OutOfRange&) {
+  } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(new CharWithOutOfRangeHexValueError(
         GetCurrentFilePath(), char_node));
     throw SemanticErrorException(move(error));
@@ -2012,7 +2014,7 @@ void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
     unique_ptr<SemanticError> error(new StringWithEmptyHexValueError(
         GetCurrentFilePath(), string_node));
     throw SemanticErrorException(move(error));
-  } catch (const LitParser::OutOfRange&) {
+  } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(new StringWithOutOfRangeHexValueError(
         GetCurrentFilePath(), string_node));
     throw SemanticErrorException(move(error));
@@ -2147,6 +2149,90 @@ bool SimpleSemanticAnalyzer::Impl::IsDataTypeConvertible(
 const path &SimpleSemanticAnalyzer::Impl::GetCurrentFilePath() {
   assert(!file_scopes_stack_.empty());
   return file_scopes_stack_.back()->GetFilePath();
+}
+
+SimpleSemanticAnalyzer::UnexpectedTokenError::UnexpectedTokenError(
+    const Parser::UnexpectedTokenError &error,
+    const path &file_path,
+    const string &msg)
+    : runtime_error(msg),
+      error_(error),
+      file_path_(file_path) {
+}
+
+const Parser::UnexpectedTokenError
+&SimpleSemanticAnalyzer::UnexpectedTokenError::GetError() const {
+  return error_;
+}
+
+const path &SimpleSemanticAnalyzer::UnexpectedTokenError::GetFilePath() const {
+  return file_path_;
+}
+
+bool operator==(
+    const SimpleSemanticAnalyzer::UnexpectedTokenError &lhs,
+    const SimpleSemanticAnalyzer::UnexpectedTokenError &rhs) {
+  return strcmp(lhs.what(), rhs.what()) == 0
+      && lhs.error_ == rhs.error_
+      && lhs.file_path_ == rhs.file_path_;
+}
+
+ostream &operator<<(
+    ostream &stream,
+    const SimpleSemanticAnalyzer::UnexpectedTokenError &error) {
+  return stream << "error=" << error.error_ << "; file_path="
+                << error.file_path_ << "; msg=" << error.what();
+}
+
+SimpleSemanticAnalyzer::UnexpectedCharError::UnexpectedCharError(
+    const Lexer::UnexpectedCharError &error,
+    const path &file_path,
+    const string &msg)
+    : runtime_error(msg), error_(error), file_path_(file_path) {
+}
+
+const Lexer::UnexpectedCharError
+&SimpleSemanticAnalyzer::UnexpectedCharError::GetError() const {
+  return error_;
+}
+
+const path &SimpleSemanticAnalyzer::UnexpectedCharError::GetFilePath() const {
+  return file_path_;
+}
+
+bool operator==(
+    const SimpleSemanticAnalyzer::UnexpectedCharError &lhs,
+    const SimpleSemanticAnalyzer::UnexpectedCharError &rhs) {
+  return strcmp(lhs.what(), rhs.what()) == 0
+      && lhs.file_path_ == rhs.file_path_
+      && lhs.error_ == rhs.error_;
+}
+
+ostream &operator<<(ostream &stream,
+                    const SimpleSemanticAnalyzer::UnexpectedCharError &error) {
+  return stream << "error=" << error.error_ << "; file_path="
+                << error.file_path_ << "; msg=" << error.what();
+}
+
+SimpleSemanticAnalyzer::IOError::IOError(
+    const path &file_path, const string &msg)
+    : runtime_error(msg), file_path_(file_path) {
+}
+
+const path &SimpleSemanticAnalyzer::IOError::GetFilePath() const {
+  return file_path_;
+}
+
+bool operator==(
+    const SimpleSemanticAnalyzer::IOError &lhs,
+    const SimpleSemanticAnalyzer::IOError &rhs) {
+  return strcmp(lhs.what(), rhs.what()) == 0
+      && lhs.file_path_ == rhs.file_path_;
+}
+
+ostream &operator<<(
+    ostream &stream, const SimpleSemanticAnalyzer::IOError &error) {
+  return stream << "file_path=" << error.file_path_ << "; msg=" << error.what();
 }
 }
 }

@@ -1,4 +1,5 @@
 
+#include "real_talk/lexer/simple_lexer.h"
 #include "real_talk/parser/simple_parser.h"
 #include "real_talk/parser/simple_parser_factory.h"
 

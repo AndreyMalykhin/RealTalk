@@ -10,7 +10,7 @@ namespace util {
 IOError::IOError(const string &msg): runtime_error(msg) {
 }
 
-FileNotFoundError::FileNotFoundError(const string &msg): runtime_error(msg) {
+FileNotFoundError::FileNotFoundError(const string &msg): IOError(msg) {
 }
 }
 }
