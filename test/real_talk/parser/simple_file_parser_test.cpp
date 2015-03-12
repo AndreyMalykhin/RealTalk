@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <vector>
-#include "real_talk/test/test_config.h"
+#include "real_talk/test_config.h"
 #include "real_talk/lexer/lexer_factory.h"
 #include "real_talk/lexer/lexer.h"
 #include "real_talk/lexer/token_info.h"
@@ -21,7 +21,7 @@ using testing::InSequence;
 using testing::_;
 using testing::Return;
 using boost::filesystem::path;
-using real_talk::test::TestConfig;
+using real_talk::TestConfig;
 using real_talk::lexer::LexerFactory;
 using real_talk::lexer::Lexer;
 using real_talk::lexer::TokenInfo;

@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <vector>
-#include "real_talk/test/test_config.h"
+#include "real_talk/test_config.h"
 #include "real_talk/util/errors.h"
 #include "real_talk/semantic/simple_import_file_searcher.h"
 
@@ -10,7 +10,7 @@ using std::vector;
 using boost::filesystem::path;
 using boost::filesystem::current_path;
 using testing::Test;
-using real_talk::test::TestConfig;
+using real_talk::TestConfig;
 using real_talk::util::FileNotFoundError;
 
 namespace real_talk {

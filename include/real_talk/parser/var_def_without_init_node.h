@@ -4,6 +4,8 @@
 
 #include <string>
 #include <memory>
+#include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/var_def_node.h"
 #include "real_talk/parser/data_type_node.h"
 

@@ -2,10 +2,8 @@
 #ifndef _REAL_TALK_PARSER_IF_ELSE_IF_ELSE_NODE_H_
 #define _REAL_TALK_PARSER_IF_ELSE_IF_ELSE_NODE_H_
 
-#include <memory>
 #include <vector>
-#include "real_talk/parser/else_if_node.h"
-#include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/if_else_if_node.h"
 
 namespace real_talk {
 namespace parser {

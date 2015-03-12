@@ -51,6 +51,12 @@ add_library(real_talk
   src/real_talk/semantic/simple_import_file_searcher.cpp
   src/real_talk/semantic/simple_lit_parser.cpp
   src/real_talk/semantic/lit_parser.cpp
+  src/real_talk/code/code_generator.cpp
+  src/real_talk/code/cmd_reader.cpp
+  src/real_talk/code/module_reader.cpp
+  src/real_talk/code/module.cpp
+  src/real_talk/code/id_address.cpp
+  src/real_talk/code/code.cpp
   src/real_talk/util/errors.cpp
 )
 add_executable(real_talk_tests
@@ -61,5 +67,11 @@ add_executable(real_talk_tests
   test/real_talk/semantic/simple_semantic_analyzer_test.cpp
   test/real_talk/semantic/simple_import_file_searcher_test.cpp
   test/real_talk/semantic/simple_lit_parser_test.cpp
-)
+  test/real_talk/code/code_generator_test.cpp
+  test/real_talk/code/module_reader_test.cpp
+  test/real_talk/code/cmd_reader_test.cpp
+  test/real_talk/util/endianness_test.cpp
+  test/real_talk/code/test_utils.cpp
+  )
+target_include_directories(real_talk_tests PRIVATE test)
 target_link_libraries(real_talk_tests ${GMOCK_LIBRARY} ${Boost_LIBRARIES} real_talk)
