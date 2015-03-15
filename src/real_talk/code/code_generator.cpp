@@ -16,6 +16,10 @@
 #include "real_talk/parser/if_else_if_else_node.h"
 #include "real_talk/parser/if_else_if_node.h"
 #include "real_talk/parser/import_node.h"
+#include "real_talk/semantic/data_type_visitor.h"
+#include "real_talk/semantic/data_type.h"
+#include "real_talk/semantic/semantic_analysis.h"
+#include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/code.h"
@@ -85,7 +89,20 @@ using real_talk::parser::ArgDefNode;
 using real_talk::parser::StmtNode;
 using real_talk::parser::SumNode;
 using real_talk::parser::FuncDefNode;
+using real_talk::parser::DefNode;
 using real_talk::semantic::SemanticAnalysis;
+using real_talk::semantic::VarDefAnalysis;
+using real_talk::semantic::DataTypeVisitor;
+using real_talk::semantic::DataType;
+using real_talk::semantic::ArrayDataType;
+using real_talk::semantic::FuncDataType;
+using real_talk::semantic::BoolDataType;
+using real_talk::semantic::IntDataType;
+using real_talk::semantic::LongDataType;
+using real_talk::semantic::DoubleDataType;
+using real_talk::semantic::CharDataType;
+using real_talk::semantic::StringDataType;
+using real_talk::semantic::VoidDataType;
 
 namespace real_talk {
 namespace code {
@@ -99,12 +116,13 @@ class CodeGenerator::Impl: private NodeVisitor {
 
  private:
   class StmtGrouper;
+  class CreateGlobalVarCmdGenerator;
 
-  void WriteCmdsSegment();
-  void WriteImportsSegment();
-  void WriteIdsSegment(const vector<string> &ids);
-  void WriteIdAddressesSegment(const vector<IdAddress> &id_addresses);
-  void WriteMetadataSegments(uint32_t segments_metadata_address,
+  void GenerateCmdsSegment();
+  void GenerateImportsSegment();
+  void GenerateIdsSegment(const vector<string> &ids);
+  void GenerateIdAddressesSegment(const vector<IdAddress> &id_addresses);
+  void GenerateMetadataSegments(uint32_t segments_metadata_address,
                              uint32_t cmds_address,
                              uint32_t cmds_size);
   virtual void VisitAnd(const AndNode &node) override;
@@ -301,6 +319,50 @@ class CodeGenerator::Impl::StmtGrouper: private NodeVisitor {
   vector<const FuncDefNode*> func_defs_;
 };
 
+class CodeGenerator::Impl::CreateGlobalVarCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+    code_->WriteUint32(numeric_limits<uint32_t>::max());
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateGlobalArrayVar);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateGlobalBoolVar);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateGlobalIntVar);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateGlobalLongVar);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateGlobalCharVar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateGlobalStringVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(): impl_(new Impl()) {}
 
 CodeGenerator::~CodeGenerator() {}
@@ -326,9 +388,9 @@ void CodeGenerator::Impl::Generate(
   const uint32_t segments_metadata_address = code.GetPosition();
   code.Skip(14 * sizeof(uint32_t));
   const uint32_t cmds_address = code.GetPosition();
-  WriteCmdsSegment();
+  GenerateCmdsSegment();
   const uint32_t cmds_size = code.GetPosition() - cmds_address;
-  WriteMetadataSegments(segments_metadata_address, cmds_address, cmds_size);
+  GenerateMetadataSegments(segments_metadata_address, cmds_address, cmds_size);
 
   stream.exceptions(ios::failbit | ios::badbit);
   stream.write(reinterpret_cast<char*>(code.GetData()),
@@ -342,7 +404,7 @@ void CodeGenerator::Impl::Generate(
   id_addresses_of_func_refs_.clear();
 }
 
-void CodeGenerator::Impl::WriteCmdsSegment() {
+void CodeGenerator::Impl::GenerateCmdsSegment() {
   const StmtGrouper::GroupedStmts &stmts = StmtGrouper().Group(program_);
 
   for (const StmtNode *non_func_def: stmts.non_func_defs) {
@@ -358,37 +420,37 @@ void CodeGenerator::Impl::WriteCmdsSegment() {
   code_->WriteCmdId(CmdId::kEndFuncs);
 }
 
-void CodeGenerator::Impl::WriteMetadataSegments(
+void CodeGenerator::Impl::GenerateMetadataSegments(
     uint32_t segments_metadata_address,
     uint32_t cmds_address,
     uint32_t cmds_size) {
   const uint32_t imports_metadata_address = code_->GetPosition();
-  WriteImportsSegment();
+  GenerateImportsSegment();
   const uint32_t imports_metadata_size =
       code_->GetPosition() - imports_metadata_address;
 
   const uint32_t global_var_defs_metadata_address = code_->GetPosition();
-  WriteIdsSegment(ids_of_global_var_defs_);
+  GenerateIdsSegment(ids_of_global_var_defs_);
   const uint32_t global_var_defs_metadata_size =
       code_->GetPosition() - global_var_defs_metadata_address;
 
   const uint32_t func_defs_metadata_address = code_->GetPosition();
-  WriteIdAddressesSegment(id_addresses_of_func_defs_);
+  GenerateIdAddressesSegment(id_addresses_of_func_defs_);
   const uint32_t func_defs_metadata_size =
       code_->GetPosition() - func_defs_metadata_address;
 
   const uint32_t native_func_defs_metadata_address = code_->GetPosition();
-  WriteIdsSegment(ids_of_native_func_defs_);
+  GenerateIdsSegment(ids_of_native_func_defs_);
   const uint32_t native_func_defs_metadata_size =
       code_->GetPosition() - native_func_defs_metadata_address;
 
   const uint32_t global_var_refs_metadata_address = code_->GetPosition();
-  WriteIdAddressesSegment(id_addresses_of_global_var_refs_);
+  GenerateIdAddressesSegment(id_addresses_of_global_var_refs_);
   const uint32_t global_var_refs_metadata_size =
       code_->GetPosition() - global_var_refs_metadata_address;
 
   const uint32_t func_refs_metadata_address = code_->GetPosition();
-  WriteIdAddressesSegment(id_addresses_of_func_refs_);
+  GenerateIdAddressesSegment(id_addresses_of_func_refs_);
   const uint32_t func_refs_metadata_size =
       code_->GetPosition() - func_refs_metadata_address;
 
@@ -409,19 +471,19 @@ void CodeGenerator::Impl::WriteMetadataSegments(
   code_->WriteUint32(func_refs_metadata_size);
 }
 
-void CodeGenerator::Impl::WriteImportsSegment() {
+void CodeGenerator::Impl::GenerateImportsSegment() {
   for (const path &import_file_path: import_file_paths_) {
     code_->WriteFilePath(import_file_path);
   }
 }
 
-void CodeGenerator::Impl::WriteIdsSegment(const vector<string> &ids) {
+void CodeGenerator::Impl::GenerateIdsSegment(const vector<string> &ids) {
   for (const string &id: ids) {
     code_->WriteString(id);
   }
 }
 
-void CodeGenerator::Impl::WriteIdAddressesSegment(
+void CodeGenerator::Impl::GenerateIdAddressesSegment(
     const vector<IdAddress> &id_addresses) {
   for (const IdAddress &id_address: id_addresses) {
     code_->WriteIdAddress(id_address);
@@ -436,8 +498,13 @@ void CodeGenerator::Impl::VisitProgram(const ProgramNode &node) {
 
 void CodeGenerator::Impl::VisitVarDefWithoutInit(
     const VarDefWithoutInitNode &node) {
-  code_->WriteCmdId(CmdId::kCreateGlobalInt);
-  code_->WriteUint32(numeric_limits<uint32_t>::max());
+  SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
+      semantic_analysis_->GetNodeAnalyzes().find(&node);
+  assert(node_analysis_it != semantic_analysis_->GetNodeAnalyzes().cend());
+  const VarDefAnalysis &var_def_analysis =
+      static_cast<const VarDefAnalysis&>(*(node_analysis_it->second));
+  CreateGlobalVarCmdGenerator().Generate(
+      var_def_analysis.GetDataType(), code_);
   ids_of_global_var_defs_.push_back(node.GetNameToken().GetValue());
 }
 

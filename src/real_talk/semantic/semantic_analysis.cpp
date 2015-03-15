@@ -21,6 +21,15 @@ SemanticAnalysis::SemanticAnalysis(
     : problems_(move(problems)), node_analyzes_(move(node_analyzes)) {
 }
 
+const SemanticAnalysis::NodeAnalyzes &SemanticAnalysis::GetNodeAnalyzes()
+    const {
+  return node_analyzes_;
+}
+
+const SemanticAnalysis::Problems &SemanticAnalysis::GetProblems() const {
+  return problems_;
+}
+
 bool operator==(const SemanticAnalysis &lhs, const SemanticAnalysis &rhs) {
   const auto node_analyzes_comparator = [&rhs](
       const SemanticAnalysis::NodeAnalyzes::value_type &lhs_pair) {

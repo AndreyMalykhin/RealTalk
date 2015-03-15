@@ -64,7 +64,7 @@ TEST_F(ModuleReaderTest, Read) {
 
   {
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(CmdId::kCreateGlobalInt);
+    cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
     cmds_code->WriteUint32(UINT32_C(7));
     cmds_code->WriteCmdId(CmdId::kEndMain);
     cmds_code->WriteCmdId(CmdId::kEndFuncs);

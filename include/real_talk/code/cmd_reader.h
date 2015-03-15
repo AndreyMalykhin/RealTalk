@@ -10,6 +10,7 @@ namespace code {
 
 class Cmd;
 class Code;
+class CreateGlobalVarCmd;
 
 class CmdReader {
  public:
@@ -21,9 +22,16 @@ class CmdReader {
   typedef std::array<Reader, std::numeric_limits<uint8_t>::max()> Readers;
 
   static const Readers InitReaders();
-  const Cmd &ReadEndMain();
-  const Cmd &ReadEndFuncs();
-  const Cmd &ReadCreateGlobalInt();
+  const Cmd &ReadEndMainCmd();
+  const Cmd &ReadEndFuncsCmd();
+  const Cmd &ReadCreateGlobalVarCmd(CreateGlobalVarCmd &cmd);
+  const Cmd &ReadCreateGlobalIntVarCmd();
+  const Cmd &ReadCreateGlobalArrayVarCmd();
+  const Cmd &ReadCreateGlobalLongVarCmd();
+  const Cmd &ReadCreateGlobalDoubleVarCmd();
+  const Cmd &ReadCreateGlobalCharVarCmd();
+  const Cmd &ReadCreateGlobalStringVarCmd();
+  const Cmd &ReadCreateGlobalBoolVarCmd();
 
   static const Readers kReaders;
   Code *code_;

@@ -27,6 +27,8 @@ class SemanticAnalysis {
   SemanticAnalysis(
       std::vector< std::unique_ptr<SemanticProblem> > problems,
       NodeAnalyzes node_analyzes);
+  const NodeAnalyzes &GetNodeAnalyzes() const;
+  const Problems &GetProblems() const;
   friend bool operator==(const SemanticAnalysis &lhs,
                          const SemanticAnalysis &rhs);
   friend std::ostream &operator<<(std::ostream &stream,

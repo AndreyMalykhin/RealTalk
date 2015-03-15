@@ -10,9 +10,15 @@ namespace real_talk {
 namespace code {
 
 enum class CmdId: uint8_t {
-  kCreateGlobalInt = UINT8_C(1),
-  kEndMain = UINT8_C(2),
-  kEndFuncs = UINT8_C(3)
+  kEndMain = UINT8_C(1),
+  kEndFuncs = UINT8_C(2),
+  kCreateGlobalIntVar = UINT8_C(3),
+  kCreateGlobalArrayVar = UINT8_C(4),
+  kCreateGlobalLongVar = UINT8_C(5),
+  kCreateGlobalDoubleVar = UINT8_C(6),
+  kCreateGlobalCharVar = UINT8_C(7),
+  kCreateGlobalStringVar = UINT8_C(8),
+  kCreateGlobalBoolVar = UINT8_C(9)
 };
 
 class Cmd {
