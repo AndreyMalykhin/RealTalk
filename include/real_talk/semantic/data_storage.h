@@ -10,11 +10,13 @@ namespace semantic {
 
 enum class DataStorage: uint8_t {
   kGlobal = UINT8_C(1),
-  kLocal
+  kLocal = UINT8_C(2)
 };
 
-std::ostream &operator<<(std::ostream &stream,
-                         DataStorage data_storage);
+inline std::ostream &operator<<(
+    std::ostream &stream, DataStorage data_storage) {
+  return stream << static_cast<uint32_t>(data_storage);
+}
 }
 }
 #endif

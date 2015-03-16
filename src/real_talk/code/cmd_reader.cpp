@@ -2,6 +2,7 @@
 #include <cassert>
 #include "real_talk/code/end_cmd.h"
 #include "real_talk/code/create_global_var_cmd.h"
+#include "real_talk/code/create_local_var_cmd.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/code.h"
 
@@ -26,6 +27,21 @@ CreateGlobalStringVarCmd &kCreateGlobalStringVarCmd =
     *new CreateGlobalStringVarCmd(UINT32_C(0));
 CreateGlobalBoolVarCmd &kCreateGlobalBoolVarCmd =
     *new CreateGlobalBoolVarCmd(UINT32_C(0));
+
+const CreateLocalIntVarCmd &kCreateLocalIntVarCmd =
+    *new CreateLocalIntVarCmd();
+const CreateLocalArrayVarCmd &kCreateLocalArrayVarCmd =
+    *new CreateLocalArrayVarCmd();
+const CreateLocalLongVarCmd &kCreateLocalLongVarCmd =
+    *new CreateLocalLongVarCmd();
+const CreateLocalDoubleVarCmd &kCreateLocalDoubleVarCmd =
+    *new CreateLocalDoubleVarCmd();
+const CreateLocalCharVarCmd &kCreateLocalCharVarCmd =
+    *new CreateLocalCharVarCmd();
+const CreateLocalStringVarCmd &kCreateLocalStringVarCmd =
+    *new CreateLocalStringVarCmd();
+const CreateLocalBoolVarCmd &kCreateLocalBoolVarCmd =
+    *new CreateLocalBoolVarCmd();
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -62,6 +78,21 @@ const CmdReader::Readers CmdReader::InitReaders() {
       &CmdReader::ReadCreateGlobalStringVarCmd;
   readers[static_cast<uint8_t>(CmdId::kCreateGlobalBoolVar)] =
       &CmdReader::ReadCreateGlobalBoolVarCmd;
+
+  readers[static_cast<uint8_t>(CmdId::kCreateLocalIntVar)] =
+      &CmdReader::ReadCreateLocalIntVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateLocalArrayVar)] =
+      &CmdReader::ReadCreateLocalArrayVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateLocalLongVar)] =
+      &CmdReader::ReadCreateLocalLongVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateLocalDoubleVar)] =
+      &CmdReader::ReadCreateLocalDoubleVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateLocalCharVar)] =
+      &CmdReader::ReadCreateLocalCharVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateLocalStringVar)] =
+      &CmdReader::ReadCreateLocalStringVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateLocalBoolVar)] =
+      &CmdReader::ReadCreateLocalBoolVarCmd;
   return readers;
 }
 
@@ -104,6 +135,34 @@ const Cmd &CmdReader::ReadCreateGlobalStringVarCmd() {
 
 const Cmd &CmdReader::ReadCreateGlobalBoolVarCmd() {
   return ReadCreateGlobalVarCmd(kCreateGlobalBoolVarCmd);
+}
+
+const Cmd &CmdReader::ReadCreateLocalIntVarCmd() {
+  return kCreateLocalIntVarCmd;
+}
+
+const Cmd &CmdReader::ReadCreateLocalArrayVarCmd() {
+  return kCreateLocalArrayVarCmd;
+}
+
+const Cmd &CmdReader::ReadCreateLocalLongVarCmd() {
+  return kCreateLocalLongVarCmd;
+}
+
+const Cmd &CmdReader::ReadCreateLocalDoubleVarCmd() {
+  return kCreateLocalDoubleVarCmd;
+}
+
+const Cmd &CmdReader::ReadCreateLocalCharVarCmd() {
+  return kCreateLocalCharVarCmd;
+}
+
+const Cmd &CmdReader::ReadCreateLocalStringVarCmd() {
+  return kCreateLocalStringVarCmd;
+}
+
+const Cmd &CmdReader::ReadCreateLocalBoolVarCmd() {
+  return kCreateLocalBoolVarCmd;
 }
 }
 }

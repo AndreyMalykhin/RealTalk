@@ -126,7 +126,7 @@ class CodeGeneratorTest: public Test {
 
   void TestCreateGlobalVarCmd(unique_ptr<DataTypeNode> data_type_node,
                               unique_ptr<DataType> data_type,
-                              CmdId cmd_id) {
+                              CmdId expected_cmd_id) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
         move(data_type_node),
@@ -144,13 +144,57 @@ class CodeGeneratorTest: public Test {
         SemanticAnalysis::Problems(), move(node_analyzes));
 
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(cmd_id);
+    cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kEndMain);
     cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddress> id_addresses_of_global_var_refs;
+    vector<IdAddress> id_addresses_of_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module module(version,
+                  move(cmds_code),
+                  id_addresses_of_func_defs,
+                  ids_of_global_var_defs,
+                  ids_of_native_func_defs,
+                  id_addresses_of_func_refs,
+                  id_addresses_of_global_var_refs,
+                  import_file_paths);
+    Code module_code;
+    WriteModule(module, module_code);
+    TestGenerate(program_node, semantic_analysis, version, module_code);
+  }
+
+  void TestCreateLocalVarCmd(unique_ptr<DataTypeNode> data_type_node,
+                              unique_ptr<DataType> data_type,
+                              CmdId expected_cmd_id) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+        move(data_type_node),
+        TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+    unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+    program_stmt_nodes.push_back(move(var_def_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis(
+        new VarDefAnalysis(move(data_type), DataStorage::kLocal));
+    node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::Problems(), move(node_analyzes));
+
+    unique_ptr<Code> cmds_code(new Code());
+    cmds_code->WriteCmdId(expected_cmd_id);
+    cmds_code->WriteCmdId(CmdId::kEndMain);
+    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+    vector<path> import_file_paths;
+    vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
     vector<IdAddress> id_addresses_of_global_var_refs;
@@ -239,6 +283,77 @@ TEST_F(CodeGeneratorTest, CreateGlobalBoolVarCmd) {
   unique_ptr<DataType> data_type(new BoolDataType());
   TestCreateGlobalVarCmd(
       move(data_type_node), move(data_type), CmdId::kCreateGlobalBoolVar);
+}
+
+TEST_F(CodeGeneratorTest, CreateLocalIntVarCmd) {
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> data_type(new IntDataType());
+  TestCreateLocalVarCmd(
+      move(data_type_node), move(data_type), CmdId::kCreateLocalIntVar);
+}
+
+TEST_F(CodeGeneratorTest, CreateLocalArrayVarCmd) {
+  unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> array_data_type_node1(new ArrayDataTypeNode(
+      move(int_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  unique_ptr<DataTypeNode> array_data_type_node2(new ArrayDataTypeNode(
+      move(array_data_type_node1),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
+
+  unique_ptr<DataType> int_data_type(new IntDataType());
+  unique_ptr<DataType> array_data_type1(
+      new ArrayDataType(move(int_data_type)));
+  unique_ptr<DataType> array_data_type2(
+      new ArrayDataType(move(array_data_type1)));
+
+  TestCreateLocalVarCmd(move(array_data_type_node2),
+                         move(array_data_type2),
+                         CmdId::kCreateLocalArrayVar);
+}
+
+TEST_F(CodeGeneratorTest, CreateLocalLongVarCmd) {
+  unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> data_type(new LongDataType());
+  TestCreateLocalVarCmd(
+      move(data_type_node), move(data_type), CmdId::kCreateLocalLongVar);
+}
+
+TEST_F(CodeGeneratorTest, CreateLocalDoubleVarCmd) {
+  unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> data_type(new DoubleDataType());
+  TestCreateLocalVarCmd(
+      move(data_type_node), move(data_type), CmdId::kCreateLocalDoubleVar);
+}
+
+TEST_F(CodeGeneratorTest, CreateLocalCharVarCmd) {
+  unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> data_type(new CharDataType());
+  TestCreateLocalVarCmd(
+      move(data_type_node), move(data_type), CmdId::kCreateLocalCharVar);
+}
+
+TEST_F(CodeGeneratorTest, CreateLocalStringVarCmd) {
+  unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> data_type(new StringDataType());
+  TestCreateLocalVarCmd(
+      move(data_type_node), move(data_type), CmdId::kCreateLocalStringVar);
+}
+
+TEST_F(CodeGeneratorTest, CreateLocalBoolVarCmd) {
+  unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> data_type(new BoolDataType());
+  TestCreateLocalVarCmd(
+      move(data_type_node), move(data_type), CmdId::kCreateLocalBoolVar);
 }
 }
 }

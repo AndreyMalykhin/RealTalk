@@ -103,6 +103,7 @@ using real_talk::semantic::DoubleDataType;
 using real_talk::semantic::CharDataType;
 using real_talk::semantic::StringDataType;
 using real_talk::semantic::VoidDataType;
+using real_talk::semantic::DataStorage;
 
 namespace real_talk {
 namespace code {
@@ -117,6 +118,7 @@ class CodeGenerator::Impl: private NodeVisitor {
  private:
   class StmtGrouper;
   class CreateGlobalVarCmdGenerator;
+  class CreateLocalVarCmdGenerator;
 
   void GenerateCmdsSegment();
   void GenerateImportsSegment();
@@ -363,6 +365,49 @@ class CodeGenerator::Impl::CreateGlobalVarCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::CreateLocalVarCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateLocalArrayVar);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateLocalBoolVar);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateLocalIntVar);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateLocalLongVar);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateLocalDoubleVar);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateLocalCharVar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateLocalStringVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(): impl_(new Impl()) {}
 
 CodeGenerator::~CodeGenerator() {}
@@ -503,9 +548,17 @@ void CodeGenerator::Impl::VisitVarDefWithoutInit(
   assert(node_analysis_it != semantic_analysis_->GetNodeAnalyzes().cend());
   const VarDefAnalysis &var_def_analysis =
       static_cast<const VarDefAnalysis&>(*(node_analysis_it->second));
-  CreateGlobalVarCmdGenerator().Generate(
-      var_def_analysis.GetDataType(), code_);
-  ids_of_global_var_defs_.push_back(node.GetNameToken().GetValue());
+
+  if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
+    CreateGlobalVarCmdGenerator().Generate(
+        var_def_analysis.GetDataType(), code_);
+    ids_of_global_var_defs_.push_back(node.GetNameToken().GetValue());
+  } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
+    CreateLocalVarCmdGenerator().Generate(
+        var_def_analysis.GetDataType(), code_);
+  } else {
+    assert(false);
+  }
 }
 
 void CodeGenerator::Impl::VisitVarDefWithInit(

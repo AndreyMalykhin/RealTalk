@@ -32,6 +32,13 @@ class CmdReader {
   const Cmd &ReadCreateGlobalCharVarCmd();
   const Cmd &ReadCreateGlobalStringVarCmd();
   const Cmd &ReadCreateGlobalBoolVarCmd();
+  const Cmd &ReadCreateLocalIntVarCmd();
+  const Cmd &ReadCreateLocalArrayVarCmd();
+  const Cmd &ReadCreateLocalLongVarCmd();
+  const Cmd &ReadCreateLocalDoubleVarCmd();
+  const Cmd &ReadCreateLocalCharVarCmd();
+  const Cmd &ReadCreateLocalStringVarCmd();
+  const Cmd &ReadCreateLocalBoolVarCmd();
 
   static const Readers kReaders;
   Code *code_;

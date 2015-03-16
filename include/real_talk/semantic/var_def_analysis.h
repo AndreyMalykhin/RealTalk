@@ -16,6 +16,7 @@ class VarDefAnalysis: public DefAnalysis {
                  DataStorage storage);
   virtual const DataType &GetDataType() const override;
   virtual ValueType GetValueType() const override;
+  DataStorage GetStorage() const;
 
  private:
   virtual bool IsEqual(const NodeSemanticAnalysis &rhs) const override;

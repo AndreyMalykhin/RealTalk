@@ -46,7 +46,6 @@ add_library(real_talk
   src/real_talk/semantic/lit_analysis.cpp
   src/real_talk/semantic/id_analysis.cpp
   src/real_talk/semantic/import_analysis.cpp
-  src/real_talk/semantic/data_storage.cpp
   src/real_talk/semantic/simple_semantic_analyzer.cpp
   src/real_talk/semantic/simple_import_file_searcher.cpp
   src/real_talk/semantic/simple_lit_parser.cpp
