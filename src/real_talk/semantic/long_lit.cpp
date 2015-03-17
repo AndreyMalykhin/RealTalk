@@ -7,7 +7,10 @@ using std::unique_ptr;
 namespace real_talk {
 namespace semantic {
 
-LongLit::LongLit(int64_t value): value_(value) {
+LongLit::LongLit(int64_t value): value_(value) {}
+
+int64_t LongLit::GetValue() const {
+  return value_;
 }
 
 bool LongLit::IsEqual(const Lit &lit) const {

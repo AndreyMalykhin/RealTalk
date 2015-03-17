@@ -10,11 +10,12 @@ namespace semantic {
 
 enum class ValueType: uint8_t {
   kLeft = UINT8_C(1),
-  kRight
+  kRight = UINT8_C(2)
 };
 
-std::ostream &operator<<(std::ostream &stream,
-                         ValueType value_type);
+inline std::ostream &operator<<(std::ostream &stream, ValueType value_type) {
+  return stream << static_cast<uint32_t>(value_type);
+}
 }
 }
 #endif

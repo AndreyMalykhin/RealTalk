@@ -3,6 +3,8 @@
 #include "real_talk/code/end_cmd.h"
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/create_local_var_cmd.h"
+#include "real_talk/code/unload_cmd.h"
+#include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/code.h"
 
@@ -42,6 +44,11 @@ const CreateLocalStringVarCmd &kCreateLocalStringVarCmd =
     *new CreateLocalStringVarCmd();
 const CreateLocalBoolVarCmd &kCreateLocalBoolVarCmd =
     *new CreateLocalBoolVarCmd();
+
+const UnloadCmd &kUnloadCmd = *new UnloadCmd();
+
+LoadIntValueCmd &kLoadIntValueCmd = *new LoadIntValueCmd(INT32_C(0));
+LoadLongValueCmd &kLoadLongValueCmd = *new LoadLongValueCmd(INT64_C(0));
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -93,6 +100,13 @@ const CmdReader::Readers CmdReader::InitReaders() {
       &CmdReader::ReadCreateLocalStringVarCmd;
   readers[static_cast<uint8_t>(CmdId::kCreateLocalBoolVar)] =
       &CmdReader::ReadCreateLocalBoolVarCmd;
+
+  readers[static_cast<uint8_t>(CmdId::kUnload)] = &CmdReader::ReadUnloadCmd;
+
+  readers[static_cast<uint8_t>(CmdId::kLoadIntValue)] =
+      &CmdReader::ReadLoadIntValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kLoadLongValue)] =
+      &CmdReader::ReadLoadLongValueCmd;
   return readers;
 }
 
@@ -163,6 +177,20 @@ const Cmd &CmdReader::ReadCreateLocalStringVarCmd() {
 
 const Cmd &CmdReader::ReadCreateLocalBoolVarCmd() {
   return kCreateLocalBoolVarCmd;
+}
+
+const Cmd &CmdReader::ReadUnloadCmd() {
+  return kUnloadCmd;
+}
+
+const Cmd &CmdReader::ReadLoadIntValueCmd() {
+  kLoadIntValueCmd.SetValue(code_->ReadInt32());
+  return kLoadIntValueCmd;
+}
+
+const Cmd &CmdReader::ReadLoadLongValueCmd() {
+  kLoadLongValueCmd.SetValue(code_->ReadInt64());
+  return kLoadLongValueCmd;
 }
 }
 }

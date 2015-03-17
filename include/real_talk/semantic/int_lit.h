@@ -12,14 +12,15 @@ namespace semantic {
 
 class IntLit: public Lit {
  public:
-  explicit IntLit(std::int32_t value);
+  explicit IntLit(int32_t value);
   std::unique_ptr<IntLit> Clone() const;
+  int32_t GetValue() const;
 
  private:
   virtual bool IsEqual(const Lit &rhs) const override;
   virtual void Print(std::ostream &stream) const override;
 
-  std::int32_t value_;
+  int32_t value_;
 };
 }
 }

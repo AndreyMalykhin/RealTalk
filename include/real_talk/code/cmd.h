@@ -25,7 +25,10 @@ enum class CmdId: uint8_t {
   kCreateLocalDoubleVar = UINT8_C(13),
   kCreateLocalCharVar = UINT8_C(14),
   kCreateLocalStringVar = UINT8_C(15),
-  kCreateLocalBoolVar = UINT8_C(16)
+  kCreateLocalBoolVar = UINT8_C(16),
+  kUnload = UINT8_C(17),
+  kLoadIntValue = UINT8_C(18),
+  kLoadLongValue = UINT8_C(19)
 };
 
 class Cmd {

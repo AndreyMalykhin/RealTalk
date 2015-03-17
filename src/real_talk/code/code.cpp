@@ -97,6 +97,41 @@ void Code::WriteUint32(uint32_t value) {
   AfterWrite(sizeof(value));
 }
 
+uint64_t Code::ReadUint64() {
+  assert(HasEnoughSize(sizeof(uint64_t)));
+  const uint64_t value = real_talk::util::FromLittleEndian64(
+      *reinterpret_cast<uint64_t*>(current_byte_));
+  current_byte_ += sizeof(value);
+  return value;
+}
+
+void Code::WriteUint64(uint64_t value) {
+  EnsureCapacity(sizeof(value));
+  *reinterpret_cast<uint64_t*>(current_byte_) =
+      real_talk::util::ToLittleEndian64(value);
+  AfterWrite(sizeof(value));
+}
+
+int32_t Code::ReadInt32() {
+  const uint32_t unsigned_value = ReadUint32();
+  return *reinterpret_cast<const int32_t*>(&unsigned_value);
+}
+
+void Code::WriteInt32(int32_t value) {
+  const uint32_t unsigned_value = *reinterpret_cast<uint32_t*>(&value);
+  WriteUint32(unsigned_value);
+}
+
+int64_t Code::ReadInt64() {
+  const uint64_t unsigned_value = ReadUint64();
+  return *reinterpret_cast<const int64_t*>(&unsigned_value);
+}
+
+void Code::WriteInt64(int64_t value) {
+  const uint64_t unsigned_value = *reinterpret_cast<uint64_t*>(&value);
+  WriteUint64(unsigned_value);
+}
+
 void Code::WriteBytes(const unsigned char *bytes, uint32_t count) {
   assert(bytes);
   EnsureCapacity(count);

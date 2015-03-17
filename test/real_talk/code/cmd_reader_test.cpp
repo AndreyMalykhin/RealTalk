@@ -5,6 +5,8 @@
 #include "real_talk/code/end_cmd.h"
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/create_local_var_cmd.h"
+#include "real_talk/code/load_value_cmd.h"
+#include "real_talk/code/unload_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -141,6 +143,31 @@ TEST_F(CmdReaderTest, CreateLocalArrayVarCmd) {
   CreateLocalArrayVarCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kCreateLocalArrayVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadCmd) {
+  UnloadCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kUnload);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadIntValueCmd) {
+  int32_t value = INT32_C(-7);
+  LoadIntValueCmd expected_cmd(value);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadIntValue);
+  code.WriteInt32(value);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLongValueCmd) {
+  int64_t value = INT64_C(-77);
+  LoadLongValueCmd expected_cmd(value);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadLongValue);
+  code.WriteInt64(value);
   TestGetNextCmd(code, expected_cmd);
 }
 }

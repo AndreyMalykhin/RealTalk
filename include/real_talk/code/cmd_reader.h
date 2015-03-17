@@ -39,6 +39,9 @@ class CmdReader {
   const Cmd &ReadCreateLocalCharVarCmd();
   const Cmd &ReadCreateLocalStringVarCmd();
   const Cmd &ReadCreateLocalBoolVarCmd();
+  const Cmd &ReadUnloadCmd();
+  const Cmd &ReadLoadIntValueCmd();
+  const Cmd &ReadLoadLongValueCmd();
 
   static const Readers kReaders;
   Code *code_;

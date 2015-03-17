@@ -17,8 +17,12 @@
 #include "real_talk/parser/string_data_type_node.h"
 #include "real_talk/parser/bool_data_type_node.h"
 #include "real_talk/parser/program_node.h"
+#include "real_talk/parser/int_node.h"
+#include "real_talk/parser/long_node.h"
+#include "real_talk/parser/expr_stmt_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
+#include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/int_data_type.h"
 #include "real_talk/semantic/long_data_type.h"
 #include "real_talk/semantic/array_data_type.h"
@@ -26,6 +30,9 @@
 #include "real_talk/semantic/char_data_type.h"
 #include "real_talk/semantic/string_data_type.h"
 #include "real_talk/semantic/bool_data_type.h"
+#include "real_talk/semantic/value_type.h"
+#include "real_talk/semantic/int_lit.h"
+#include "real_talk/semantic/long_lit.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/end_cmd.h"
 #include "real_talk/code/id_address.h"
@@ -65,9 +72,14 @@ using real_talk::parser::CharDataTypeNode;
 using real_talk::parser::StringDataTypeNode;
 using real_talk::parser::BoolDataTypeNode;
 using real_talk::parser::ProgramNode;
+using real_talk::parser::IntNode;
+using real_talk::parser::LongNode;
+using real_talk::parser::ExprStmtNode;
+using real_talk::parser::LitNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
+using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::DataType;
 using real_talk::semantic::IntDataType;
 using real_talk::semantic::LongDataType;
@@ -77,6 +89,10 @@ using real_talk::semantic::CharDataType;
 using real_talk::semantic::StringDataType;
 using real_talk::semantic::BoolDataType;
 using real_talk::semantic::DataStorage;
+using real_talk::semantic::ValueType;
+using real_talk::semantic::Lit;
+using real_talk::semantic::IntLit;
+using real_talk::semantic::LongLit;
 
 namespace real_talk {
 namespace code {
@@ -190,6 +206,48 @@ class CodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(expected_cmd_id);
+    cmds_code->WriteCmdId(CmdId::kEndMain);
+    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+    vector<path> import_file_paths;
+    vector<string> ids_of_global_var_defs;
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddress> id_addresses_of_global_var_refs;
+    vector<IdAddress> id_addresses_of_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module module(version,
+                  move(cmds_code),
+                  id_addresses_of_func_defs,
+                  ids_of_global_var_defs,
+                  ids_of_native_func_defs,
+                  id_addresses_of_func_refs,
+                  id_addresses_of_global_var_refs,
+                  import_file_paths);
+    Code module_code;
+    WriteModule(module, module_code);
+    TestGenerate(program_node, semantic_analysis, version, module_code);
+  }
+
+  void TestLoadValueCmd(unique_ptr<LitNode> lit_node,
+                        unique_ptr<LitAnalysis> lit_analysis,
+                        const Code &expected_code) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    LitNode *lit_node_ptr = lit_node.get();
+    unique_ptr<StmtNode> int_stmt_node(new ExprStmtNode(
+        move(lit_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+    program_stmt_nodes.push_back(move(int_stmt_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::Problems(), move(node_analyzes));
+
+    unique_ptr<Code> cmds_code(new Code());
+    cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
+    cmds_code->WriteCmdId(CmdId::kUnload);
     cmds_code->WriteCmdId(CmdId::kEndMain);
     cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
@@ -354,6 +412,79 @@ TEST_F(CodeGeneratorTest, CreateLocalBoolVarCmd) {
   unique_ptr<DataType> data_type(new BoolDataType());
   TestCreateLocalVarCmd(
       move(data_type_node), move(data_type), CmdId::kCreateLocalBoolVar);
+}
+
+TEST_F(CodeGeneratorTest, UnloadCmd) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  IntNode *int_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<IntNode> int_node(int_node_ptr);
+  unique_ptr<StmtNode> int_stmt_node(new ExprStmtNode(
+      move(int_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
+  program_stmt_nodes.push_back(move(int_stmt_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> int_lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  node_analyzes.insert(make_pair(int_node_ptr, move(int_lit_analysis)));
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kLoadIntValue);
+  cmds_code->WriteInt32(INT32_C(7));
+  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
+}
+
+TEST_F(CodeGeneratorTest, LoadIntValueCmd) {
+  unique_ptr<LitNode> lit_node(new IntNode(
+      TokenInfo(Token::kIntLit, "-7", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(-7)))));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadIntValue);
+  expected_code.WriteInt32(INT32_C(-7));
+  TestLoadValueCmd(move(lit_node), move(lit_analysis), expected_code);
+}
+
+TEST_F(CodeGeneratorTest, LoadLongValueCmd) {
+  unique_ptr<LitNode> lit_node(new LongNode(
+      TokenInfo(Token::kLongLit, "-77L", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new LongDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(-77)))));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadLongValue);
+  expected_code.WriteInt64(INT64_C(-77));
+  TestLoadValueCmd(move(lit_node), move(lit_analysis), expected_code);
 }
 }
 }

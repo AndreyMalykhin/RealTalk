@@ -16,10 +16,15 @@
 #include "real_talk/parser/if_else_if_else_node.h"
 #include "real_talk/parser/if_else_if_node.h"
 #include "real_talk/parser/import_node.h"
+#include "real_talk/parser/int_node.h"
+#include "real_talk/parser/long_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
+#include "real_talk/semantic/lit_analysis.h"
+#include "real_talk/semantic/int_lit.h"
+#include "real_talk/semantic/long_lit.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/code.h"
@@ -90,8 +95,11 @@ using real_talk::parser::StmtNode;
 using real_talk::parser::SumNode;
 using real_talk::parser::FuncDefNode;
 using real_talk::parser::DefNode;
+using real_talk::parser::Node;
 using real_talk::semantic::SemanticAnalysis;
+using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
+using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
 using real_talk::semantic::ArrayDataType;
@@ -104,6 +112,8 @@ using real_talk::semantic::CharDataType;
 using real_talk::semantic::StringDataType;
 using real_talk::semantic::VoidDataType;
 using real_talk::semantic::DataStorage;
+using real_talk::semantic::IntLit;
+using real_talk::semantic::LongLit;
 
 namespace real_talk {
 namespace code {
@@ -184,6 +194,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   virtual void VisitReturnWithoutValue(
       const ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(const ArgDefNode &node) override;
+  const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
 
   const ProgramNode *program_;
   const SemanticAnalysis *semantic_analysis_;
@@ -543,11 +554,8 @@ void CodeGenerator::Impl::VisitProgram(const ProgramNode &node) {
 
 void CodeGenerator::Impl::VisitVarDefWithoutInit(
     const VarDefWithoutInitNode &node) {
-  SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
-      semantic_analysis_->GetNodeAnalyzes().find(&node);
-  assert(node_analysis_it != semantic_analysis_->GetNodeAnalyzes().cend());
   const VarDefAnalysis &var_def_analysis =
-      static_cast<const VarDefAnalysis&>(*(node_analysis_it->second));
+      static_cast<const VarDefAnalysis&>(GetNodeAnalysis(node));
 
   if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
     CreateGlobalVarCmdGenerator().Generate(
@@ -563,6 +571,19 @@ void CodeGenerator::Impl::VisitVarDefWithoutInit(
 
 void CodeGenerator::Impl::VisitVarDefWithInit(
     const VarDefWithInitNode&) {}
+
+void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
+  node.GetExpr()->Accept(*this);
+  // TODO mb it's not always needed
+  code_->WriteCmdId(CmdId::kUnload);
+}
+
+void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode&) {}
+
+void CodeGenerator::Impl::VisitReturnWithoutValue(
+    const ReturnWithoutValueNode&) {}
+
+void CodeGenerator::Impl::VisitArgDef(const ArgDefNode&) {}
 
 void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
 
@@ -590,8 +611,6 @@ void CodeGenerator::Impl::VisitDouble(const DoubleNode&) {}
 
 void CodeGenerator::Impl::VisitEqual(const EqualNode&) {}
 
-void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode&) {}
-
 void CodeGenerator::Impl::VisitFuncDefWithBody(
     const FuncDefWithBodyNode&) {}
 
@@ -608,13 +627,27 @@ void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode&) {}
 
 void CodeGenerator::Impl::VisitImport(const ImportNode&) {}
 
-void CodeGenerator::Impl::VisitInt(const IntNode&) {}
+void CodeGenerator::Impl::VisitInt(const IntNode &node) {
+  code_->WriteCmdId(CmdId::kLoadIntValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const int32_t value =
+      static_cast<const IntLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteInt32(value);
+}
+
+void CodeGenerator::Impl::VisitLong(const LongNode &node) {
+  code_->WriteCmdId(CmdId::kLoadLongValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const int64_t value =
+      static_cast<const LongLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteInt64(value);
+}
 
 void CodeGenerator::Impl::VisitLess(const LessNode&) {}
 
 void CodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode&) {}
-
-void CodeGenerator::Impl::VisitLong(const LongNode&) {}
 
 void CodeGenerator::Impl::VisitMul(const MulNode&) {}
 
@@ -642,27 +675,44 @@ void CodeGenerator::Impl::VisitSum(const SumNode&) {}
 
 void CodeGenerator::Impl::VisitId(const IdNode&) {}
 
-void CodeGenerator::Impl::VisitIntDataType(const IntDataTypeNode&) {}
+void CodeGenerator::Impl::VisitIntDataType(const IntDataTypeNode&) {
+  assert(false);
+}
 
-void CodeGenerator::Impl::VisitLongDataType(const LongDataTypeNode&) {}
+void CodeGenerator::Impl::VisitLongDataType(const LongDataTypeNode&) {
+  assert(false);
+}
 
-void CodeGenerator::Impl::VisitDoubleDataType(const DoubleDataTypeNode&) {}
+void CodeGenerator::Impl::VisitDoubleDataType(const DoubleDataTypeNode&) {
+  assert(false);
+}
 
-void CodeGenerator::Impl::VisitCharDataType(const CharDataTypeNode&) {}
+void CodeGenerator::Impl::VisitCharDataType(const CharDataTypeNode&) {
+  assert(false);
+}
 
-void CodeGenerator::Impl::VisitStringDataType(const StringDataTypeNode&) {}
+void CodeGenerator::Impl::VisitStringDataType(const StringDataTypeNode&) {
+  assert(false);
+}
 
-void CodeGenerator::Impl::VisitBoolDataType(const BoolDataTypeNode&) {}
+void CodeGenerator::Impl::VisitBoolDataType(const BoolDataTypeNode&) {
+  assert(false);
+}
 
-void CodeGenerator::Impl::VisitVoidDataType(const VoidDataTypeNode&) {}
+void CodeGenerator::Impl::VisitVoidDataType(const VoidDataTypeNode&) {
+  assert(false);
+}
 
-void CodeGenerator::Impl::VisitArrayDataType(const ArrayDataTypeNode&) {}
+void CodeGenerator::Impl::VisitArrayDataType(const ArrayDataTypeNode&) {
+  assert(false);
+}
 
-void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode&) {}
-
-void CodeGenerator::Impl::VisitReturnWithoutValue(
-    const ReturnWithoutValueNode&) {}
-
-void CodeGenerator::Impl::VisitArgDef(const ArgDefNode&) {}
+const NodeSemanticAnalysis &CodeGenerator::Impl::GetNodeAnalysis(
+    const Node &node) const {
+  SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
+      semantic_analysis_->GetNodeAnalyzes().find(&node);
+  assert(node_analysis_it != semantic_analysis_->GetNodeAnalyzes().cend());
+  return *(node_analysis_it->second);
+}
 }
 }

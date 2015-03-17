@@ -41,6 +41,9 @@ class Code {
   uint32_t GetPosition() const;
   void SetPosition(uint32_t position);
   uint32_t ReadUint32();
+  uint64_t ReadUint64();
+  int32_t ReadInt32();
+  int64_t ReadInt64();
   std::string ReadString();
   CmdId ReadCmdId();
   IdAddress ReadIdAddress();
@@ -56,6 +59,21 @@ class Code {
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
   void WriteUint32(uint32_t value);
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
+  void WriteUint64(uint64_t value);
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
+  void WriteInt32(int32_t value);
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
+  void WriteInt64(int64_t value);
 
   /**
    * @throws real_talk::code::Code::CodeSizeOverflowError

@@ -7,11 +7,14 @@ using std::unique_ptr;
 namespace real_talk {
 namespace semantic {
 
-IntLit::IntLit(int32_t value): value_(value) {
-}
+IntLit::IntLit(int32_t value): value_(value) {}
 
 unique_ptr<IntLit> IntLit::Clone() const {
   return unique_ptr<IntLit>(new IntLit(value_));
+}
+
+int32_t IntLit::GetValue() const {
+  return value_;
 }
 
 bool IntLit::IsEqual(const Lit &lit) const {

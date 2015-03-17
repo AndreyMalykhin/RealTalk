@@ -12,13 +12,14 @@ namespace semantic {
 
 class LongLit: public Lit {
  public:
-  explicit LongLit(std::int64_t value);
+  explicit LongLit(int64_t value);
+  int64_t GetValue() const;
 
  private:
   virtual bool IsEqual(const Lit &rhs) const override;
   virtual void Print(std::ostream &stream) const override;
 
-  std::int64_t value_;
+  int64_t value_;
 };
 }
 }
