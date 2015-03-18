@@ -13,6 +13,7 @@ namespace semantic {
 class DoubleLit: public Lit {
  public:
   explicit DoubleLit(double value);
+  double GetValue() const;
 
  private:
   virtual bool IsEqual(const Lit &rhs) const override;

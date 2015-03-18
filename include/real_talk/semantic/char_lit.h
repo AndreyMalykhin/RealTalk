@@ -12,6 +12,7 @@ namespace semantic {
 class CharLit: public Lit {
  public:
   explicit CharLit(char value);
+  char GetValue() const;
 
  private:
   virtual bool IsEqual(const Lit &rhs) const override;

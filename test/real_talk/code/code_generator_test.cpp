@@ -19,6 +19,9 @@
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/int_node.h"
 #include "real_talk/parser/long_node.h"
+#include "real_talk/parser/bool_node.h"
+#include "real_talk/parser/string_node.h"
+#include "real_talk/parser/double_node.h"
 #include "real_talk/parser/expr_stmt_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
@@ -33,6 +36,9 @@
 #include "real_talk/semantic/value_type.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
+#include "real_talk/semantic/bool_lit.h"
+#include "real_talk/semantic/string_lit.h"
+#include "real_talk/semantic/double_lit.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/end_cmd.h"
 #include "real_talk/code/id_address.h"
@@ -74,6 +80,9 @@ using real_talk::parser::BoolDataTypeNode;
 using real_talk::parser::ProgramNode;
 using real_talk::parser::IntNode;
 using real_talk::parser::LongNode;
+using real_talk::parser::BoolNode;
+using real_talk::parser::StringNode;
+using real_talk::parser::DoubleNode;
 using real_talk::parser::ExprStmtNode;
 using real_talk::parser::LitNode;
 using real_talk::semantic::SemanticAnalysis;
@@ -93,6 +102,9 @@ using real_talk::semantic::ValueType;
 using real_talk::semantic::Lit;
 using real_talk::semantic::IntLit;
 using real_talk::semantic::LongLit;
+using real_talk::semantic::BoolLit;
+using real_talk::semantic::StringLit;
+using real_talk::semantic::DoubleLit;
 
 namespace real_talk {
 namespace code {
@@ -484,6 +496,45 @@ TEST_F(CodeGeneratorTest, LoadLongValueCmd) {
   Code expected_code;
   expected_code.WriteCmdId(CmdId::kLoadLongValue);
   expected_code.WriteInt64(INT64_C(-77));
+  TestLoadValueCmd(move(lit_node), move(lit_analysis), expected_code);
+}
+
+TEST_F(CodeGeneratorTest, LoadBoolValueCmd) {
+  unique_ptr<LitNode> lit_node(new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(false))));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadBoolValue);
+  expected_code.WriteBool(false);
+  TestLoadValueCmd(move(lit_node), move(lit_analysis), expected_code);
+}
+
+TEST_F(CodeGeneratorTest, LoadStringValueCmd) {
+  unique_ptr<LitNode> lit_node(new StringNode(
+      TokenInfo(Token::kStringLit, "swagger", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new StringDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("swagger"))));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadStringValue);
+  expected_code.WriteString("swagger");
+  TestLoadValueCmd(move(lit_node), move(lit_analysis), expected_code);
+}
+
+TEST_F(CodeGeneratorTest, LoadDoubleValueCmd) {
+  unique_ptr<LitNode> lit_node(new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "7.77777777777", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new DoubleDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(7.77777777777))));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code.WriteDouble(7.77777777777);
   TestLoadValueCmd(move(lit_node), move(lit_analysis), expected_code);
 }
 }

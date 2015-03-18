@@ -1,6 +1,7 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <string>
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/end_cmd.h"
 #include "real_talk/code/create_global_var_cmd.h"
@@ -10,6 +11,7 @@
 #include "real_talk/code/code.h"
 
 using std::stringstream;
+using std::string;
 using testing::Test;
 
 namespace real_talk {
@@ -168,6 +170,42 @@ TEST_F(CmdReaderTest, LoadLongValueCmd) {
   Code code;
   code.WriteCmdId(CmdId::kLoadLongValue);
   code.WriteInt64(value);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadBoolValueCmd) {
+  bool value = true;
+  LoadBoolValueCmd expected_cmd(value);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadBoolValue);
+  code.WriteBool(value);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadCharValueCmd) {
+  char value = 'a';
+  LoadCharValueCmd expected_cmd(value);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadCharValue);
+  code.WriteChar(value);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadStringValueCmd) {
+  string value("swag");
+  LoadStringValueCmd expected_cmd(value);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadStringValue);
+  code.WriteString(value);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadDoubleValueCmd) {
+  double value = -7.77777777777777777777;
+  LoadDoubleValueCmd expected_cmd(value);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadDoubleValue);
+  code.WriteDouble(value);
   TestGetNextCmd(code, expected_cmd);
 }
 }

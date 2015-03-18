@@ -18,6 +18,10 @@
 #include "real_talk/parser/import_node.h"
 #include "real_talk/parser/int_node.h"
 #include "real_talk/parser/long_node.h"
+#include "real_talk/parser/bool_node.h"
+#include "real_talk/parser/char_node.h"
+#include "real_talk/parser/string_node.h"
+#include "real_talk/parser/double_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_analysis.h"
@@ -25,6 +29,10 @@
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
+#include "real_talk/semantic/bool_lit.h"
+#include "real_talk/semantic/char_lit.h"
+#include "real_talk/semantic/string_lit.h"
+#include "real_talk/semantic/double_lit.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/code.h"
@@ -114,6 +122,10 @@ using real_talk::semantic::VoidDataType;
 using real_talk::semantic::DataStorage;
 using real_talk::semantic::IntLit;
 using real_talk::semantic::LongLit;
+using real_talk::semantic::BoolLit;
+using real_talk::semantic::CharLit;
+using real_talk::semantic::StringLit;
+using real_talk::semantic::DoubleLit;
 
 namespace real_talk {
 namespace code {
@@ -595,19 +607,13 @@ void CodeGenerator::Impl::VisitArrayAllocWithInit(
 
 void CodeGenerator::Impl::VisitAssign(const AssignNode&) {}
 
-void CodeGenerator::Impl::VisitBool(const BoolNode&) {}
-
 void CodeGenerator::Impl::VisitBreak(const BreakNode&) {}
 
 void CodeGenerator::Impl::VisitCall(const CallNode&) {}
 
-void CodeGenerator::Impl::VisitChar(const CharNode&) {}
-
 void CodeGenerator::Impl::VisitContinue(const ContinueNode&) {}
 
 void CodeGenerator::Impl::VisitDiv(const DivNode&) {}
-
-void CodeGenerator::Impl::VisitDouble(const DoubleNode&) {}
 
 void CodeGenerator::Impl::VisitEqual(const EqualNode&) {}
 
@@ -645,6 +651,42 @@ void CodeGenerator::Impl::VisitLong(const LongNode &node) {
   code_->WriteInt64(value);
 }
 
+void CodeGenerator::Impl::VisitBool(const BoolNode &node) {
+  code_->WriteCmdId(CmdId::kLoadBoolValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const bool value =
+      static_cast<const BoolLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteBool(value);
+}
+
+void CodeGenerator::Impl::VisitChar(const CharNode &node) {
+  code_->WriteCmdId(CmdId::kLoadCharValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const char value =
+      static_cast<const CharLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteChar(value);
+}
+
+void CodeGenerator::Impl::VisitString(const StringNode &node) {
+  code_->WriteCmdId(CmdId::kLoadStringValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const string &value =
+      static_cast<const StringLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteString(value);
+}
+
+void CodeGenerator::Impl::VisitDouble(const DoubleNode &node) {
+  code_->WriteCmdId(CmdId::kLoadDoubleValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const double &value =
+      static_cast<const DoubleLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteDouble(value);
+}
+
 void CodeGenerator::Impl::VisitLess(const LessNode&) {}
 
 void CodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode&) {}
@@ -664,8 +706,6 @@ void CodeGenerator::Impl::VisitPreDec(const PreDecNode&) {}
 void CodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
 
 void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode&) {}
-
-void CodeGenerator::Impl::VisitString(const StringNode&) {}
 
 void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
 

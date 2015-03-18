@@ -5,18 +5,21 @@
 
 using std::ostream;
 using std::unique_ptr;
-using std::abs;
+using std::fabs;
 using std::numeric_limits;
 
 namespace real_talk {
 namespace semantic {
 
-DoubleLit::DoubleLit(double value): value_(value) {
+DoubleLit::DoubleLit(double value): value_(value) {}
+
+double DoubleLit::GetValue() const {
+  return value_;
 }
 
 bool DoubleLit::IsEqual(const Lit &lit) const {
   const DoubleLit &rhs = static_cast<const DoubleLit&>(lit);
-  return abs(value_ - rhs.value_) <= numeric_limits<double>::epsilon();
+  return fabs(value_ - rhs.value_) <= numeric_limits<double>::epsilon();
 }
 
 void DoubleLit::Print(ostream &stream) const {

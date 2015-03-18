@@ -7,7 +7,10 @@ using std::unique_ptr;
 namespace real_talk {
 namespace semantic {
 
-CharLit::CharLit(char value): value_(value) {
+CharLit::CharLit(char value): value_(value) {}
+
+char CharLit::GetValue() const {
+  return value_;
 }
 
 bool CharLit::IsEqual(const Lit &lit) const {

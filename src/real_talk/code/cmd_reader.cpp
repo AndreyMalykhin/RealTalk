@@ -49,6 +49,10 @@ const UnloadCmd &kUnloadCmd = *new UnloadCmd();
 
 LoadIntValueCmd &kLoadIntValueCmd = *new LoadIntValueCmd(INT32_C(0));
 LoadLongValueCmd &kLoadLongValueCmd = *new LoadLongValueCmd(INT64_C(0));
+LoadBoolValueCmd &kLoadBoolValueCmd = *new LoadBoolValueCmd(false);
+LoadCharValueCmd &kLoadCharValueCmd = *new LoadCharValueCmd('\0');
+LoadStringValueCmd &kLoadStringValueCmd = *new LoadStringValueCmd("");
+LoadDoubleValueCmd &kLoadDoubleValueCmd = *new LoadDoubleValueCmd(0.0);
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -107,6 +111,14 @@ const CmdReader::Readers CmdReader::InitReaders() {
       &CmdReader::ReadLoadIntValueCmd;
   readers[static_cast<uint8_t>(CmdId::kLoadLongValue)] =
       &CmdReader::ReadLoadLongValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kLoadBoolValue)] =
+      &CmdReader::ReadLoadBoolValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kLoadCharValue)] =
+      &CmdReader::ReadLoadCharValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kLoadStringValue)] =
+      &CmdReader::ReadLoadStringValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kLoadDoubleValue)] =
+      &CmdReader::ReadLoadDoubleValueCmd;
   return readers;
 }
 
@@ -191,6 +203,26 @@ const Cmd &CmdReader::ReadLoadIntValueCmd() {
 const Cmd &CmdReader::ReadLoadLongValueCmd() {
   kLoadLongValueCmd.SetValue(code_->ReadInt64());
   return kLoadLongValueCmd;
+}
+
+const Cmd &CmdReader::ReadLoadBoolValueCmd() {
+  kLoadBoolValueCmd.SetValue(code_->ReadBool());
+  return kLoadBoolValueCmd;
+}
+
+const Cmd &CmdReader::ReadLoadCharValueCmd() {
+  kLoadCharValueCmd.SetValue(code_->ReadChar());
+  return kLoadCharValueCmd;
+}
+
+const Cmd &CmdReader::ReadLoadStringValueCmd() {
+  kLoadStringValueCmd.SetValue(code_->ReadString());
+  return kLoadStringValueCmd;
+}
+
+const Cmd &CmdReader::ReadLoadDoubleValueCmd() {
+  kLoadDoubleValueCmd.SetValue(code_->ReadDouble());
+  return kLoadDoubleValueCmd;
 }
 }
 }

@@ -13,6 +13,7 @@ namespace semantic {
 class BoolLit: public Lit {
  public:
   explicit BoolLit(bool value);
+  bool GetValue() const;
 
  private:
   virtual bool IsEqual(const Lit &rhs) const override;

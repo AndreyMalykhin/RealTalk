@@ -42,6 +42,10 @@ class CmdReader {
   const Cmd &ReadUnloadCmd();
   const Cmd &ReadLoadIntValueCmd();
   const Cmd &ReadLoadLongValueCmd();
+  const Cmd &ReadLoadBoolValueCmd();
+  const Cmd &ReadLoadCharValueCmd();
+  const Cmd &ReadLoadStringValueCmd();
+  const Cmd &ReadLoadDoubleValueCmd();
 
   static const Readers kReaders;
   Code *code_;

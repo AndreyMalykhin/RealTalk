@@ -2,12 +2,17 @@
 #include <boost/numeric/conversion/cast.hpp>
 #include <cassert>
 #include <string>
+#include <limits>
 #include "real_talk/code/code.h"
 #include "real_talk/util/endianness.h"
 #include "real_talk/util/errors.h"
 
 namespace real_talk {
 namespace code {
+
+static_assert(std::numeric_limits<double>::is_iec559,
+              "IEEE 754 standard must be used for 'double'");
+static_assert(sizeof(double) == 8, "Size of 'double' must be 8 bytes");
 
 Code::Code(): size_(UINT32_C(0)),
               capacity_(UINT32_C(1024)),
@@ -130,6 +135,45 @@ int64_t Code::ReadInt64() {
 void Code::WriteInt64(int64_t value) {
   const uint64_t unsigned_value = *reinterpret_cast<uint64_t*>(&value);
   WriteUint64(unsigned_value);
+}
+
+double Code::ReadDouble() {
+  const uint64_t unsigned_value = ReadUint64();
+  const unsigned char *bytes =
+      reinterpret_cast<const unsigned char*>(&unsigned_value);
+  return *reinterpret_cast<const double*>(bytes);
+}
+
+void Code::WriteDouble(double value) {
+  const unsigned char *bytes = reinterpret_cast<const unsigned char*>(&value);
+  const uint64_t unsigned_value = *reinterpret_cast<const uint64_t*>(bytes);
+  WriteUint64(unsigned_value);
+}
+
+bool Code::ReadBool() {
+  assert(HasEnoughSize(sizeof(uint8_t)));
+  const uint8_t value = *reinterpret_cast<uint8_t*>(current_byte_);
+  current_byte_ += sizeof(value);
+  return static_cast<bool>(value);
+}
+
+void Code::WriteBool(bool value) {
+  EnsureCapacity(sizeof(uint8_t));
+  *reinterpret_cast<uint8_t*>(current_byte_) = static_cast<uint8_t>(value);
+  AfterWrite(sizeof(uint8_t));
+}
+
+char Code::ReadChar() {
+  assert(HasEnoughSize(sizeof(char)));
+  const char value = *reinterpret_cast<char*>(current_byte_);
+  current_byte_ += sizeof(value);
+  return value;
+}
+
+void Code::WriteChar(char value) {
+  EnsureCapacity(sizeof(value));
+  *reinterpret_cast<char*>(current_byte_) = value;
+  AfterWrite(sizeof(value));
 }
 
 void Code::WriteBytes(const unsigned char *bytes, uint32_t count) {
