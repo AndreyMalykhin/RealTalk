@@ -22,7 +22,9 @@
 #include "real_talk/parser/bool_node.h"
 #include "real_talk/parser/string_node.h"
 #include "real_talk/parser/double_node.h"
+#include "real_talk/parser/char_node.h"
 #include "real_talk/parser/expr_stmt_node.h"
+#include "real_talk/parser/import_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
@@ -39,6 +41,7 @@
 #include "real_talk/semantic/bool_lit.h"
 #include "real_talk/semantic/string_lit.h"
 #include "real_talk/semantic/double_lit.h"
+#include "real_talk/semantic/char_lit.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/end_cmd.h"
 #include "real_talk/code/id_address.h"
@@ -83,8 +86,10 @@ using real_talk::parser::LongNode;
 using real_talk::parser::BoolNode;
 using real_talk::parser::StringNode;
 using real_talk::parser::DoubleNode;
+using real_talk::parser::CharNode;
 using real_talk::parser::ExprStmtNode;
 using real_talk::parser::LitNode;
+using real_talk::parser::ImportNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
@@ -105,6 +110,7 @@ using real_talk::semantic::LongLit;
 using real_talk::semantic::BoolLit;
 using real_talk::semantic::StringLit;
 using real_talk::semantic::DoubleLit;
+using real_talk::semantic::CharLit;
 
 namespace real_talk {
 namespace code {
@@ -514,7 +520,7 @@ TEST_F(CodeGeneratorTest, LoadBoolValueCmd) {
 
 TEST_F(CodeGeneratorTest, LoadStringValueCmd) {
   unique_ptr<LitNode> lit_node(new StringNode(
-      TokenInfo(Token::kStringLit, "swagger", UINT32_C(0), UINT32_C(0))));
+      TokenInfo(Token::kStringLit, "\"swagger\"", UINT32_C(0), UINT32_C(0))));
   unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new StringDataType()),
       ValueType::kRight,
@@ -536,6 +542,65 @@ TEST_F(CodeGeneratorTest, LoadDoubleValueCmd) {
   expected_code.WriteCmdId(CmdId::kLoadDoubleValue);
   expected_code.WriteDouble(7.77777777777);
   TestLoadValueCmd(move(lit_node), move(lit_analysis), expected_code);
+}
+
+TEST_F(CodeGeneratorTest, LoadCharValueCmd) {
+  unique_ptr<LitNode> lit_node(new CharNode(
+      TokenInfo(Token::kCharLit, "'b'", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new CharDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('b'))));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadCharValue);
+  expected_code.WriteChar('b');
+  TestLoadValueCmd(move(lit_node), move(lit_analysis), expected_code);
+}
+
+TEST_F(CodeGeneratorTest, Import) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  StringNode *file_path_node_ptr = new StringNode(
+      TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<StringNode> file_path_node(file_path_node_ptr);
+  unique_ptr<ImportNode> import_node(new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
+      move(file_path_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
+  program_stmt_nodes.push_back(move(import_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new StringDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("file.rt"))));
+  node_analyzes.insert(
+      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths = {"file.rt"};
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
 }
 }
 }

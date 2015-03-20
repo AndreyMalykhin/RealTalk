@@ -590,6 +590,18 @@ void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
   code_->WriteCmdId(CmdId::kUnload);
 }
 
+void CodeGenerator::Impl::VisitIfElseIfElse(const IfElseIfElseNode&) {}
+
+void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode&) {}
+
+void CodeGenerator::Impl::VisitImport(const ImportNode &node) {
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(*node.GetFilePath()));
+  const path file_path(
+      static_cast<const StringLit&>(lit_analysis.GetLit()).GetValue());
+  import_file_paths_.push_back(file_path);
+}
+
 void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode&) {}
 
 void CodeGenerator::Impl::VisitReturnWithoutValue(
@@ -626,12 +638,6 @@ void CodeGenerator::Impl::VisitFuncDefWithoutBody(
 void CodeGenerator::Impl::VisitGreater(const GreaterNode&) {}
 
 void CodeGenerator::Impl::VisitGreaterOrEqual(const GreaterOrEqualNode&) {}
-
-void CodeGenerator::Impl::VisitIfElseIfElse(const IfElseIfElseNode&) {}
-
-void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode&) {}
-
-void CodeGenerator::Impl::VisitImport(const ImportNode&) {}
 
 void CodeGenerator::Impl::VisitInt(const IntNode &node) {
   code_->WriteCmdId(CmdId::kLoadIntValue);
