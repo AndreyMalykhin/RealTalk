@@ -32,7 +32,15 @@ enum class CmdId: uint8_t {
   kLoadBoolValue = UINT8_C(20),
   kLoadCharValue = UINT8_C(21),
   kLoadStringValue = UINT8_C(22),
-  kLoadDoubleValue = UINT8_C(23)
+  kLoadDoubleValue = UINT8_C(23),
+  kCreateAndInitGlobalIntVar = UINT8_C(24),
+  kCreateAndInitGlobalArrayVar = UINT8_C(25),
+  kCreateAndInitGlobalLongVar = UINT8_C(26),
+  kCreateAndInitGlobalDoubleVar = UINT8_C(27),
+  kCreateAndInitGlobalCharVar = UINT8_C(28),
+  kCreateAndInitGlobalStringVar = UINT8_C(29),
+  kCreateAndInitGlobalBoolVar = UINT8_C(30),
+  kCreateIntArray = UINT8_C(31)
 };
 
 class Cmd {

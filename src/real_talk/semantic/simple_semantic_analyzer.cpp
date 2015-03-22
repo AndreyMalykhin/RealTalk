@@ -11,6 +11,7 @@
 #include <utility>
 #include <exception>
 #include <functional>
+#include <limits>
 #include "real_talk/lexer/lexer.h"
 #include "real_talk/util/errors.h"
 #include "real_talk/parser/parser.h"
@@ -96,6 +97,7 @@
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/data_type_visitor.h"
 
+using std::numeric_limits;
 using std::function;
 using std::vector;
 using std::string;
@@ -336,7 +338,8 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
                       const CommonExprAnalysis &operand_analysis);
   void VisitBranch(const real_talk::parser::BranchNode &branch_node);
   std::unique_ptr<DataType> VisitArrayAlloc(
-      const real_talk::parser::ArrayAllocNode &array_alloc_node);
+      const real_talk::parser::ArrayAllocNode &array_alloc_node,
+      size_t dimensions_count);
   const DataType &VisitVarDef(
       const real_talk::parser::VarDefNode &var_def_node);
   void VisitFuncDef(const real_talk::parser::FuncDefNode &func_def_node,
@@ -376,6 +379,7 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   std::vector<FuncScope*> func_scopes_stack_;
   std::vector<LoopScope*> loop_scopes_stack_;
   std::unique_ptr<DataType> current_data_type_;
+  size_t dimensions_count_of_current_array_type_;
   size_t non_import_stmts_count_;
 };
 
@@ -576,7 +580,6 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedBySubscriptIndex
     : public DataTypeQuery {
  private:
   virtual void VisitInt(const IntDataType&) override {result_ = true;}
-  virtual void VisitLong(const LongDataType&) override {result_ = true;}
 };
 
 enum class SimpleSemanticAnalyzer::Impl::DataTypeId: uint8_t {
@@ -1556,7 +1559,8 @@ void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
 
 void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &alloc_node) {
-  unique_ptr<DataType> element_data_type = VisitArrayAlloc(alloc_node);
+  unique_ptr<DataType> element_data_type =
+      VisitArrayAlloc(alloc_node, alloc_node.GetSizes().size());
   unique_ptr<DataType> &array_data_type = element_data_type;
   assert(!alloc_node.GetSizes().empty());
 
@@ -1582,12 +1586,12 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
 
 void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode &alloc_node) {
-  unique_ptr<DataType> array_data_type = VisitArrayAlloc(alloc_node);
+  unique_ptr<DataType> array_data_type =
+      VisitArrayAlloc(alloc_node, alloc_node.GetSizes().size());
   assert(!alloc_node.GetSizes().empty());
 
-  for (const unique_ptr<UnboundedArraySizeNode> &size: alloc_node.GetSizes()) {
+  for (size_t i = 0; i != alloc_node.GetSizes().size(); ++i) {
     array_data_type.reset(new ArrayDataType(move(array_data_type)));
-    (void) size;
   }
 
   const vector< unique_ptr<ExprNode> > &values = alloc_node.GetValues();
@@ -1622,7 +1626,15 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
 }
 
 unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
-    const ArrayAllocNode &alloc_node) {
+    const ArrayAllocNode &alloc_node, size_t dimensions_count) {
+  const uint8_t max_dimensions_count = numeric_limits<uint8_t>::max();
+
+  if (dimensions_count > max_dimensions_count) {
+    unique_ptr<SemanticError> error(new ArrayAllocWithTooManyDimensionsError(
+        GetCurrentFilePath(), alloc_node, max_dimensions_count));
+    throw SemanticErrorException(move(error));
+  }
+
   unique_ptr<DataType> element_data_type =
       CreateDataType(*(alloc_node.GetDataType()));
 
@@ -2071,11 +2083,20 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayDataType(
       CreateDataType(*(data_type_node.GetElementDataType()));
   current_data_type_.reset(new ArrayDataType(
       move(element_data_type)));
+  ++dimensions_count_of_current_array_type_;
+  const uint8_t max_dimensions_count = numeric_limits<uint8_t>::max();
+
+  if (dimensions_count_of_current_array_type_ > max_dimensions_count) {
+    unique_ptr<SemanticError> error(new ArrayTypeWithTooManyDimensionsError(
+        GetCurrentFilePath(), data_type_node, max_dimensions_count));
+    throw SemanticErrorException(move(error));
+  }
 }
 
 unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::CreateDataType(
     const DataTypeNode &data_type_node) {
   assert(!current_data_type_);
+  dimensions_count_of_current_array_type_ = 0;
   data_type_node.Accept(*this);
   assert(current_data_type_);
   return move(current_data_type_);

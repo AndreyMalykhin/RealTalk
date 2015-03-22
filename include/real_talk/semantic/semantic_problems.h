@@ -16,11 +16,50 @@ class UnaryExprNode;
 class ArrayAllocNode;
 class BoundedArraySizeNode;
 class StringNode;
+class ArrayDataTypeNode;
 }
 
 namespace semantic {
 
 class DataType;
+
+class ArrayAllocWithTooManyDimensionsError: public SemanticError {
+ public:
+  ArrayAllocWithTooManyDimensionsError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::ArrayAllocNode &alloc,
+      size_t max_count);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::ArrayAllocNode &GetAlloc() const;
+  size_t GetMaxCount() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::ArrayAllocNode &alloc_;
+  size_t max_count_;
+};
+
+class ArrayTypeWithTooManyDimensionsError: public SemanticError {
+ public:
+  ArrayTypeWithTooManyDimensionsError(
+      const boost::filesystem::path &file_path,
+      const real_talk::parser::ArrayDataTypeNode &array_type,
+      size_t max_count);
+  virtual const boost::filesystem::path &GetFilePath() const override;
+  const real_talk::parser::ArrayDataTypeNode &GetArrayType() const;
+  size_t GetMaxCount() const;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  boost::filesystem::path file_path_;
+  const real_talk::parser::ArrayDataTypeNode &array_type_;
+  size_t max_count_;
+};
 
 class DoubleWithOutOfRangeValueError: public SemanticError {
  public:

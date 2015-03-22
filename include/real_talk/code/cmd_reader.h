@@ -11,6 +11,8 @@ namespace code {
 class Cmd;
 class Code;
 class CreateGlobalVarCmd;
+class CreateAndInitGlobalVarCmd;
+class CreateArrayCmd;
 
 class CmdReader {
  public:
@@ -46,6 +48,16 @@ class CmdReader {
   const Cmd &ReadLoadCharValueCmd();
   const Cmd &ReadLoadStringValueCmd();
   const Cmd &ReadLoadDoubleValueCmd();
+  const Cmd &ReadCreateAndInitGlobalVarCmd(CreateAndInitGlobalVarCmd &cmd);
+  const Cmd &ReadCreateAndInitGlobalIntVarCmd();
+  const Cmd &ReadCreateAndInitGlobalArrayVarCmd();
+  const Cmd &ReadCreateAndInitGlobalLongVarCmd();
+  const Cmd &ReadCreateAndInitGlobalDoubleVarCmd();
+  const Cmd &ReadCreateAndInitGlobalCharVarCmd();
+  const Cmd &ReadCreateAndInitGlobalStringVarCmd();
+  const Cmd &ReadCreateAndInitGlobalBoolVarCmd();
+  const Cmd &ReadCreateArrayCmd(CreateArrayCmd &cmd);
+  const Cmd &ReadCreateIntArrayCmd();
 
   static const Readers kReaders;
   Code *code_;

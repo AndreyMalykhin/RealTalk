@@ -40,6 +40,7 @@ class Code {
   uint32_t GetSize() const;
   uint32_t GetPosition() const;
   void SetPosition(uint32_t position);
+  uint8_t ReadUint8();
   uint32_t ReadUint32();
   uint64_t ReadUint64();
   int32_t ReadInt32();
@@ -57,6 +58,11 @@ class Code {
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
   void Skip(uint32_t bytes_count);
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
+  void WriteUint8(uint8_t value);
 
   /**
    * @throws real_talk::code::Code::CodeSizeOverflowError

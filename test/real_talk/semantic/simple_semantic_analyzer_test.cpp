@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include <iterator>
+#include <limits>
 #include "real_talk/util/errors.h"
 #include "real_talk/lexer/token_info.h"
 #include "real_talk/lexer/lexer.h"
@@ -95,6 +96,7 @@
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/semantic_problems.h"
 
+using std::numeric_limits;
 using std::vector;
 using std::string;
 using std::to_string;
@@ -6390,6 +6392,56 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithoutInit) {
 }
 
 TEST_F(SimpleSemanticAnalyzerTest,
+       ArrayAllocWithoutInitUsingTooManyDimensionsIsInvalid) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
+  vector< unique_ptr<BoundedArraySizeNode> > size_nodes;
+  const uint8_t max_dimensions_count = numeric_limits<uint8_t>::max();
+
+  for (uint32_t i = 0; i != max_dimensions_count + 1; ++i) {
+    unique_ptr<ExprNode> size_value_node(new IntNode(
+        TokenInfo(Token::kIntLit, "1", i + 3, i + 3)));
+    unique_ptr<BoundedArraySizeNode> size_node(new BoundedArraySizeNode(
+        TokenInfo(Token::kSubscriptStart, "[", i + 2, i + 2),
+        move(size_value_node),
+        TokenInfo(Token::kSubscriptEnd, "]", i + 4, i + 4)));
+    size_nodes.push_back(move(size_node));
+  }
+
+  ArrayAllocWithoutInitNode *alloc_node_ptr = new ArrayAllocWithoutInitNode(
+      TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
+      move(data_type_node),
+      move(size_nodes));
+  unique_ptr<ExprNode> alloc_expr_node(alloc_node_ptr);
+  unique_ptr<StmtNode> alloc_stmt_node(new ExprStmtNode(
+      move(alloc_expr_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1000), UINT32_C(1000))));
+  stmt_nodes.push_back(move(alloc_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new ArrayAllocWithTooManyDimensionsError(
+      program_file_path, *alloc_node_ptr, max_dimensions_count));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  TestLitParses test_lit_parses = {};
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest,
        ArrayAllocWithoutInitUsingUnsupportedSizeDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
@@ -6550,6 +6602,57 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest,
+       ArrayAllocWithInitUsingTooManyDimensionsIsInvalid) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
+  vector< unique_ptr<UnboundedArraySizeNode> > size_nodes;
+  const uint8_t max_dimensions_count = numeric_limits<uint8_t>::max();
+
+  for (uint32_t i = 0; i != max_dimensions_count + 1; ++i) {
+    unique_ptr<UnboundedArraySizeNode> size_node(new UnboundedArraySizeNode(
+        TokenInfo(Token::kSubscriptStart, "[", i + 2, i + 2),
+        TokenInfo(Token::kSubscriptEnd, "]", i + 3, i + 3)));
+    size_nodes.push_back(move(size_node));
+  }
+
+  ArrayAllocWithInitNode *alloc_node_ptr = new ArrayAllocWithInitNode(
+      TokenInfo(Token::kNew, "fresh", UINT32_C(0), UINT32_C(0)),
+      move(data_type_node),
+      move(size_nodes),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(1000), UINT32_C(1000)),
+      vector< unique_ptr<ExprNode> >(),
+      vector<TokenInfo>(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(1001), UINT32_C(1001)));
+  unique_ptr<ExprNode> alloc_expr_node(alloc_node_ptr);
+  unique_ptr<StmtNode> alloc_stmt_node(new ExprStmtNode(
+      move(alloc_expr_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1002), UINT32_C(1002))));
+  stmt_nodes.push_back(move(alloc_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new ArrayAllocWithTooManyDimensionsError(
+      program_file_path, *alloc_node_ptr, max_dimensions_count));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  TestLitParses test_lit_parses = {};
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),
@@ -8034,6 +8137,55 @@ TEST_F(SimpleSemanticAnalyzerTest, Bool) {
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
   path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest,
+       ArrayDataTypeWithTooManyDimensionsIsInvalid) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+      move(element_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  const size_t max_dimensions_count = numeric_limits<uint8_t>::max();
+
+  for (uint32_t i = 0; i != max_dimensions_count; ++i) {
+    array_data_type_node.reset(new ArrayDataTypeNode(
+        move(array_data_type_node),
+        TokenInfo(Token::kSubscriptStart, "[", i + 3, i + 3),
+        TokenInfo(Token::kSubscriptEnd, "]", i + 4, i + 4)));
+  }
+
+  ArrayDataTypeNode *array_data_type_node_ptr =
+      static_cast<ArrayDataTypeNode*>(array_data_type_node.get());
+  VarDefWithoutInitNode *def_node_ptr = new VarDefWithoutInitNode(
+      move(array_data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(1000), UINT32_C(1000)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(1001), UINT32_C(1001)));
+  unique_ptr<StmtNode> def_node(def_node_ptr);
+  stmt_nodes.push_back(move(def_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::Problems problems;
+  path program_file_path;
+  unique_ptr<SemanticProblem> problem(new ArrayTypeWithTooManyDimensionsError(
+      program_file_path, *array_data_type_node_ptr, max_dimensions_count));
+  problems.push_back(move(problem));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  vector<TestFileParse> test_file_parses;
+  TestLitParses test_lit_parses = {};
+  vector<TestImportFileSearch> test_import_file_searches;
   TestProgram test_program = {program_node,
                               program_file_path,
                               move(analysis),

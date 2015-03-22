@@ -5,6 +5,8 @@
 #include "real_talk/code/create_local_var_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/code/load_value_cmd.h"
+#include "real_talk/code/create_and_init_global_var_cmd.h"
+#include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/code.h"
 
@@ -53,6 +55,23 @@ LoadBoolValueCmd &kLoadBoolValueCmd = *new LoadBoolValueCmd(false);
 LoadCharValueCmd &kLoadCharValueCmd = *new LoadCharValueCmd('\0');
 LoadStringValueCmd &kLoadStringValueCmd = *new LoadStringValueCmd("");
 LoadDoubleValueCmd &kLoadDoubleValueCmd = *new LoadDoubleValueCmd(0.0);
+
+CreateAndInitGlobalIntVarCmd &kCreateAndInitGlobalIntVarCmd =
+    *new CreateAndInitGlobalIntVarCmd(UINT32_C(0));
+CreateAndInitGlobalArrayVarCmd &kCreateAndInitGlobalArrayVarCmd =
+    *new CreateAndInitGlobalArrayVarCmd(UINT32_C(0));
+CreateAndInitGlobalLongVarCmd &kCreateAndInitGlobalLongVarCmd =
+    *new CreateAndInitGlobalLongVarCmd(UINT32_C(0));
+CreateAndInitGlobalDoubleVarCmd &kCreateAndInitGlobalDoubleVarCmd =
+    *new CreateAndInitGlobalDoubleVarCmd(UINT32_C(0));
+CreateAndInitGlobalCharVarCmd &kCreateAndInitGlobalCharVarCmd =
+    *new CreateAndInitGlobalCharVarCmd(UINT32_C(0));
+CreateAndInitGlobalStringVarCmd &kCreateAndInitGlobalStringVarCmd =
+    *new CreateAndInitGlobalStringVarCmd(UINT32_C(0));
+CreateAndInitGlobalBoolVarCmd &kCreateAndInitGlobalBoolVarCmd =
+    *new CreateAndInitGlobalBoolVarCmd(UINT32_C(0));
+
+CreateIntArrayCmd &kCreateIntArrayCmd = *new CreateIntArrayCmd(UINT8_C(1));
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -119,6 +138,25 @@ const CmdReader::Readers CmdReader::InitReaders() {
       &CmdReader::ReadLoadStringValueCmd;
   readers[static_cast<uint8_t>(CmdId::kLoadDoubleValue)] =
       &CmdReader::ReadLoadDoubleValueCmd;
+
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalIntVar)] =
+      &CmdReader::ReadCreateAndInitGlobalIntVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalArrayVar)] =
+      &CmdReader::ReadCreateAndInitGlobalArrayVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalLongVar)] =
+      &CmdReader::ReadCreateAndInitGlobalLongVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalDoubleVar)] =
+      &CmdReader::ReadCreateAndInitGlobalDoubleVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalCharVar)] =
+      &CmdReader::ReadCreateAndInitGlobalCharVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalStringVar)] =
+      &CmdReader::ReadCreateAndInitGlobalStringVarCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalBoolVar)] =
+      &CmdReader::ReadCreateAndInitGlobalBoolVarCmd;
+
+  readers[static_cast<uint8_t>(CmdId::kCreateIntArray)] =
+      &CmdReader::ReadCreateIntArrayCmd;
+
   return readers;
 }
 
@@ -223,6 +261,49 @@ const Cmd &CmdReader::ReadLoadStringValueCmd() {
 const Cmd &CmdReader::ReadLoadDoubleValueCmd() {
   kLoadDoubleValueCmd.SetValue(code_->ReadDouble());
   return kLoadDoubleValueCmd;
+}
+
+inline const Cmd &CmdReader::ReadCreateAndInitGlobalVarCmd(
+    CreateAndInitGlobalVarCmd &cmd) {
+  cmd.SetVarIndex(code_->ReadUint32());
+  return cmd;
+}
+
+const Cmd &CmdReader::ReadCreateAndInitGlobalIntVarCmd() {
+  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalIntVarCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitGlobalArrayVarCmd() {
+  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalArrayVarCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitGlobalLongVarCmd() {
+  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalLongVarCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitGlobalDoubleVarCmd() {
+  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalDoubleVarCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitGlobalCharVarCmd() {
+  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalCharVarCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitGlobalStringVarCmd() {
+  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalStringVarCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitGlobalBoolVarCmd() {
+  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalBoolVarCmd);
+}
+
+const Cmd &CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) {
+  cmd.SetDimensionsCount(code_->ReadUint8());
+  return cmd;
+}
+
+const Cmd &CmdReader::ReadCreateIntArrayCmd() {
+  return ReadCreateArrayCmd(kCreateIntArrayCmd);
 }
 }
 }

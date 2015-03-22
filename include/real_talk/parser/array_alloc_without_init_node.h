@@ -4,6 +4,7 @@
 
 #include <boost/iterator/indirect_iterator.hpp>
 #include <vector>
+#include <limits>
 #include "real_talk/parser/array_alloc_node.h"
 #include "real_talk/parser/base_array_alloc_node.h"
 #include "real_talk/parser/bounded_array_size_node.h"

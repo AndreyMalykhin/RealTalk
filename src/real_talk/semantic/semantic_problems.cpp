@@ -23,6 +23,7 @@
 #include "real_talk/parser/int_node.h"
 #include "real_talk/parser/long_node.h"
 #include "real_talk/parser/double_node.h"
+#include "real_talk/parser/array_data_type_node.h"
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/semantic_problems.h"
 
@@ -58,9 +59,78 @@ using real_talk::parser::CharNode;
 using real_talk::parser::IntNode;
 using real_talk::parser::LongNode;
 using real_talk::parser::DoubleNode;
+using real_talk::parser::ArrayDataTypeNode;
 
 namespace real_talk {
 namespace semantic {
+
+ArrayAllocWithTooManyDimensionsError::ArrayAllocWithTooManyDimensionsError(
+    const path &file_path,
+    const ArrayAllocNode &alloc,
+    size_t max_count)
+    : file_path_(file_path),
+      alloc_(alloc),
+      max_count_(max_count) {
+  assert(max_count > 0);
+}
+
+const path &ArrayAllocWithTooManyDimensionsError::GetFilePath() const {
+  return file_path_;
+}
+
+const ArrayAllocNode &ArrayAllocWithTooManyDimensionsError::GetAlloc()
+    const {
+  return alloc_;
+}
+
+size_t ArrayAllocWithTooManyDimensionsError::GetMaxCount() const {
+  return max_count_;
+}
+
+void ArrayAllocWithTooManyDimensionsError::Print(ostream &stream) const {
+  stream << "alloc=" << alloc_ << "; max_count=" << max_count_;
+}
+
+bool ArrayAllocWithTooManyDimensionsError::IsEqual(
+    const SemanticProblem &problem) const {
+  const ArrayAllocWithTooManyDimensionsError &rhs =
+      static_cast<const ArrayAllocWithTooManyDimensionsError&>(problem);
+  return alloc_ == rhs.alloc_ && max_count_ == rhs.max_count_;
+}
+
+ArrayTypeWithTooManyDimensionsError::ArrayTypeWithTooManyDimensionsError(
+    const path &file_path,
+    const ArrayDataTypeNode &array_type,
+    size_t max_count)
+    : file_path_(file_path),
+      array_type_(array_type),
+      max_count_(max_count) {
+  assert(max_count > 0);
+}
+
+const path &ArrayTypeWithTooManyDimensionsError::GetFilePath() const {
+  return file_path_;
+}
+
+const ArrayDataTypeNode &ArrayTypeWithTooManyDimensionsError::GetArrayType()
+    const {
+  return array_type_;
+}
+
+size_t ArrayTypeWithTooManyDimensionsError::GetMaxCount() const {
+  return max_count_;
+}
+
+void ArrayTypeWithTooManyDimensionsError::Print(ostream &stream) const {
+  stream << "array_type=" << array_type_ << "; max_count=" << max_count_;
+}
+
+bool ArrayTypeWithTooManyDimensionsError::IsEqual(
+    const SemanticProblem &problem) const {
+  const ArrayTypeWithTooManyDimensionsError &rhs =
+      static_cast<const ArrayTypeWithTooManyDimensionsError&>(problem);
+  return array_type_ == rhs.array_type_ && max_count_ == rhs.max_count_;
+}
 
 DoubleWithOutOfRangeValueError::DoubleWithOutOfRangeValueError(
     const path &file_path, const DoubleNode &double_node)

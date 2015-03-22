@@ -87,6 +87,19 @@ void Code::Skip(uint32_t bytes_count) {
   AfterWrite(bytes_count);
 }
 
+uint8_t Code::ReadUint8() {
+  assert(HasEnoughSize(sizeof(uint8_t)));
+  const uint8_t value = *reinterpret_cast<uint8_t*>(current_byte_);
+  current_byte_ += sizeof(value);
+  return value;
+}
+
+void Code::WriteUint8(uint8_t value) {
+  EnsureCapacity(sizeof(value));
+  *reinterpret_cast<uint8_t*>(current_byte_) = value;
+  AfterWrite(sizeof(value));
+}
+
 uint32_t Code::ReadUint32() {
   assert(HasEnoughSize(sizeof(uint32_t)));
   const uint32_t value = real_talk::util::FromLittleEndian32(

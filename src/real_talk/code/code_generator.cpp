@@ -1,6 +1,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <cassert>
 #include <string>
 #include <vector>
@@ -22,11 +23,13 @@
 #include "real_talk/parser/char_node.h"
 #include "real_talk/parser/string_node.h"
 #include "real_talk/parser/double_node.h"
+#include "real_talk/parser/array_alloc_without_init_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
-#include "real_talk/semantic/data_type.h"
+#include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
+#include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
 #include "real_talk/semantic/bool_lit.h"
@@ -47,6 +50,7 @@ using std::vector;
 using std::numeric_limits;
 using boost::numeric_cast;
 using boost::filesystem::path;
+using boost::adaptors::reverse;
 using real_talk::parser::ProgramNode;
 using real_talk::parser::NodeVisitor;
 using real_talk::parser::AndNode;
@@ -104,10 +108,12 @@ using real_talk::parser::SumNode;
 using real_talk::parser::FuncDefNode;
 using real_talk::parser::DefNode;
 using real_talk::parser::Node;
+using real_talk::parser::BoundedArraySizeNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
 using real_talk::semantic::LitAnalysis;
+using real_talk::semantic::CommonExprAnalysis;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
 using real_talk::semantic::ArrayDataType;
@@ -141,6 +147,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   class StmtGrouper;
   class CreateGlobalVarCmdGenerator;
   class CreateLocalVarCmdGenerator;
+  class CreateAndInitGlobalVarCmdGenerator;
+  class CreateArrayCmdGenerator;
 
   void GenerateCmdsSegment();
   void GenerateImportsSegment();
@@ -388,6 +396,50 @@ class CodeGenerator::Impl::CreateGlobalVarCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+    code_->WriteUint32(numeric_limits<uint32_t>::max());
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalArrayVar);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalBoolVar);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalIntVar);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalLongVar);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalDoubleVar);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalCharVar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalStringVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 class CodeGenerator::Impl::CreateLocalVarCmdGenerator
     : private DataTypeVisitor {
  public:
@@ -423,6 +475,51 @@ class CodeGenerator::Impl::CreateLocalVarCmdGenerator
 
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kCreateLocalStringVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class CodeGenerator::Impl::CreateArrayCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(
+      const DataType &data_type, uint8_t dimensions_count, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+    code_->WriteUint8(dimensions_count);
+  }
+
+ private:
+  virtual void VisitBool(const BoolDataType&) override {
+    assert(false);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateIntArray);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    assert(false);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    assert(false);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    assert(false);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    assert(false);
+  }
+
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -581,8 +678,22 @@ void CodeGenerator::Impl::VisitVarDefWithoutInit(
   }
 }
 
-void CodeGenerator::Impl::VisitVarDefWithInit(
-    const VarDefWithInitNode&) {}
+void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
+  node.GetValue()->Accept(*this);
+  const VarDefAnalysis &var_def_analysis =
+      static_cast<const VarDefAnalysis&>(GetNodeAnalysis(node));
+
+  if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
+    CreateAndInitGlobalVarCmdGenerator().Generate(
+        var_def_analysis.GetDataType(), code_);
+    ids_of_global_var_defs_.push_back(node.GetNameToken().GetValue());
+  } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
+    // CreateAndInitLocalVarCmdGenerator().Generate(
+    //     var_def_analysis.GetDataType(), code_);
+  } else {
+    assert(false);
+  }
+}
 
 void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
   node.GetExpr()->Accept(*this);
@@ -612,7 +723,20 @@ void CodeGenerator::Impl::VisitArgDef(const ArgDefNode&) {}
 void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
 
 void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
-    const ArrayAllocWithoutInitNode&) {}
+    const ArrayAllocWithoutInitNode &node) {
+  for (const std::unique_ptr<BoundedArraySizeNode> &size
+           : reverse(node.GetSizes())) {
+    size->GetValue()->Accept(*this);
+  }
+
+  const CommonExprAnalysis &array_alloc_analysis =
+      static_cast<const CommonExprAnalysis&>(GetNodeAnalysis(node));
+  const size_t dimensions_count = node.GetSizes().size();
+  assert(numeric_cast<uint8_t>(dimensions_count));  
+  CreateArrayCmdGenerator().Generate(array_alloc_analysis.GetDataType(),
+                                     static_cast<uint8_t>(dimensions_count),
+                                     code_);
+}
 
 void CodeGenerator::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode&) {}
