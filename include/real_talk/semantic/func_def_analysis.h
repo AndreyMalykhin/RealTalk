@@ -11,9 +11,14 @@ namespace semantic {
 
 class FuncDefAnalysis: public DefAnalysis {
  public:
-  FuncDefAnalysis(std::unique_ptr<FuncDataType> data_type, bool is_native);
+  FuncDefAnalysis(std::unique_ptr<FuncDataType> data_type,
+                  bool is_native,
+                  bool has_return);
   virtual const FuncDataType &GetDataType() const override;
   virtual ValueType GetValueType() const override;
+  bool IsNative() const;
+  bool HasReturn() const;
+  void SetHasReturn(bool has_return);
 
  private:
   virtual bool IsEqual(const NodeSemanticAnalysis &rhs) const override;
@@ -21,6 +26,7 @@ class FuncDefAnalysis: public DefAnalysis {
 
   std::unique_ptr<FuncDataType> data_type_;
   bool is_native_;
+  bool has_return_;
 };
 }
 }

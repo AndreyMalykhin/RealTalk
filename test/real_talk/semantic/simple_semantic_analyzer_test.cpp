@@ -505,7 +505,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
         move(return_data_type), move(arg_data_types)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
-        move(func_data_type), false));
+        move(func_data_type), false, false));
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
     unique_ptr<DataType> arg_data_type(new IntDataType());
@@ -566,7 +566,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
         move(return_data_type), move(arg_data_types)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
-        move(func_data_type), false));
+        move(func_data_type), false, false));
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
     unique_ptr<DataType> var_data_type(new IntDataType());
@@ -1035,7 +1035,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, true));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1095,7 +1095,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyWithoutArgsAndReturnValue) {
   unique_ptr<FuncDataType> func_data_type(
       new FuncDataType(move(return_data_type), move(arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1147,7 +1147,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<FuncDataType> func_data_type(
       new FuncDataType(move(return_data_type), move(arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), true));
+      new FuncDefAnalysis(move(func_data_type), true, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1225,7 +1225,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
         move(return_data_type1), move(arg_data_types1)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis1(new FuncDefAnalysis(
-        move(func_data_type1), false));
+        move(func_data_type1), false, false));
     node_analyzes.insert(
         make_pair(func_def_node_ptr1, move(func_def_analysis1)));
     unique_ptr<DataType> return_data_type2(new VoidDataType());
@@ -1233,7 +1233,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type2(new FuncDataType(
         move(return_data_type2), move(arg_data_types2)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis2(new FuncDefAnalysis(
-        move(func_data_type2), false));
+        move(func_data_type2), false, false));
     node_analyzes.insert(
         make_pair(func_def_node_ptr2, move(func_def_analysis2)));
 
@@ -1299,14 +1299,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
   ArrayDataType *return_data_type_ptr =
       new ArrayDataType(move(array_element_data_type));
   unique_ptr<DataType> return_data_type(return_data_type_ptr);
-  vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType *func_data_type_ptr =
-      new FuncDataType(move(return_data_type), move(arg_data_types));
-  unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
-  unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
-  node_analyzes.insert(
-      make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   SemanticAnalysis::Problems problems;
   path program_file_path;
@@ -1378,17 +1370,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<FuncDataType> func_data_type1(
       new FuncDataType(move(return_data_type1), move(arg_data_types1)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis1(
-      new FuncDefAnalysis(move(func_data_type1), false));
+      new FuncDefAnalysis(move(func_data_type1), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr1, move(func_def_analysis1)));
-  unique_ptr<DataType> return_data_type2(new VoidDataType());
-  vector< unique_ptr<DataType> > arg_data_types2;
-  unique_ptr<FuncDataType> func_data_type2(
-      new FuncDataType(move(return_data_type2), move(arg_data_types2)));
-  unique_ptr<NodeSemanticAnalysis> func_def_analysis2(
-      new FuncDefAnalysis(move(func_data_type2), false));
-  node_analyzes.insert(
-      make_pair(func_def_node_ptr2, move(func_def_analysis2)));
 
   SemanticAnalysis::Problems problems;
   path file_path;
@@ -1414,11 +1398,39 @@ TEST_F(SimpleSemanticAnalyzerTest,
 TEST_F(SimpleSemanticAnalyzerTest,
        FuncDefWithBodyUsingNonVoidDataTypeWithoutReturnValueIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  vector< unique_ptr<StmtNode> > body_stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  vector< unique_ptr<StmtNode> > func_body_stmt_nodes;
+  vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
+  IntNode *int_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(11), UINT32_C(11)));
+  unique_ptr<ExprNode> int_node(int_node_ptr);
+  unique_ptr<StmtNode> return_node(new ReturnValueNode(
+      TokenInfo(Token::kReturn, "return", UINT32_C(10), UINT32_C(10)),
+      move(int_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12))));
+  if_body_stmt_nodes.push_back(move(return_node));
+
+  unique_ptr<ScopeNode> if_body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(9), UINT32_C(9)),
+      move(if_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13))));
+
+  BoolNode *bool_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<ExprNode> cond_node(bool_node_ptr);
+  unique_ptr<IfNode> if_node(new IfNode(
+      TokenInfo(Token::kIf, "if", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(6), UINT32_C(6)),
+      move(cond_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(8), UINT32_C(8)),
+      move(if_body_node)));
+  unique_ptr<StmtNode> if_else_if_node(new IfElseIfNode(
+      move(if_node), vector< unique_ptr<ElseIfNode> >()));
+  func_body_stmt_nodes.push_back(move(if_else_if_node));
+
+  unique_ptr<ScopeNode> func_body_node(new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
-      move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      move(func_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(14), UINT32_C(14))));
 
   unique_ptr<DataTypeNode> return_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
@@ -1430,20 +1442,35 @@ TEST_F(SimpleSemanticAnalyzerTest,
       vector< unique_ptr<ArgDefNode> >(),
       vector<TokenInfo>(),
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
-      move(body_node));
+      move(func_body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> return_data_type(new IntDataType());
-  vector< unique_ptr<DataType> > arg_data_types;
-  unique_ptr<FuncDataType> func_data_type(
-      new FuncDataType(move(return_data_type), move(arg_data_types)));
+  unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+      unique_ptr<DataType>(new IntDataType()),
+      vector< unique_ptr<DataType> >()));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
+
+  unique_ptr<NodeSemanticAnalysis> bool_lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  node_analyzes.insert(make_pair(bool_node_ptr, move(bool_lit_analysis)));
+
+  unique_ptr<NodeSemanticAnalysis> int_lit_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  node_analyzes.insert(make_pair(int_node_ptr, move(int_lit_analysis)));
+
+  TestLitParses test_lit_parses = {};
+  test_lit_parses.ints = {{"7", INT32_C(7)}};
+  test_lit_parses.bools = {{"yeah", true}};
 
   SemanticAnalysis::Problems problems;
   path file_path;
@@ -1454,7 +1481,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   vector<TestFileParse> test_file_parses;
   vector<TestImportFileSearch> test_import_file_searches;
-  TestLitParses test_lit_parses = {};
   path program_file_path;
   TestProgram test_program = {program_node,
                               program_file_path,
@@ -1503,7 +1529,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyWithArgsAndReturnValue) {
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), true));
+      new FuncDefAnalysis(move(func_data_type), true, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
   unique_ptr<DataType> arg_data_type(new IntDataType());
@@ -1555,7 +1581,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyAndArgsAndReturnValue) {
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), true));
+      new FuncDefAnalysis(move(func_data_type), true, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1599,7 +1625,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<FuncDataType> func_data_type(
       new FuncDataType(move(return_data_type), move(arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1673,7 +1699,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
         move(return_data_type1), move(arg_data_types1)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis1(new FuncDefAnalysis(
-        move(func_data_type1), true));
+        move(func_data_type1), true, false));
     node_analyzes.insert(
         make_pair(func_def_node_ptr1, move(func_def_analysis1)));
     unique_ptr<DataType> return_data_type2(new VoidDataType());
@@ -1681,7 +1707,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type2(new FuncDataType(
         move(return_data_type2), move(arg_data_types2)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis2(new FuncDefAnalysis(
-        move(func_data_type2), true));
+        move(func_data_type2), true, false));
     node_analyzes.insert(
         make_pair(func_def_node_ptr2, move(func_def_analysis2)));
 
@@ -1743,14 +1769,6 @@ TEST_F(SimpleSemanticAnalyzerTest,
   ArrayDataType *return_data_type_ptr =
       new ArrayDataType(move(array_element_data_type));
   unique_ptr<DataType> return_data_type(return_data_type_ptr);
-  vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType *func_data_type_ptr =
-      new FuncDataType(move(return_data_type), move(arg_data_types));
-  unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
-  unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), true));
-  node_analyzes.insert(
-      make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   SemanticAnalysis::Problems problems;
   path program_file_path;
@@ -1817,17 +1835,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<FuncDataType> func_data_type1(
       new FuncDataType(move(return_data_type1), move(arg_data_types1)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis1(
-      new FuncDefAnalysis(move(func_data_type1), false));
+      new FuncDefAnalysis(move(func_data_type1), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr1, move(func_def_analysis1)));
-  unique_ptr<DataType> return_data_type2(new VoidDataType());
-  vector< unique_ptr<DataType> > arg_data_types2;
-  unique_ptr<FuncDataType> func_data_type2(
-      new FuncDataType(move(return_data_type2), move(arg_data_types2)));
-  unique_ptr<NodeSemanticAnalysis> func_def_analysis2(
-      new FuncDefAnalysis(move(func_data_type2), true));
-  node_analyzes.insert(
-      make_pair(func_def_node_ptr2, move(func_def_analysis2)));
 
   SemanticAnalysis::Problems problems;
   path file_path;
@@ -1918,7 +1928,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ArgDefWithUnsupportedDataTypeIsInvalid) {
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
         move(func_return_data_type), move(func_arg_data_types)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false));
+        new FuncDefAnalysis(move(func_data_type), false, false));
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
     unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
@@ -2000,7 +2010,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2108,7 +2118,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, true));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2196,7 +2206,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2284,7 +2294,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(return_data_type), move(arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2396,7 +2406,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(return_data_type), move(arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2519,7 +2529,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(return_data_type), move(arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false));
+      new FuncDefAnalysis(move(func_data_type), false, false));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2790,7 +2800,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
         move(func_return_data_type), move(func_arg_data_types)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false));
+        new FuncDefAnalysis(move(func_data_type), false, false));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
@@ -2906,7 +2916,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
         move(func_return_data_type), move(func_arg_data_types)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false));
+        new FuncDefAnalysis(move(func_data_type), false, false));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
@@ -3148,7 +3158,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
         move(func_return_data_type), move(func_arg_data_types)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false));
+        new FuncDefAnalysis(move(func_data_type), false, false));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
@@ -3271,7 +3281,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
         move(func_return_data_type), move(func_arg_data_types)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false));
+        new FuncDefAnalysis(move(func_data_type), false, false));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
@@ -3516,7 +3526,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
   unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
       move(func_return_data_type1), move(func_arg_data_types1)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis1(
-      new FuncDefAnalysis(move(func_data_type1), false));
+      new FuncDefAnalysis(move(func_data_type1), false, false));
   node_analyzes.insert(make_pair(func_def_node_ptr1, move(func_def_analysis1)));
 
   unique_ptr<DataType> var_data_type3(new IntDataType());
@@ -4240,7 +4250,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<FuncDataType> func_def_data_type(new FuncDataType(
         move(func_return_data_type), move(func_arg_data_types)));
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
-        move(func_def_data_type), false));
+        move(func_def_data_type), false, false));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
@@ -4910,6 +4920,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -5046,6 +5057,7 @@ TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -5182,6 +5194,7 @@ TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -5318,6 +5331,7 @@ TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -5454,6 +5468,7 @@ TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -5590,6 +5605,7 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -5726,6 +5742,7 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -5864,6 +5881,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -6003,6 +6021,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -6140,6 +6159,7 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -6277,6 +6297,7 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -7040,6 +7061,7 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -7154,6 +7176,7 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -7268,6 +7291,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -7382,6 +7406,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      false,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 

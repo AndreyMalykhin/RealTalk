@@ -391,18 +391,26 @@ class SimpleSemanticAnalyzer::Impl::SemanticErrorException
   }
 
  private:
-  std::unique_ptr<SemanticError> error_;
+  unique_ptr<SemanticError> error_;
 };
 
 class SimpleSemanticAnalyzer::Impl::Scope {
  public:
   explicit Scope(vector<Scope*> &scopes_stack)
-      : scopes_stack_(scopes_stack) {
+      : scopes_stack_(scopes_stack), has_return_(false) {
     scopes_stack_.push_back(this);
   }
 
   ~Scope() {
     scopes_stack_.pop_back();
+  }
+
+  bool HasReturn() const {
+    return has_return_;
+  }
+
+  void SetHasReturn(bool has_return) {
+    has_return_ = has_return;
   }
 
   const IdDefs &GetIdDefs() const {
@@ -415,7 +423,8 @@ class SimpleSemanticAnalyzer::Impl::Scope {
 
  private:
   IdDefs id_defs_;
-  std::vector<Scope*> &scopes_stack_;
+  vector<Scope*> &scopes_stack_;
+  bool has_return_;
 };
 
 class SimpleSemanticAnalyzer::Impl::FileScope {
@@ -435,8 +444,8 @@ class SimpleSemanticAnalyzer::Impl::FileScope {
   }
 
  private:
-  std::vector<FileScope*> &file_scopes_stack_;
-  const boost::filesystem::path &file_path_;
+  vector<FileScope*> &file_scopes_stack_;
+  const path &file_path_;
 };
 
 class SimpleSemanticAnalyzer::Impl::FuncScope {
@@ -445,8 +454,7 @@ class SimpleSemanticAnalyzer::Impl::FuncScope {
       vector<FuncScope*> &func_scopes_stack,
       const FuncDefNode &func_def)
       : func_scopes_stack_(func_scopes_stack),
-        func_def_(func_def),
-        has_return_value_(false) {
+        func_def_(func_def) {
     func_scopes_stack_.push_back(this);
   }
 
@@ -454,22 +462,13 @@ class SimpleSemanticAnalyzer::Impl::FuncScope {
     func_scopes_stack_.pop_back();
   }
 
-  bool HasReturnValue() const {
-    return has_return_value_;
-  }
-
-  void SetHasReturnValue(bool has_return_value) {
-    has_return_value_ = has_return_value;
-  }
-
   const FuncDefNode &GetFuncDef() const {
     return func_def_;
   }
 
  private:
-  std::vector<FuncScope*> &func_scopes_stack_;
+  vector<FuncScope*> &func_scopes_stack_;
   const FuncDefNode &func_def_;
-  bool has_return_value_;
 };
 
 class SimpleSemanticAnalyzer::Impl::LoopScope {
@@ -484,7 +483,7 @@ class SimpleSemanticAnalyzer::Impl::LoopScope {
   }
 
  private:
-  std::vector<LoopScope*> &scopes_stack_;
+  vector<LoopScope*> &scopes_stack_;
 };
 
 class SimpleSemanticAnalyzer::Impl::DataTypeQuery: protected DataTypeVisitor {
@@ -1106,10 +1105,9 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
 
   VisitReturn(return_node);
   return_node.GetValue()->Accept(*this);
-  FuncScope &current_func_scope = *(func_scopes_stack_.back());
-  current_func_scope.SetHasReturnValue(true);
+  const FuncScope &current_func_scope = *(func_scopes_stack_.back());
   const DataType &func_def_return_data_type =
-      GetFuncReturnDataType(&current_func_scope.GetFuncDef());
+      GetFuncReturnDataType(&(current_func_scope.GetFuncDef()));
   const DataType &value_data_type =
       GetExprDataType(return_node.GetValue().get());
   const bool is_data_types_compatible = AssignDataTypeDeductor().Deduct(
@@ -1132,9 +1130,9 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnWithoutValue(
   }
 
   VisitReturn(return_node);
-  FuncScope &current_func_scope = *(func_scopes_stack_.back());
+  const FuncScope &current_func_scope = *(func_scopes_stack_.back());
   const DataType &func_def_return_data_type =
-      GetFuncReturnDataType(&current_func_scope.GetFuncDef());
+      GetFuncReturnDataType(&(current_func_scope.GetFuncDef()));
 
   if (func_def_return_data_type != VoidDataType()) {
     unique_ptr<SemanticError> error(
@@ -1151,6 +1149,9 @@ void SimpleSemanticAnalyzer::Impl::VisitReturn(const ReturnNode &return_node) {
         new ReturnNotWithinFuncError(GetCurrentFilePath(), return_node));
     throw SemanticErrorException(move(error));
   }
+
+  Scope *current_scope = scopes_stack_.back();
+  current_scope->SetHasReturn(true);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode &break_node) {
@@ -1283,15 +1284,23 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithBody(
     arg_def_node->Accept(*this);
   }
 
-  for (const unique_ptr<StmtNode> &stmt: func_def_node.GetBody()->GetStmts()) {
+  for (const unique_ptr<StmtNode> &stmt
+           : func_def_node.GetBody()->GetStmts()) {
     stmt->Accept(*this);
   }
 
-  if (*return_data_type != VoidDataType() && !func_scope.HasReturnValue()) {
+  if (*return_data_type != VoidDataType() && !scope.HasReturn()) {
     unique_ptr<SemanticError> error(new FuncDefWithoutReturnValueError(
         GetCurrentFilePath(), func_def_node));
     throw SemanticErrorException(move(error));
   }
+
+  SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
+      node_analyzes_.find(&func_def_node);
+  assert(node_analysis_it != node_analyzes_.cend());
+  FuncDefAnalysis &def_analysis =
+      static_cast<FuncDefAnalysis&>(*(node_analysis_it->second));
+  def_analysis.SetHasReturn(scope.HasReturn());
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithoutBody(
@@ -1326,7 +1335,22 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
     ++non_import_stmts_count_;
   }
 
+  if (!IsCurrentScopeGlobal()) {
+    unique_ptr<SemanticError> error(
+        new FuncDefWithinNonGlobalScope(GetCurrentFilePath(), func_def_node));
+    throw SemanticErrorException(move(error));
+  }
+
   return_data_type = CreateDataType(*(func_def_node.GetDataType()));
+  const bool is_return_data_type_supported =
+      IsDataTypeSupportedByFuncDef().Check(*return_data_type);
+
+  if (!is_return_data_type_supported) {
+    unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
+        GetCurrentFilePath(), func_def_node, return_data_type->Clone()));
+    throw SemanticErrorException(move(error));
+  }
+
   vector< unique_ptr<DataType> > arg_data_types;
 
   for (const unique_ptr<ArgDefNode> &arg_def_node: func_def_node.GetArgs()) {
@@ -1335,8 +1359,6 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
     arg_data_types.push_back(move(arg_data_type));
   }
 
-  unique_ptr<FuncDataType> func_data_type(
-      new FuncDataType(return_data_type->Clone(), move(arg_data_types)));
   unordered_set<Token> modifier_tokens;
 
   for (const TokenInfo &modifier_token: func_def_node.GetModifierTokens()) {
@@ -1346,28 +1368,11 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
   }
 
   is_func_native = modifier_tokens.count(Token::kNative) != 0;
+  unique_ptr<FuncDataType> func_data_type(
+      new FuncDataType(return_data_type->Clone(), move(arg_data_types)));
   unique_ptr<DefAnalysis> def_analysis(
-      new FuncDefAnalysis(move(func_data_type), is_func_native));
+      new FuncDefAnalysis(move(func_data_type), is_func_native, false));
   AddDefAnalysis(func_def_node, move(def_analysis));
-
-  if (IsWithinImportProgram()) {
-    return;
-  }
-
-  if (!IsCurrentScopeGlobal()) {
-    unique_ptr<SemanticError> error(
-        new FuncDefWithinNonGlobalScope(GetCurrentFilePath(), func_def_node));
-    throw SemanticErrorException(move(error));
-  }
-
-  const bool is_return_data_type_supported =
-      IsDataTypeSupportedByFuncDef().Check(*return_data_type);
-
-  if (!is_return_data_type_supported) {
-    unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
-        GetCurrentFilePath(), func_def_node, return_data_type->Clone()));
-    throw SemanticErrorException(move(error));
-  }
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(
@@ -2080,7 +2085,7 @@ const CommonExprAnalysis &SimpleSemanticAnalyzer::Impl::GetExprAnalysis(
     const ExprNode *expr) {
   SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
       node_analyzes_.find(expr);
-  assert(node_analysis_it != node_analyzes_.end());
+  assert(node_analysis_it != node_analyzes_.cend());
   return static_cast<const CommonExprAnalysis&>(*(node_analysis_it->second));
 }
 
@@ -2093,7 +2098,7 @@ const DataType &SimpleSemanticAnalyzer::Impl::GetFuncReturnDataType(
     const FuncDefNode *func_def) {
   SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
       node_analyzes_.find(func_def);
-  assert(node_analysis_it != node_analyzes_.end());
+  assert(node_analysis_it != node_analyzes_.cend());
   const FuncDefAnalysis &func_def_analysis =
       static_cast<const FuncDefAnalysis&>(*(node_analysis_it->second));
   return func_def_analysis.GetDataType().GetReturnDataType();
