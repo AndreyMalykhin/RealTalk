@@ -41,6 +41,36 @@ class CreateIntArrayCmd: public CreateArrayCmd {
   explicit CreateIntArrayCmd(uint8_t dimensions_count)
       : CreateArrayCmd(dimensions_count) {}
 };
+
+class CreateLongArrayCmd: public CreateArrayCmd {
+ public:
+  explicit CreateLongArrayCmd(uint8_t dimensions_count)
+      : CreateArrayCmd(dimensions_count) {}
+};
+
+class CreateDoubleArrayCmd: public CreateArrayCmd {
+ public:
+  explicit CreateDoubleArrayCmd(uint8_t dimensions_count)
+      : CreateArrayCmd(dimensions_count) {}
+};
+
+class CreateBoolArrayCmd: public CreateArrayCmd {
+ public:
+  explicit CreateBoolArrayCmd(uint8_t dimensions_count)
+      : CreateArrayCmd(dimensions_count) {}
+};
+
+class CreateCharArrayCmd: public CreateArrayCmd {
+ public:
+  explicit CreateCharArrayCmd(uint8_t dimensions_count)
+      : CreateArrayCmd(dimensions_count) {}
+};
+
+class CreateStringArrayCmd: public CreateArrayCmd {
+ public:
+  explicit CreateStringArrayCmd(uint8_t dimensions_count)
+      : CreateArrayCmd(dimensions_count) {}
+};
 }
 }
 #endif

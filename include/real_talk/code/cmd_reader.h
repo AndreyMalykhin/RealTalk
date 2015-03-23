@@ -56,8 +56,20 @@ class CmdReader {
   const Cmd &ReadCreateAndInitGlobalCharVarCmd();
   const Cmd &ReadCreateAndInitGlobalStringVarCmd();
   const Cmd &ReadCreateAndInitGlobalBoolVarCmd();
+  const Cmd &ReadCreateAndInitLocalIntVarCmd();
+  const Cmd &ReadCreateAndInitLocalArrayVarCmd();
+  const Cmd &ReadCreateAndInitLocalLongVarCmd();
+  const Cmd &ReadCreateAndInitLocalDoubleVarCmd();
+  const Cmd &ReadCreateAndInitLocalCharVarCmd();
+  const Cmd &ReadCreateAndInitLocalStringVarCmd();
+  const Cmd &ReadCreateAndInitLocalBoolVarCmd();
   const Cmd &ReadCreateArrayCmd(CreateArrayCmd &cmd);
   const Cmd &ReadCreateIntArrayCmd();
+  const Cmd &ReadCreateLongArrayCmd();
+  const Cmd &ReadCreateDoubleArrayCmd();
+  const Cmd &ReadCreateBoolArrayCmd();
+  const Cmd &ReadCreateCharArrayCmd();
+  const Cmd &ReadCreateStringArrayCmd();
 
   static const Readers kReaders;
   Code *code_;

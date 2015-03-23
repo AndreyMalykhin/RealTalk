@@ -107,6 +107,7 @@ using real_talk::parser::StmtNode;
 using real_talk::parser::SumNode;
 using real_talk::parser::FuncDefNode;
 using real_talk::parser::DefNode;
+using real_talk::parser::VarDefNode;
 using real_talk::parser::Node;
 using real_talk::parser::BoundedArraySizeNode;
 using real_talk::semantic::SemanticAnalysis;
@@ -148,6 +149,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class CreateGlobalVarCmdGenerator;
   class CreateLocalVarCmdGenerator;
   class CreateAndInitGlobalVarCmdGenerator;
+  class CreateAndInitLocalVarCmdGenerator;
   class CreateArrayCmdGenerator;
 
   void GenerateCmdsSegment();
@@ -155,8 +157,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   void GenerateIdsSegment(const vector<string> &ids);
   void GenerateIdAddressesSegment(const vector<IdAddress> &id_addresses);
   void GenerateMetadataSegments(uint32_t segments_metadata_address,
-                             uint32_t cmds_address,
-                             uint32_t cmds_size);
+                                uint32_t cmds_address,
+                                uint32_t cmds_size);
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
       const ArrayAllocWithoutInitNode &node) override;
@@ -214,6 +216,9 @@ class CodeGenerator::Impl: private NodeVisitor {
   virtual void VisitReturnWithoutValue(
       const ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(const ArgDefNode &node) override;
+  template<typename TCreateGlobalVarCmdGenerator,
+           typename TCreateLocalVarCmdGenerator>
+  void VisitVarDef(const VarDefNode &node);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
 
   const ProgramNode *program_;
@@ -440,6 +445,49 @@ class CodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::CreateAndInitLocalVarCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalArrayVar);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalBoolVar);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalDoubleVar);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalCharVar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalStringVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 class CodeGenerator::Impl::CreateLocalVarCmdGenerator
     : private DataTypeVisitor {
  public:
@@ -495,7 +543,7 @@ class CodeGenerator::Impl::CreateArrayCmdGenerator
 
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    assert(false);
+    code_->WriteCmdId(CmdId::kCreateBoolArray);
   }
 
   virtual void VisitInt(const IntDataType&) override {
@@ -503,19 +551,19 @@ class CodeGenerator::Impl::CreateArrayCmdGenerator
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    assert(false);
+    code_->WriteCmdId(CmdId::kCreateLongArray);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    assert(false);
+    code_->WriteCmdId(CmdId::kCreateDoubleArray);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    assert(false);
+    code_->WriteCmdId(CmdId::kCreateCharArray);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    assert(false);
+    code_->WriteCmdId(CmdId::kCreateStringArray);
   }
 
   virtual void VisitArray(const ArrayDataType &data_type) override {
@@ -661,35 +709,38 @@ void CodeGenerator::Impl::VisitProgram(const ProgramNode &node) {
   }
 }
 
+void CodeGenerator::Impl::VisitImport(const ImportNode &node) {
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(*node.GetFilePath()));
+  const path file_path(
+      static_cast<const StringLit&>(lit_analysis.GetLit()).GetValue());
+  import_file_paths_.push_back(file_path);
+}
+
 void CodeGenerator::Impl::VisitVarDefWithoutInit(
     const VarDefWithoutInitNode &node) {
-  const VarDefAnalysis &var_def_analysis =
-      static_cast<const VarDefAnalysis&>(GetNodeAnalysis(node));
-
-  if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
-    CreateGlobalVarCmdGenerator().Generate(
-        var_def_analysis.GetDataType(), code_);
-    ids_of_global_var_defs_.push_back(node.GetNameToken().GetValue());
-  } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
-    CreateLocalVarCmdGenerator().Generate(
-        var_def_analysis.GetDataType(), code_);
-  } else {
-    assert(false);
-  }
+  VisitVarDef<CreateGlobalVarCmdGenerator, CreateLocalVarCmdGenerator>(node);
 }
 
 void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
   node.GetValue()->Accept(*this);
+  VisitVarDef<CreateAndInitGlobalVarCmdGenerator,
+              CreateAndInitLocalVarCmdGenerator>(node);
+}
+
+template<typename TCreateGlobalVarCmdGenerator,
+         typename TCreateLocalVarCmdGenerator>
+void CodeGenerator::Impl::VisitVarDef(const VarDefNode &node) {
   const VarDefAnalysis &var_def_analysis =
       static_cast<const VarDefAnalysis&>(GetNodeAnalysis(node));
 
   if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
-    CreateAndInitGlobalVarCmdGenerator().Generate(
+    TCreateGlobalVarCmdGenerator().Generate(
         var_def_analysis.GetDataType(), code_);
     ids_of_global_var_defs_.push_back(node.GetNameToken().GetValue());
   } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
-    // CreateAndInitLocalVarCmdGenerator().Generate(
-    //     var_def_analysis.GetDataType(), code_);
+    TCreateLocalVarCmdGenerator().Generate(
+        var_def_analysis.GetDataType(), code_);
   } else {
     assert(false);
   }
@@ -701,26 +752,28 @@ void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
   code_->WriteCmdId(CmdId::kUnload);
 }
 
+void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode&) {}
+
 void CodeGenerator::Impl::VisitIfElseIfElse(const IfElseIfElseNode&) {}
 
 void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode&) {}
 
-void CodeGenerator::Impl::VisitImport(const ImportNode &node) {
-  const LitAnalysis &lit_analysis =
-      static_cast<const LitAnalysis&>(GetNodeAnalysis(*node.GetFilePath()));
-  const path file_path(
-      static_cast<const StringLit&>(lit_analysis.GetLit()).GetValue());
-  import_file_paths_.push_back(file_path);
-}
+void CodeGenerator::Impl::VisitBreak(const BreakNode&) {}
+
+void CodeGenerator::Impl::VisitContinue(const ContinueNode&) {}
+
+void CodeGenerator::Impl::VisitFuncDefWithBody(
+    const FuncDefWithBodyNode&) {}
+
+void CodeGenerator::Impl::VisitFuncDefWithoutBody(
+    const FuncDefWithoutBodyNode&) {}
+
+void CodeGenerator::Impl::VisitArgDef(const ArgDefNode&) {}
 
 void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode&) {}
 
 void CodeGenerator::Impl::VisitReturnWithoutValue(
     const ReturnWithoutValueNode&) {}
-
-void CodeGenerator::Impl::VisitArgDef(const ArgDefNode&) {}
-
-void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
 
 void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &node) {
@@ -732,7 +785,7 @@ void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
   const CommonExprAnalysis &array_alloc_analysis =
       static_cast<const CommonExprAnalysis&>(GetNodeAnalysis(node));
   const size_t dimensions_count = node.GetSizes().size();
-  assert(numeric_cast<uint8_t>(dimensions_count));  
+  assert(dimensions_count <= numeric_limits<uint8_t>::max());
   CreateArrayCmdGenerator().Generate(array_alloc_analysis.GetDataType(),
                                      static_cast<uint8_t>(dimensions_count),
                                      code_);
@@ -741,23 +794,19 @@ void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
 void CodeGenerator::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode&) {}
 
-void CodeGenerator::Impl::VisitAssign(const AssignNode&) {}
+void CodeGenerator::Impl::VisitId(const IdNode&) {}
 
-void CodeGenerator::Impl::VisitBreak(const BreakNode&) {}
+void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
 
 void CodeGenerator::Impl::VisitCall(const CallNode&) {}
 
-void CodeGenerator::Impl::VisitContinue(const ContinueNode&) {}
+void CodeGenerator::Impl::VisitAssign(const AssignNode&) {}
+
+void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
 
 void CodeGenerator::Impl::VisitDiv(const DivNode&) {}
 
 void CodeGenerator::Impl::VisitEqual(const EqualNode&) {}
-
-void CodeGenerator::Impl::VisitFuncDefWithBody(
-    const FuncDefWithBodyNode&) {}
-
-void CodeGenerator::Impl::VisitFuncDefWithoutBody(
-    const FuncDefWithoutBodyNode&) {}
 
 void CodeGenerator::Impl::VisitGreater(const GreaterNode&) {}
 
@@ -835,15 +884,9 @@ void CodeGenerator::Impl::VisitPreDec(const PreDecNode&) {}
 
 void CodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
 
-void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode&) {}
-
-void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
-
 void CodeGenerator::Impl::VisitSub(const SubNode&) {}
 
 void CodeGenerator::Impl::VisitSum(const SumNode&) {}
-
-void CodeGenerator::Impl::VisitId(const IdNode&) {}
 
 void CodeGenerator::Impl::VisitIntDataType(const IntDataTypeNode&) {
   assert(false);

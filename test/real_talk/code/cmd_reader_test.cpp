@@ -9,6 +9,7 @@
 #include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/code/create_and_init_global_var_cmd.h"
+#include "real_talk/code/create_and_init_local_var_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/code.h"
 
@@ -275,10 +276,82 @@ TEST_F(CmdReaderTest, CreateAndInitGlobalBoolVarCmd) {
       CmdId::kCreateAndInitGlobalBoolVar, expected_cmd);
 }
 
+TEST_F(CmdReaderTest, CreateAndInitLocalIntVarCmd) {
+  CreateAndInitLocalIntVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalLongVarCmd) {
+  CreateAndInitLocalLongVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalDoubleVarCmd) {
+  CreateAndInitLocalDoubleVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCreateAndInitLocalDoubleVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalBoolVarCmd) {
+  CreateAndInitLocalBoolVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCreateAndInitLocalBoolVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalCharVarCmd) {
+  CreateAndInitLocalCharVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCreateAndInitLocalCharVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalStringVarCmd) {
+  CreateAndInitLocalStringVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCreateAndInitLocalStringVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
 TEST_F(CmdReaderTest, CreateIntArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateIntArrayCmd expected_cmd(dimensions_count);
   TestCreateArrayCmd(CmdId::kCreateIntArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateLongArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateLongArrayCmd expected_cmd(dimensions_count);
+  TestCreateArrayCmd(CmdId::kCreateLongArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateDoubleArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateDoubleArrayCmd expected_cmd(dimensions_count);
+  TestCreateArrayCmd(CmdId::kCreateDoubleArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateBoolArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateBoolArrayCmd expected_cmd(dimensions_count);
+  TestCreateArrayCmd(CmdId::kCreateBoolArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateCharArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateCharArrayCmd expected_cmd(dimensions_count);
+  TestCreateArrayCmd(CmdId::kCreateCharArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateStringArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateStringArrayCmd expected_cmd(dimensions_count);
+  TestCreateArrayCmd(CmdId::kCreateStringArray, expected_cmd);
 }
 }
 }
