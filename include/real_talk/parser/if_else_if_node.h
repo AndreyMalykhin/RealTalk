@@ -8,6 +8,7 @@
 #include "real_talk/parser/branch_node.h"
 #include "real_talk/parser/if_node.h"
 #include "real_talk/parser/else_if_node.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {

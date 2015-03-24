@@ -8,6 +8,7 @@
 #include "real_talk/code/create_and_init_global_var_cmd.h"
 #include "real_talk/code/create_and_init_local_var_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
+#include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/code.h"
 
@@ -95,6 +96,8 @@ const CreateAndInitLocalStringVarCmd &kCreateAndInitLocalStringVarCmd =
     *new CreateAndInitLocalStringVarCmd();
 const CreateAndInitLocalBoolVarCmd &kCreateAndInitLocalBoolVarCmd =
     *new CreateAndInitLocalBoolVarCmd();
+
+JumpIfNotCmd &kJumpIfNotCmd = *new JumpIfNotCmd(UINT32_C(0));
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -204,6 +207,9 @@ const CmdReader::Readers CmdReader::InitReaders() {
       &CmdReader::ReadCreateCharArrayCmd;
   readers[static_cast<uint8_t>(CmdId::kCreateStringArray)] =
       &CmdReader::ReadCreateStringArrayCmd;
+
+  readers[static_cast<uint8_t>(CmdId::kJumpIfNot)] =
+      &CmdReader::ReadJumpIfNotCmd;
 
   return readers;
 }
@@ -400,6 +406,11 @@ const Cmd &CmdReader::ReadCreateCharArrayCmd() {
 
 const Cmd &CmdReader::ReadCreateStringArrayCmd() {
   return ReadCreateArrayCmd(kCreateStringArrayCmd);
+}
+
+const Cmd &CmdReader::ReadJumpIfNotCmd() {
+  kJumpIfNotCmd.SetAddress(code_->ReadUint32());
+  return kJumpIfNotCmd;
 }
 }
 }

@@ -11,6 +11,7 @@
 #include "real_talk/code/create_and_init_global_var_cmd.h"
 #include "real_talk/code/create_and_init_local_var_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
+#include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -352,6 +353,15 @@ TEST_F(CmdReaderTest, CreateStringArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateStringArrayCmd expected_cmd(dimensions_count);
   TestCreateArrayCmd(CmdId::kCreateStringArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, JumpIfNotCmd) {
+  uint32_t address = UINT32_C(7);
+  JumpIfNotCmd expected_cmd(address);
+  Code code;
+  code.WriteCmdId(CmdId::kJumpIfNot);
+  code.WriteUint32(address);
+  TestGetNextCmd(code, expected_cmd);
 }
 }
 }

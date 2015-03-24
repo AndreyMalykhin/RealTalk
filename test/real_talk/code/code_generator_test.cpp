@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <limits>
 #include <iterator>
+#include "real_talk/parser/if_else_if_else_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
 #include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/int_data_type_node.h"
@@ -101,6 +102,10 @@ using real_talk::parser::ExprNode;
 using real_talk::parser::PrimitiveDataTypeNode;
 using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::ArrayAllocWithoutInitNode;
+using real_talk::parser::ScopeNode;
+using real_talk::parser::IfNode;
+using real_talk::parser::ElseIfNode;
+using real_talk::parser::IfElseIfElseNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
@@ -1302,6 +1307,161 @@ TEST_F(CodeGeneratorTest, CreateStringArrayCmd) {
   unique_ptr<DataType> data_type(new StringDataType());
   TestCreateArrayCmd(
       move(data_type_node), move(data_type), CmdId::kCreateStringArray);
+}
+
+TEST_F(CodeGeneratorTest, JumpIfNotCmd) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
+  IntNode *int_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "1", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> int_node(int_node_ptr);
+  unique_ptr<StmtNode> int_stmt_node(new ExprStmtNode(
+      move(int_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
+  if_body_stmt_nodes.push_back(move(int_stmt_node));
+  unique_ptr<ScopeNode> if_body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      move(if_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7))));
+  BoolNode *bool_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> bool_node(bool_node_ptr);
+  unique_ptr<IfNode> if_node(new IfNode(
+      TokenInfo(Token::kIf, "if", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(1), UINT32_C(1)),
+      move(bool_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      move(if_body_node)));
+
+  vector< unique_ptr<ElseIfNode> > else_if_nodes;
+  vector< unique_ptr<StmtNode> > else_if_body_stmt_nodes;
+  IntNode *int_node_ptr2 = new IntNode(
+      TokenInfo(Token::kIntLit, "2", UINT32_C(14), UINT32_C(14)));
+  unique_ptr<ExprNode> int_node2(int_node_ptr2);
+  unique_ptr<StmtNode> int_stmt_node2(new ExprStmtNode(
+      move(int_node2),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(15), UINT32_C(15))));
+  else_if_body_stmt_nodes.push_back(move(int_stmt_node2));
+  unique_ptr<ScopeNode> else_if_body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(13), UINT32_C(13)),
+      move(else_if_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16))));
+  BoolNode *bool_node_ptr2 = new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(11), UINT32_C(11)));
+  unique_ptr<ExprNode> bool_node2(bool_node_ptr2);
+  unique_ptr<IfNode> if_node2(new IfNode(
+      TokenInfo(Token::kIf, "if", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(10), UINT32_C(10)),
+      move(bool_node2),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(12), UINT32_C(12)),
+      move(else_if_body_node)));
+  unique_ptr<ElseIfNode> else_if_node(new ElseIfNode(
+      TokenInfo(Token::kElse, "else", UINT32_C(8), UINT32_C(8)),
+      move(if_node2)));
+  else_if_nodes.push_back(move(else_if_node));
+
+  vector< unique_ptr<StmtNode> > else_body_stmt_nodes;
+  IntNode *int_node_ptr3 = new IntNode(
+      TokenInfo(Token::kIntLit, "3", UINT32_C(19), UINT32_C(19)));
+  unique_ptr<ExprNode> int_node3(int_node_ptr3);
+  unique_ptr<StmtNode> int_stmt_node3(new ExprStmtNode(
+      move(int_node3),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(20), UINT32_C(20))));
+  else_body_stmt_nodes.push_back(move(int_stmt_node3));
+  unique_ptr<ScopeNode> else_body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(18), UINT32_C(18)),
+      move(else_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(21), UINT32_C(21))));
+
+  unique_ptr<StmtNode> if_else_if_else_node(new IfElseIfElseNode(
+      move(if_node),
+      move(else_if_nodes),
+      TokenInfo(Token::kElse, "else", UINT32_C(17), UINT32_C(17)),
+      move(else_body_node)));
+  program_stmt_nodes.push_back(move(if_else_if_else_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
+  node_analyzes.insert(make_pair(int_node_ptr, move(int_analysis)));
+  unique_ptr<NodeSemanticAnalysis> int_analysis2(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(2)))));
+  node_analyzes.insert(make_pair(int_node_ptr2, move(int_analysis2)));
+  unique_ptr<NodeSemanticAnalysis> int_analysis3(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(3)))));
+  node_analyzes.insert(make_pair(int_node_ptr3, move(int_analysis3)));
+  unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+  unique_ptr<NodeSemanticAnalysis> bool_analysis2(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(false))));
+  node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
+
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(true);
+  cmds_code->WriteCmdId(CmdId::kJumpIfNot);
+  uint32_t else_if_address_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(uint32_t));
+  cmds_code->WriteCmdId(CmdId::kLoadIntValue);
+  cmds_code->WriteInt32(INT32_C(1));
+  cmds_code->WriteCmdId(CmdId::kUnload);
+  uint32_t else_if_address = cmds_code->GetPosition();
+  cmds_code->SetPosition(else_if_address_placeholder);
+  cmds_code->WriteUint32(else_if_address);
+  cmds_code->SetPosition(else_if_address);
+
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(false);
+  cmds_code->WriteCmdId(CmdId::kJumpIfNot);
+  uint32_t else_address_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(uint32_t));
+  cmds_code->WriteCmdId(CmdId::kLoadIntValue);
+  cmds_code->WriteInt32(INT32_C(2));
+  cmds_code->WriteCmdId(CmdId::kUnload);
+  uint32_t else_address = cmds_code->GetPosition();
+  cmds_code->SetPosition(else_address_placeholder);
+  cmds_code->WriteUint32(else_address);
+  cmds_code->SetPosition(else_address);
+
+  cmds_code->WriteCmdId(CmdId::kLoadIntValue);
+  cmds_code->WriteInt32(INT32_C(3));
+  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
 }
 }
 }

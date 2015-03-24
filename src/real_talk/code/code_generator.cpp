@@ -110,6 +110,9 @@ using real_talk::parser::DefNode;
 using real_talk::parser::VarDefNode;
 using real_talk::parser::Node;
 using real_talk::parser::BoundedArraySizeNode;
+using real_talk::parser::ElseIfNode;
+using real_talk::parser::IfElseIfElseNode;
+using real_talk::parser::IfNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
@@ -152,13 +155,6 @@ class CodeGenerator::Impl: private NodeVisitor {
   class CreateAndInitLocalVarCmdGenerator;
   class CreateArrayCmdGenerator;
 
-  void GenerateCmdsSegment();
-  void GenerateImportsSegment();
-  void GenerateIdsSegment(const vector<string> &ids);
-  void GenerateIdAddressesSegment(const vector<IdAddress> &id_addresses);
-  void GenerateMetadataSegments(uint32_t segments_metadata_address,
-                                uint32_t cmds_address,
-                                uint32_t cmds_size);
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
       const ArrayAllocWithoutInitNode &node) override;
@@ -219,7 +215,16 @@ class CodeGenerator::Impl: private NodeVisitor {
   template<typename TCreateGlobalVarCmdGenerator,
            typename TCreateLocalVarCmdGenerator>
   void VisitVarDef(const VarDefNode &node);
+  void VisitIf(const IfNode &node);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
+  uint32_t GetCmdsCodePosition() const;
+  void GenerateCmdsSegment();
+  void GenerateImportsSegment();
+  void GenerateIdsSegment(const vector<string> &ids);
+  void GenerateIdAddressesSegment(const vector<IdAddress> &id_addresses);
+  void GenerateMetadataSegments(uint32_t segments_metadata_address,
+                                uint32_t cmds_address,
+                                uint32_t cmds_size);
 
   const ProgramNode *program_;
   const SemanticAnalysis *semantic_analysis_;
@@ -230,6 +235,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   vector<IdAddress> id_addresses_of_func_defs_;
   vector<IdAddress> id_addresses_of_global_var_refs_;
   vector<IdAddress> id_addresses_of_func_refs_;
+  uint32_t cmds_address_;
 };
 
 class CodeGenerator::Impl::StmtGrouper: private NodeVisitor {
@@ -600,14 +606,13 @@ void CodeGenerator::Impl::Generate(
   code.WriteUint32(version);
   const uint32_t segments_metadata_address = code.GetPosition();
   code.Skip(14 * sizeof(uint32_t));
-  const uint32_t cmds_address = code.GetPosition();
+  cmds_address_ = code.GetPosition();
   GenerateCmdsSegment();
-  const uint32_t cmds_size = code.GetPosition() - cmds_address;
-  GenerateMetadataSegments(segments_metadata_address, cmds_address, cmds_size);
+  const uint32_t cmds_size = code.GetPosition() - cmds_address_;
+  GenerateMetadataSegments(segments_metadata_address, cmds_address_, cmds_size);
 
   stream.exceptions(ios::failbit | ios::badbit);
-  stream.write(reinterpret_cast<char*>(code.GetData()),
-               code.GetSize());
+  stream.write(reinterpret_cast<char*>(code.GetData()), code.GetSize());
 
   import_file_paths_.clear();
   ids_of_global_var_defs_.clear();
@@ -754,9 +759,38 @@ void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
 
 void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode&) {}
 
-void CodeGenerator::Impl::VisitIfElseIfElse(const IfElseIfElseNode&) {}
+void CodeGenerator::Impl::VisitIfElseIfElse(
+    const IfElseIfElseNode &if_else_if_else) {
+  VisitIf(*(if_else_if_else.GetIf()));
+
+  for (const unique_ptr<ElseIfNode> &else_if: if_else_if_else.GetElseIfs()) {
+    VisitIf(*(else_if->GetIf()));
+  }
+
+  for (const unique_ptr<StmtNode> &stmt
+           : if_else_if_else.GetElseBody()->GetStmts()) {
+    stmt->Accept(*this);
+  }
+}
 
 void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode&) {}
+
+void CodeGenerator::Impl::VisitIf(const IfNode &node) {
+  node.GetCond()->Accept(*this);
+  code_->WriteCmdId(CmdId::kJumpIfNot);
+  const uint32_t jump_address_placeholder = code_->GetPosition();
+  code_->Skip(sizeof(uint32_t));
+
+  for (const unique_ptr<StmtNode> &stmt: node.GetBody()->GetStmts()) {
+    stmt->Accept(*this);
+  }
+
+  const uint32_t current_address_relative_to_cmds = GetCmdsCodePosition();
+  const uint32_t current_address = code_->GetPosition();
+  code_->SetPosition(jump_address_placeholder);
+  code_->WriteUint32(current_address_relative_to_cmds);
+  code_->SetPosition(current_address);
+}
 
 void CodeGenerator::Impl::VisitBreak(const BreakNode&) {}
 
@@ -926,6 +960,11 @@ const NodeSemanticAnalysis &CodeGenerator::Impl::GetNodeAnalysis(
       semantic_analysis_->GetNodeAnalyzes().find(&node);
   assert(node_analysis_it != semantic_analysis_->GetNodeAnalyzes().cend());
   return *(node_analysis_it->second);
+}
+
+uint32_t CodeGenerator::Impl::GetCmdsCodePosition() const {
+  assert(code_->GetPosition() >= cmds_address_);
+  return code_->GetPosition() - cmds_address_;
 }
 }
 }
