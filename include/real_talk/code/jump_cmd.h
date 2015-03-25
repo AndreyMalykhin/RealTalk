@@ -7,11 +7,11 @@
 namespace real_talk {
 namespace code {
 
-class JumpIfNotCmd: public Cmd {
+class JumpCmd: public Cmd {
  public:
-  explicit JumpIfNotCmd(uint32_t address): address_(address) {}
-  void SetAddress(uint32_t address) {address_ = address;}
-  uint32_t GetAddress() const {return address_;}
+  inline explicit JumpCmd(uint32_t address) noexcept: address_(address) {}
+  inline void SetAddress(uint32_t address) noexcept {address_ = address;}
+  inline uint32_t GetAddress() const noexcept {return address_;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -19,11 +19,21 @@ class JumpIfNotCmd: public Cmd {
   }
 
   virtual bool IsEqual(const Cmd &cmd) const override {
-    const JumpIfNotCmd &rhs = static_cast<const JumpIfNotCmd&>(cmd);
+    const JumpCmd &rhs = static_cast<const JumpCmd&>(cmd);
     return address_ == rhs.address_;
   }
 
   uint32_t address_;
+};
+
+class JumpIfNotCmd: public JumpCmd {
+ public:
+  inline explicit JumpIfNotCmd(uint32_t address) noexcept: JumpCmd(address) {}
+};
+
+class DirectJumpCmd: public JumpCmd {
+ public:
+  inline explicit DirectJumpCmd(uint32_t address) noexcept: JumpCmd(address) {}
 };
 }
 }

@@ -146,8 +146,9 @@ ostream &operator<<(ostream &stream, Module &module) {
     stream << "\ncmds=\n";
 
     do {
+      stream << cmd_reader.GetCode()->GetPosition();
       const Cmd &cmd = cmd_reader.GetNextCmd();
-      stream << cmd << "\n";
+      stream << " " << cmd << "\n";
 
       if (cmd == EndFuncsCmd()) {
         break;

@@ -215,7 +215,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   template<typename TCreateGlobalVarCmdGenerator,
            typename TCreateLocalVarCmdGenerator>
   void VisitVarDef(const VarDefNode &node);
-  void VisitIf(const IfNode &node);
+  uint32_t VisitIf(const IfNode &node);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
   uint32_t GetCmdsCodePosition() const;
   void GenerateCmdsSegment();
@@ -761,21 +761,33 @@ void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode&) {}
 
 void CodeGenerator::Impl::VisitIfElseIfElse(
     const IfElseIfElseNode &if_else_if_else) {
-  VisitIf(*(if_else_if_else.GetIf()));
+  vector<uint32_t> branch_end_address_placeholders;
+  branch_end_address_placeholders.push_back(VisitIf(*if_else_if_else.GetIf()));
 
   for (const unique_ptr<ElseIfNode> &else_if: if_else_if_else.GetElseIfs()) {
-    VisitIf(*(else_if->GetIf()));
+    branch_end_address_placeholders.push_back(VisitIf(*else_if->GetIf()));
   }
 
   for (const unique_ptr<StmtNode> &stmt
            : if_else_if_else.GetElseBody()->GetStmts()) {
     stmt->Accept(*this);
   }
+
+  const uint32_t branch_end_address = GetCmdsCodePosition();
+  const uint32_t continue_address = code_->GetPosition();
+
+  for (const uint32_t branch_end_address_placeholder
+           : branch_end_address_placeholders) {
+    code_->SetPosition(branch_end_address_placeholder);
+    code_->WriteUint32(branch_end_address);
+  }
+
+  code_->SetPosition(continue_address);
 }
 
 void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode&) {}
 
-void CodeGenerator::Impl::VisitIf(const IfNode &node) {
+uint32_t CodeGenerator::Impl::VisitIf(const IfNode &node) {
   node.GetCond()->Accept(*this);
   code_->WriteCmdId(CmdId::kJumpIfNot);
   const uint32_t jump_address_placeholder = code_->GetPosition();
@@ -785,11 +797,15 @@ void CodeGenerator::Impl::VisitIf(const IfNode &node) {
     stmt->Accept(*this);
   }
 
-  const uint32_t current_address_relative_to_cmds = GetCmdsCodePosition();
-  const uint32_t current_address = code_->GetPosition();
+  code_->WriteCmdId(CmdId::kDirectJump);
+  const uint32_t branch_end_address_placeholder = code_->GetPosition();
+  code_->Skip(sizeof(uint32_t));
+  const uint32_t jump_address = GetCmdsCodePosition();
+  const uint32_t continue_address = code_->GetPosition();
   code_->SetPosition(jump_address_placeholder);
-  code_->WriteUint32(current_address_relative_to_cmds);
-  code_->SetPosition(current_address);
+  code_->WriteUint32(jump_address);
+  code_->SetPosition(continue_address);
+  return branch_end_address_placeholder;
 }
 
 void CodeGenerator::Impl::VisitBreak(const BreakNode&) {}

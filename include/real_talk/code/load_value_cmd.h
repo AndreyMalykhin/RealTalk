@@ -12,8 +12,8 @@ namespace code {
 
 class LoadIntValueCmd: public Cmd {
  public:
-  explicit LoadIntValueCmd(int32_t value): value_(value) {}
-  void SetValue(int32_t value) {value_ = value;}
+  inline explicit LoadIntValueCmd(int32_t value) noexcept: value_(value) {}
+  inline void SetValue(int32_t value) noexcept {value_ = value;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -30,8 +30,8 @@ class LoadIntValueCmd: public Cmd {
 
 class LoadLongValueCmd: public Cmd {
  public:
-  explicit LoadLongValueCmd(int64_t value): value_(value) {}
-  void SetValue(int64_t value) {value_ = value;}
+  inline explicit LoadLongValueCmd(int64_t value) noexcept: value_(value) {}
+  inline void SetValue(int64_t value) noexcept {value_ = value;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -48,8 +48,8 @@ class LoadLongValueCmd: public Cmd {
 
 class LoadBoolValueCmd: public Cmd {
  public:
-  explicit LoadBoolValueCmd(bool value): value_(value) {}
-  void SetValue(bool value) {value_ = value;}
+  inline explicit LoadBoolValueCmd(bool value) noexcept: value_(value) {}
+  inline void SetValue(bool value) noexcept {value_ = value;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -66,8 +66,8 @@ class LoadBoolValueCmd: public Cmd {
 
 class LoadCharValueCmd: public Cmd {
  public:
-  explicit LoadCharValueCmd(char value): value_(value) {}
-  void SetValue(char value) {value_ = value;}
+  inline explicit LoadCharValueCmd(char value) noexcept: value_(value) {}
+  inline void SetValue(char value) noexcept {value_ = value;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -85,7 +85,7 @@ class LoadCharValueCmd: public Cmd {
 class LoadStringValueCmd: public Cmd {
  public:
   explicit LoadStringValueCmd(const std::string &value): value_(value) {}
-  void SetValue(const std::string &value) {value_ = value;}
+  inline void SetValue(const std::string &value) {value_ = value;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -102,8 +102,8 @@ class LoadStringValueCmd: public Cmd {
 
 class LoadDoubleValueCmd: public Cmd {
  public:
-  explicit LoadDoubleValueCmd(double value): value_(value) {}
-  void SetValue(double value) {value_ = value;}
+  inline explicit LoadDoubleValueCmd(double value) noexcept: value_(value) {}
+  inline void SetValue(double value) noexcept {value_ = value;}
 
  private:
   virtual void Print(std::ostream &stream) const override {

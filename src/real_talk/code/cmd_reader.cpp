@@ -9,6 +9,7 @@
 #include "real_talk/code/create_and_init_local_var_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/jump_cmd.h"
+#include "real_talk/code/destroy_local_vars_and_jump_cmd.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/code.h"
 
@@ -98,6 +99,10 @@ const CreateAndInitLocalBoolVarCmd &kCreateAndInitLocalBoolVarCmd =
     *new CreateAndInitLocalBoolVarCmd();
 
 JumpIfNotCmd &kJumpIfNotCmd = *new JumpIfNotCmd(UINT32_C(0));
+DirectJumpCmd &kDirectJumpCmd = *new DirectJumpCmd(UINT32_C(0));
+
+DestroyLocalVarsAndJumpCmd &kDestroyLocalVarsAndJumpCmd =
+    *new DestroyLocalVarsAndJumpCmd(UINT32_C(1), UINT32_C(0));
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -105,6 +110,10 @@ const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
 void CmdReader::SetCode(Code *code) {
   assert(code);
   code_ = code;
+}
+
+Code *CmdReader::GetCode() const {
+  return code_;
 }
 
 const Cmd &CmdReader::GetNextCmd() {
@@ -210,6 +219,11 @@ const CmdReader::Readers CmdReader::InitReaders() {
 
   readers[static_cast<uint8_t>(CmdId::kJumpIfNot)] =
       &CmdReader::ReadJumpIfNotCmd;
+  readers[static_cast<uint8_t>(CmdId::kDirectJump)] =
+      &CmdReader::ReadDirectJumpCmd;
+
+  readers[static_cast<uint8_t>(CmdId::kDestroyLocalVarsAndJumpCmd)] =
+      &CmdReader::ReadDestroyLocalVarsAndJumpCmd;
 
   return readers;
 }
@@ -379,7 +393,7 @@ const Cmd &CmdReader::ReadCreateAndInitLocalBoolVarCmd() {
   return kCreateAndInitLocalBoolVarCmd;
 }
 
-const Cmd &CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) {
+inline const Cmd &CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) {
   cmd.SetDimensionsCount(code_->ReadUint8());
   return cmd;
 }
@@ -408,9 +422,23 @@ const Cmd &CmdReader::ReadCreateStringArrayCmd() {
   return ReadCreateArrayCmd(kCreateStringArrayCmd);
 }
 
+inline const Cmd &CmdReader::ReadJumpCmd(JumpCmd &cmd) {
+  cmd.SetAddress(code_->ReadUint32());
+  return cmd;
+}
+
 const Cmd &CmdReader::ReadJumpIfNotCmd() {
-  kJumpIfNotCmd.SetAddress(code_->ReadUint32());
-  return kJumpIfNotCmd;
+  return ReadJumpCmd(kJumpIfNotCmd);
+}
+
+const Cmd &CmdReader::ReadDirectJumpCmd() {
+  return ReadJumpCmd(kDirectJumpCmd);
+}
+
+const Cmd &CmdReader::ReadDestroyLocalVarsAndJumpCmd() {
+  kDestroyLocalVarsAndJumpCmd.SetVarsCount(code_->ReadUint32());
+  kDestroyLocalVarsAndJumpCmd.SetAddress(code_->ReadUint32());
+  return kDestroyLocalVarsAndJumpCmd;
 }
 }
 }

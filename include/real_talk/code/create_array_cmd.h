@@ -10,16 +10,16 @@ namespace code {
 
 class CreateArrayCmd: public Cmd {
  public:
-  explicit CreateArrayCmd(uint8_t dimensions_count)
+  inline explicit CreateArrayCmd(uint8_t dimensions_count) noexcept
       : dimensions_count_(dimensions_count) {
     assert(dimensions_count_ > UINT8_C(0));
   }
 
-  uint8_t GetDimensionsCount() const {
+  inline uint8_t GetDimensionsCount() const noexcept {
     return dimensions_count_;
   }
 
-  void SetDimensionsCount(uint8_t dimensions_count) {
+  inline void SetDimensionsCount(uint8_t dimensions_count) noexcept {
     dimensions_count_ = dimensions_count;
   }
 
@@ -38,37 +38,37 @@ class CreateArrayCmd: public Cmd {
 
 class CreateIntArrayCmd: public CreateArrayCmd {
  public:
-  explicit CreateIntArrayCmd(uint8_t dimensions_count)
+  inline explicit CreateIntArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
 };
 
 class CreateLongArrayCmd: public CreateArrayCmd {
  public:
-  explicit CreateLongArrayCmd(uint8_t dimensions_count)
+  inline explicit CreateLongArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
 };
 
 class CreateDoubleArrayCmd: public CreateArrayCmd {
  public:
-  explicit CreateDoubleArrayCmd(uint8_t dimensions_count)
+  inline explicit CreateDoubleArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
 };
 
 class CreateBoolArrayCmd: public CreateArrayCmd {
  public:
-  explicit CreateBoolArrayCmd(uint8_t dimensions_count)
+  inline explicit CreateBoolArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
 };
 
 class CreateCharArrayCmd: public CreateArrayCmd {
  public:
-  explicit CreateCharArrayCmd(uint8_t dimensions_count)
+  inline explicit CreateCharArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
 };
 
 class CreateStringArrayCmd: public CreateArrayCmd {
  public:
-  explicit CreateStringArrayCmd(uint8_t dimensions_count)
+  inline explicit CreateStringArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
 };
 }

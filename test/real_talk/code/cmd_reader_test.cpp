@@ -12,6 +12,7 @@
 #include "real_talk/code/create_and_init_local_var_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/jump_cmd.h"
+#include "real_talk/code/destroy_local_vars_and_jump_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -58,6 +59,13 @@ class CmdReaderTest: public Test {
     Code code;
     code.WriteCmdId(cmd_id);
     code.WriteUint8(expected_cmd.GetDimensionsCount());
+    TestGetNextCmd(code, expected_cmd);
+  }
+
+  void TestJumpCmd(CmdId cmd_id, const JumpCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint32(expected_cmd.GetAddress());
     TestGetNextCmd(code, expected_cmd);
   }
 };
@@ -358,8 +366,22 @@ TEST_F(CmdReaderTest, CreateStringArrayCmd) {
 TEST_F(CmdReaderTest, JumpIfNotCmd) {
   uint32_t address = UINT32_C(7);
   JumpIfNotCmd expected_cmd(address);
+  TestJumpCmd(CmdId::kJumpIfNot, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DirectJumpCmd) {
+  uint32_t address = UINT32_C(2);
+  DirectJumpCmd expected_cmd(address);
+  TestJumpCmd(CmdId::kDirectJump, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalVarsAndJumpCmd) {
+  uint32_t vars_count = UINT32_C(1);
+  uint32_t address = UINT32_C(2);
+  DestroyLocalVarsAndJumpCmd expected_cmd(vars_count, address);
   Code code;
-  code.WriteCmdId(CmdId::kJumpIfNot);
+  code.WriteCmdId(CmdId::kDestroyLocalVarsAndJumpCmd);
+  code.WriteUint32(vars_count);
   code.WriteUint32(address);
   TestGetNextCmd(code, expected_cmd);
 }

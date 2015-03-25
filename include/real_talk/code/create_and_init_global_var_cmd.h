@@ -9,10 +9,10 @@ namespace code {
 
 class CreateAndInitGlobalVarCmd: public Cmd {
  public:
-  explicit CreateAndInitGlobalVarCmd(uint32_t var_index)
+  inline explicit CreateAndInitGlobalVarCmd(uint32_t var_index) noexcept
       : var_index_(var_index) {}
-  void SetVarIndex(uint32_t var_index) {var_index_ = var_index;}
-  uint32_t GetVarIndex() const {return var_index_;}
+  inline void SetVarIndex(uint32_t var_index) noexcept {var_index_ = var_index;}
+  inline uint32_t GetVarIndex() const noexcept {return var_index_;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -30,43 +30,43 @@ class CreateAndInitGlobalVarCmd: public Cmd {
 
 class CreateAndInitGlobalIntVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  explicit CreateAndInitGlobalIntVarCmd(uint32_t var_index)
+  inline explicit CreateAndInitGlobalIntVarCmd(uint32_t var_index) noexcept
       : CreateAndInitGlobalVarCmd(var_index) {}
 };
 
 class CreateAndInitGlobalArrayVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  explicit CreateAndInitGlobalArrayVarCmd(uint32_t var_index)
+  inline explicit CreateAndInitGlobalArrayVarCmd(uint32_t var_index) noexcept
       : CreateAndInitGlobalVarCmd(var_index) {}
 };
 
 class CreateAndInitGlobalLongVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  explicit CreateAndInitGlobalLongVarCmd(uint32_t var_index)
+  inline explicit CreateAndInitGlobalLongVarCmd(uint32_t var_index) noexcept
       : CreateAndInitGlobalVarCmd(var_index) {}
 };
 
 class CreateAndInitGlobalDoubleVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  explicit CreateAndInitGlobalDoubleVarCmd(uint32_t var_index)
+  inline explicit CreateAndInitGlobalDoubleVarCmd(uint32_t var_index) noexcept
       : CreateAndInitGlobalVarCmd(var_index) {}
 };
 
 class CreateAndInitGlobalCharVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  explicit CreateAndInitGlobalCharVarCmd(uint32_t var_index)
+  inline explicit CreateAndInitGlobalCharVarCmd(uint32_t var_index) noexcept
       : CreateAndInitGlobalVarCmd(var_index) {}
 };
 
 class CreateAndInitGlobalStringVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  explicit CreateAndInitGlobalStringVarCmd(uint32_t var_index)
+  inline explicit CreateAndInitGlobalStringVarCmd(uint32_t var_index) noexcept
       : CreateAndInitGlobalVarCmd(var_index) {}
 };
 
 class CreateAndInitGlobalBoolVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  explicit CreateAndInitGlobalBoolVarCmd(uint32_t var_index)
+  inline explicit CreateAndInitGlobalBoolVarCmd(uint32_t var_index) noexcept
       : CreateAndInitGlobalVarCmd(var_index) {}
 };
 }

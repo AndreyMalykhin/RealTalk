@@ -212,17 +212,11 @@ void Code::WriteString(const std::string &str) {
 }
 
 CmdId Code::ReadCmdId() {
-  assert(HasEnoughSize(sizeof(uint8_t)));
-  const CmdId id = static_cast<CmdId>(*current_byte_);
-  current_byte_ += sizeof(uint8_t);
-  return id;
+  return static_cast<CmdId>(ReadUint8());
 }
 
 void Code::WriteCmdId(CmdId id) {
-  const uint8_t serialized_id = static_cast<uint8_t>(id);
-  EnsureCapacity(sizeof(serialized_id));
-  *current_byte_ = serialized_id;
-  AfterWrite(sizeof(serialized_id));
+  WriteUint8(static_cast<uint8_t>(id));
 }
 
 IdAddress Code::ReadIdAddress() {
