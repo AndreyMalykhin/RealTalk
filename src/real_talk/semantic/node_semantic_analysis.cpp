@@ -14,6 +14,7 @@ bool operator==(const NodeSemanticAnalysis &lhs,
 
 ostream &operator<<(ostream &stream,
                     const NodeSemanticAnalysis &analysis) {
+  stream << typeid(analysis).name() << "; ";
   analysis.Print(stream);
   return stream;
 }

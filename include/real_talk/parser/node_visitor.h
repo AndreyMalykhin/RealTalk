@@ -5,6 +5,7 @@
 namespace real_talk {
 namespace parser {
 
+class ScopeNode;
 class AndNode;
 class ArrayAllocWithoutInitNode;
 class ArrayAllocWithInitNode;
@@ -112,6 +113,7 @@ class NodeVisitor {
   virtual void VisitReturnValue(const ReturnValueNode &node) = 0;
   virtual void VisitReturnWithoutValue(const ReturnWithoutValueNode &node) = 0;
   virtual void VisitArgDef(const ArgDefNode &node) = 0;
+  virtual void VisitScope(const ScopeNode &node) = 0;
 };
 }
 }

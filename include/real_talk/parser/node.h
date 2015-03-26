@@ -11,8 +11,6 @@ class NodeVisitor;
 
 class Node {
  public:
-  Node() = default;
-  Node(const Node&) = default;
   virtual ~Node() {}
   virtual void Accept(NodeVisitor &visitor) const = 0;
 

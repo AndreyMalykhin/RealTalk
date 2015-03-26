@@ -93,6 +93,7 @@
 #include "real_talk/semantic/import_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/id_analysis.h"
+#include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/data_type_visitor.h"
@@ -187,6 +188,7 @@ using real_talk::parser::ArrayAllocNode;
 using real_talk::parser::FuncDefNode;
 using real_talk::parser::BinaryExprNode;
 using real_talk::parser::UnaryExprNode;
+using real_talk::parser::ScopeNode;
 using real_talk::util::FileNotFoundError;
 
 namespace real_talk {
@@ -284,6 +286,8 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
       const real_talk::parser::ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(
       const real_talk::parser::ArgDefNode &node) override;
+  virtual void VisitScope(
+      const real_talk::parser::ScopeNode &node) override;
 
   enum class DataTypeId: uint8_t;
   class Scope;
@@ -1287,10 +1291,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithBody(
     arg_def_node->Accept(*this);
   }
 
-  for (const unique_ptr<StmtNode> &stmt
-           : func_def_node.GetBody()->GetStmts()) {
-    stmt->Accept(*this);
-  }
+  func_def_node.GetBody()->Accept(*this);
 
   if (*return_data_type != VoidDataType() && !scope.HasReturn()) {
     unique_ptr<SemanticError> error(new FuncDefWithoutReturnValueError(
@@ -1401,10 +1402,7 @@ void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(
 
   LoopScope loop_scope(loop_scopes_stack_);
   Scope scope(scopes_stack_);
-
-  for (const unique_ptr<StmtNode> &stmt: loop_node.GetBody()->GetStmts()) {
-    stmt->Accept(*this);
-  }
+  loop_node.GetBody()->Accept(*this);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitIfElseIf(
@@ -1423,13 +1421,8 @@ void SimpleSemanticAnalyzer::Impl::VisitIfElseIfElse(
   }
 
   VisitBranch(if_else_if_else_node);
-  const vector< unique_ptr<StmtNode> > &else_stmts =
-      if_else_if_else_node.GetElseBody()->GetStmts();
   Scope scope(scopes_stack_);
-
-  for (const unique_ptr<StmtNode> &else_stmt: else_stmts) {
-    else_stmt->Accept(*this);
-  }
+  if_else_if_else_node.GetElseBody()->Accept(*this);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
@@ -1454,15 +1447,9 @@ void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
     }
   }
 
-  const vector< unique_ptr<StmtNode> > &if_stmts =
-      branch_node.GetIf()->GetBody()->GetStmts();
-
   {
     Scope scope(scopes_stack_);
-
-    for (const unique_ptr<StmtNode> &stmt: if_stmts) {
-      stmt->Accept(*this);
-    }
+    branch_node.GetIf()->GetBody()->Accept(*this);
   }
 
   for (const unique_ptr<ElseIfNode> &else_if: branch_node.GetElseIfs()) {
@@ -1483,13 +1470,8 @@ void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
       throw SemanticErrorException(move(error));
     }
 
-    const vector< unique_ptr<StmtNode> > &else_if_stmts =
-        else_if->GetIf()->GetBody()->GetStmts();
     Scope scope(scopes_stack_);
-
-    for (const unique_ptr<StmtNode> &stmt: else_if_stmts) {
-      stmt->Accept(*this);
-    }
+    else_if->GetIf()->GetBody()->Accept(*this);
   }
 }
 
@@ -2040,6 +2022,19 @@ void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
   unique_ptr<DataType> data_type(new StringDataType());
   unique_ptr<Lit> lit(new StringLit(value));
   AddLitAnalysis(&string_node, move(data_type), move(lit));
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitScope(const ScopeNode &scope_node) {
+  for (const unique_ptr<StmtNode> &stmt: scope_node.GetStmts()) {
+    stmt->Accept(*this);
+  }
+
+  assert(!scopes_stack_.empty());
+  const size_t local_vars_count = scopes_stack_.back()->GetIdDefs().size();
+  assert(local_vars_count <= numeric_limits<uint32_t>::max());
+  unique_ptr<NodeSemanticAnalysis> scope_analysis(
+      new ScopeAnalysis(static_cast<uint32_t>(local_vars_count)));
+  node_analyzes_.insert(make_pair(&scope_node, move(scope_analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitIntDataType(

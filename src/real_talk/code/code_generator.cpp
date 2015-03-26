@@ -113,6 +113,7 @@ using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::ElseIfNode;
 using real_talk::parser::IfElseIfElseNode;
 using real_talk::parser::IfNode;
+using real_talk::parser::ScopeNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
@@ -212,6 +213,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   virtual void VisitReturnWithoutValue(
       const ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(const ArgDefNode &node) override;
+  virtual void VisitScope(const ScopeNode &node) override;
   template<typename TCreateGlobalVarCmdGenerator,
            typename TCreateLocalVarCmdGenerator>
   void VisitVarDef(const VarDefNode &node);
@@ -358,6 +360,7 @@ class CodeGenerator::Impl::StmtGrouper: private NodeVisitor {
   virtual void VisitReturnWithoutValue(
       const ReturnWithoutValueNode&) override {assert(false);}
   virtual void VisitArgDef(const ArgDefNode&) override {assert(false);}
+  virtual void VisitScope(const ScopeNode&) override {assert(false);}
 
   vector<const StmtNode*> non_func_defs_;
   vector<const FuncDefNode*> func_defs_;
@@ -937,6 +940,8 @@ void CodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
 void CodeGenerator::Impl::VisitSub(const SubNode&) {}
 
 void CodeGenerator::Impl::VisitSum(const SumNode&) {}
+
+void CodeGenerator::Impl::VisitScope(const ScopeNode&) {}
 
 void CodeGenerator::Impl::VisitIntDataType(const IntDataTypeNode&) {
   assert(false);

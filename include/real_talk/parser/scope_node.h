@@ -6,12 +6,14 @@
 #include <vector>
 #include <memory>
 #include "real_talk/parser/node.h"
+#include "real_talk/parser/stmt_node.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
 namespace parser {
 
-class ScopeNode final {
+class ScopeNode: public Node {
  public:
   ScopeNode(
       const real_talk::lexer::TokenInfo &start_token,
@@ -22,30 +24,35 @@ class ScopeNode final {
         end_token_(end_token) {
   }
 
+  virtual void Accept(NodeVisitor &visitor) const override {
+    visitor.VisitScope(*this);
+  }
+
   const std::vector< std::unique_ptr<StmtNode> > &GetStmts() const {
     return stmts_;
   }
 
-  friend bool operator==(const ScopeNode &lhs, const ScopeNode &rhs) {
-    return lhs.start_token_ == rhs.start_token_
-        && lhs.end_token_ == rhs.end_token_
-        && lhs.stmts_.size() == rhs.stmts_.size()
-        && std::equal(boost::make_indirect_iterator(lhs.stmts_.begin()),
-                      boost::make_indirect_iterator(lhs.stmts_.end()),
+ private:
+  virtual bool IsEqual(const Node &node) const {
+    const ScopeNode &rhs = static_cast<const ScopeNode&>(node);
+    return start_token_ == rhs.start_token_
+        && end_token_ == rhs.end_token_
+        && stmts_.size() == rhs.stmts_.size()
+        && std::equal(boost::make_indirect_iterator(stmts_.begin()),
+                      boost::make_indirect_iterator(stmts_.end()),
                       boost::make_indirect_iterator(rhs.stmts_.begin()));
   }
 
-  friend std::ostream &operator<<(std::ostream &stream, const ScopeNode &node) {
-    stream << node.start_token_.GetValue() << '\n';
+  virtual void Print(std::ostream &stream) const {
+    stream << start_token_.GetValue() << '\n';
 
-    for (const std::unique_ptr<StmtNode> &stmt: node.stmts_) {
+    for (const std::unique_ptr<StmtNode> &stmt: stmts_) {
       stream << *stmt << '\n';
     }
 
-    return stream << node.end_token_.GetValue();
+    stream << end_token_.GetValue();
   }
 
- private:
   real_talk::lexer::TokenInfo start_token_;
   std::vector< std::unique_ptr<StmtNode> > stmts_;
   real_talk::lexer::TokenInfo end_token_;
