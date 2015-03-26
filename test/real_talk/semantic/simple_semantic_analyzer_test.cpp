@@ -2919,10 +2919,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
 TEST_F(SimpleSemanticAnalyzerTest,
        IfElseIfUsingElseIfWithIncompatibleDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> func_body_node(new ScopeNode(
+  ScopeNode *func_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> func_body_node(func_body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -2946,10 +2947,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   stmt_nodes.push_back(move(var_def_node));
 
-  unique_ptr<ScopeNode> if_body_node1(new ScopeNode(
+  ScopeNode *if_body_node_ptr1 = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(13), UINT32_C(13)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(14), UINT32_C(14))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(14), UINT32_C(14)));
+  unique_ptr<ScopeNode> if_body_node1(if_body_node_ptr1);
   IdNode *id_node_ptr1 = new IdNode(
       TokenInfo(Token::kName, "var", UINT32_C(11), UINT32_C(11)));
   unique_ptr<ExprNode> id_node1(id_node_ptr1);
@@ -2988,6 +2990,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t func_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> func_body_analysis(
+      new ScopeAnalysis(func_body_local_vars_count));
+  node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
+
+  uint32_t if_body_local_vars_count1 = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
+      new ScopeAnalysis(if_body_local_vars_count1));
+  node_analyzes.insert(make_pair(if_body_node_ptr1, move(if_body_analysis1)));
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -3065,10 +3076,11 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
   unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
   body_stmt_nodes1.push_back(move(var_def_node2));
-  unique_ptr<ScopeNode> if_body1(new ScopeNode(
+  ScopeNode *if_body_ptr1 = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
       move(body_stmt_nodes1),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11)));
+  unique_ptr<ScopeNode> if_body1(if_body_ptr1);
 
   IdNode *if_cond_ptr1 = new IdNode(
       TokenInfo(Token::kName, "name", UINT32_C(5), UINT32_C(5)));
@@ -3090,10 +3102,11 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(20), UINT32_C(20)));
   unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
   body_stmt_nodes2.push_back(move(var_def_node3));
-  unique_ptr<ScopeNode> if_body2(new ScopeNode(
+  ScopeNode *if_body_ptr2 = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(17), UINT32_C(17)),
       move(body_stmt_nodes2),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(21), UINT32_C(21))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(21), UINT32_C(21)));
+  unique_ptr<ScopeNode> if_body2(if_body_ptr2);
 
   IdNode *if_cond_ptr2 = new IdNode(
       TokenInfo(Token::kName, "name", UINT32_C(15), UINT32_C(15)));
@@ -3118,10 +3131,11 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(26), UINT32_C(26)));
   unique_ptr<StmtNode> var_def_node4(var_def_node_ptr4);
   body_stmt_nodes3.push_back(move(var_def_node4));
-  unique_ptr<ScopeNode> else_body(new ScopeNode(
+  ScopeNode *else_body_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(23), UINT32_C(23)),
       move(body_stmt_nodes3),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(27), UINT32_C(27))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(27), UINT32_C(27)));
+  unique_ptr<ScopeNode> else_body(else_body_ptr);
 
   unique_ptr<StmtNode> if_else_if_node(new IfElseIfElseNode(
       move(if_node1),
@@ -3132,6 +3146,21 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t if_body_local_vars_count1 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
+      new ScopeAnalysis(if_body_local_vars_count1));
+  node_analyzes.insert(make_pair(if_body_ptr1, move(if_body_analysis1)));
+
+  uint32_t if_body_local_vars_count2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> if_body_analysis2(
+      new ScopeAnalysis(if_body_local_vars_count2));
+  node_analyzes.insert(make_pair(if_body_ptr2, move(if_body_analysis2)));
+
+  uint32_t else_body_local_vars_count = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> else_body_analysis(
+      new ScopeAnalysis(else_body_local_vars_count));
+  node_analyzes.insert(make_pair(else_body_ptr, move(else_body_analysis)));
+
   unique_ptr<DataType> var_data_type1(new BoolDataType());
   unique_ptr<NodeSemanticAnalysis> var_def_analysis1(
       new VarDefAnalysis(move(var_data_type1), DataStorage::kGlobal));
@@ -3183,10 +3212,11 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
 TEST_F(SimpleSemanticAnalyzerTest,
        IfElseIfElseUsingIfWithIncompatibleDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> func_body_node(new ScopeNode(
+  ScopeNode *func_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> func_body_node(func_body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -3230,6 +3260,10 @@ TEST_F(SimpleSemanticAnalyzerTest,
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t func_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> func_body_analysis(
+      new ScopeAnalysis(func_body_local_vars_count));
+  node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -3277,10 +3311,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
 TEST_F(SimpleSemanticAnalyzerTest,
        IfElseIfElseUsingElseIfWithIncompatibleDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> func_body_node(new ScopeNode(
+  ScopeNode *func_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> func_body_node(func_body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -3304,10 +3339,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   stmt_nodes.push_back(move(var_def_node));
 
-  unique_ptr<ScopeNode> if_body_node1(new ScopeNode(
+  ScopeNode *if_body_node_ptr1 = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(13), UINT32_C(13)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(14), UINT32_C(14))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(14), UINT32_C(14)));
+  unique_ptr<ScopeNode> if_body_node1(if_body_node_ptr1);
   IdNode *id_node_ptr1 = new IdNode(
       TokenInfo(Token::kName, "var", UINT32_C(11), UINT32_C(11)));
   unique_ptr<ExprNode> id_node1(id_node_ptr1);
@@ -3353,6 +3389,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t func_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> func_body_analysis(
+      new ScopeAnalysis(func_body_local_vars_count));
+  node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
+
+  uint32_t if_body_local_vars_count1 = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
+      new ScopeAnalysis(if_body_local_vars_count1));
+  node_analyzes.insert(make_pair(if_body_node_ptr1, move(if_body_analysis1)));
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -4233,10 +4278,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
   unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
   body_stmt_nodes.push_back(move(var_def_node2));
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
 
   IdNode *id_node_ptr = new IdNode(
       TokenInfo(Token::kName, "name", UINT32_C(5), UINT32_C(5)));
@@ -4251,6 +4297,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> var_def_data_type1(new BoolDataType());
   unique_ptr<NodeSemanticAnalysis> var_def_analysis1(new VarDefAnalysis(
       move(var_def_data_type1), DataStorage::kGlobal));
@@ -4286,10 +4337,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
 TEST_F(SimpleSemanticAnalyzerTest,
        PreTestLoopWithIncompatibleDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> func_body_node(new ScopeNode(
+  ScopeNode *func_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> func_body_node(func_body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -4322,6 +4374,10 @@ TEST_F(SimpleSemanticAnalyzerTest,
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t func_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> func_body_analysis(
+      new ScopeAnalysis(func_body_local_vars_count));
+  node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -4381,10 +4437,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
       TokenInfo(Token::kContinue, "continue", UINT32_C(8), UINT32_C(8)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   body_stmt_nodes.push_back(move(continue_node));
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
 
   IdNode *id_node_ptr = new IdNode(
       TokenInfo(Token::kName, "var", UINT32_C(5), UINT32_C(5)));
@@ -4399,6 +4456,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> var_def_data_type1(new BoolDataType());
   unique_ptr<NodeSemanticAnalysis> var_def_analysis1(new VarDefAnalysis(
       move(var_def_data_type1), DataStorage::kGlobal));
@@ -4472,10 +4534,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
       TokenInfo(Token::kBreak, "break", UINT32_C(8), UINT32_C(8)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   body_stmt_nodes.push_back(move(break_node));
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
 
   IdNode *id_node_ptr = new IdNode(
       TokenInfo(Token::kName, "var", UINT32_C(5), UINT32_C(5)));
@@ -4490,6 +4553,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> var_def_data_type1(new BoolDataType());
   unique_ptr<NodeSemanticAnalysis> var_def_analysis1(new VarDefAnalysis(
       move(var_def_data_type1), DataStorage::kGlobal));
@@ -4957,10 +5025,11 @@ TEST_F(SimpleSemanticAnalyzerTest, And) {
 
 TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -4993,6 +5062,11 @@ TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -5094,10 +5168,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Or) {
 
 TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -5130,6 +5205,11 @@ TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -5231,10 +5311,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Mul) {
 
 TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -5267,6 +5348,11 @@ TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -5368,10 +5454,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Div) {
 
 TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -5404,6 +5491,11 @@ TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -5505,10 +5597,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Sum) {
 
 TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -5541,6 +5634,11 @@ TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -5642,10 +5740,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Sub) {
 
 TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -5678,6 +5777,11 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -5779,10 +5883,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Equal) {
 
 TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -5815,6 +5920,11 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -5918,10 +6028,11 @@ TEST_F(SimpleSemanticAnalyzerTest, LessOrEqual) {
 TEST_F(SimpleSemanticAnalyzerTest,
        LessOrEqualWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -5954,6 +6065,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -6058,10 +6174,11 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterOrEqual) {
 TEST_F(SimpleSemanticAnalyzerTest,
        GreaterOrEqualWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -6094,6 +6211,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -6196,10 +6318,11 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqual) {
 
 TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -6232,6 +6355,11 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -6334,10 +6462,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Greater) {
 
 TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -6370,6 +6499,11 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
@@ -7203,10 +7337,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Not) {
 
 TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(0), UINT32_C(0)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -7235,6 +7370,11 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   FuncDataType func_data_type(
       unique_ptr<DataType>(new VoidDataType()),
       vector< unique_ptr<DataType> >());
@@ -7318,10 +7458,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Negative) {
 
 TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(0), UINT32_C(0)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -7350,6 +7491,11 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   FuncDataType func_data_type(
       unique_ptr<DataType>(new VoidDataType()),
       vector< unique_ptr<DataType> >());
@@ -7433,10 +7579,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreInc) {
 
 TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(0), UINT32_C(0)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -7465,6 +7612,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   FuncDataType func_data_type(
       unique_ptr<DataType>(new VoidDataType()),
       vector< unique_ptr<DataType> >());
@@ -7548,10 +7700,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDec) {
 
 TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  unique_ptr<ScopeNode> body_node(new ScopeNode(
+  ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(0), UINT32_C(0)),
       vector< unique_ptr<StmtNode> >(),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
   FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -7580,6 +7733,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
   FuncDataType func_data_type(
       unique_ptr<DataType>(new VoidDataType()),
       vector< unique_ptr<DataType> >());
