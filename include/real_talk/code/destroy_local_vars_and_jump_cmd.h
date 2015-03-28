@@ -11,7 +11,7 @@ class DestroyLocalVarsAndJumpCmd: public Cmd {
  public:
   inline explicit DestroyLocalVarsAndJumpCmd(
       uint32_t vars_count, uint32_t address) noexcept
-      : vars_count_(vars_count), address_(address) {assert(vars_count != 0);}
+      : vars_count_(vars_count), address_(address) {assert(vars_count > 0);}
 
   inline void SetVarsCount(uint32_t count) noexcept {vars_count_ = count;}
   inline uint32_t GetVarsCount() const noexcept {return vars_count_;}

@@ -10,6 +10,7 @@
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/destroy_local_vars_and_jump_cmd.h"
+#include "real_talk/code/destroy_local_vars_cmd.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/code.h"
 
@@ -103,6 +104,8 @@ DirectJumpCmd &kDirectJumpCmd = *new DirectJumpCmd(UINT32_C(0));
 
 DestroyLocalVarsAndJumpCmd &kDestroyLocalVarsAndJumpCmd =
     *new DestroyLocalVarsAndJumpCmd(UINT32_C(1), UINT32_C(0));
+DestroyLocalVarsCmd &kDestroyLocalVarsCmd =
+    *new DestroyLocalVarsCmd(UINT32_C(1));
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -222,8 +225,10 @@ const CmdReader::Readers CmdReader::InitReaders() {
   readers[static_cast<uint8_t>(CmdId::kDirectJump)] =
       &CmdReader::ReadDirectJumpCmd;
 
-  readers[static_cast<uint8_t>(CmdId::kDestroyLocalVarsAndJumpCmd)] =
+  readers[static_cast<uint8_t>(CmdId::kDestroyLocalVarsAndJump)] =
       &CmdReader::ReadDestroyLocalVarsAndJumpCmd;
+  readers[static_cast<uint8_t>(CmdId::kDestroyLocalVars)] =
+      &CmdReader::ReadDestroyLocalVarsCmd;
 
   return readers;
 }
@@ -439,6 +444,11 @@ const Cmd &CmdReader::ReadDestroyLocalVarsAndJumpCmd() {
   kDestroyLocalVarsAndJumpCmd.SetVarsCount(code_->ReadUint32());
   kDestroyLocalVarsAndJumpCmd.SetAddress(code_->ReadUint32());
   return kDestroyLocalVarsAndJumpCmd;
+}
+
+const Cmd &CmdReader::ReadDestroyLocalVarsCmd() {
+  kDestroyLocalVarsCmd.SetVarsCount(code_->ReadUint32());
+  return kDestroyLocalVarsCmd;
 }
 }
 }

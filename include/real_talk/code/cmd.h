@@ -55,7 +55,8 @@ enum class CmdId: uint8_t {
   kCreateAndInitLocalBoolVar = UINT8_C(43),
   kJumpIfNot = UINT8_C(44),
   kDirectJump = UINT8_C(45),
-  kDestroyLocalVarsAndJumpCmd = UINT8_C(46)
+  kDestroyLocalVarsAndJump = UINT8_C(46),
+  kDestroyLocalVars = UINT8_C(47)
 };
 
 class Cmd {

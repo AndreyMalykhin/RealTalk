@@ -33,6 +33,7 @@
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
+#include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/int_data_type.h"
 #include "real_talk/semantic/long_data_type.h"
 #include "real_talk/semantic/array_data_type.h"
@@ -112,6 +113,7 @@ using real_talk::semantic::VarDefAnalysis;
 using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::ExprAnalysis;
 using real_talk::semantic::CommonExprAnalysis;
+using real_talk::semantic::ScopeAnalysis;
 using real_talk::semantic::DataType;
 using real_talk::semantic::IntDataType;
 using real_talk::semantic::LongDataType;
@@ -1319,10 +1321,11 @@ TEST_F(CodeGeneratorTest, JumpIfNotCmd) {
       move(int_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
   if_body_stmt_nodes.push_back(move(int_stmt_node));
-  unique_ptr<ScopeNode> if_body_node(new ScopeNode(
+  ScopeNode *if_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<ScopeNode> if_body_node(if_body_node_ptr);
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
   unique_ptr<ExprNode> bool_node(bool_node_ptr);
@@ -1342,10 +1345,11 @@ TEST_F(CodeGeneratorTest, JumpIfNotCmd) {
       move(int_node2),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(15), UINT32_C(15))));
   else_if_body_stmt_nodes.push_back(move(int_stmt_node2));
-  unique_ptr<ScopeNode> else_if_body_node(new ScopeNode(
+  ScopeNode *else_if_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(13), UINT32_C(13)),
       move(else_if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16)));
+  unique_ptr<ScopeNode> else_if_body_node(else_if_body_node_ptr);
   BoolNode *bool_node_ptr2 = new BoolNode(
       TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(11), UINT32_C(11)));
   unique_ptr<ExprNode> bool_node2(bool_node_ptr2);
@@ -1368,10 +1372,11 @@ TEST_F(CodeGeneratorTest, JumpIfNotCmd) {
       move(int_node3),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(20), UINT32_C(20))));
   else_body_stmt_nodes.push_back(move(int_stmt_node3));
-  unique_ptr<ScopeNode> else_body_node(new ScopeNode(
+  ScopeNode *else_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(18), UINT32_C(18)),
       move(else_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(21), UINT32_C(21))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(21), UINT32_C(21)));
+  unique_ptr<ScopeNode> else_body_node(else_body_node_ptr);
 
   unique_ptr<StmtNode> if_else_if_else_node(new IfElseIfElseNode(
       move(if_node),
@@ -1382,6 +1387,20 @@ TEST_F(CodeGeneratorTest, JumpIfNotCmd) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t if_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> if_body_analysis(
+      new ScopeAnalysis(if_body_local_vars_count));
+  node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
+  uint32_t else_if_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> else_if_body_analysis(
+      new ScopeAnalysis(else_if_body_local_vars_count));
+  node_analyzes.insert(
+      make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
+  uint32_t else_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> else_body_analysis(
+      new ScopeAnalysis(else_body_local_vars_count));
+  node_analyzes.insert(
+      make_pair(else_body_node_ptr, move(else_body_analysis)));
   unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
       ValueType::kRight,
@@ -1488,10 +1507,11 @@ TEST_F(CodeGeneratorTest, DestroyLocalVarsAndJumpCmd) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   if_body_stmt_nodes.push_back(move(var_def_node));
-  unique_ptr<ScopeNode> if_body_node(new ScopeNode(
+  ScopeNode *if_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(8), UINT32_C(8))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(8), UINT32_C(8)));
+  unique_ptr<ScopeNode> if_body_node(if_body_node_ptr);
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
   unique_ptr<ExprNode> bool_node(bool_node_ptr);
@@ -1512,10 +1532,11 @@ TEST_F(CodeGeneratorTest, DestroyLocalVarsAndJumpCmd) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(17), UINT32_C(17)));
   unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
   else_if_body_stmt_nodes.push_back(move(var_def_node2));
-  unique_ptr<ScopeNode> else_if_body_node(new ScopeNode(
+  ScopeNode *else_if_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(14), UINT32_C(14)),
       move(else_if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(18), UINT32_C(18))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(18), UINT32_C(18)));
+  unique_ptr<ScopeNode> else_if_body_node(else_if_body_node_ptr);
   BoolNode *bool_node_ptr2 = new BoolNode(
       TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(12), UINT32_C(12)));
   unique_ptr<ExprNode> bool_node2(bool_node_ptr2);
@@ -1538,10 +1559,11 @@ TEST_F(CodeGeneratorTest, DestroyLocalVarsAndJumpCmd) {
       move(int_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(22), UINT32_C(22))));
   else_body_stmt_nodes.push_back(move(int_stmt_node));
-  unique_ptr<ScopeNode> else_body_node(new ScopeNode(
+  ScopeNode *else_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(20), UINT32_C(20)),
       move(else_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(23), UINT32_C(23))));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(23), UINT32_C(23)));
+  unique_ptr<ScopeNode> else_body_node(else_body_node_ptr);
 
   unique_ptr<StmtNode> if_else_if_else_node(new IfElseIfElseNode(
       move(if_node),
@@ -1552,6 +1574,20 @@ TEST_F(CodeGeneratorTest, DestroyLocalVarsAndJumpCmd) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t if_body_local_vars_count = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> if_body_analysis(
+      new ScopeAnalysis(if_body_local_vars_count));
+  node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
+  uint32_t else_if_body_local_vars_count = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> else_if_body_analysis(
+      new ScopeAnalysis(if_body_local_vars_count));
+  node_analyzes.insert(
+      make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
+  uint32_t else_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> else_body_analysis(
+      new ScopeAnalysis(else_body_local_vars_count));
+  node_analyzes.insert(
+      make_pair(else_body_node_ptr, move(else_body_analysis)));
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
@@ -1584,8 +1620,8 @@ TEST_F(CodeGeneratorTest, DestroyLocalVarsAndJumpCmd) {
   uint32_t else_if_address_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(uint32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJumpCmd);
-  cmds_code->WriteUint32(UINT32_C(1));
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
+  cmds_code->WriteUint32(if_body_local_vars_count);
   uint32_t branch_end_address_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(uint32_t));
 
@@ -1599,8 +1635,8 @@ TEST_F(CodeGeneratorTest, DestroyLocalVarsAndJumpCmd) {
   uint32_t else_address_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(uint32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJumpCmd);
-  cmds_code->WriteUint32(UINT32_C(1));
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
+  cmds_code->WriteUint32(else_if_body_local_vars_count);
   uint32_t branch_end_address_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(uint32_t));
 
@@ -1616,6 +1652,114 @@ TEST_F(CodeGeneratorTest, DestroyLocalVarsAndJumpCmd) {
   cmds_code->SetPosition(branch_end_address_placeholder);
   cmds_code->WriteUint32(branch_end_address);
   cmds_code->SetPosition(branch_end_address_placeholder2);
+  cmds_code->WriteUint32(branch_end_address);
+  cmds_code->SetPosition(branch_end_address);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
+}
+
+TEST_F(CodeGeneratorTest, DestroyLocalVarsCmd) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
+  ScopeNode *if_body_node_ptr = new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      move(if_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ScopeNode> if_body_node(if_body_node_ptr);
+  BoolNode *bool_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> bool_node(bool_node_ptr);
+  unique_ptr<IfNode> if_node(new IfNode(
+      TokenInfo(Token::kIf, "if", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(1), UINT32_C(1)),
+      move(bool_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      move(if_body_node)));
+
+  vector< unique_ptr<StmtNode> > else_body_stmt_nodes;
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(8), UINT32_C(8))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  else_body_stmt_nodes.push_back(move(var_def_node));
+  ScopeNode *else_body_node_ptr = new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
+      move(else_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11)));
+  unique_ptr<ScopeNode> else_body_node(else_body_node_ptr);
+
+  unique_ptr<StmtNode> if_else_if_else_node(new IfElseIfElseNode(
+      move(if_node),
+      vector< unique_ptr<ElseIfNode> >(),
+      TokenInfo(Token::kElse, "else", UINT32_C(6), UINT32_C(6)),
+      move(else_body_node)));
+  program_stmt_nodes.push_back(move(if_else_if_else_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t if_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> if_body_analysis(
+      new ScopeAnalysis(if_body_local_vars_count));
+  node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
+  uint32_t else_body_local_vars_count = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> else_body_analysis(
+      new ScopeAnalysis(else_body_local_vars_count));
+  node_analyzes.insert(
+      make_pair(else_body_node_ptr, move(else_body_analysis)));
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(true);
+  cmds_code->WriteCmdId(CmdId::kJumpIfNot);
+  uint32_t else_address_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(uint32_t));
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
+  uint32_t branch_end_address_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(uint32_t));
+
+  uint32_t else_address = cmds_code->GetPosition();
+  cmds_code->SetPosition(else_address_placeholder);
+  cmds_code->WriteUint32(else_address);
+  cmds_code->SetPosition(else_address);
+  cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
+  cmds_code->WriteUint32(else_body_local_vars_count);
+
+  uint32_t branch_end_address = cmds_code->GetPosition();
+  cmds_code->SetPosition(branch_end_address_placeholder);
   cmds_code->WriteUint32(branch_end_address);
   cmds_code->SetPosition(branch_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);

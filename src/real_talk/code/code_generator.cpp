@@ -30,6 +30,7 @@
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
+#include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
 #include "real_talk/semantic/bool_lit.h"
@@ -119,6 +120,7 @@ using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
 using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::CommonExprAnalysis;
+using real_talk::semantic::ScopeAnalysis;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
 using real_talk::semantic::ArrayDataType;
@@ -771,9 +773,13 @@ void CodeGenerator::Impl::VisitIfElseIfElse(
     branch_end_address_placeholders.push_back(VisitIf(*else_if->GetIf()));
   }
 
-  for (const unique_ptr<StmtNode> &stmt
-           : if_else_if_else.GetElseBody()->GetStmts()) {
-    stmt->Accept(*this);
+  if_else_if_else.GetElseBody()->Accept(*this);
+  const ScopeAnalysis &else_body_analysis = static_cast<const ScopeAnalysis&>(
+      GetNodeAnalysis(*if_else_if_else.GetElseBody()));
+
+  if (else_body_analysis.GetLocalVarsCount() > 0) {
+    code_->WriteCmdId(CmdId::kDestroyLocalVars);
+    code_->WriteUint32(else_body_analysis.GetLocalVarsCount());
   }
 
   const uint32_t branch_end_address = GetCmdsCodePosition();
@@ -795,12 +801,17 @@ uint32_t CodeGenerator::Impl::VisitIf(const IfNode &node) {
   code_->WriteCmdId(CmdId::kJumpIfNot);
   const uint32_t jump_address_placeholder = code_->GetPosition();
   code_->Skip(sizeof(uint32_t));
+  node.GetBody()->Accept(*this);
+  const ScopeAnalysis &body_analysis =
+      static_cast<const ScopeAnalysis&>(GetNodeAnalysis(*node.GetBody()));
 
-  for (const unique_ptr<StmtNode> &stmt: node.GetBody()->GetStmts()) {
-    stmt->Accept(*this);
+  if (body_analysis.GetLocalVarsCount() > 0) {
+    code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
+    code_->WriteUint32(body_analysis.GetLocalVarsCount());
+  } else {
+    code_->WriteCmdId(CmdId::kDirectJump);
   }
 
-  code_->WriteCmdId(CmdId::kDirectJump);
   const uint32_t branch_end_address_placeholder = code_->GetPosition();
   code_->Skip(sizeof(uint32_t));
   const uint32_t jump_address = GetCmdsCodePosition();
@@ -941,7 +952,11 @@ void CodeGenerator::Impl::VisitSub(const SubNode&) {}
 
 void CodeGenerator::Impl::VisitSum(const SumNode&) {}
 
-void CodeGenerator::Impl::VisitScope(const ScopeNode&) {}
+void CodeGenerator::Impl::VisitScope(const ScopeNode &node) {
+  for (const unique_ptr<StmtNode> &stmt: node.GetStmts()) {
+    stmt->Accept(*this);
+  }
+}
 
 void CodeGenerator::Impl::VisitIntDataType(const IntDataTypeNode&) {
   assert(false);

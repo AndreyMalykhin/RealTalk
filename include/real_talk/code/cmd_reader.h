@@ -76,6 +76,7 @@ class CmdReader {
   const Cmd &ReadJumpIfNotCmd();
   const Cmd &ReadDirectJumpCmd();
   const Cmd &ReadDestroyLocalVarsAndJumpCmd();
+  const Cmd &ReadDestroyLocalVarsCmd();
 
   static const Readers kReaders;
   Code *code_;
