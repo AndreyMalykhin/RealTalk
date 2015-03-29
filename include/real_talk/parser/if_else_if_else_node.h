@@ -47,7 +47,8 @@ class IfElseIfElseNode: public BranchNode {
   }
 
   virtual void Print(std::ostream &stream) const override {
-    stream << if_else_if_ << ' ' << else_token_.GetValue() << ' ' << *else_body_;
+    stream << if_else_if_ << ' ' << else_token_.GetValue() << ' '
+           << *else_body_;
   }
 
   IfElseIfNode if_else_if_;

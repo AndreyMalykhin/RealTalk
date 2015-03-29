@@ -56,7 +56,13 @@ enum class CmdId: uint8_t {
   kJumpIfNot = UINT8_C(44),
   kDirectJump = UINT8_C(45),
   kDestroyLocalVarsAndJump = UINT8_C(46),
-  kDestroyLocalVars = UINT8_C(47)
+  kDestroyLocalVars = UINT8_C(47),
+  kCreateAndInitIntArray = UINT8_C(48),
+  kCreateAndInitLongArray = UINT8_C(49),
+  kCreateAndInitDoubleArray = UINT8_C(50),
+  kCreateAndInitBoolArray = UINT8_C(51),
+  kCreateAndInitCharArray = UINT8_C(52),
+  kCreateAndInitStringArray = UINT8_C(53)
 };
 
 class Cmd {

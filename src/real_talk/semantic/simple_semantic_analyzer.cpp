@@ -1577,6 +1577,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
   }
 
   const vector< unique_ptr<ExprNode> > &values = alloc_node.GetValues();
+  assert(values.size() <= numeric_limits<uint32_t>::max());
   auto value_end_it = values.end();
 
   for (auto value_it = values.begin();

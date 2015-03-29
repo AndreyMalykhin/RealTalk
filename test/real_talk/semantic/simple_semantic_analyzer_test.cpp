@@ -2964,7 +2964,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<IfNode> if_node1(if_node_ptr1);
 
   vector< unique_ptr<ElseIfNode> > else_if_nodes;
-    unique_ptr<ScopeNode> if_body_node2(new ScopeNode(
+  unique_ptr<ScopeNode> if_body_node2(new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(20), UINT32_C(20)),
       vector< unique_ptr<StmtNode> >(),
       TokenInfo(Token::kScopeEnd, "}", UINT32_C(21), UINT32_C(21))));

@@ -84,17 +84,22 @@ class ArrayAllocWithInitNode: public ArrayAllocNode {
     }
 
     stream << values_start_token_.GetValue();
-    auto last_value_it = values_.end() - 1;
-    auto value_separator_token_it = value_separator_tokens_.begin();
 
-    for (auto value_it = values_.begin();
-         value_it != last_value_it;
-         ++value_it) {
-      stream << **value_it << value_separator_token_it->GetValue() << ' ';
-      ++value_separator_token_it;
+    if (!values_.empty()) {
+      auto last_value_it = values_.end() - 1;
+      auto value_separator_token_it = value_separator_tokens_.begin();
+
+      for (auto value_it = values_.begin();
+           value_it != last_value_it;
+           ++value_it) {
+        stream << **value_it << value_separator_token_it->GetValue() << ' ';
+        ++value_separator_token_it;
+      }
+
+      stream << **last_value_it;
     }
 
-    stream << **last_value_it << values_end_token_.GetValue();
+    stream << values_end_token_.GetValue();
   }
 
   BaseArrayAllocNode array_alloc_node_;

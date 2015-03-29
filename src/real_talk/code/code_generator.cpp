@@ -24,6 +24,7 @@
 #include "real_talk/parser/string_node.h"
 #include "real_talk/parser/double_node.h"
 #include "real_talk/parser/array_alloc_without_init_node.h"
+#include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/semantic_analysis.h"
@@ -115,6 +116,7 @@ using real_talk::parser::ElseIfNode;
 using real_talk::parser::IfElseIfElseNode;
 using real_talk::parser::IfNode;
 using real_talk::parser::ScopeNode;
+using real_talk::parser::ExprNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
@@ -157,6 +159,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class CreateAndInitGlobalVarCmdGenerator;
   class CreateAndInitLocalVarCmdGenerator;
   class CreateArrayCmdGenerator;
+  class CreateAndInitArrayCmdGenerator;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -219,9 +222,10 @@ class CodeGenerator::Impl: private NodeVisitor {
   template<typename TCreateGlobalVarCmdGenerator,
            typename TCreateLocalVarCmdGenerator>
   void VisitVarDef(const VarDefNode &node);
-  uint32_t VisitIf(const IfNode &node);
+  void VisitIf(const IfNode &node, uint32_t *branch_end_address_placeholder);
+  void WriteCurrentCmdAddress(const vector<uint32_t> &address_placeholders);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
-  uint32_t GetCmdsCodePosition() const;
+  uint32_t GetCurrentCmdAddress() const;
   void GenerateCmdsSegment();
   void GenerateImportsSegment();
   void GenerateIdsSegment(const vector<string> &ids);
@@ -587,6 +591,54 @@ class CodeGenerator::Impl::CreateArrayCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::CreateAndInitArrayCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type,
+                uint8_t dimensions_count,
+                uint32_t values_count,
+                Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+    code_->WriteUint8(dimensions_count);
+    code_->WriteUint32(values_count);
+  }
+
+ private:
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitBoolArray);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitIntArray);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLongArray);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitDoubleArray);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitCharArray);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitStringArray);
+  }
+
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(): impl_(new Impl()) {}
 
 CodeGenerator::~CodeGenerator() {}
@@ -762,15 +814,41 @@ void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
   code_->WriteCmdId(CmdId::kUnload);
 }
 
-void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode&) {}
+void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
+  const uint32_t start_address = GetCurrentCmdAddress();
+  node.GetCond()->Accept(*this);
+  code_->WriteCmdId(CmdId::kJumpIfNot);
+  const uint32_t end_address_placeholder = code_->GetPosition();
+  code_->Skip(sizeof(uint32_t));
+  node.GetBody()->Accept(*this);
+  const ScopeAnalysis &body_analysis = static_cast<const ScopeAnalysis&>(
+      GetNodeAnalysis(*(node.GetBody())));
+
+  if (body_analysis.GetLocalVarsCount() > 0) {
+    code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
+    code_->WriteUint32(body_analysis.GetLocalVarsCount());
+  } else {
+    code_->WriteCmdId(CmdId::kDirectJump);
+  }
+
+  code_->WriteUint32(start_address);
+  WriteCurrentCmdAddress(vector<uint32_t>({end_address_placeholder}));
+}
+
+void CodeGenerator::Impl::VisitBreak(const BreakNode&) {}
+
+void CodeGenerator::Impl::VisitContinue(const ContinueNode&) {}
 
 void CodeGenerator::Impl::VisitIfElseIfElse(
     const IfElseIfElseNode &if_else_if_else) {
   vector<uint32_t> branch_end_address_placeholders;
-  branch_end_address_placeholders.push_back(VisitIf(*if_else_if_else.GetIf()));
+  uint32_t branch_end_address_placeholder;
+  VisitIf(*(if_else_if_else.GetIf()), &branch_end_address_placeholder);
+  branch_end_address_placeholders.push_back(branch_end_address_placeholder);
 
   for (const unique_ptr<ElseIfNode> &else_if: if_else_if_else.GetElseIfs()) {
-    branch_end_address_placeholders.push_back(VisitIf(*else_if->GetIf()));
+    VisitIf(*(else_if->GetIf()), &branch_end_address_placeholder);
+    branch_end_address_placeholders.push_back(branch_end_address_placeholder);
   }
 
   if_else_if_else.GetElseBody()->Accept(*this);
@@ -782,21 +860,41 @@ void CodeGenerator::Impl::VisitIfElseIfElse(
     code_->WriteUint32(else_body_analysis.GetLocalVarsCount());
   }
 
-  const uint32_t branch_end_address = GetCmdsCodePosition();
-  const uint32_t continue_address = code_->GetPosition();
-
-  for (const uint32_t branch_end_address_placeholder
-           : branch_end_address_placeholders) {
-    code_->SetPosition(branch_end_address_placeholder);
-    code_->WriteUint32(branch_end_address);
-  }
-
-  code_->SetPosition(continue_address);
+  WriteCurrentCmdAddress(branch_end_address_placeholders);
 }
 
-void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode&) {}
+void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode &if_else_if) {
+  if (if_else_if.GetElseIfs().empty()) {
+    VisitIf(*if_else_if.GetIf(), nullptr);
+    return;
+  }
 
-uint32_t CodeGenerator::Impl::VisitIf(const IfNode &node) {
+  vector<uint32_t> branch_end_address_placeholders;
+  uint32_t branch_end_address_placeholder;
+  VisitIf(*(if_else_if.GetIf()), &branch_end_address_placeholder);
+  branch_end_address_placeholders.push_back(branch_end_address_placeholder);
+  auto last_else_if_it = if_else_if.GetElseIfs().cend() - 1;
+
+  for (auto else_if_it = if_else_if.GetElseIfs().cbegin();
+       else_if_it != last_else_if_it;
+       ++else_if_it) {
+    const unique_ptr<IfNode> &if_node = (**else_if_it).GetIf();
+    VisitIf(*if_node, &branch_end_address_placeholder);
+    branch_end_address_placeholders.push_back(branch_end_address_placeholder);
+  }
+
+  const unique_ptr<IfNode> &if_node = (**last_else_if_it).GetIf();
+  VisitIf(*if_node, nullptr);
+  WriteCurrentCmdAddress(branch_end_address_placeholders);
+}
+
+/**
+ * @param branch_end_address_placeholder If not null, generates jump to the end
+ * of branch and stores here address of placeholder, that needs to be filled
+ * with the address of branch end
+ */
+void CodeGenerator::Impl::VisitIf(
+    const IfNode &node, uint32_t *branch_end_address_placeholder) {
   node.GetCond()->Accept(*this);
   code_->WriteCmdId(CmdId::kJumpIfNot);
   const uint32_t jump_address_placeholder = code_->GetPosition();
@@ -805,26 +903,25 @@ uint32_t CodeGenerator::Impl::VisitIf(const IfNode &node) {
   const ScopeAnalysis &body_analysis =
       static_cast<const ScopeAnalysis&>(GetNodeAnalysis(*node.GetBody()));
 
-  if (body_analysis.GetLocalVarsCount() > 0) {
-    code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-    code_->WriteUint32(body_analysis.GetLocalVarsCount());
+  if (branch_end_address_placeholder == nullptr) {
+    if (body_analysis.GetLocalVarsCount() > 0) {
+      code_->WriteCmdId(CmdId::kDestroyLocalVars);
+      code_->WriteUint32(body_analysis.GetLocalVarsCount());
+    }
   } else {
-    code_->WriteCmdId(CmdId::kDirectJump);
+    if (body_analysis.GetLocalVarsCount() > 0) {
+      code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
+      code_->WriteUint32(body_analysis.GetLocalVarsCount());
+    } else {
+      code_->WriteCmdId(CmdId::kDirectJump);
+    }
+
+    *branch_end_address_placeholder = code_->GetPosition();
+    code_->Skip(sizeof(uint32_t));
   }
 
-  const uint32_t branch_end_address_placeholder = code_->GetPosition();
-  code_->Skip(sizeof(uint32_t));
-  const uint32_t jump_address = GetCmdsCodePosition();
-  const uint32_t continue_address = code_->GetPosition();
-  code_->SetPosition(jump_address_placeholder);
-  code_->WriteUint32(jump_address);
-  code_->SetPosition(continue_address);
-  return branch_end_address_placeholder;
+  WriteCurrentCmdAddress(vector<uint32_t>({jump_address_placeholder}));
 }
-
-void CodeGenerator::Impl::VisitBreak(const BreakNode&) {}
-
-void CodeGenerator::Impl::VisitContinue(const ContinueNode&) {}
 
 void CodeGenerator::Impl::VisitFuncDefWithBody(
     const FuncDefWithBodyNode&) {}
@@ -856,7 +953,23 @@ void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
 }
 
 void CodeGenerator::Impl::VisitArrayAllocWithInit(
-    const ArrayAllocWithInitNode&) {}
+    const ArrayAllocWithInitNode &node) {
+  for (const unique_ptr<ExprNode> &value: reverse(node.GetValues())) {
+    value->Accept(*this);
+  }
+
+  const CommonExprAnalysis &array_alloc_analysis =
+      static_cast<const CommonExprAnalysis&>(GetNodeAnalysis(node));
+  const size_t dimensions_count = node.GetSizes().size();
+  assert(dimensions_count <= numeric_limits<uint8_t>::max());
+  const size_t values_count = node.GetValues().size();
+  assert(values_count <= numeric_limits<uint32_t>::max());
+  CreateAndInitArrayCmdGenerator().Generate(
+      array_alloc_analysis.GetDataType(),
+      static_cast<uint8_t>(dimensions_count),
+      static_cast<uint32_t>(values_count),
+      code_);
+}
 
 void CodeGenerator::Impl::VisitId(const IdNode&) {}
 
@@ -998,9 +1111,22 @@ const NodeSemanticAnalysis &CodeGenerator::Impl::GetNodeAnalysis(
   return *(node_analysis_it->second);
 }
 
-uint32_t CodeGenerator::Impl::GetCmdsCodePosition() const {
+uint32_t CodeGenerator::Impl::GetCurrentCmdAddress() const {
   assert(code_->GetPosition() >= cmds_address_);
   return code_->GetPosition() - cmds_address_;
+}
+
+void CodeGenerator::Impl::WriteCurrentCmdAddress(
+    const vector<uint32_t> &address_placeholders) {
+  const uint32_t current_address = GetCurrentCmdAddress();
+  const uint32_t continue_address = code_->GetPosition();
+
+  for (const uint32_t address_placeholder: address_placeholders) {
+    code_->SetPosition(address_placeholder);
+    code_->WriteUint32(current_address);
+  }
+
+  code_->SetPosition(continue_address);
 }
 }
 }

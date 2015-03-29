@@ -13,6 +13,7 @@ class Code;
 class CreateGlobalVarCmd;
 class CreateAndInitGlobalVarCmd;
 class CreateArrayCmd;
+class CreateAndInitArrayCmd;
 class JumpCmd;
 
 class CmdReader {
@@ -77,6 +78,13 @@ class CmdReader {
   const Cmd &ReadDirectJumpCmd();
   const Cmd &ReadDestroyLocalVarsAndJumpCmd();
   const Cmd &ReadDestroyLocalVarsCmd();
+  const Cmd &ReadCreateAndInitArrayCmd(CreateAndInitArrayCmd &cmd);
+  const Cmd &ReadCreateAndInitIntArrayCmd();
+  const Cmd &ReadCreateAndInitLongArrayCmd();
+  const Cmd &ReadCreateAndInitDoubleArrayCmd();
+  const Cmd &ReadCreateAndInitBoolArrayCmd();
+  const Cmd &ReadCreateAndInitCharArrayCmd();
+  const Cmd &ReadCreateAndInitStringArrayCmd();
 
   static const Readers kReaders;
   Code *code_;

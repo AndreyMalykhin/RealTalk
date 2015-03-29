@@ -8,6 +8,7 @@
 #include "real_talk/code/create_and_init_global_var_cmd.h"
 #include "real_talk/code/create_and_init_local_var_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
+#include "real_talk/code/create_and_init_array_cmd.h"
 #include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/destroy_local_vars_and_jump_cmd.h"
 #include "real_talk/code/destroy_local_vars_cmd.h"
@@ -83,6 +84,19 @@ CreateBoolArrayCmd &kCreateBoolArrayCmd = *new CreateBoolArrayCmd(UINT8_C(1));
 CreateCharArrayCmd &kCreateCharArrayCmd = *new CreateCharArrayCmd(UINT8_C(1));
 CreateStringArrayCmd &kCreateStringArrayCmd =
     *new CreateStringArrayCmd(UINT8_C(1));
+
+CreateAndInitIntArrayCmd &kCreateAndInitIntArrayCmd =
+    *new CreateAndInitIntArrayCmd(UINT8_C(1), UINT32_C(0));
+CreateAndInitLongArrayCmd &kCreateAndInitLongArrayCmd =
+    *new CreateAndInitLongArrayCmd(UINT8_C(1), UINT32_C(0));
+CreateAndInitDoubleArrayCmd &kCreateAndInitDoubleArrayCmd =
+    *new CreateAndInitDoubleArrayCmd(UINT8_C(1), UINT32_C(0));
+CreateAndInitBoolArrayCmd &kCreateAndInitBoolArrayCmd =
+    *new CreateAndInitBoolArrayCmd(UINT8_C(1), UINT32_C(0));
+CreateAndInitCharArrayCmd &kCreateAndInitCharArrayCmd =
+    *new CreateAndInitCharArrayCmd(UINT8_C(1), UINT32_C(0));
+CreateAndInitStringArrayCmd &kCreateAndInitStringArrayCmd =
+    *new CreateAndInitStringArrayCmd(UINT8_C(1), UINT32_C(0));
 
 const CreateAndInitLocalIntVarCmd &kCreateAndInitLocalIntVarCmd =
     *new CreateAndInitLocalIntVarCmd();
@@ -219,6 +233,19 @@ const CmdReader::Readers CmdReader::InitReaders() {
       &CmdReader::ReadCreateCharArrayCmd;
   readers[static_cast<uint8_t>(CmdId::kCreateStringArray)] =
       &CmdReader::ReadCreateStringArrayCmd;
+
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitIntArray)] =
+      &CmdReader::ReadCreateAndInitIntArrayCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLongArray)] =
+      &CmdReader::ReadCreateAndInitLongArrayCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitDoubleArray)] =
+      &CmdReader::ReadCreateAndInitDoubleArrayCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitBoolArray)] =
+      &CmdReader::ReadCreateAndInitBoolArrayCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitCharArray)] =
+      &CmdReader::ReadCreateAndInitCharArrayCmd;
+  readers[static_cast<uint8_t>(CmdId::kCreateAndInitStringArray)] =
+      &CmdReader::ReadCreateAndInitStringArrayCmd;
 
   readers[static_cast<uint8_t>(CmdId::kJumpIfNot)] =
       &CmdReader::ReadJumpIfNotCmd;
@@ -425,6 +452,37 @@ const Cmd &CmdReader::ReadCreateCharArrayCmd() {
 
 const Cmd &CmdReader::ReadCreateStringArrayCmd() {
   return ReadCreateArrayCmd(kCreateStringArrayCmd);
+}
+
+inline const Cmd &CmdReader::ReadCreateAndInitArrayCmd(
+    CreateAndInitArrayCmd &cmd) {
+  cmd.SetDimensionsCount(code_->ReadUint8());
+  cmd.SetValuesCount(code_->ReadUint32());
+  return cmd;
+}
+
+const Cmd &CmdReader::ReadCreateAndInitIntArrayCmd() {
+  return ReadCreateAndInitArrayCmd(kCreateAndInitIntArrayCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitLongArrayCmd() {
+  return ReadCreateAndInitArrayCmd(kCreateAndInitLongArrayCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitDoubleArrayCmd() {
+  return ReadCreateAndInitArrayCmd(kCreateAndInitDoubleArrayCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitBoolArrayCmd() {
+  return ReadCreateAndInitArrayCmd(kCreateAndInitBoolArrayCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitCharArrayCmd() {
+  return ReadCreateAndInitArrayCmd(kCreateAndInitCharArrayCmd);
+}
+
+const Cmd &CmdReader::ReadCreateAndInitStringArrayCmd() {
+  return ReadCreateAndInitArrayCmd(kCreateAndInitStringArrayCmd);
 }
 
 inline const Cmd &CmdReader::ReadJumpCmd(JumpCmd &cmd) {

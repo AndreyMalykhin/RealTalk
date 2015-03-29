@@ -32,7 +32,8 @@ class IfElseIfNode: public BranchNode {
     return if_;
   }
 
-  const std::vector< std::unique_ptr<ElseIfNode> > &GetElseIfs() const override {
+  const std::vector< std::unique_ptr<ElseIfNode> > &GetElseIfs()
+      const override {
     return else_ifs_;
   }
 

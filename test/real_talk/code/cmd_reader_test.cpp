@@ -11,6 +11,7 @@
 #include "real_talk/code/create_and_init_global_var_cmd.h"
 #include "real_talk/code/create_and_init_local_var_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
+#include "real_talk/code/create_and_init_array_cmd.h"
 #include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/destroy_local_vars_and_jump_cmd.h"
 #include "real_talk/code/destroy_local_vars_cmd.h"
@@ -60,6 +61,15 @@ class CmdReaderTest: public Test {
     Code code;
     code.WriteCmdId(cmd_id);
     code.WriteUint8(expected_cmd.GetDimensionsCount());
+    TestGetNextCmd(code, expected_cmd);
+  }
+
+  void TestCreateAndInitArrayCmd(
+      CmdId cmd_id, const CreateAndInitArrayCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    code.WriteUint32(expected_cmd.GetValuesCount());
     TestGetNextCmd(code, expected_cmd);
   }
 
@@ -362,6 +372,48 @@ TEST_F(CmdReaderTest, CreateStringArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateStringArrayCmd expected_cmd(dimensions_count);
   TestCreateArrayCmd(CmdId::kCreateStringArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitIntArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  uint32_t values_count = UINT32_C(3);
+  CreateAndInitIntArrayCmd expected_cmd(dimensions_count, values_count);
+  TestCreateAndInitArrayCmd(CmdId::kCreateAndInitIntArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLongArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  uint32_t values_count = UINT32_C(3);
+  CreateAndInitLongArrayCmd expected_cmd(dimensions_count, values_count);
+  TestCreateAndInitArrayCmd(CmdId::kCreateAndInitLongArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitDoubleArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  uint32_t values_count = UINT32_C(3);
+  CreateAndInitDoubleArrayCmd expected_cmd(dimensions_count, values_count);
+  TestCreateAndInitArrayCmd(CmdId::kCreateAndInitDoubleArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitBoolArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  uint32_t values_count = UINT32_C(3);
+  CreateAndInitBoolArrayCmd expected_cmd(dimensions_count, values_count);
+  TestCreateAndInitArrayCmd(CmdId::kCreateAndInitBoolArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitCharArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  uint32_t values_count = UINT32_C(3);
+  CreateAndInitCharArrayCmd expected_cmd(dimensions_count, values_count);
+  TestCreateAndInitArrayCmd(CmdId::kCreateAndInitCharArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitStringArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(2);
+  uint32_t values_count = UINT32_C(3);
+  CreateAndInitStringArrayCmd expected_cmd(dimensions_count, values_count);
+  TestCreateAndInitArrayCmd(CmdId::kCreateAndInitStringArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, JumpIfNotCmd) {
