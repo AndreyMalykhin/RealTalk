@@ -3772,22 +3772,6 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportAfterAnyOtherStmtIsInvalid) {
       new VarDefAnalysis(move(var_data_type1), DataStorage::kGlobal));
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
-  unique_ptr<DataType> var_data_type2(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(
-      new VarDefAnalysis(move(var_data_type2), DataStorage::kGlobal));
-  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-
-  unique_ptr<DataType> file_path_data_type(new StringDataType());
-  unique_ptr<Lit> file_path_lit(new StringLit("file.rt"));
-  unique_ptr<NodeSemanticAnalysis> file_path_expr_analysis(new LitAnalysis(
-      move(file_path_data_type), ValueType::kRight, move(file_path_lit)));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_expr_analysis)));
-
-  unique_ptr<NodeSemanticAnalysis> import_analysis(
-      new ImportAnalysis(import_program_node));
-  node_analyzes.insert(make_pair(import_node_ptr, move(import_analysis)));
-
   SemanticAnalysis::Problems problems;
   path file_path;
   unique_ptr<SemanticProblem> problem(
@@ -3795,21 +3779,8 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportAfterAnyOtherStmtIsInvalid) {
   problems.push_back(move(problem));
 
   vector<TestFileParse> test_file_parses;
-  path import_program_absolute_file_path("/myproject/file.rt");
-  TestFileParse test_file_parse =
-      {import_program_absolute_file_path, import_program_node};
-  test_file_parses.push_back(test_file_parse);
-
   vector<TestImportFileSearch> test_import_file_searches;
-  path import_relative_file_path("file.rt");
-  path import_absolute_file_path = import_program_absolute_file_path;
-  TestImportFileSearch test_import_file_search =
-      {import_relative_file_path, import_absolute_file_path};
-  test_import_file_searches.push_back(test_import_file_search);
-
   TestLitParses test_lit_parses = {};
-  test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
-
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   path main_program_file_path;
   TestProgram test_program = {main_program_node,
