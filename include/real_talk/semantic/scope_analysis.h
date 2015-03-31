@@ -3,7 +3,6 @@
 #define _REAL_TALK_SEMANTIC_SCOPE_ANALYSIS_H_
 
 #include <cstdint>
-#include <memory>
 #include "real_talk/semantic/node_semantic_analysis.h"
 
 namespace real_talk {

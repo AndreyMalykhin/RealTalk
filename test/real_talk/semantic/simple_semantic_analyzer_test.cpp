@@ -91,6 +91,7 @@
 #include "real_talk/semantic/id_analysis.h"
 #include "real_talk/semantic/import_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
+#include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/simple_semantic_analyzer.h"
 #include "real_talk/semantic/import_file_searcher.h"
@@ -4404,14 +4405,34 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
   stmt_nodes.push_back(move(var_def_node1));
 
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
-  unique_ptr<StmtNode> continue_node(new ContinueNode(
-      TokenInfo(Token::kContinue, "continue", UINT32_C(8), UINT32_C(8)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
+    unique_ptr<DataTypeNode> var_data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(8), UINT32_C(8))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(var_data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  body_stmt_nodes.push_back(move(var_def_node2));
+
+  ContinueNode *continue_node_ptr = new ContinueNode(
+      TokenInfo(Token::kContinue, "continue", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> continue_node(continue_node_ptr);
   body_stmt_nodes.push_back(move(continue_node));
+
+  unique_ptr<DataTypeNode> var_data_type_node3(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(13))));
+  VarDefWithoutInitNode *var_def_node_ptr3 = new VarDefWithoutInitNode(
+      move(var_data_type_node3),
+      TokenInfo(Token::kName, "var3", UINT32_C(14), UINT32_C(14)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(15), UINT32_C(15)));
+  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+  body_stmt_nodes.push_back(move(var_def_node3));
+
   ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16)));
   unique_ptr<ScopeNode> body_node(body_node_ptr);
 
   IdNode *id_node_ptr = new IdNode(
@@ -4427,18 +4448,32 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  uint32_t body_local_vars_count = UINT32_C(2);
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_vars_count));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
+  uint32_t flow_local_vars_count = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> continue_analysis(
+      new ControlFlowTransferAnalysis(flow_local_vars_count));
+  node_analyzes.insert(make_pair(continue_node_ptr, move(continue_analysis)));
 
   unique_ptr<DataType> var_def_data_type1(new BoolDataType());
   unique_ptr<NodeSemanticAnalysis> var_def_analysis1(new VarDefAnalysis(
       move(var_def_data_type1), DataStorage::kGlobal));
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
-  BoolDataType *id_data_type_ptr = new BoolDataType();
-  unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  unique_ptr<DataType> var_def_data_type2(new IntDataType());
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new VarDefAnalysis(
+      move(var_def_data_type2), DataStorage::kLocal));
+  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+
+  unique_ptr<DataType> var_def_data_type3(new LongDataType());
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new VarDefAnalysis(
+      move(var_def_data_type3), DataStorage::kLocal));
+  node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
+
+  unique_ptr<DataType> id_data_type(new BoolDataType());
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(id_data_type), ValueType::kLeft, var_def_node_ptr1));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
@@ -4501,14 +4536,34 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
   stmt_nodes.push_back(move(var_def_node1));
 
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
-  unique_ptr<StmtNode> break_node(new BreakNode(
-      TokenInfo(Token::kBreak, "break", UINT32_C(8), UINT32_C(8)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
+    unique_ptr<DataTypeNode> var_data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(8), UINT32_C(8))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(var_data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  body_stmt_nodes.push_back(move(var_def_node2));
+
+  BreakNode *break_node_ptr = new BreakNode(
+      TokenInfo(Token::kBreak, "break", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> break_node(break_node_ptr);
   body_stmt_nodes.push_back(move(break_node));
+
+  unique_ptr<DataTypeNode> var_data_type_node3(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(13))));
+  VarDefWithoutInitNode *var_def_node_ptr3 = new VarDefWithoutInitNode(
+      move(var_data_type_node3),
+      TokenInfo(Token::kName, "var3", UINT32_C(14), UINT32_C(14)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(15), UINT32_C(15)));
+  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+  body_stmt_nodes.push_back(move(var_def_node3));
+
   ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(7), UINT32_C(7)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16)));
   unique_ptr<ScopeNode> body_node(body_node_ptr);
 
   IdNode *id_node_ptr = new IdNode(
@@ -4524,18 +4579,32 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  uint32_t body_local_vars_count = UINT32_C(2);
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_vars_count));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+
+  uint32_t flow_local_vars_count = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> break_analysis(
+      new ControlFlowTransferAnalysis(flow_local_vars_count));
+  node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
 
   unique_ptr<DataType> var_def_data_type1(new BoolDataType());
   unique_ptr<NodeSemanticAnalysis> var_def_analysis1(new VarDefAnalysis(
       move(var_def_data_type1), DataStorage::kGlobal));
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
-  BoolDataType *id_data_type_ptr = new BoolDataType();
-  unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  unique_ptr<DataType> var_def_data_type2(new IntDataType());
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new VarDefAnalysis(
+      move(var_def_data_type2), DataStorage::kLocal));
+  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+
+  unique_ptr<DataType> var_def_data_type3(new LongDataType());
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new VarDefAnalysis(
+      move(var_def_data_type3), DataStorage::kLocal));
+  node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
+
+  unique_ptr<DataType> id_data_type(new BoolDataType());
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(id_data_type), ValueType::kLeft, var_def_node_ptr1));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));

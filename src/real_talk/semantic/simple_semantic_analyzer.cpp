@@ -94,6 +94,7 @@
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/id_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
+#include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/data_type_visitor.h"
@@ -190,6 +191,7 @@ using real_talk::parser::FuncDefNode;
 using real_talk::parser::BinaryExprNode;
 using real_talk::parser::UnaryExprNode;
 using real_talk::parser::ScopeNode;
+using real_talk::parser::ControlFlowTransferNode;
 using real_talk::util::FileNotFoundError;
 
 namespace real_talk {
@@ -349,6 +351,8 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
                     bool &is_func_native,
                     std::unique_ptr<DataType> &return_data_type);
   const Scope *VisitReturn(const real_talk::parser::ReturnNode &return_node);
+  template<typename TError, typename TNode> void VisitControlFlowTransfer(
+      const TNode &node);
   std::unique_ptr<DataType> CreateDataType(
       const real_talk::parser::DataTypeNode &data_type_node);
   const CommonExprAnalysis &GetExprAnalysis(
@@ -361,7 +365,7 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   Scope *GetCurrentScope();
 
   /**
-   * @return Null of not found
+   * @return Null if not found
    */
   Scope *FindParentScope(ScopeType type);
   bool IsWithinImportProgram();
@@ -1154,21 +1158,16 @@ const SimpleSemanticAnalyzer::Impl::Scope
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode &break_node) {
-  if (IsWithinImportProgram()) {
-    return;
-  }
-
-  ++non_import_stmts_count_;
-
-  if (FindParentScope(ScopeType::kLoop) == nullptr) {
-    unique_ptr<SemanticError> error(
-        new BreakNotWithinLoopError(GetCurrentFilePath(), break_node));
-    throw SemanticErrorException(move(error));
-  }
+  VisitControlFlowTransfer<BreakNotWithinLoopError>(break_node);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitContinue(
     const ContinueNode &continue_node) {
+  VisitControlFlowTransfer<ContinueNotWithinLoopError>(continue_node);
+}
+
+template<typename TError, typename TNode>
+void SimpleSemanticAnalyzer::Impl::VisitControlFlowTransfer(const TNode &node) {
   if (IsWithinImportProgram()) {
     return;
   }
@@ -1176,10 +1175,24 @@ void SimpleSemanticAnalyzer::Impl::VisitContinue(
   ++non_import_stmts_count_;
 
   if (FindParentScope(ScopeType::kLoop) == nullptr) {
-    unique_ptr<SemanticError> error(
-        new ContinueNotWithinLoopError(GetCurrentFilePath(), continue_node));
+    unique_ptr<SemanticError> error(new TError(GetCurrentFilePath(), node));
     throw SemanticErrorException(move(error));
   }
+
+  size_t flow_local_vars_count = 0;
+
+  for (const Scope *scope: reverse(scopes_stack_)) {
+    flow_local_vars_count += scope->GetIdDefs().size();
+
+    if (scope->GetType() == ScopeType::kLoop) {
+      break;
+    }
+  }
+
+  assert(flow_local_vars_count <= numeric_limits<uint32_t>::max());
+  unique_ptr<NodeSemanticAnalysis> analysis(new ControlFlowTransferAnalysis(
+      static_cast<uint32_t>(flow_local_vars_count)));
+  node_analyzes_.insert(make_pair(&node, move(analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitExprStmt(const ExprStmtNode& stmt) {

@@ -25,6 +25,7 @@
 #include "real_talk/parser/double_node.h"
 #include "real_talk/parser/array_alloc_without_init_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
+#include "real_talk/parser/break_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/semantic_analysis.h"
@@ -32,6 +33,7 @@
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
+#include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
 #include "real_talk/semantic/bool_lit.h"
@@ -123,6 +125,7 @@ using real_talk::semantic::VarDefAnalysis;
 using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::CommonExprAnalysis;
 using real_talk::semantic::ScopeAnalysis;
+using real_talk::semantic::ControlFlowTransferAnalysis;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
 using real_talk::semantic::ArrayDataType;
@@ -160,6 +163,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class CreateAndInitLocalVarCmdGenerator;
   class CreateArrayCmdGenerator;
   class CreateAndInitArrayCmdGenerator;
+  class Scope;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -226,6 +230,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   void WriteCurrentCmdAddress(const vector<uint32_t> &address_placeholders);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
   uint32_t GetCurrentCmdAddress() const;
+  Scope *GetCurrentScope();
   void GenerateCmdsSegment();
   void GenerateImportsSegment();
   void GenerateIdsSegment(const vector<string> &ids);
@@ -243,7 +248,27 @@ class CodeGenerator::Impl: private NodeVisitor {
   vector<IdAddress> id_addresses_of_func_defs_;
   vector<IdAddress> id_addresses_of_global_var_refs_;
   vector<IdAddress> id_addresses_of_func_refs_;
+  vector<Scope*> scopes_stack_;
   uint32_t cmds_address_;
+};
+
+class CodeGenerator::Impl::Scope {
+ public:
+  explicit Scope(vector<Scope*> &scopes_stack): scopes_stack_(scopes_stack) {
+    scopes_stack_.push_back(this);
+  }
+
+  ~Scope() {
+    scopes_stack_.pop_back();
+  }
+
+  vector<uint32_t> &GetAddressPlaceholders() {
+    return address_placeholders_;
+  }
+
+ private:
+  vector<Scope*> &scopes_stack_;
+  vector<uint32_t> address_placeholders_;
 };
 
 class CodeGenerator::Impl::StmtGrouper: private NodeVisitor {
@@ -671,6 +696,7 @@ void CodeGenerator::Impl::Generate(
   stream.exceptions(ios::failbit | ios::badbit);
   stream.write(reinterpret_cast<char*>(code.GetData()), code.GetSize());
 
+  assert(scopes_stack_.empty());
   import_file_paths_.clear();
   ids_of_global_var_defs_.clear();
   id_addresses_of_func_defs_.clear();
@@ -817,8 +843,10 @@ void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
 void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
   const uint32_t start_address = GetCurrentCmdAddress();
   node.GetCond()->Accept(*this);
+  Scope scope(scopes_stack_);
   code_->WriteCmdId(CmdId::kJumpIfNot);
   const uint32_t end_address_placeholder = code_->GetPosition();
+  scope.GetAddressPlaceholders().push_back(end_address_placeholder);
   code_->Skip(sizeof(uint32_t));
   node.GetBody()->Accept(*this);
   const ScopeAnalysis &body_analysis = static_cast<const ScopeAnalysis&>(
@@ -832,10 +860,25 @@ void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
   }
 
   code_->WriteUint32(start_address);
-  WriteCurrentCmdAddress(vector<uint32_t>({end_address_placeholder}));
+  WriteCurrentCmdAddress(scope.GetAddressPlaceholders());
 }
 
-void CodeGenerator::Impl::VisitBreak(const BreakNode&) {}
+void CodeGenerator::Impl::VisitBreak(const BreakNode &node) {
+  const ControlFlowTransferAnalysis &break_analysis =
+      static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
+
+  if (break_analysis.GetFlowLocalVarsCount() > 0) {
+    code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
+    code_->WriteUint32(break_analysis.GetFlowLocalVarsCount());
+  } else {
+    code_->WriteCmdId(CmdId::kDirectJump);
+  }
+
+  const uint32_t flow_end_address_placeholder = code_->GetPosition();
+  GetCurrentScope()->GetAddressPlaceholders().push_back(
+      flow_end_address_placeholder);
+  code_->Skip(sizeof(uint32_t));
+}
 
 void CodeGenerator::Impl::VisitContinue(const ContinueNode&) {}
 
@@ -1127,6 +1170,11 @@ void CodeGenerator::Impl::WriteCurrentCmdAddress(
   }
 
   code_->SetPosition(continue_address);
+}
+
+CodeGenerator::Impl::Scope *CodeGenerator::Impl::GetCurrentScope() {
+  assert(!scopes_stack_.empty());
+  return scopes_stack_.back();
 }
 }
 }

@@ -32,11 +32,13 @@
 #include "real_talk/parser/array_alloc_without_init_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/pre_test_loop_node.h"
+#include "real_talk/parser/break_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
+#include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/int_data_type.h"
 #include "real_talk/semantic/long_data_type.h"
 #include "real_talk/semantic/array_data_type.h"
@@ -114,6 +116,7 @@ using real_talk::parser::ElseIfNode;
 using real_talk::parser::IfElseIfElseNode;
 using real_talk::parser::IfElseIfNode;
 using real_talk::parser::PreTestLoopNode;
+using real_talk::parser::BreakNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
@@ -121,6 +124,7 @@ using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::ExprAnalysis;
 using real_talk::semantic::CommonExprAnalysis;
 using real_talk::semantic::ScopeAnalysis;
+using real_talk::semantic::ControlFlowTransferAnalysis;
 using real_talk::semantic::DataType;
 using real_talk::semantic::IntDataType;
 using real_talk::semantic::LongDataType;
@@ -2614,6 +2618,202 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
 
   uint32_t loop_end_address = cmds_code->GetPosition();
   cmds_code->SetPosition(loop_end_address_placeholder);
+  cmds_code->WriteUint32(loop_end_address);
+  cmds_code->SetPosition(loop_end_address);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
+}
+
+TEST_F(CodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
+  BreakNode *break_node_ptr = new BreakNode(
+      TokenInfo(Token::kBreak, "break", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6)));
+  unique_ptr<StmtNode> break_node(break_node_ptr);
+  loop_body_stmt_nodes.push_back(move(break_node));
+  ScopeNode *loop_body_node_ptr = new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      move(loop_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<ScopeNode> loop_body_node(loop_body_node_ptr);
+  BoolNode *bool_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> bool_node(bool_node_ptr);
+  unique_ptr<StmtNode> loop_node(new PreTestLoopNode(
+      TokenInfo(Token::kWhile, "while", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(1), UINT32_C(1)),
+      move(bool_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      move(loop_body_node)));
+  program_stmt_nodes.push_back(move(loop_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t loop_body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
+      new ScopeAnalysis(loop_body_local_vars_count));
+  node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
+  uint32_t flow_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> break_analysis(
+      new ControlFlowTransferAnalysis(flow_local_vars_count));
+  node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
+  unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  uint32_t loop_start_address = cmds_code->GetPosition();
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(true);
+  cmds_code->WriteCmdId(CmdId::kJumpIfNot);
+  uint32_t loop_end_address_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(uint32_t));
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
+  uint32_t loop_end_address_placeholder2 = cmds_code->GetPosition();
+  cmds_code->WriteUint32(loop_end_address_placeholder2);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
+  cmds_code->WriteUint32(loop_start_address);
+
+  uint32_t loop_end_address = cmds_code->GetPosition();
+  cmds_code->SetPosition(loop_end_address_placeholder);
+  cmds_code->WriteUint32(loop_end_address);
+  cmds_code->SetPosition(loop_end_address_placeholder2);
+  cmds_code->WriteUint32(loop_end_address);
+  cmds_code->SetPosition(loop_end_address);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
+}
+
+TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
+  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  loop_body_stmt_nodes.push_back(move(var_def_node));
+  BreakNode *break_node_ptr = new BreakNode(
+      TokenInfo(Token::kBreak, "break", UINT32_C(8), UINT32_C(8)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9)));
+  unique_ptr<StmtNode> break_node(break_node_ptr);
+  loop_body_stmt_nodes.push_back(move(break_node));
+  unique_ptr<DataTypeNode> var_data_type_node2(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(10), UINT32_C(10))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(var_data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  loop_body_stmt_nodes.push_back(move(var_def_node2));
+  ScopeNode *loop_body_node_ptr = new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      move(loop_body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
+  unique_ptr<ScopeNode> loop_body_node(loop_body_node_ptr);
+  BoolNode *bool_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> bool_node(bool_node_ptr);
+  unique_ptr<StmtNode> loop_node(new PreTestLoopNode(
+      TokenInfo(Token::kWhile, "while", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(1), UINT32_C(1)),
+      move(bool_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      move(loop_body_node)));
+  program_stmt_nodes.push_back(move(loop_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t loop_body_local_vars_count = UINT32_C(2);
+  unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
+      new ScopeAnalysis(loop_body_local_vars_count));
+  node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
+  uint32_t flow_local_vars_count = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> break_analysis(
+      new ControlFlowTransferAnalysis(flow_local_vars_count));
+  node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new VarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), DataStorage::kLocal));
+  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  uint32_t loop_start_address = cmds_code->GetPosition();
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(true);
+  cmds_code->WriteCmdId(CmdId::kJumpIfNot);
+  uint32_t loop_end_address_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(uint32_t));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
+  cmds_code->WriteUint32(flow_local_vars_count);
+  uint32_t loop_end_address_placeholder2 = cmds_code->GetPosition();
+  cmds_code->WriteUint32(loop_end_address_placeholder2);
+  cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
+  cmds_code->WriteUint32(loop_body_local_vars_count);
+  cmds_code->WriteUint32(loop_start_address);
+
+  uint32_t loop_end_address = cmds_code->GetPosition();
+  cmds_code->SetPosition(loop_end_address_placeholder);
+  cmds_code->WriteUint32(loop_end_address);
+  cmds_code->SetPosition(loop_end_address_placeholder2);
   cmds_code->WriteUint32(loop_end_address);
   cmds_code->SetPosition(loop_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);

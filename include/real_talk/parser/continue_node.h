@@ -3,12 +3,12 @@
 #define _REAL_TALK_PARSER_CONTINUE_NODE_H_
 
 #include <memory>
-#include "real_talk/parser/stmt_node.h"
+#include "real_talk/parser/control_flow_transfer_node.h"
 
 namespace real_talk {
 namespace parser {
 
-class ContinueNode: public StmtNode {
+class ContinueNode: public ControlFlowTransferNode {
  public:
   ContinueNode(
       const real_talk::lexer::TokenInfo &start_token,
