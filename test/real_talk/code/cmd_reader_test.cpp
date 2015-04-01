@@ -15,6 +15,7 @@
 #include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/destroy_local_vars_and_jump_cmd.h"
 #include "real_talk/code/destroy_local_vars_cmd.h"
+#include "real_talk/code/return_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -445,6 +446,13 @@ TEST_F(CmdReaderTest, DestroyLocalVarsCmd) {
   Code code;
   code.WriteCmdId(CmdId::kDestroyLocalVars);
   code.WriteUint32(vars_count);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ReturnCmd) {
+  ReturnCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kReturn);
   TestGetNextCmd(code, expected_cmd);
 }
 }
