@@ -27,14 +27,19 @@
 #include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/break_node.h"
 #include "real_talk/parser/continue_node.h"
+#include "real_talk/parser/return_value_node.h"
+#include "real_talk/parser/return_without_value_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
+#include "real_talk/semantic/void_data_type.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
+#include "real_talk/semantic/arg_def_analysis.h"
+#include "real_talk/semantic/func_def_analysis.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
 #include "real_talk/semantic/bool_lit.h"
@@ -127,6 +132,8 @@ using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::CommonExprAnalysis;
 using real_talk::semantic::ScopeAnalysis;
 using real_talk::semantic::ControlFlowTransferAnalysis;
+using real_talk::semantic::ArgDefAnalysis;
+using real_talk::semantic::FuncDefAnalysis;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
 using real_talk::semantic::ArrayDataType;
@@ -960,17 +967,47 @@ void CodeGenerator::Impl::VisitIf(
 }
 
 void CodeGenerator::Impl::VisitFuncDefWithBody(
-    const FuncDefWithBodyNode&) {}
+    const FuncDefWithBodyNode &node) {
+  const uint32_t start_address = GetCurrentCmdAddress();
+
+  for (const unique_ptr<ArgDefNode> &arg: node.GetArgs()) {
+    arg->Accept(*this);
+  }
+
+  for (const unique_ptr<StmtNode> &stmt: node.GetBody()->GetStmts()) {
+    stmt->Accept(*this);
+  }
+
+  const FuncDefAnalysis &analysis =
+      static_cast<const FuncDefAnalysis&>(GetNodeAnalysis(node));
+
+  if (analysis.GetDataType().GetReturnDataType() == VoidDataType()
+      && !analysis.HasReturn()) {
+    code_->WriteCmdId(CmdId::kReturn);
+  }
+
+  const string &id = node.GetNameToken().GetValue();
+  id_addresses_of_func_defs_.push_back(IdAddress(id, start_address));
+}
 
 void CodeGenerator::Impl::VisitFuncDefWithoutBody(
     const FuncDefWithoutBodyNode&) {}
 
-void CodeGenerator::Impl::VisitArgDef(const ArgDefNode&) {}
+void CodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
+  const ArgDefAnalysis &analysis =
+      static_cast<const ArgDefAnalysis&>(GetNodeAnalysis(node));
+  CreateAndInitLocalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
+}
 
-void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode&) {}
+void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
+  node.GetValue()->Accept(*this);
+  code_->WriteCmdId(CmdId::kReturnValue);
+}
 
 void CodeGenerator::Impl::VisitReturnWithoutValue(
-    const ReturnWithoutValueNode&) {}
+    const ReturnWithoutValueNode&) {
+  code_->WriteCmdId(CmdId::kReturn);
+}
 
 void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &node) {

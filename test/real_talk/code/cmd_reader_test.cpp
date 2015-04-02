@@ -455,5 +455,12 @@ TEST_F(CmdReaderTest, ReturnCmd) {
   code.WriteCmdId(CmdId::kReturn);
   TestGetNextCmd(code, expected_cmd);
 }
+
+TEST_F(CmdReaderTest, ReturnValueCmd) {
+  ReturnValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kReturnValue);
+  TestGetNextCmd(code, expected_cmd);
+}
 }
 }

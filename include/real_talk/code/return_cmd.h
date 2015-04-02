@@ -12,6 +12,12 @@ class ReturnCmd: public Cmd {
   virtual void Print(std::ostream&) const override {}
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };
+
+class ReturnValueCmd: public Cmd {
+ private:
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
+};
 }
 }
 #endif

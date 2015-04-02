@@ -34,6 +34,8 @@
 #include "real_talk/parser/pre_test_loop_node.h"
 #include "real_talk/parser/break_node.h"
 #include "real_talk/parser/continue_node.h"
+#include "real_talk/parser/return_without_value_node.h"
+#include "real_talk/parser/return_value_node.h"
 #include "real_talk/parser/func_def_with_body_node.h"
 #include "real_talk/parser/void_data_type_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
@@ -128,6 +130,8 @@ using real_talk::parser::ContinueNode;
 using real_talk::parser::FuncDefWithBodyNode;
 using real_talk::parser::ArgDefNode;
 using real_talk::parser::VoidDataTypeNode;
+using real_talk::parser::ReturnWithoutValueNode;
+using real_talk::parser::ReturnValueNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
@@ -3044,7 +3048,7 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   TestGenerate(program_node, semantic_analysis, version, module_code);
 }
 
-TEST_F(CodeGeneratorTest, FuncDefWithBodyWithoutReturn) {
+TEST_F(CodeGeneratorTest, FuncDefWithBody) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
@@ -3118,6 +3122,164 @@ TEST_F(CodeGeneratorTest, FuncDefWithBodyWithoutReturn) {
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
+}
+
+TEST_F(CodeGeneratorTest, ReturnWithoutValue) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<StmtNode> > body_stmt_nodes;
+  unique_ptr<StmtNode> return_node(new ReturnWithoutValueNode(
+      TokenInfo(Token::kReturn, "return", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
+  body_stmt_nodes.push_back(move(return_node));
+  ScopeNode *body_node_ptr = new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      move(body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
+  unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
+      TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
+  vector<TokenInfo> modifier_tokens;
+  vector<TokenInfo> arg_separator_tokens;
+  FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
+      modifier_tokens,
+      move(return_data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
+      vector< unique_ptr<ArgDefNode> >(),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      move(body_node));
+  unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
+  program_stmt_nodes.push_back(move(func_def_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+  unique_ptr<DataType> return_data_type(new VoidDataType());
+  vector< unique_ptr<DataType> > arg_data_types;
+  unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+      move(return_data_type), move(arg_data_types)));
+  bool is_func_native = false;
+  bool is_func_has_return = true;
+  unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
+      move(func_data_type), is_func_native, is_func_has_return));
+  node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
+
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  uint32_t func_def_address = cmds_code->GetPosition();
+  cmds_code->WriteCmdId(CmdId::kReturn);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
+}
+
+TEST_F(CodeGeneratorTest, ReturnValue) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<StmtNode> > body_stmt_nodes;
+  IntNode *int_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> int_node(int_node_ptr);
+  unique_ptr<StmtNode> return_node(new ReturnValueNode(
+      TokenInfo(Token::kReturn, "return", UINT32_C(5), UINT32_C(5)),
+      move(int_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
+  body_stmt_nodes.push_back(move(return_node));
+  ScopeNode *body_node_ptr = new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
+      move(body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
+
+  unique_ptr<DataTypeNode> return_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  vector<TokenInfo> modifier_tokens;
+  vector<TokenInfo> arg_separator_tokens;
+  FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
+      modifier_tokens,
+      move(return_data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
+      vector< unique_ptr<ArgDefNode> >(),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
+      move(body_node));
+  unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
+  program_stmt_nodes.push_back(move(func_def_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t body_local_vars_count = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+  unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  node_analyzes.insert(make_pair(int_node_ptr, move(int_analysis)));
+  unique_ptr<DataType> return_data_type(new IntDataType());
+  vector< unique_ptr<DataType> > arg_data_types;
+  unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+      move(return_data_type), move(arg_data_types)));
+  bool is_func_native = false;
+  bool is_func_has_return = true;
+  unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
+      move(func_data_type), is_func_native, is_func_has_return));
+  node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
+
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  uint32_t func_def_address = cmds_code->GetPosition();
+  cmds_code->WriteCmdId(CmdId::kLoadIntValue);
+  cmds_code->WriteInt32(INT32_C(7));
+  cmds_code->WriteCmdId(CmdId::kReturnValue);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
   vector<path> import_file_paths;

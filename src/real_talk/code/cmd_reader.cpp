@@ -123,6 +123,7 @@ DestroyLocalVarsCmd &kDestroyLocalVarsCmd =
     *new DestroyLocalVarsCmd(UINT32_C(1));
 
 const ReturnCmd &kReturnCmd = *new ReturnCmd();
+const ReturnValueCmd &kReturnValueCmd = *new ReturnValueCmd();
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -261,6 +262,8 @@ const CmdReader::Readers CmdReader::InitReaders() {
       &CmdReader::ReadDestroyLocalVarsCmd;
 
   readers[static_cast<uint8_t>(CmdId::kReturn)] = &CmdReader::ReadReturnCmd;
+  readers[static_cast<uint8_t>(CmdId::kReturnValue)] =
+      &CmdReader::ReadReturnValueCmd;
 
   return readers;
 }
@@ -516,6 +519,10 @@ const Cmd &CmdReader::ReadDestroyLocalVarsCmd() {
 
 const Cmd &CmdReader::ReadReturnCmd() {
   return kReturnCmd;
+}
+
+const Cmd &CmdReader::ReadReturnValueCmd() {
+  return kReturnValueCmd;
 }
 }
 }
