@@ -123,7 +123,13 @@ DestroyLocalVarsCmd &kDestroyLocalVarsCmd =
     *new DestroyLocalVarsCmd(UINT32_C(1));
 
 const ReturnCmd &kReturnCmd = *new ReturnCmd();
-const ReturnValueCmd &kReturnValueCmd = *new ReturnValueCmd();
+const ReturnIntValueCmd &kReturnIntValueCmd = *new ReturnIntValueCmd();
+const ReturnLongValueCmd &kReturnLongValueCmd = *new ReturnLongValueCmd();
+const ReturnDoubleValueCmd &kReturnDoubleValueCmd = *new ReturnDoubleValueCmd();
+const ReturnCharValueCmd &kReturnCharValueCmd = *new ReturnCharValueCmd();
+const ReturnStringValueCmd &kReturnStringValueCmd = *new ReturnStringValueCmd();
+const ReturnBoolValueCmd &kReturnBoolValueCmd = *new ReturnBoolValueCmd();
+const ReturnArrayValueCmd &kReturnArrayValueCmd = *new ReturnArrayValueCmd();
 }
 
 const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
@@ -262,8 +268,20 @@ const CmdReader::Readers CmdReader::InitReaders() {
       &CmdReader::ReadDestroyLocalVarsCmd;
 
   readers[static_cast<uint8_t>(CmdId::kReturn)] = &CmdReader::ReadReturnCmd;
-  readers[static_cast<uint8_t>(CmdId::kReturnValue)] =
-      &CmdReader::ReadReturnValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kReturnIntValue)] =
+      &CmdReader::ReadReturnIntValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kReturnLongValue)] =
+      &CmdReader::ReadReturnLongValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kReturnDoubleValue)] =
+      &CmdReader::ReadReturnDoubleValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kReturnBoolValue)] =
+      &CmdReader::ReadReturnBoolValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kReturnCharValue)] =
+      &CmdReader::ReadReturnCharValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kReturnStringValue)] =
+      &CmdReader::ReadReturnStringValueCmd;
+  readers[static_cast<uint8_t>(CmdId::kReturnArrayValue)] =
+      &CmdReader::ReadReturnArrayValueCmd;
 
   return readers;
 }
@@ -521,8 +539,32 @@ const Cmd &CmdReader::ReadReturnCmd() {
   return kReturnCmd;
 }
 
-const Cmd &CmdReader::ReadReturnValueCmd() {
-  return kReturnValueCmd;
+const Cmd &CmdReader::ReadReturnIntValueCmd() {
+  return kReturnIntValueCmd;
+}
+
+const Cmd &CmdReader::ReadReturnLongValueCmd() {
+  return kReturnLongValueCmd;
+}
+
+const Cmd &CmdReader::ReadReturnDoubleValueCmd() {
+  return kReturnDoubleValueCmd;
+}
+
+const Cmd &CmdReader::ReadReturnCharValueCmd() {
+  return kReturnCharValueCmd;
+}
+
+const Cmd &CmdReader::ReadReturnStringValueCmd() {
+  return kReturnStringValueCmd;
+}
+
+const Cmd &CmdReader::ReadReturnBoolValueCmd() {
+  return kReturnBoolValueCmd;
+}
+
+const Cmd &CmdReader::ReadReturnArrayValueCmd() {
+  return kReturnArrayValueCmd;
 }
 }
 }

@@ -86,7 +86,13 @@ class CmdReader {
   const Cmd &ReadCreateAndInitCharArrayCmd();
   const Cmd &ReadCreateAndInitStringArrayCmd();
   const Cmd &ReadReturnCmd();
-  const Cmd &ReadReturnValueCmd();
+  const Cmd &ReadReturnIntValueCmd();
+  const Cmd &ReadReturnLongValueCmd();
+  const Cmd &ReadReturnDoubleValueCmd();
+  const Cmd &ReadReturnBoolValueCmd();
+  const Cmd &ReadReturnCharValueCmd();
+  const Cmd &ReadReturnStringValueCmd();
+  const Cmd &ReadReturnArrayValueCmd();
 
   static const Readers kReaders;
   Code *code_;

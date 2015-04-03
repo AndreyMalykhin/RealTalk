@@ -456,10 +456,52 @@ TEST_F(CmdReaderTest, ReturnCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, ReturnValueCmd) {
-  ReturnValueCmd expected_cmd;
+TEST_F(CmdReaderTest, ReturnIntValueCmd) {
+  ReturnIntValueCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kReturnValue);
+  code.WriteCmdId(CmdId::kReturnIntValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ReturnLongValueCmd) {
+  ReturnLongValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kReturnLongValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ReturnDoubleValueCmd) {
+  ReturnDoubleValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kReturnDoubleValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ReturnCharValueCmd) {
+  ReturnCharValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kReturnCharValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ReturnStringValueCmd) {
+  ReturnStringValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kReturnStringValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ReturnBoolValueCmd) {
+  ReturnBoolValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kReturnBoolValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ReturnArrayValueCmd) {
+  ReturnArrayValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kReturnArrayValue);
   TestGetNextCmd(code, expected_cmd);
 }
 }

@@ -13,7 +13,43 @@ class ReturnCmd: public Cmd {
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };
 
-class ReturnValueCmd: public Cmd {
+class ReturnIntValueCmd: public Cmd {
+ private:
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
+};
+
+class ReturnLongValueCmd: public Cmd {
+ private:
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
+};
+
+class ReturnDoubleValueCmd: public Cmd {
+ private:
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
+};
+
+class ReturnBoolValueCmd: public Cmd {
+ private:
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
+};
+
+class ReturnCharValueCmd: public Cmd {
+ private:
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
+};
+
+class ReturnStringValueCmd: public Cmd {
+ private:
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
+};
+
+class ReturnArrayValueCmd: public Cmd {
  private:
   virtual void Print(std::ostream&) const override {}
   virtual bool IsEqual(const Cmd&) const override {return true;}

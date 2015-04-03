@@ -134,6 +134,7 @@ using real_talk::semantic::ScopeAnalysis;
 using real_talk::semantic::ControlFlowTransferAnalysis;
 using real_talk::semantic::ArgDefAnalysis;
 using real_talk::semantic::FuncDefAnalysis;
+using real_talk::semantic::ExprAnalysis;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
 using real_talk::semantic::ArrayDataType;
@@ -171,6 +172,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class CreateAndInitLocalVarCmdGenerator;
   class CreateArrayCmdGenerator;
   class CreateAndInitArrayCmdGenerator;
+  class ReturnValueCmdGenerator;
   class Scope;
 
   virtual void VisitAnd(const AndNode &node) override;
@@ -679,6 +681,49 @@ class CodeGenerator::Impl::CreateAndInitArrayCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::ReturnValueCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kReturnArrayValue);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kReturnBoolValue);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kReturnIntValue);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kReturnLongValue);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kReturnDoubleValue);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kReturnCharValue);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kReturnStringValue);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(): impl_(new Impl()) {}
 
 CodeGenerator::~CodeGenerator() {}
@@ -1001,7 +1046,9 @@ void CodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
 
 void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   node.GetValue()->Accept(*this);
-  code_->WriteCmdId(CmdId::kReturnValue);
+  const ExprAnalysis &analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
+  ReturnValueCmdGenerator().Generate(analysis.GetDataType(), code_);
 }
 
 void CodeGenerator::Impl::VisitReturnWithoutValue(

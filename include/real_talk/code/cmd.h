@@ -64,7 +64,13 @@ enum class CmdId: uint8_t {
   kCreateAndInitCharArray = UINT8_C(52),
   kCreateAndInitStringArray = UINT8_C(53),
   kReturn = UINT8_C(54),
-  kReturnValue = UINT8_C(55)
+  kReturnIntValue = UINT8_C(55),
+  kReturnLongValue = UINT8_C(56),
+  kReturnDoubleValue = UINT8_C(57),
+  kReturnBoolValue = UINT8_C(58),
+  kReturnCharValue = UINT8_C(59),
+  kReturnStringValue = UINT8_C(60),
+  kReturnArrayValue = UINT8_C(61)
 };
 
 class Cmd {
