@@ -44,12 +44,11 @@ Educational-purpose programming language with:
             lexer // source code tokenizer
             parser // source code parser; syntax tree
             semantic // semantic analyzer
-            code // bytecode generator (TODO)
+            code // bytecode generator
             vm // virtual machine (TODO)
 
 ###Dependencies
 - C++11
-- libc++
 - Clang 6.0+
 - CMake 3.0.1+
 - Boost 1.56.0
