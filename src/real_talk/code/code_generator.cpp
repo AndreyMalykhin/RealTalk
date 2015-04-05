@@ -1023,11 +1023,11 @@ void CodeGenerator::Impl::VisitFuncDefWithBody(
     stmt->Accept(*this);
   }
 
-  const FuncDefAnalysis &analysis =
+  const FuncDefAnalysis &func_analysis =
       static_cast<const FuncDefAnalysis&>(GetNodeAnalysis(node));
 
-  if (analysis.GetDataType().GetReturnDataType() == VoidDataType()
-      && !analysis.HasReturn()) {
+  if (func_analysis.GetDataType().GetReturnDataType() == VoidDataType()
+      && !func_analysis.HasReturn()) {
     code_->WriteCmdId(CmdId::kReturn);
   }
 
@@ -1036,7 +1036,10 @@ void CodeGenerator::Impl::VisitFuncDefWithBody(
 }
 
 void CodeGenerator::Impl::VisitFuncDefWithoutBody(
-    const FuncDefWithoutBodyNode&) {}
+    const FuncDefWithoutBodyNode &node) {
+  const string id = node.GetNameToken().GetValue();
+  ids_of_native_func_defs_.push_back(id);
+}
 
 void CodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
   const ArgDefAnalysis &analysis =

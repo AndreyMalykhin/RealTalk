@@ -14,6 +14,7 @@
 #include "real_talk/code/destroy_local_vars_cmd.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/return_cmd.h"
+#include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -130,9 +131,22 @@ const ReturnCharValueCmd &kReturnCharValueCmd = *new ReturnCharValueCmd();
 const ReturnStringValueCmd &kReturnStringValueCmd = *new ReturnStringValueCmd();
 const ReturnBoolValueCmd &kReturnBoolValueCmd = *new ReturnBoolValueCmd();
 const ReturnArrayValueCmd &kReturnArrayValueCmd = *new ReturnArrayValueCmd();
-}
 
-const CmdReader::Readers CmdReader::kReaders = CmdReader::InitReaders();
+LoadGlobalIntVarValueCmd &kLoadGlobalIntVarValueCmd =
+    *new LoadGlobalIntVarValueCmd(UINT32_C(0));
+LoadGlobalArrayVarValueCmd &kLoadGlobalArrayVarValueCmd =
+    *new LoadGlobalArrayVarValueCmd(UINT32_C(0));
+LoadGlobalLongVarValueCmd &kLoadGlobalLongVarValueCmd =
+    *new LoadGlobalLongVarValueCmd(UINT32_C(0));
+LoadGlobalDoubleVarValueCmd &kLoadGlobalDoubleVarValueCmd =
+    *new LoadGlobalDoubleVarValueCmd(UINT32_C(0));
+LoadGlobalCharVarValueCmd &kLoadGlobalCharVarValueCmd =
+    *new LoadGlobalCharVarValueCmd(UINT32_C(0));
+LoadGlobalStringVarValueCmd &kLoadGlobalStringVarValueCmd =
+    *new LoadGlobalStringVarValueCmd(UINT32_C(0));
+LoadGlobalBoolVarValueCmd &kLoadGlobalBoolVarValueCmd =
+    *new LoadGlobalBoolVarValueCmd(UINT32_C(0));
+}
 
 void CmdReader::SetCode(Code *code) {
   assert(code);
@@ -144,427 +158,289 @@ Code *CmdReader::GetCode() const {
 }
 
 const Cmd &CmdReader::GetNextCmd() {
-  const uint8_t cmd_id = static_cast<uint8_t>(code_->ReadCmdId());
-  assert(cmd_id < kReaders.size());
-  const Reader reader = kReaders[cmd_id];
-  assert(reader);
-  return (this->*reader)();
+  const Cmd *cmd = nullptr;
+
+  switch (code_->ReadCmdId()) {
+    case CmdId::kEndMain:
+      cmd = &kEndMainCmd;
+      break;
+    case CmdId::kEndFuncs:
+      cmd = &kEndFuncsCmd;
+      break;
+    case CmdId::kCreateGlobalIntVar:
+      ReadCreateGlobalVarCmd(kCreateGlobalIntVarCmd);
+      cmd = &kCreateGlobalIntVarCmd;
+      break;
+    case CmdId::kCreateGlobalArrayVar:
+      ReadCreateGlobalVarCmd(kCreateGlobalArrayVarCmd);
+      cmd = &kCreateGlobalArrayVarCmd;
+      break;
+    case CmdId::kCreateGlobalLongVar:
+      ReadCreateGlobalVarCmd(kCreateGlobalLongVarCmd);
+      cmd = &kCreateGlobalLongVarCmd;
+      break;
+    case CmdId::kCreateGlobalDoubleVar:
+      ReadCreateGlobalVarCmd(kCreateGlobalDoubleVarCmd);
+      cmd = &kCreateGlobalDoubleVarCmd;
+      break;
+    case CmdId::kCreateGlobalCharVar:
+      ReadCreateGlobalVarCmd(kCreateGlobalCharVarCmd);
+      cmd = &kCreateGlobalCharVarCmd;
+      break;
+    case CmdId::kCreateGlobalStringVar:
+      ReadCreateGlobalVarCmd(kCreateGlobalStringVarCmd);
+      cmd = &kCreateGlobalStringVarCmd;
+      break;
+    case CmdId::kCreateGlobalBoolVar:
+      ReadCreateGlobalVarCmd(kCreateGlobalBoolVarCmd);
+      cmd = &kCreateGlobalBoolVarCmd;
+      break;
+    case CmdId::kCreateLocalIntVar:
+      cmd = &kCreateLocalIntVarCmd;
+      break;
+    case CmdId::kCreateLocalArrayVar:
+      cmd = &kCreateLocalArrayVarCmd;
+      break;
+    case CmdId::kCreateLocalLongVar:
+      cmd = &kCreateLocalLongVarCmd;
+      break;
+    case CmdId::kCreateLocalDoubleVar:
+      cmd = &kCreateLocalDoubleVarCmd;
+      break;
+    case CmdId::kCreateLocalCharVar:
+      cmd = &kCreateLocalCharVarCmd;
+      break;
+    case CmdId::kCreateLocalStringVar:
+      cmd = &kCreateLocalStringVarCmd;
+      break;
+    case CmdId::kCreateLocalBoolVar:
+      cmd = &kCreateLocalBoolVarCmd;
+      break;
+    case CmdId::kUnload:
+      cmd = &kUnloadCmd;
+      break;
+    case CmdId::kLoadIntValue:
+      kLoadIntValueCmd.SetValue(code_->ReadInt32());
+      cmd = &kLoadIntValueCmd;
+      break;
+    case CmdId::kLoadLongValue:
+      kLoadLongValueCmd.SetValue(code_->ReadInt64());
+      cmd = &kLoadLongValueCmd;
+      break;
+    case CmdId::kLoadBoolValue:
+      kLoadBoolValueCmd.SetValue(code_->ReadBool());
+      cmd = &kLoadBoolValueCmd;
+      break;
+    case CmdId::kLoadCharValue:
+      kLoadCharValueCmd.SetValue(code_->ReadChar());
+      cmd = &kLoadCharValueCmd;
+      break;
+    case CmdId::kLoadStringValue:
+      kLoadStringValueCmd.SetValue(code_->ReadString());
+      cmd = &kLoadStringValueCmd;
+      break;
+    case CmdId::kLoadDoubleValue:
+      kLoadDoubleValueCmd.SetValue(code_->ReadDouble());
+      cmd = &kLoadDoubleValueCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalIntVar:
+      ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalIntVarCmd);
+      cmd = &kCreateAndInitGlobalIntVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalArrayVar:
+      ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalArrayVarCmd);
+      cmd = &kCreateAndInitGlobalArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalLongVar:
+      ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalLongVarCmd);
+      cmd = &kCreateAndInitGlobalLongVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalDoubleVar:
+      ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalDoubleVarCmd);
+      cmd = &kCreateAndInitGlobalDoubleVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalCharVar:
+      ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalCharVarCmd);
+      cmd = &kCreateAndInitGlobalCharVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalStringVar:
+      ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalStringVarCmd);
+      cmd = &kCreateAndInitGlobalStringVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalBoolVar:
+      ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalBoolVarCmd);
+      cmd = &kCreateAndInitGlobalBoolVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalIntVar:
+      cmd = &kCreateAndInitLocalIntVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalArrayVar:
+      cmd = &kCreateAndInitLocalArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalLongVar:
+      cmd = &kCreateAndInitLocalLongVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalDoubleVar:
+      cmd = &kCreateAndInitLocalDoubleVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalCharVar:
+      cmd = &kCreateAndInitLocalCharVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalStringVar:
+      cmd = &kCreateAndInitLocalStringVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalBoolVar:
+      cmd = &kCreateAndInitLocalBoolVarCmd;
+      break;
+    case CmdId::kCreateIntArray:
+      ReadCreateArrayCmd(kCreateIntArrayCmd);
+      cmd = &kCreateIntArrayCmd;
+      break;
+    case CmdId::kCreateLongArray:
+      ReadCreateArrayCmd(kCreateLongArrayCmd);
+      cmd = &kCreateLongArrayCmd;
+      break;
+    case CmdId::kCreateDoubleArray:
+      ReadCreateArrayCmd(kCreateDoubleArrayCmd);
+      cmd = &kCreateDoubleArrayCmd;
+      break;
+    case CmdId::kCreateBoolArray:
+      ReadCreateArrayCmd(kCreateBoolArrayCmd);
+      cmd = &kCreateBoolArrayCmd;
+      break;
+    case CmdId::kCreateCharArray:
+      ReadCreateArrayCmd(kCreateCharArrayCmd);
+      cmd = &kCreateCharArrayCmd;
+      break;
+    case CmdId::kCreateStringArray:
+      ReadCreateArrayCmd(kCreateStringArrayCmd);
+      cmd = &kCreateStringArrayCmd;
+      break;
+    case CmdId::kCreateAndInitIntArray:
+      ReadCreateAndInitArrayCmd(kCreateAndInitIntArrayCmd);
+      cmd = &kCreateAndInitIntArrayCmd;
+      break;
+    case CmdId::kCreateAndInitLongArray:
+      ReadCreateAndInitArrayCmd(kCreateAndInitLongArrayCmd);
+      cmd = &kCreateAndInitLongArrayCmd;
+      break;
+    case CmdId::kCreateAndInitDoubleArray:
+      ReadCreateAndInitArrayCmd(kCreateAndInitDoubleArrayCmd);
+      cmd = &kCreateAndInitDoubleArrayCmd;
+      break;
+    case CmdId::kCreateAndInitBoolArray:
+      ReadCreateAndInitArrayCmd(kCreateAndInitBoolArrayCmd);
+      cmd = &kCreateAndInitBoolArrayCmd;
+      break;
+    case CmdId::kCreateAndInitCharArray:
+      ReadCreateAndInitArrayCmd(kCreateAndInitCharArrayCmd);
+      cmd = &kCreateAndInitCharArrayCmd;
+      break;
+    case CmdId::kCreateAndInitStringArray:
+      ReadCreateAndInitArrayCmd(kCreateAndInitStringArrayCmd);
+      cmd = &kCreateAndInitStringArrayCmd;
+      break;
+    case CmdId::kJumpIfNot:
+      ReadJumpCmd(kJumpIfNotCmd);
+      cmd = &kJumpIfNotCmd;
+      break;
+    case CmdId::kDirectJump:
+      ReadJumpCmd(kDirectJumpCmd);
+      cmd = &kDirectJumpCmd;
+      break;
+    case CmdId::kDestroyLocalVarsAndJump:
+      kDestroyLocalVarsAndJumpCmd.SetVarsCount(code_->ReadUint32());
+      kDestroyLocalVarsAndJumpCmd.SetAddress(code_->ReadUint32());
+      cmd = &kDestroyLocalVarsAndJumpCmd;
+      break;
+    case CmdId::kDestroyLocalVars:
+      kDestroyLocalVarsCmd.SetVarsCount(code_->ReadUint32());
+      cmd = &kDestroyLocalVarsCmd;
+      break;
+    case CmdId::kReturn:
+      cmd = &kReturnCmd;
+      break;
+    case CmdId::kReturnIntValue:
+      cmd = &kReturnIntValueCmd;
+      break;
+    case CmdId::kReturnLongValue:
+      cmd = &kReturnLongValueCmd;
+      break;
+    case CmdId::kReturnDoubleValue:
+      cmd = &kReturnDoubleValueCmd;
+      break;
+    case CmdId::kReturnCharValue:
+      cmd = &kReturnCharValueCmd;
+      break;
+    case CmdId::kReturnStringValue:
+      cmd = &kReturnStringValueCmd;
+      break;
+    case CmdId::kReturnBoolValue:
+      cmd = &kReturnBoolValueCmd;
+      break;
+    case CmdId::kReturnArrayValue:
+      cmd = &kReturnArrayValueCmd;
+      break;
+    case CmdId::kLoadGlobalIntVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalIntVarValueCmd);
+      cmd = &kLoadGlobalIntVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalArrayVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalArrayVarValueCmd);
+      cmd = &kLoadGlobalArrayVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalLongVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalLongVarValueCmd);
+      cmd = &kLoadGlobalLongVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalDoubleVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalDoubleVarValueCmd);
+      cmd = &kLoadGlobalDoubleVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalCharVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalCharVarValueCmd);
+      cmd = &kLoadGlobalCharVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalStringVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalStringVarValueCmd);
+      cmd = &kLoadGlobalStringVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalBoolVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalBoolVarValueCmd);
+      cmd = &kLoadGlobalBoolVarValueCmd;
+      break;
+  }
+
+  assert(cmd != nullptr);
+  return *cmd;
 }
 
-const CmdReader::Readers CmdReader::InitReaders() {
-  Readers readers = {};
-  readers[static_cast<uint8_t>(CmdId::kEndMain)] = &CmdReader::ReadEndMainCmd;
-  readers[static_cast<uint8_t>(CmdId::kEndFuncs)] = &CmdReader::ReadEndFuncsCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kCreateGlobalIntVar)] =
-      &CmdReader::ReadCreateGlobalIntVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateGlobalArrayVar)] =
-      &CmdReader::ReadCreateGlobalArrayVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateGlobalLongVar)] =
-      &CmdReader::ReadCreateGlobalLongVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateGlobalDoubleVar)] =
-      &CmdReader::ReadCreateGlobalDoubleVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateGlobalCharVar)] =
-      &CmdReader::ReadCreateGlobalCharVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateGlobalStringVar)] =
-      &CmdReader::ReadCreateGlobalStringVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateGlobalBoolVar)] =
-      &CmdReader::ReadCreateGlobalBoolVarCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kCreateLocalIntVar)] =
-      &CmdReader::ReadCreateLocalIntVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateLocalArrayVar)] =
-      &CmdReader::ReadCreateLocalArrayVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateLocalLongVar)] =
-      &CmdReader::ReadCreateLocalLongVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateLocalDoubleVar)] =
-      &CmdReader::ReadCreateLocalDoubleVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateLocalCharVar)] =
-      &CmdReader::ReadCreateLocalCharVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateLocalStringVar)] =
-      &CmdReader::ReadCreateLocalStringVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateLocalBoolVar)] =
-      &CmdReader::ReadCreateLocalBoolVarCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kUnload)] = &CmdReader::ReadUnloadCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kLoadIntValue)] =
-      &CmdReader::ReadLoadIntValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kLoadLongValue)] =
-      &CmdReader::ReadLoadLongValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kLoadBoolValue)] =
-      &CmdReader::ReadLoadBoolValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kLoadCharValue)] =
-      &CmdReader::ReadLoadCharValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kLoadStringValue)] =
-      &CmdReader::ReadLoadStringValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kLoadDoubleValue)] =
-      &CmdReader::ReadLoadDoubleValueCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalIntVar)] =
-      &CmdReader::ReadCreateAndInitGlobalIntVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalArrayVar)] =
-      &CmdReader::ReadCreateAndInitGlobalArrayVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalLongVar)] =
-      &CmdReader::ReadCreateAndInitGlobalLongVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalDoubleVar)] =
-      &CmdReader::ReadCreateAndInitGlobalDoubleVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalCharVar)] =
-      &CmdReader::ReadCreateAndInitGlobalCharVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalStringVar)] =
-      &CmdReader::ReadCreateAndInitGlobalStringVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitGlobalBoolVar)] =
-      &CmdReader::ReadCreateAndInitGlobalBoolVarCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLocalIntVar)] =
-      &CmdReader::ReadCreateAndInitLocalIntVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLocalArrayVar)] =
-      &CmdReader::ReadCreateAndInitLocalArrayVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLocalLongVar)] =
-      &CmdReader::ReadCreateAndInitLocalLongVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLocalDoubleVar)] =
-      &CmdReader::ReadCreateAndInitLocalDoubleVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLocalCharVar)] =
-      &CmdReader::ReadCreateAndInitLocalCharVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLocalStringVar)] =
-      &CmdReader::ReadCreateAndInitLocalStringVarCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLocalBoolVar)] =
-      &CmdReader::ReadCreateAndInitLocalBoolVarCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kCreateIntArray)] =
-      &CmdReader::ReadCreateIntArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateLongArray)] =
-      &CmdReader::ReadCreateLongArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateDoubleArray)] =
-      &CmdReader::ReadCreateDoubleArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateBoolArray)] =
-      &CmdReader::ReadCreateBoolArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateCharArray)] =
-      &CmdReader::ReadCreateCharArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateStringArray)] =
-      &CmdReader::ReadCreateStringArrayCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitIntArray)] =
-      &CmdReader::ReadCreateAndInitIntArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitLongArray)] =
-      &CmdReader::ReadCreateAndInitLongArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitDoubleArray)] =
-      &CmdReader::ReadCreateAndInitDoubleArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitBoolArray)] =
-      &CmdReader::ReadCreateAndInitBoolArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitCharArray)] =
-      &CmdReader::ReadCreateAndInitCharArrayCmd;
-  readers[static_cast<uint8_t>(CmdId::kCreateAndInitStringArray)] =
-      &CmdReader::ReadCreateAndInitStringArrayCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kJumpIfNot)] =
-      &CmdReader::ReadJumpIfNotCmd;
-  readers[static_cast<uint8_t>(CmdId::kDirectJump)] =
-      &CmdReader::ReadDirectJumpCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kDestroyLocalVarsAndJump)] =
-      &CmdReader::ReadDestroyLocalVarsAndJumpCmd;
-  readers[static_cast<uint8_t>(CmdId::kDestroyLocalVars)] =
-      &CmdReader::ReadDestroyLocalVarsCmd;
-
-  readers[static_cast<uint8_t>(CmdId::kReturn)] = &CmdReader::ReadReturnCmd;
-  readers[static_cast<uint8_t>(CmdId::kReturnIntValue)] =
-      &CmdReader::ReadReturnIntValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kReturnLongValue)] =
-      &CmdReader::ReadReturnLongValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kReturnDoubleValue)] =
-      &CmdReader::ReadReturnDoubleValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kReturnBoolValue)] =
-      &CmdReader::ReadReturnBoolValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kReturnCharValue)] =
-      &CmdReader::ReadReturnCharValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kReturnStringValue)] =
-      &CmdReader::ReadReturnStringValueCmd;
-  readers[static_cast<uint8_t>(CmdId::kReturnArrayValue)] =
-      &CmdReader::ReadReturnArrayValueCmd;
-
-  return readers;
-}
-
-const Cmd &CmdReader::ReadEndMainCmd() {
-  return kEndMainCmd;
-}
-
-const Cmd &CmdReader::ReadEndFuncsCmd() {
-  return kEndFuncsCmd;
-}
-
-inline const Cmd &CmdReader::ReadCreateGlobalVarCmd(CreateGlobalVarCmd &cmd) {
+inline void CmdReader::ReadCreateGlobalVarCmd(CreateGlobalVarCmd &cmd) {
   cmd.SetVarIndex(code_->ReadUint32());
-  return cmd;
 }
 
-const Cmd &CmdReader::ReadCreateGlobalIntVarCmd() {
-  return ReadCreateGlobalVarCmd(kCreateGlobalIntVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateGlobalArrayVarCmd() {
-  return ReadCreateGlobalVarCmd(kCreateGlobalArrayVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateGlobalLongVarCmd() {
-  return ReadCreateGlobalVarCmd(kCreateGlobalLongVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateGlobalDoubleVarCmd() {
-  return ReadCreateGlobalVarCmd(kCreateGlobalDoubleVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateGlobalCharVarCmd() {
-  return ReadCreateGlobalVarCmd(kCreateGlobalCharVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateGlobalStringVarCmd() {
-  return ReadCreateGlobalVarCmd(kCreateGlobalStringVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateGlobalBoolVarCmd() {
-  return ReadCreateGlobalVarCmd(kCreateGlobalBoolVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateLocalIntVarCmd() {
-  return kCreateLocalIntVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateLocalArrayVarCmd() {
-  return kCreateLocalArrayVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateLocalLongVarCmd() {
-  return kCreateLocalLongVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateLocalDoubleVarCmd() {
-  return kCreateLocalDoubleVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateLocalCharVarCmd() {
-  return kCreateLocalCharVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateLocalStringVarCmd() {
-  return kCreateLocalStringVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateLocalBoolVarCmd() {
-  return kCreateLocalBoolVarCmd;
-}
-
-const Cmd &CmdReader::ReadUnloadCmd() {
-  return kUnloadCmd;
-}
-
-const Cmd &CmdReader::ReadLoadIntValueCmd() {
-  kLoadIntValueCmd.SetValue(code_->ReadInt32());
-  return kLoadIntValueCmd;
-}
-
-const Cmd &CmdReader::ReadLoadLongValueCmd() {
-  kLoadLongValueCmd.SetValue(code_->ReadInt64());
-  return kLoadLongValueCmd;
-}
-
-const Cmd &CmdReader::ReadLoadBoolValueCmd() {
-  kLoadBoolValueCmd.SetValue(code_->ReadBool());
-  return kLoadBoolValueCmd;
-}
-
-const Cmd &CmdReader::ReadLoadCharValueCmd() {
-  kLoadCharValueCmd.SetValue(code_->ReadChar());
-  return kLoadCharValueCmd;
-}
-
-const Cmd &CmdReader::ReadLoadStringValueCmd() {
-  kLoadStringValueCmd.SetValue(code_->ReadString());
-  return kLoadStringValueCmd;
-}
-
-const Cmd &CmdReader::ReadLoadDoubleValueCmd() {
-  kLoadDoubleValueCmd.SetValue(code_->ReadDouble());
-  return kLoadDoubleValueCmd;
-}
-
-inline const Cmd &CmdReader::ReadCreateAndInitGlobalVarCmd(
+inline void CmdReader::ReadCreateAndInitGlobalVarCmd(
     CreateAndInitGlobalVarCmd &cmd) {
   cmd.SetVarIndex(code_->ReadUint32());
-  return cmd;
 }
 
-const Cmd &CmdReader::ReadCreateAndInitGlobalIntVarCmd() {
-  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalIntVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitGlobalArrayVarCmd() {
-  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalArrayVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitGlobalLongVarCmd() {
-  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalLongVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitGlobalDoubleVarCmd() {
-  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalDoubleVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitGlobalCharVarCmd() {
-  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalCharVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitGlobalStringVarCmd() {
-  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalStringVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitGlobalBoolVarCmd() {
-  return ReadCreateAndInitGlobalVarCmd(kCreateAndInitGlobalBoolVarCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitLocalIntVarCmd() {
-  return kCreateAndInitLocalIntVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateAndInitLocalArrayVarCmd() {
-  return kCreateAndInitLocalArrayVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateAndInitLocalLongVarCmd() {
-  return kCreateAndInitLocalLongVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateAndInitLocalDoubleVarCmd() {
-  return kCreateAndInitLocalDoubleVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateAndInitLocalCharVarCmd() {
-  return kCreateAndInitLocalCharVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateAndInitLocalStringVarCmd() {
-  return kCreateAndInitLocalStringVarCmd;
-}
-
-const Cmd &CmdReader::ReadCreateAndInitLocalBoolVarCmd() {
-  return kCreateAndInitLocalBoolVarCmd;
-}
-
-inline const Cmd &CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) {
+inline void CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) {
   cmd.SetDimensionsCount(code_->ReadUint8());
-  return cmd;
 }
 
-const Cmd &CmdReader::ReadCreateIntArrayCmd() {
-  return ReadCreateArrayCmd(kCreateIntArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateLongArrayCmd() {
-  return ReadCreateArrayCmd(kCreateLongArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateDoubleArrayCmd() {
-  return ReadCreateArrayCmd(kCreateDoubleArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateBoolArrayCmd() {
-  return ReadCreateArrayCmd(kCreateBoolArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateCharArrayCmd() {
-  return ReadCreateArrayCmd(kCreateCharArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateStringArrayCmd() {
-  return ReadCreateArrayCmd(kCreateStringArrayCmd);
-}
-
-inline const Cmd &CmdReader::ReadCreateAndInitArrayCmd(
+inline void CmdReader::ReadCreateAndInitArrayCmd(
     CreateAndInitArrayCmd &cmd) {
   cmd.SetDimensionsCount(code_->ReadUint8());
   cmd.SetValuesCount(code_->ReadUint32());
-  return cmd;
 }
 
-const Cmd &CmdReader::ReadCreateAndInitIntArrayCmd() {
-  return ReadCreateAndInitArrayCmd(kCreateAndInitIntArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitLongArrayCmd() {
-  return ReadCreateAndInitArrayCmd(kCreateAndInitLongArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitDoubleArrayCmd() {
-  return ReadCreateAndInitArrayCmd(kCreateAndInitDoubleArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitBoolArrayCmd() {
-  return ReadCreateAndInitArrayCmd(kCreateAndInitBoolArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitCharArrayCmd() {
-  return ReadCreateAndInitArrayCmd(kCreateAndInitCharArrayCmd);
-}
-
-const Cmd &CmdReader::ReadCreateAndInitStringArrayCmd() {
-  return ReadCreateAndInitArrayCmd(kCreateAndInitStringArrayCmd);
-}
-
-inline const Cmd &CmdReader::ReadJumpCmd(JumpCmd &cmd) {
+inline void CmdReader::ReadJumpCmd(JumpCmd &cmd) {
   cmd.SetAddress(code_->ReadUint32());
-  return cmd;
 }
 
-const Cmd &CmdReader::ReadJumpIfNotCmd() {
-  return ReadJumpCmd(kJumpIfNotCmd);
-}
-
-const Cmd &CmdReader::ReadDirectJumpCmd() {
-  return ReadJumpCmd(kDirectJumpCmd);
-}
-
-const Cmd &CmdReader::ReadDestroyLocalVarsAndJumpCmd() {
-  kDestroyLocalVarsAndJumpCmd.SetVarsCount(code_->ReadUint32());
-  kDestroyLocalVarsAndJumpCmd.SetAddress(code_->ReadUint32());
-  return kDestroyLocalVarsAndJumpCmd;
-}
-
-const Cmd &CmdReader::ReadDestroyLocalVarsCmd() {
-  kDestroyLocalVarsCmd.SetVarsCount(code_->ReadUint32());
-  return kDestroyLocalVarsCmd;
-}
-
-const Cmd &CmdReader::ReadReturnCmd() {
-  return kReturnCmd;
-}
-
-const Cmd &CmdReader::ReadReturnIntValueCmd() {
-  return kReturnIntValueCmd;
-}
-
-const Cmd &CmdReader::ReadReturnLongValueCmd() {
-  return kReturnLongValueCmd;
-}
-
-const Cmd &CmdReader::ReadReturnDoubleValueCmd() {
-  return kReturnDoubleValueCmd;
-}
-
-const Cmd &CmdReader::ReadReturnCharValueCmd() {
-  return kReturnCharValueCmd;
-}
-
-const Cmd &CmdReader::ReadReturnStringValueCmd() {
-  return kReturnStringValueCmd;
-}
-
-const Cmd &CmdReader::ReadReturnBoolValueCmd() {
-  return kReturnBoolValueCmd;
-}
-
-const Cmd &CmdReader::ReadReturnArrayValueCmd() {
-  return kReturnArrayValueCmd;
+inline void CmdReader::ReadLoadGlobalVarValueCmd(
+    LoadGlobalVarValueCmd &cmd) {
+  cmd.SetVarIndex(code_->ReadUint32());
 }
 }
 }

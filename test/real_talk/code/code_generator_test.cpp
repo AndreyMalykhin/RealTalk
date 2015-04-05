@@ -37,7 +37,9 @@
 #include "real_talk/parser/return_without_value_node.h"
 #include "real_talk/parser/return_value_node.h"
 #include "real_talk/parser/func_def_with_body_node.h"
+#include "real_talk/parser/func_def_without_body_node.h"
 #include "real_talk/parser/void_data_type_node.h"
+#include "real_talk/parser/id_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
@@ -46,6 +48,7 @@
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/arg_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
+#include "real_talk/semantic/id_analysis.h"
 #include "real_talk/semantic/int_data_type.h"
 #include "real_talk/semantic/long_data_type.h"
 #include "real_talk/semantic/array_data_type.h"
@@ -128,10 +131,12 @@ using real_talk::parser::PreTestLoopNode;
 using real_talk::parser::BreakNode;
 using real_talk::parser::ContinueNode;
 using real_talk::parser::FuncDefWithBodyNode;
+using real_talk::parser::FuncDefWithoutBodyNode;
 using real_talk::parser::ArgDefNode;
 using real_talk::parser::VoidDataTypeNode;
 using real_talk::parser::ReturnWithoutValueNode;
 using real_talk::parser::ReturnValueNode;
+using real_talk::parser::IdNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::VarDefAnalysis;
@@ -142,6 +147,7 @@ using real_talk::semantic::ScopeAnalysis;
 using real_talk::semantic::ControlFlowTransferAnalysis;
 using real_talk::semantic::ArgDefAnalysis;
 using real_talk::semantic::FuncDefAnalysis;
+using real_talk::semantic::IdAnalysis;
 using real_talk::semantic::DataType;
 using real_talk::semantic::IntDataType;
 using real_talk::semantic::LongDataType;
@@ -623,25 +629,24 @@ class CodeGeneratorTest: public Test {
     TestGenerate(program_node, semantic_analysis, version, module_code);
   }
 
-  void TestReturnValueCmd() {
+  void TestReturnValueCmd(unique_ptr<ExprNode> value_node,
+                          unique_ptr<DataTypeNode> return_data_type_node,
+                          unique_ptr<DataType> return_data_type,
+                          SemanticAnalysis::NodeAnalyzes value_analyzes,
+                          const Code &expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     vector< unique_ptr<StmtNode> > body_stmt_nodes;
-    // IntNode *int_node_ptr = new IntNode(
-    //     TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(5)));
-    // unique_ptr<ExprNode> int_node(int_node_ptr);
     unique_ptr<StmtNode> return_node(new ReturnValueNode(
         TokenInfo(Token::kReturn, "return", UINT32_C(5), UINT32_C(5)),
-        move(int_node),
-        TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
+        move(value_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(100), UINT32_C(100))));
     body_stmt_nodes.push_back(move(return_node));
     ScopeNode *body_node_ptr = new ScopeNode(
         TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
         move(body_stmt_nodes),
-        TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+        TokenInfo(Token::kScopeEnd, "}", UINT32_C(101), UINT32_C(101)));
     unique_ptr<ScopeNode> body_node(body_node_ptr);
 
-    // unique_ptr<DataTypeNode> return_data_type_node(new IntDataTypeNode(
-    //     TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
     vector<TokenInfo> modifier_tokens;
     vector<TokenInfo> arg_separator_tokens;
     FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
@@ -658,16 +663,12 @@ class CodeGeneratorTest: public Test {
     ProgramNode program_node(move(program_stmt_nodes));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
+    node_analyzes.insert(make_move_iterator(value_analyzes.begin()),
+                         make_move_iterator(value_analyzes.end()));
     uint32_t body_local_vars_count = UINT32_C(0);
     unique_ptr<NodeSemanticAnalysis> body_analysis(
         new ScopeAnalysis(body_local_vars_count));
     node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
-    // unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
-    //     unique_ptr<DataType>(new IntDataType()),
-    //     ValueType::kRight,
-    //     unique_ptr<Lit>(new IntLit(INT32_C(7)))));
-    // node_analyzes.insert(make_pair(int_node_ptr, move(int_analysis)));
-    // unique_ptr<DataType> return_data_type(new IntDataType());
     vector< unique_ptr<DataType> > arg_data_types;
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
         move(return_data_type), move(arg_data_types)));
@@ -683,9 +684,7 @@ class CodeGeneratorTest: public Test {
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kEndMain);
     uint32_t func_def_address = cmds_code->GetPosition();
-    // cmds_code->WriteCmdId(CmdId::kLoadIntValue);
-    // cmds_code->WriteInt32(INT32_C(7));
-    // cmds_code->WriteCmdId(CmdId::kReturnIntValue);
+    cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
     cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
     vector<path> import_file_paths;
@@ -3303,55 +3302,244 @@ TEST_F(CodeGeneratorTest, ReturnWithoutValue) {
 }
 
 TEST_F(CodeGeneratorTest, ReturnIntValue) {
-  vector< unique_ptr<StmtNode> > program_stmt_nodes;
-  vector< unique_ptr<StmtNode> > body_stmt_nodes;
-  IntNode *int_node_ptr = new IntNode(
+  IntNode *value_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(5)));
-  unique_ptr<ExprNode> int_node(int_node_ptr);
-  unique_ptr<StmtNode> return_node(new ReturnValueNode(
-      TokenInfo(Token::kReturn, "return", UINT32_C(5), UINT32_C(5)),
-      move(int_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
-  body_stmt_nodes.push_back(move(return_node));
-  ScopeNode *body_node_ptr = new ScopeNode(
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
-      move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
-  unique_ptr<ScopeNode> body_node(body_node_ptr);
-
+  unique_ptr<ExprNode> value_node(value_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  vector<TokenInfo> modifier_tokens;
+  unique_ptr<DataType> return_data_type(new IntDataType());
+  SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadIntValue);
+  expected_code.WriteInt32(INT32_C(7));
+  expected_code.WriteCmdId(CmdId::kReturnIntValue);
+
+  TestReturnValueCmd(move(value_node),
+                     move(return_data_type_node),
+                     move(return_data_type),
+                     move(value_analyzes),
+                     expected_code);
+}
+
+TEST_F(CodeGeneratorTest, ReturnLongValue) {
+  LongNode *value_node_ptr = new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  unique_ptr<DataTypeNode> return_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> return_data_type(new LongDataType());
+  SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new LongDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
+  value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadLongValue);
+  expected_code.WriteInt64(INT64_C(7));
+  expected_code.WriteCmdId(CmdId::kReturnLongValue);
+
+  TestReturnValueCmd(move(value_node),
+                     move(return_data_type_node),
+                     move(return_data_type),
+                     move(value_analyzes),
+                     expected_code);
+}
+
+TEST_F(CodeGeneratorTest, ReturnDoubleValue) {
+  DoubleNode *value_node_ptr = new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  unique_ptr<DataTypeNode> return_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> return_data_type(new DoubleDataType());
+  SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new DoubleDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(7.7))));
+  value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code.WriteDouble(7.7);
+  expected_code.WriteCmdId(CmdId::kReturnDoubleValue);
+
+  TestReturnValueCmd(move(value_node),
+                     move(return_data_type_node),
+                     move(return_data_type),
+                     move(value_analyzes),
+                     expected_code);
+}
+
+TEST_F(CodeGeneratorTest, ReturnBoolValue) {
+  BoolNode *value_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  unique_ptr<DataTypeNode> return_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> return_data_type(new BoolDataType());
+  SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadBoolValue);
+  expected_code.WriteBool(true);
+  expected_code.WriteCmdId(CmdId::kReturnBoolValue);
+
+  TestReturnValueCmd(move(value_node),
+                     move(return_data_type_node),
+                     move(return_data_type),
+                     move(value_analyzes),
+                     expected_code);
+}
+
+TEST_F(CodeGeneratorTest, ReturnCharValue) {
+  CharNode *value_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  unique_ptr<DataTypeNode> return_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> return_data_type(new CharDataType());
+  SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new CharDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
+  value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadCharValue);
+  expected_code.WriteChar('a');
+  expected_code.WriteCmdId(CmdId::kReturnCharValue);
+
+  TestReturnValueCmd(move(value_node),
+                     move(return_data_type_node),
+                     move(return_data_type),
+                     move(value_analyzes),
+                     expected_code);
+}
+
+TEST_F(CodeGeneratorTest, ReturnStringValue) {
+  StringNode *value_node_ptr = new StringNode(
+      TokenInfo(Token::kStringLit, "\"ab\"", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  unique_ptr<DataTypeNode> return_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> return_data_type(new StringDataType());
+  SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new StringDataType()),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("ab"))));
+  value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadStringValue);
+  expected_code.WriteString("ab");
+  expected_code.WriteCmdId(CmdId::kReturnStringValue);
+
+  TestReturnValueCmd(move(value_node),
+                     move(return_data_type_node),
+                     move(return_data_type),
+                     move(value_analyzes),
+                     expected_code);
+}
+
+TEST_F(CodeGeneratorTest, ReturnArrayValue) {
+  unique_ptr<PrimitiveDataTypeNode> bool_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(7), UINT32_C(7))));
+  vector< unique_ptr<UnboundedArraySizeNode> > array_sizes;
+  unique_ptr<UnboundedArraySizeNode> array_size(new UnboundedArraySizeNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(8), UINT32_C(8)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(9), UINT32_C(9))));
+  array_sizes.push_back(move(array_size));
+  vector< unique_ptr<ExprNode> > array_values;
+  vector<TokenInfo> array_value_separator_tokens;
+  ArrayAllocWithInitNode *value_node_ptr = new ArrayAllocWithInitNode(
+      TokenInfo(Token::kNew, "new", UINT32_C(6), UINT32_C(6)),
+      move(bool_data_type_node),
+      move(array_sizes),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(10), UINT32_C(10)),
+      move(array_values),
+      array_value_separator_tokens,
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+
+  unique_ptr<DataTypeNode> bool_data_type_node2(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> return_data_type_node(new ArrayDataTypeNode(
+      move(bool_data_type_node2),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  unique_ptr<DataType> return_data_type(
+      new ArrayDataType(unique_ptr<DataType>(new BoolDataType())));
+
+  SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      return_data_type->Clone(), ValueType::kRight));
+  value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kCreateAndInitBoolArray);
+  uint8_t dimensions_count = UINT8_C(1);
+  uint32_t values_count = UINT32_C(0);
+  expected_code.WriteUint8(dimensions_count);
+  expected_code.WriteUint32(values_count);
+  expected_code.WriteCmdId(CmdId::kReturnArrayValue);
+
+  TestReturnValueCmd(move(value_node),
+                     move(return_data_type_node),
+                     move(return_data_type),
+                     move(value_analyzes),
+                     expected_code);
+}
+
+TEST_F(CodeGeneratorTest, FuncDefWithoutBody) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> arg_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(4), UINT32_C(4))));
+  ArgDefNode *arg_def_node_ptr = new ArgDefNode(
+      move(arg_data_type_node),
+      TokenInfo(Token::kName, "arg", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<ArgDefNode> arg_def_node(arg_def_node_ptr);
+  arg_def_nodes.push_back(move(arg_def_node));
+
+  unique_ptr<DataTypeNode> return_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
+  vector<TokenInfo> modifier_tokens =
+      {TokenInfo(Token::kNative, "native", UINT32_C(0), UINT32_C(0))};
   vector<TokenInfo> arg_separator_tokens;
-  FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
+  FuncDefWithoutBodyNode *func_def_node_ptr = new FuncDefWithoutBodyNode(
       modifier_tokens,
       move(return_data_type_node),
-      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
-      vector< unique_ptr<ArgDefNode> >(),
+      TokenInfo(Token::kName, "func", UINT32_C(2), UINT32_C(2)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(3), UINT32_C(3)),
+      move(arg_def_nodes),
       arg_separator_tokens,
-      TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
-      move(body_node));
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   program_stmt_nodes.push_back(move(func_def_node));
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
-  unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
-  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
-  unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
-      unique_ptr<DataType>(new IntDataType()),
-      ValueType::kRight,
-      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
-  node_analyzes.insert(make_pair(int_node_ptr, move(int_analysis)));
+  unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new ArgDefAnalysis(
+      unique_ptr<DataType>(new LongDataType())));
+  node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
   unique_ptr<DataType> return_data_type(new IntDataType());
   vector< unique_ptr<DataType> > arg_data_types;
+  arg_data_types.push_back(unique_ptr<DataType>(new LongDataType()));
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(return_data_type), move(arg_data_types)));
-  bool is_func_native = false;
-  bool is_func_has_return = true;
+  bool is_func_native = true;
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       move(func_data_type), is_func_native, is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
@@ -3361,16 +3549,74 @@ TEST_F(CodeGeneratorTest, ReturnIntValue) {
 
   unique_ptr<Code> cmds_code(new Code());
   cmds_code->WriteCmdId(CmdId::kEndMain);
-  uint32_t func_def_address = cmds_code->GetPosition();
-  cmds_code->WriteCmdId(CmdId::kLoadIntValue);
-  cmds_code->WriteInt32(INT32_C(7));
-  cmds_code->WriteCmdId(CmdId::kReturnIntValue);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
-  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs = {{"func"}};
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
+}
+
+TEST_F(CodeGeneratorTest, GlobalRightIntId) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  program_stmt_nodes.push_back(move(var_def_node));
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
+  unique_ptr<StmtNode> id_stmt_node(new ExprStmtNode(
+      move(id_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4))));
+  program_stmt_nodes.push_back(move(id_stmt_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), DataStorage::kGlobal));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kRight,
+      var_def_node_ptr));
+  node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
+  uint32_t var_index = numeric_limits<uint32_t>::max();
+  cmds_code->WriteUint32(var_index);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  cmds_code->WriteUint32(var_index);
+  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs = {{"func"}};
   vector<IdAddress> id_addresses_of_global_var_refs;
   vector<IdAddress> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);

@@ -70,7 +70,14 @@ enum class CmdId: uint8_t {
   kReturnBoolValue = UINT8_C(58),
   kReturnCharValue = UINT8_C(59),
   kReturnStringValue = UINT8_C(60),
-  kReturnArrayValue = UINT8_C(61)
+  kReturnArrayValue = UINT8_C(61),
+  kLoadGlobalIntVarValue = UINT8_C(62),
+  kLoadGlobalLongVarValue = UINT8_C(63),
+  kLoadGlobalDoubleVarValue = UINT8_C(64),
+  kLoadGlobalBoolVarValue = UINT8_C(65),
+  kLoadGlobalCharVarValue = UINT8_C(66),
+  kLoadGlobalStringVarValue = UINT8_C(67),
+  kLoadGlobalArrayVarValue = UINT8_C(68)
 };
 
 class Cmd {
