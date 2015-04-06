@@ -1037,7 +1037,7 @@ void CodeGenerator::Impl::VisitFuncDefWithBody(
 
 void CodeGenerator::Impl::VisitFuncDefWithoutBody(
     const FuncDefWithoutBodyNode &node) {
-  const string id = node.GetNameToken().GetValue();
+  const string &id = node.GetNameToken().GetValue();
   ids_of_native_func_defs_.push_back(id);
 }
 
@@ -1094,7 +1094,50 @@ void CodeGenerator::Impl::VisitArrayAllocWithInit(
       code_);
 }
 
-void CodeGenerator::Impl::VisitId(const IdNode&) {}
+void CodeGenerator::Impl::VisitId(const IdNode&) {
+  // const string &id = node.GetNameToken().GetValue();
+  // const IdAnalysis &id_analysis =
+  //     static_cast<const IdAnalysis&>(GetNodeAnalysis(id_node));
+  // const DefNode *def_node = id_analysis.GetDef();
+
+  // if (def_node->GetType() == DefType::kVar) {
+  //   const VarDefAnalysis &var_def_analysis =
+  //       static_cast<const VarDefAnalysis&>(GetNodeAnalysis(*def_node));
+
+  //   if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
+  //     if (id_analysis.IsAssignee()) {
+  //       LoadGlobalVarValueCmdGenerator().Generate(
+  //           var_def_analysis.GetDataType(),
+  //           code_,
+  //           id_addresses_of_global_var_refs_);
+  //     } else {
+  //       assert(false);
+  //     }
+  //   } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
+  //     assert(false);
+
+  //     if (id_analysis.IsAssignee()) {
+  //       assert(false);
+  //     } else {
+  //       assert(false);
+  //     }
+  //   } else {
+  //     assert(false);
+  //   }
+  // } else if (def_node->GetType() == DefType::kArg) {
+  //   assert(false);
+
+  //   if (id_analysis.IsAssignee()) {
+  //     assert(false);
+  //   } else {
+  //     assert(false);
+  //   }
+  // } else if (def_node->GetType() == DefType::kFunc) {
+  //   assert(false);
+  // } else {
+  //   assert(false);
+  // }
+}
 
 void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
 

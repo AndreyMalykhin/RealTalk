@@ -738,7 +738,7 @@ class SimpleSemanticAnalyzer::Impl::BinaryDataTypeDeductor {
   virtual ~BinaryDataTypeDeductor() {}
 
   /**
-   * @return nullptr if data types are not supported
+   * @return Null if data types are not supported
    */
   unique_ptr<DataType> Deduct(const DataType &lhs, const DataType &rhs) const {
     const Workers &workers = GetWorkers();
@@ -1682,10 +1682,12 @@ void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
 
   const DefAnalysis &def_analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(def_node));
+  bool is_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       def_analysis.GetDataType().Clone(),
       def_analysis.GetValueType(),
-      def_node));
+      def_node,
+      is_assignee));
   node_analyzes_.insert(make_pair(&id_node, move(id_analysis)));
 }
 

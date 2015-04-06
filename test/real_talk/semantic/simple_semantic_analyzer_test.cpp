@@ -1063,8 +1063,12 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
 
   IntDataType *return_expr_data_type_ptr = new IntDataType();
   unique_ptr<DataType> return_expr_data_type(return_expr_data_type_ptr);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(return_expr_data_type), ValueType::kLeft, arg_def_node_ptr));
+      move(return_expr_data_type),
+      ValueType::kLeft,
+      arg_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(return_expr_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -2060,8 +2064,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   StringDataType *return_expr_data_type_ptr = new StringDataType();
   unique_ptr<DataType> return_expr_data_type(return_expr_data_type_ptr);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(return_expr_data_type), ValueType::kLeft, arg_def_node_ptr));
+      move(return_expr_data_type),
+      ValueType::kLeft,
+      arg_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(return_expr_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -2361,8 +2369,12 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   func_arg_data_types.push_back(move(func_arg_data_type));
   unique_ptr<DataType> id_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kRight, func_def_node_ptr));
+      move(id_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   unique_ptr<DataType> call_expr_data_type(new VoidDataType());
@@ -2479,8 +2491,12 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
   func_arg_data_types.push_back(move(func_arg_data_type));
   unique_ptr<DataType> id_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kRight, func_def_node_ptr));
+      move(id_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   unique_ptr<DataType> call_expr_data_type(new VoidDataType());
@@ -2607,8 +2623,12 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
   func_arg_data_types.push_back(move(func_arg_data_type));
   unique_ptr<DataType> id_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kRight, func_def_node_ptr));
+      move(id_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   unique_ptr<DataType> call_expr_data_type(new VoidDataType());
@@ -2676,8 +2696,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   unique_ptr<DataType> id_data_type(new IntDataType());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -2799,14 +2820,22 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
 
   BoolDataType *if_cond_data_type_ptr1 = new BoolDataType();
   unique_ptr<DataType> if_cond_data_type1(if_cond_data_type_ptr1);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> if_cond_expr_analysis1(new IdAnalysis(
-      move(if_cond_data_type1), ValueType::kLeft, var_def_node_ptr1));
+      move(if_cond_data_type1),
+      ValueType::kLeft,
+      var_def_node_ptr1,
+      is_id_assignee));
   node_analyzes.insert(make_pair(if_cond_ptr1, move(if_cond_expr_analysis1)));
 
   BoolDataType *if_cond_data_type_ptr2 = new BoolDataType();
   unique_ptr<DataType> if_cond_data_type2(if_cond_data_type_ptr2);
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> if_cond_expr_analysis2(new IdAnalysis(
-      move(if_cond_data_type2), ValueType::kLeft, var_def_node_ptr1));
+      move(if_cond_data_type2),
+      ValueType::kLeft,
+      var_def_node_ptr1,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(if_cond_ptr2, move(if_cond_expr_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -2889,8 +2918,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *func_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
-      move(func_data_type), ValueType::kRight, func_def_node_ptr));
+      move(func_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -3020,8 +3053,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   BoolDataType *var_data_type_ptr = new BoolDataType();
   unique_ptr<DataType> var_data_type(var_data_type_ptr);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis1(new IdAnalysis(
-      move(var_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(var_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_expr_analysis1)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -3029,8 +3063,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *func_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis2(new IdAnalysis(
-      move(func_data_type), ValueType::kRight, func_def_node_ptr));
+      move(func_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_expr_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -3184,14 +3222,22 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
 
   BoolDataType *if_cond_data_type_ptr1 = new BoolDataType();
   unique_ptr<DataType> if_cond_data_type1(if_cond_data_type_ptr1);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> if_cond_expr_analysis1(new IdAnalysis(
-      move(if_cond_data_type1), ValueType::kLeft, var_def_node_ptr1));
+      move(if_cond_data_type1),
+      ValueType::kLeft,
+      var_def_node_ptr1,
+      is_id_assignee));
   node_analyzes.insert(make_pair(if_cond_ptr1, move(if_cond_expr_analysis1)));
 
   BoolDataType *if_cond_data_type_ptr2 = new BoolDataType();
   unique_ptr<DataType> if_cond_data_type2(if_cond_data_type_ptr2);
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> if_cond_expr_analysis2(new IdAnalysis(
-      move(if_cond_data_type2), ValueType::kLeft, var_def_node_ptr1));
+      move(if_cond_data_type2),
+      ValueType::kLeft,
+      var_def_node_ptr1,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(if_cond_ptr2, move(if_cond_expr_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -3281,8 +3327,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *func_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
-      move(func_data_type), ValueType::kRight, func_def_node_ptr));
+      move(func_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -3419,8 +3469,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   BoolDataType *var_data_type_ptr = new BoolDataType();
   unique_ptr<DataType> var_data_type(var_data_type_ptr);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis1(new IdAnalysis(
-      move(var_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(var_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_expr_analysis1)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -3428,8 +3479,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *func_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis2(new IdAnalysis(
-      move(func_data_type), ValueType::kRight, func_def_node_ptr));
+      move(func_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_expr_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -4286,8 +4341,9 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
 
   BoolDataType *id_data_type_ptr = new BoolDataType();
   unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr1));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr1, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -4366,8 +4422,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *id_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kRight, func_def_node_ptr));
+      move(id_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -4474,8 +4534,9 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> id_data_type(new BoolDataType());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr1));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr1, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -4605,8 +4666,9 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> id_data_type(new BoolDataType());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr1));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr1, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -4699,8 +4761,9 @@ TEST_F(SimpleSemanticAnalyzerTest, Assign) {
 
   IntDataType *id_data_type_ptr = new IntDataType();
   unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  bool is_id_assignee = true;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   IntDataType *lit_data_type_ptr = new IntDataType();
@@ -4764,8 +4827,12 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithUnsupportedDataTypesIsInvalid) {
 
   IntDataType *id_data_type_ptr = new IntDataType();
   unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  bool is_id_assignee = true;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(id_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   StringDataType *lit_data_type_ptr = new StringDataType();
@@ -4973,12 +5040,20 @@ TEST_F(SimpleSemanticAnalyzerTest, LessWithUnsupportedDataTypesIsInvalid) {
         test_data.var_data_type->Clone(), DataStorage::kGlobal));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
+    bool is_id_assignee = false;
     unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-        test_data.var_data_type->Clone(), ValueType::kLeft, var_def_node_ptr));
+        test_data.var_data_type->Clone(),
+        ValueType::kLeft,
+        var_def_node_ptr,
+        is_id_assignee));
     node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+    bool is_id_assignee2 = false;
     unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-        test_data.var_data_type->Clone(), ValueType::kLeft, var_def_node_ptr));
+        test_data.var_data_type->Clone(),
+        ValueType::kLeft,
+        var_def_node_ptr,
+        is_id_assignee2));
     node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
     SemanticAnalysis::Problems problems;
@@ -5117,12 +5192,20 @@ TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -5260,12 +5343,20 @@ TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -5403,12 +5494,20 @@ TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -5546,12 +5645,20 @@ TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -5689,12 +5796,20 @@ TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -5832,12 +5947,20 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -5975,12 +6098,20 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -6120,12 +6251,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -6266,12 +6405,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -6410,12 +6557,20 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -6554,12 +6709,20 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
       false));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
+  bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
-      func_data_type.Clone(), ValueType::kRight, func_def_node_ptr));
+      func_data_type.Clone(),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
   SemanticAnalysis::Problems problems;
@@ -7079,8 +7242,9 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
 
   unique_ptr<DataType> id_data_type(
       new ArrayDataType(unique_ptr<DataType>(new LongDataType())));
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   IntDataType *index_data_type_ptr = new IntDataType();
@@ -7148,8 +7312,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   unique_ptr<DataType> id_data_type(new LongDataType());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7225,8 +7390,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   unique_ptr<DataType> id_data_type(
       new ArrayDataType(unique_ptr<DataType>(new LongDataType())));
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7278,8 +7444,9 @@ TEST_F(SimpleSemanticAnalyzerTest, Id) {
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   unique_ptr<DataType> id_data_type(new LongDataType());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr));
+      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7426,8 +7593,12 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kRight, func_def_node_ptr));
+      move(id_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7547,8 +7718,12 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kRight, func_def_node_ptr));
+      move(id_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7668,8 +7843,12 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kRight, func_def_node_ptr));
+      move(id_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7789,8 +7968,12 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kRight, func_def_node_ptr));
+      move(id_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;

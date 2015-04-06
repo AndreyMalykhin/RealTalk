@@ -3594,10 +3594,12 @@ TEST_F(CodeGeneratorTest, GlobalRightIntId) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), DataStorage::kGlobal));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       unique_ptr<DataType>(new IntDataType()),
       ValueType::kRight,
-      var_def_node_ptr));
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis semantic_analysis(
@@ -3608,16 +3610,18 @@ TEST_F(CodeGeneratorTest, GlobalRightIntId) {
   uint32_t var_index = numeric_limits<uint32_t>::max();
   cmds_code->WriteUint32(var_index);
   cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  uint32_t var_ref_address = cmds_code->GetPosition();
   cmds_code->WriteUint32(var_index);
   cmds_code->WriteCmdId(CmdId::kUnload);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
   vector<path> import_file_paths;
-  vector<string> ids_of_global_var_defs;
+  vector<string> ids_of_global_var_defs = {"var"};
   vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs = {{"func"}};
-  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs =
+      {{"var", var_ref_address}};
   vector<IdAddress> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
