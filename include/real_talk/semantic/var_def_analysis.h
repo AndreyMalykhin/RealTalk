@@ -16,6 +16,7 @@ class VarDefAnalysis: public DefAnalysis {
                  DataStorage storage);
   virtual const DataType &GetDataType() const override;
   virtual ValueType GetValueType() const override;
+  virtual void Accept(DefAnalysisVisitor &visitor) const override;
   DataStorage GetStorage() const;
 
  private:

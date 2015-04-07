@@ -1,5 +1,6 @@
 
 #include <cassert>
+#include "real_talk/semantic/def_analysis_visitor.h"
 #include "real_talk/semantic/var_def_analysis.h"
 
 using std::unique_ptr;
@@ -14,6 +15,10 @@ VarDefAnalysis::VarDefAnalysis(
     : data_type_(move(data_type)),
       storage_(storage) {
   assert(data_type_);
+}
+
+void VarDefAnalysis::Accept(DefAnalysisVisitor &visitor) const {
+  visitor.VisitVarDef(*this);
 }
 
 DataStorage VarDefAnalysis::GetStorage() const {

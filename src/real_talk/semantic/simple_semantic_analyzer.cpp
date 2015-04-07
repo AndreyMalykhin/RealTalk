@@ -93,6 +93,7 @@
 #include "real_talk/semantic/import_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/id_analysis.h"
+#include "real_talk/semantic/subscript_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/import_file_searcher.h"
@@ -210,6 +211,7 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
  private:
   enum class DataTypeId: uint8_t;
   enum class ScopeType: uint8_t;
+  class AssigneeContext;
   class Scope;
   class FileScope;
   class SemanticErrorException;
@@ -369,6 +371,7 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
    */
   Scope *FindParentScope(ScopeType type);
   bool IsWithinImportProgram();
+  bool IsAssigneeContext();
   bool IsDataTypeConvertible(const DataType &dest, const DataType &src);
   const boost::filesystem::path &GetCurrentFilePath();
   void AddDefAnalysis(const real_talk::parser::DefNode &def_node,
@@ -393,6 +396,7 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   std::unique_ptr<DataType> current_data_type_;
   size_t dimensions_count_of_current_array_type_;
   size_t non_import_stmts_count_;
+  vector<AssigneeContext*> assignee_contexts_stack_;
 };
 
 class SimpleSemanticAnalyzer::Impl::SemanticErrorException
@@ -412,9 +416,9 @@ class SimpleSemanticAnalyzer::Impl::SemanticErrorException
 
 enum class SimpleSemanticAnalyzer::Impl::ScopeType: uint8_t {
   kCommon = UINT8_C(1),
-  kGlobal,
-  kLoop,
-  kFunc
+  kGlobal = UINT8_C(2),
+  kLoop = UINT8_C(3),
+  kFunc = UINT8_C(4)
 };
 
 class SimpleSemanticAnalyzer::Impl::Scope {
@@ -487,6 +491,26 @@ class SimpleSemanticAnalyzer::Impl::FileScope {
  private:
   const path &file_path_;
   vector<FileScope*> &file_scopes_stack_;
+};
+
+class SimpleSemanticAnalyzer::Impl::AssigneeContext {
+ public:
+  AssigneeContext(bool is_active, vector<AssigneeContext*> &contexts_stack)
+      : is_active_(is_active), contexts_stack_(contexts_stack) {
+    contexts_stack_.push_back(this);
+  }
+
+  ~AssigneeContext() {
+    contexts_stack_.pop_back();
+  }
+
+  bool IsActive() const {
+    return is_active_;
+  }
+
+ private:
+  bool is_active_;
+  vector<AssigneeContext*> &contexts_stack_;
 };
 
 class SimpleSemanticAnalyzer::Impl::DataTypeQuery: protected DataTypeVisitor {
@@ -1086,6 +1110,7 @@ SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze() {
 
   assert(scopes_stack_.empty());
   assert(file_scopes_stack_.empty());
+  assert(assignee_contexts_stack_.empty());
   return SemanticAnalysis(move(problems_), move(node_analyzes_));
 }
 
@@ -1630,7 +1655,11 @@ unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
 
 void SimpleSemanticAnalyzer::Impl::VisitSubscript(
     const SubscriptNode &subscript_node) {
-  subscript_node.GetOperand()->Accept(*this);
+  {
+    AssigneeContext assignee_context(false, assignee_contexts_stack_);
+    subscript_node.GetOperand()->Accept(*this);
+  }
+
   const CommonExprAnalysis &operand_analysis =
       GetExprAnalysis(subscript_node.GetOperand().get());
   const DataType &operand_data_type = operand_analysis.GetDataType();
@@ -1643,7 +1672,11 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
     throw SemanticErrorException(move(error));
   }
 
-  subscript_node.GetIndex()->Accept(*this);
+  {
+    AssigneeContext assignee_context(false, assignee_contexts_stack_);
+    subscript_node.GetIndex()->Accept(*this);
+  }
+
   const DataType &index_data_type =
       GetExprDataType(subscript_node.GetIndex().get());
 
@@ -1655,9 +1688,11 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
     throw SemanticErrorException(move(error));
   }
 
-  AddExprAnalysis(subscript_node,
-                  move(subscript_data_type),
-                  operand_analysis.GetValueType());
+  unique_ptr<NodeSemanticAnalysis> subscript_analysis(new SubscriptAnalysis(
+      move(subscript_data_type),
+      operand_analysis.GetValueType(),
+      IsAssigneeContext()));
+  node_analyzes_.insert(make_pair(&subscript_node, move(subscript_analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
@@ -1682,12 +1717,11 @@ void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
 
   const DefAnalysis &def_analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(def_node));
-  bool is_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       def_analysis.GetDataType().Clone(),
       def_analysis.GetValueType(),
       def_node,
-      is_assignee));
+      IsAssigneeContext()));
   node_analyzes_.insert(make_pair(&id_node, move(id_analysis)));
 }
 
@@ -1749,7 +1783,11 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
-  assign_node.GetLeftOperand()->Accept(*this);
+  {
+    AssigneeContext assignee_context(true, assignee_contexts_stack_);
+    assign_node.GetLeftOperand()->Accept(*this);
+  }
+
   const CommonExprAnalysis &left_operand_expr_analysis =
       GetExprAnalysis(assign_node.GetLeftOperand().get());
 
@@ -1851,7 +1889,7 @@ void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode &pre_dec_node) {
       GetExprAnalysis(pre_dec_node.GetOperand().get());
   PreDecDataTypeDeductor data_type_deductor;
   VisitUnaryExpr(pre_dec_node,
-                 operand_analysis.GetValueType(),
+                 ValueType::kRight,
                  data_type_deductor,
                  operand_analysis);
 }
@@ -1862,7 +1900,7 @@ void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode &pre_inc_node) {
       GetExprAnalysis(pre_inc_node.GetOperand().get());
   PreIncDataTypeDeductor data_type_deductor;
   VisitUnaryExpr(pre_inc_node,
-                 operand_analysis.GetValueType(),
+                 ValueType::kRight,
                  data_type_deductor,
                  operand_analysis);
 }
@@ -1874,7 +1912,7 @@ void SimpleSemanticAnalyzer::Impl::VisitNegative(
       GetExprAnalysis(negative_node.GetOperand().get());
   NegativeDataTypeDeductor data_type_deductor;
   VisitUnaryExpr(negative_node,
-                 operand_analysis.GetValueType(),
+                 ValueType::kRight,
                  data_type_deductor,
                  operand_analysis);
 }
@@ -2182,6 +2220,11 @@ bool SimpleSemanticAnalyzer::Impl::IsWithinImportProgram() {
 bool SimpleSemanticAnalyzer::Impl::IsDataTypeConvertible(
     const DataType &dest, const DataType &src) {
   return dest == src;
+}
+
+bool SimpleSemanticAnalyzer::Impl::IsAssigneeContext() {
+  return !assignee_contexts_stack_.empty()
+      && assignee_contexts_stack_.back()->IsActive();
 }
 
 const path &SimpleSemanticAnalyzer::Impl::GetCurrentFilePath() {

@@ -1,5 +1,6 @@
 
 #include <cassert>
+#include "real_talk/semantic/def_analysis_visitor.h"
 #include "real_talk/semantic/arg_def_analysis.h"
 
 using std::unique_ptr;
@@ -11,6 +12,10 @@ namespace semantic {
 ArgDefAnalysis::ArgDefAnalysis(unique_ptr<DataType> data_type)
     : data_type_(move(data_type)) {
   assert(data_type_);
+}
+
+void ArgDefAnalysis::Accept(DefAnalysisVisitor &visitor) const {
+  visitor.VisitArgDef(*this);
 }
 
 ValueType ArgDefAnalysis::GetValueType() const {

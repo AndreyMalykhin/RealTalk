@@ -89,6 +89,7 @@
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/id_analysis.h"
+#include "real_talk/semantic/subscript_analysis.h"
 #include "real_talk/semantic/import_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
@@ -4717,7 +4718,7 @@ TEST_F(SimpleSemanticAnalyzerTest, BreakNotWithinLoopIsInvalid) {
   TestAnalyze(test_program);
 }
 
-TEST_F(SimpleSemanticAnalyzerTest, Assign) {
+TEST_F(SimpleSemanticAnalyzerTest, AssignToId) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
@@ -4772,6 +4773,113 @@ TEST_F(SimpleSemanticAnalyzerTest, Assign) {
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
       move(lit_data_type), ValueType::kRight, move(lit)));
   node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
+
+  SemanticAnalysis::Problems problems;
+  SemanticAnalysis analysis(move(problems), move(node_analyzes));
+  vector<TestFileParse> test_file_parses;
+  vector<TestImportFileSearch> test_import_file_searches;
+  path program_file_path;
+  TestProgram test_program = {program_node,
+                              program_file_path,
+                              move(analysis),
+                              test_file_parses,
+                              test_import_file_searches,
+                              test_lit_parses};
+
+  TestAnalyze(test_program);
+}
+
+TEST_F(SimpleSemanticAnalyzerTest, AssignToSubscript) {
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node2(new ArrayDataTypeNode(
+      move(data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(data_type_node2),
+      TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  stmt_nodes.push_back(move(var_def_node));
+
+  unique_ptr<DataTypeNode> data_type_node3(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(data_type_node3),
+      TokenInfo(Token::kName, "index", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  stmt_nodes.push_back(move(var_def_node2));
+
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(8), UINT32_C(8)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
+  IdNode *id_node_ptr2 = new IdNode(
+      TokenInfo(Token::kName, "index", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ExprNode> id_node2(id_node_ptr2);
+  SubscriptNode *subscript_node_ptr = new SubscriptNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(11), UINT32_C(11)),
+      move(id_node),
+      move(id_node2));
+  unique_ptr<ExprNode> subscript_node(subscript_node_ptr);
+  IntNode *lit_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(13), UINT32_C(13)));
+  unique_ptr<ExprNode> lit_node(lit_node_ptr);
+  AssignNode *assign_node_ptr = new AssignNode(
+      TokenInfo(Token::kAssignOp, "=", UINT32_C(12), UINT32_C(12)),
+      move(subscript_node),
+      move(lit_node));
+  unique_ptr<ExprNode> assign_node(assign_node_ptr);
+  unique_ptr<StmtNode> assign_stmt_node(new ExprStmtNode(
+      move(assign_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(14), UINT32_C(14))));
+  stmt_nodes.push_back(move(assign_stmt_node));
+  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> array_data_type(new ArrayDataType(
+      unique_ptr<DataType>(new IntDataType())));
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
+      array_data_type->Clone(), DataStorage::kGlobal));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new VarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), DataStorage::kGlobal));
+  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  unique_ptr<NodeSemanticAnalysis> assign_expr_analysis(new CommonExprAnalysis(
+      unique_ptr<DataType>(new IntDataType()), ValueType::kRight));
+  node_analyzes.insert(make_pair(assign_node_ptr, move(assign_expr_analysis)));
+  bool is_id_assignee = false;
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      array_data_type->Clone(),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
+  node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+  bool is_id_assignee2 = false;
+  unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kLeft,
+      var_def_node_ptr2,
+      is_id_assignee2));
+  node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
+  bool is_subscript_assignee = true;
+  unique_ptr<NodeSemanticAnalysis> subscript_analysis(new SubscriptAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kLeft,
+      is_subscript_assignee));
+  node_analyzes.insert(make_pair(subscript_node_ptr, move(subscript_analysis)));
+  IntDataType *lit_data_type_ptr = new IntDataType();
+  unique_ptr<DataType> lit_data_type(lit_data_type_ptr);
+  unique_ptr<Lit> lit(new IntLit(INT32_C(7)));
+  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
+      move(lit_data_type), ValueType::kRight, move(lit)));
+  node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
+
+  TestLitParses test_lit_parses = {};
+  test_lit_parses.ints = {{"7", INT32_C(7)}};
 
   SemanticAnalysis::Problems problems;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
@@ -7255,8 +7363,11 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
   node_analyzes.insert(make_pair(index_node_ptr, move(index_lit_analysis)));
 
   unique_ptr<DataType> subscript_data_type(new LongDataType());
+  bool is_subscript_assignee = false;
   unique_ptr<NodeSemanticAnalysis> subscript_expr_analysis(
-      new CommonExprAnalysis(move(subscript_data_type), ValueType::kLeft));
+      new SubscriptAnalysis(move(subscript_data_type),
+                            ValueType::kLeft,
+                            is_subscript_assignee));
   node_analyzes.insert(
       make_pair(subscript_node_ptr, move(subscript_expr_analysis)));
 
@@ -7623,38 +7734,48 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
 
 TEST_F(SimpleSemanticAnalyzerTest, Negative) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<ExprNode> lit_node(lit_node_ptr);
+  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  stmt_nodes.push_back(move(var_def_node));
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(4), UINT32_C(4)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
   NegativeNode *negative_node_ptr = new NegativeNode(
-      TokenInfo(Token::kSubOp, "-", UINT32_C(0), UINT32_C(0)),
-      move(lit_node));
+      TokenInfo(Token::kSubOp, "-", UINT32_C(3), UINT32_C(3)),
+      move(id_node));
   unique_ptr<ExprNode> negative_node(negative_node_ptr);
   unique_ptr<StmtNode> negative_stmt_node(new ExprStmtNode(
       move(negative_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(negative_stmt_node));
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"7", INT32_C(7)}};
-
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> negative_data_type(new IntDataType());
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), DataStorage::kGlobal));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  bool is_id_assignee = false;
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
+  node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
   unique_ptr<NodeSemanticAnalysis> negative_expr_analysis(
-      new CommonExprAnalysis(move(negative_data_type), ValueType::kRight));
+      new CommonExprAnalysis(
+          unique_ptr<DataType>(new IntDataType()), ValueType::kRight));
   node_analyzes.insert(
       make_pair(negative_node_ptr, move(negative_expr_analysis)));
-
-  unique_ptr<DataType> lit_data_type(new IntDataType());
-  unique_ptr<Lit> lit(new IntLit(INT32_C(7)));
-  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
-      move(lit_data_type), ValueType::kRight, move(lit)));
-  node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
   SemanticAnalysis::Problems problems;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   vector<TestFileParse> test_file_parses;
+  TestLitParses test_lit_parses = {};
   vector<TestImportFileSearch> test_import_file_searches;
   path program_file_path;
   TestProgram test_program = {program_node,
@@ -7748,38 +7869,48 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
 
 TEST_F(SimpleSemanticAnalyzerTest, PreInc) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<ExprNode> lit_node(lit_node_ptr);
+  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  stmt_nodes.push_back(move(var_def_node));
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(4), UINT32_C(4)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
   PreIncNode *pre_inc_node_ptr = new PreIncNode(
-      TokenInfo(Token::kPreIncOp, "++", UINT32_C(0), UINT32_C(0)),
-      move(lit_node));
+      TokenInfo(Token::kPreIncOp, "++", UINT32_C(3), UINT32_C(3)),
+      move(id_node));
   unique_ptr<ExprNode> pre_inc_node(pre_inc_node_ptr);
   unique_ptr<StmtNode> pre_inc_stmt_node(new ExprStmtNode(
       move(pre_inc_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(pre_inc_stmt_node));
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"7", INT32_C(7)}};
-
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> pre_inc_data_type(new IntDataType());
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), DataStorage::kGlobal));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  bool is_id_assignee = false;
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
+  node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
   unique_ptr<NodeSemanticAnalysis> pre_inc_expr_analysis(
-      new CommonExprAnalysis(move(pre_inc_data_type), ValueType::kRight));
+      new CommonExprAnalysis(
+          unique_ptr<DataType>(new IntDataType()), ValueType::kRight));
   node_analyzes.insert(
       make_pair(pre_inc_node_ptr, move(pre_inc_expr_analysis)));
-
-  unique_ptr<DataType> lit_data_type(new IntDataType());
-  unique_ptr<Lit> lit(new IntLit(INT32_C(7)));
-  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
-      move(lit_data_type), ValueType::kRight, move(lit)));
-  node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
   SemanticAnalysis::Problems problems;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   vector<TestFileParse> test_file_parses;
+  TestLitParses test_lit_parses = {};
   vector<TestImportFileSearch> test_import_file_searches;
   path program_file_path;
   TestProgram test_program = {program_node,
@@ -7873,38 +8004,48 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
 
 TEST_F(SimpleSemanticAnalyzerTest, PreDec) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<ExprNode> lit_node(lit_node_ptr);
+  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  stmt_nodes.push_back(move(var_def_node));
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(4), UINT32_C(4)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
   PreDecNode *pre_dec_node_ptr = new PreDecNode(
-      TokenInfo(Token::kPreDecOp, "--", UINT32_C(0), UINT32_C(0)),
-      move(lit_node));
+      TokenInfo(Token::kPreDecOp, "--", UINT32_C(3), UINT32_C(3)),
+      move(id_node));
   unique_ptr<ExprNode> pre_dec_node(pre_dec_node_ptr);
   unique_ptr<StmtNode> pre_dec_stmt_node(new ExprStmtNode(
       move(pre_dec_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(pre_dec_stmt_node));
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"7", INT32_C(7)}};
-
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<DataType> pre_dec_data_type(new IntDataType());
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), DataStorage::kGlobal));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  bool is_id_assignee = false;
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
+  node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
   unique_ptr<NodeSemanticAnalysis> pre_dec_expr_analysis(
-      new CommonExprAnalysis(move(pre_dec_data_type), ValueType::kRight));
+      new CommonExprAnalysis(
+          unique_ptr<DataType>(new IntDataType()), ValueType::kRight));
   node_analyzes.insert(
       make_pair(pre_dec_node_ptr, move(pre_dec_expr_analysis)));
-
-  unique_ptr<DataType> lit_data_type(new IntDataType());
-  unique_ptr<Lit> lit(new IntLit(INT32_C(7)));
-  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
-      move(lit_data_type), ValueType::kRight, move(lit)));
-  node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
   SemanticAnalysis::Problems problems;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   vector<TestFileParse> test_file_parses;
+  TestLitParses test_lit_parses = {};
   vector<TestImportFileSearch> test_import_file_searches;
   path program_file_path;
   TestProgram test_program = {program_node,

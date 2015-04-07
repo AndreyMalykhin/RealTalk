@@ -16,6 +16,7 @@ class FuncDefAnalysis: public DefAnalysis {
                   bool has_return);
   virtual const FuncDataType &GetDataType() const override;
   virtual ValueType GetValueType() const override;
+  virtual void Accept(DefAnalysisVisitor &visitor) const override;
   bool IsNative() const;
   bool HasReturn() const;
   void SetHasReturn(bool has_return);

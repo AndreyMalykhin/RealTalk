@@ -14,6 +14,7 @@ class ArgDefAnalysis: public DefAnalysis {
   explicit ArgDefAnalysis(std::unique_ptr<DataType> data_type);
   virtual const DataType &GetDataType() const override;
   virtual ValueType GetValueType() const override;
+  virtual void Accept(DefAnalysisVisitor &visitor) const override;
 
  private:
   virtual bool IsEqual(const NodeSemanticAnalysis &rhs) const override;

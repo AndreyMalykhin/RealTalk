@@ -44,6 +44,7 @@ add_library(real_talk
   src/real_talk/semantic/common_expr_analysis.cpp
   src/real_talk/semantic/lit_analysis.cpp
   src/real_talk/semantic/id_analysis.cpp
+  src/real_talk/semantic/subscript_analysis.cpp
   src/real_talk/semantic/import_analysis.cpp
   src/real_talk/semantic/scope_analysis.cpp
   src/real_talk/semantic/control_flow_transfer_analysis.cpp

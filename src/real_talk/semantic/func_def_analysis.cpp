@@ -1,5 +1,6 @@
 
 #include <cassert>
+#include "real_talk/semantic/def_analysis_visitor.h"
 #include "real_talk/semantic/func_def_analysis.h"
 
 using std::unique_ptr;
@@ -16,6 +17,10 @@ FuncDefAnalysis::FuncDefAnalysis(
       is_native_(is_native),
       has_return_(has_return) {
   assert(data_type_);
+}
+
+void FuncDefAnalysis::Accept(DefAnalysisVisitor &visitor) const {
+  visitor.VisitFuncDef(*this);
 }
 
 ValueType FuncDefAnalysis::GetValueType() const {

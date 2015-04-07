@@ -9,11 +9,13 @@ namespace real_talk {
 namespace semantic {
 
 class DataType;
+class DefAnalysisVisitor;
 
 class DefAnalysis: public NodeSemanticAnalysis {
  public:
   virtual const DataType &GetDataType() const = 0;
   virtual ValueType GetValueType() const = 0;
+  virtual void Accept(DefAnalysisVisitor &visitor) const = 0;
 };
 }
 }
