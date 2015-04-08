@@ -29,17 +29,20 @@
 #include "real_talk/parser/continue_node.h"
 #include "real_talk/parser/return_value_node.h"
 #include "real_talk/parser/return_without_value_node.h"
+#include "real_talk/parser/id_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
+#include "real_talk/semantic/id_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/arg_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
+#include "real_talk/semantic/def_analysis_visitor.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
 #include "real_talk/semantic/bool_lit.h"
@@ -135,6 +138,9 @@ using real_talk::semantic::ControlFlowTransferAnalysis;
 using real_talk::semantic::ArgDefAnalysis;
 using real_talk::semantic::FuncDefAnalysis;
 using real_talk::semantic::ExprAnalysis;
+using real_talk::semantic::IdAnalysis;
+using real_talk::semantic::DefAnalysis;
+using real_talk::semantic::DefAnalysisVisitor;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
 using real_talk::semantic::ArrayDataType;
@@ -166,6 +172,8 @@ class CodeGenerator::Impl: private NodeVisitor {
 
  private:
   class StmtGrouper;
+  class Scope;
+  class IdNodeProcessor;
   class CreateGlobalVarCmdGenerator;
   class CreateLocalVarCmdGenerator;
   class CreateAndInitGlobalVarCmdGenerator;
@@ -173,7 +181,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class CreateArrayCmdGenerator;
   class CreateAndInitArrayCmdGenerator;
   class ReturnValueCmdGenerator;
-  class Scope;
+  class LoadGlobalVarValueCmdGenerator;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -724,6 +732,104 @@ class CodeGenerator::Impl::ReturnValueCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  uint32_t Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+    const uint32_t var_index_placeholder = code_->GetPosition();
+    code_->WriteUint32(numeric_limits<uint32_t>::max());
+    return var_index_placeholder;
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadGlobalBoolVarValue);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadGlobalCharVarValue);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadGlobalStringVarValue);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
+ public:
+  void Process(const IdNode *id_node,
+               const IdAnalysis *id_analysis,
+               const DefAnalysis *def_analysis,
+               uint32_t cmds_address,
+               vector<IdAddress> *id_addresses_of_global_var_refs,
+               Code *code) {
+    id_node_ = id_node;
+    id_analysis_ = id_analysis;
+    id_addresses_of_global_var_refs_ = id_addresses_of_global_var_refs;
+    code_ = code;
+    cmds_address_ = cmds_address;
+    def_analysis->Accept(*this);
+  }
+
+ private:
+  virtual void VisitArgDef(const ArgDefAnalysis&) override {
+    assert(false);
+  }
+
+  virtual void VisitVarDef(const VarDefAnalysis &var_def_analysis) override {
+    if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
+      if (id_analysis_->IsAssignee()) {
+        assert(false);
+      } else {
+        const uint32_t var_index_placeholder =
+            LoadGlobalVarValueCmdGenerator().Generate(
+                var_def_analysis.GetDataType(), code_);
+        const string &id = id_node_->GetNameToken().GetValue();
+        assert(var_index_placeholder >= cmds_address_);
+        id_addresses_of_global_var_refs_->push_back(
+            IdAddress(id, var_index_placeholder - cmds_address_));
+      }
+    } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
+      assert(false);
+    } else {
+      assert(false);
+    }
+  }
+
+  virtual void VisitFuncDef(const FuncDefAnalysis&) override {
+    assert(false);
+  }
+
+  const IdNode *id_node_;
+  const IdAnalysis *id_analysis_;
+  uint32_t cmds_address_;
+  vector<IdAddress> *id_addresses_of_global_var_refs_;
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(): impl_(new Impl()) {}
 
 CodeGenerator::~CodeGenerator() {}
@@ -1094,49 +1200,18 @@ void CodeGenerator::Impl::VisitArrayAllocWithInit(
       code_);
 }
 
-void CodeGenerator::Impl::VisitId(const IdNode&) {
-  // const string &id = node.GetNameToken().GetValue();
-  // const IdAnalysis &id_analysis =
-  //     static_cast<const IdAnalysis&>(GetNodeAnalysis(id_node));
-  // const DefNode *def_node = id_analysis.GetDef();
-
-  // if (def_node->GetType() == DefType::kVar) {
-  //   const VarDefAnalysis &var_def_analysis =
-  //       static_cast<const VarDefAnalysis&>(GetNodeAnalysis(*def_node));
-
-  //   if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
-  //     if (id_analysis.IsAssignee()) {
-  //       LoadGlobalVarValueCmdGenerator().Generate(
-  //           var_def_analysis.GetDataType(),
-  //           code_,
-  //           id_addresses_of_global_var_refs_);
-  //     } else {
-  //       assert(false);
-  //     }
-  //   } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
-  //     assert(false);
-
-  //     if (id_analysis.IsAssignee()) {
-  //       assert(false);
-  //     } else {
-  //       assert(false);
-  //     }
-  //   } else {
-  //     assert(false);
-  //   }
-  // } else if (def_node->GetType() == DefType::kArg) {
-  //   assert(false);
-
-  //   if (id_analysis.IsAssignee()) {
-  //     assert(false);
-  //   } else {
-  //     assert(false);
-  //   }
-  // } else if (def_node->GetType() == DefType::kFunc) {
-  //   assert(false);
-  // } else {
-  //   assert(false);
-  // }
+void CodeGenerator::Impl::VisitId(const IdNode &id) {
+  const IdAnalysis &id_analysis =
+      static_cast<const IdAnalysis&>(GetNodeAnalysis(id));
+  const DefNode *def = id_analysis.GetDef();
+  const DefAnalysis &def_analysis =
+      static_cast<const DefAnalysis&>(GetNodeAnalysis(*def));
+  IdNodeProcessor().Process(&id,
+                            &id_analysis,
+                            &def_analysis,
+                            cmds_address_,
+                            &id_addresses_of_global_var_refs_,
+                            code_);
 }
 
 void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}

@@ -77,7 +77,8 @@ enum class CmdId: uint8_t {
   kLoadGlobalBoolVarValue = UINT8_C(65),
   kLoadGlobalCharVarValue = UINT8_C(66),
   kLoadGlobalStringVarValue = UINT8_C(67),
-  kLoadGlobalArrayVarValue = UINT8_C(68)
+  kLoadGlobalArrayVarValue = UINT8_C(68),
+  kLoadGlobalVarAddress = UINT8_C(69)
 };
 
 class Cmd {

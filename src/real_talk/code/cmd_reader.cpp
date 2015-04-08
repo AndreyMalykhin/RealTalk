@@ -15,6 +15,7 @@
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/return_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
+#include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -146,6 +147,9 @@ LoadGlobalStringVarValueCmd &kLoadGlobalStringVarValueCmd =
     *new LoadGlobalStringVarValueCmd(UINT32_C(0));
 LoadGlobalBoolVarValueCmd &kLoadGlobalBoolVarValueCmd =
     *new LoadGlobalBoolVarValueCmd(UINT32_C(0));
+
+LoadGlobalVarAddressCmd &kLoadGlobalVarAddressCmd =
+    *new LoadGlobalVarAddressCmd(UINT32_C(0));
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -408,6 +412,10 @@ const Cmd &CmdReader::GetNextCmd() {
     case CmdId::kLoadGlobalBoolVarValue:
       ReadLoadGlobalVarValueCmd(kLoadGlobalBoolVarValueCmd);
       cmd = &kLoadGlobalBoolVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalVarAddress:
+      kLoadGlobalVarAddressCmd.SetVarIndex(code_->ReadUint32());
+      cmd = &kLoadGlobalVarAddressCmd;
       break;
   }
 

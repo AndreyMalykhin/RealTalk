@@ -17,6 +17,7 @@
 #include "real_talk/code/destroy_local_vars_cmd.h"
 #include "real_talk/code/return_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
+#include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -554,6 +555,15 @@ TEST_F(CmdReaderTest, LoadGlobalArrayVarValueCmd) {
   uint32_t var_index = UINT32_C(7);
   LoadGlobalArrayVarValueCmd expected_cmd(var_index);
   TestLoadGlobalVarValueCmd(CmdId::kLoadGlobalArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadGlobalVarAddressCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadGlobalVarAddressCmd expected_cmd(var_index);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadGlobalVarAddress);
+  code.WriteUint32(var_index);
+  TestGetNextCmd(code, expected_cmd);
 }
 }
 }
