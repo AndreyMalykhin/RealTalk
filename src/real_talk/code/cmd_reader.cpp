@@ -15,6 +15,7 @@
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/return_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
+#include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/code.h"
 
@@ -147,6 +148,21 @@ LoadGlobalStringVarValueCmd &kLoadGlobalStringVarValueCmd =
     *new LoadGlobalStringVarValueCmd(UINT32_C(0));
 LoadGlobalBoolVarValueCmd &kLoadGlobalBoolVarValueCmd =
     *new LoadGlobalBoolVarValueCmd(UINT32_C(0));
+
+LoadLocalIntVarValueCmd &kLoadLocalIntVarValueCmd =
+    *new LoadLocalIntVarValueCmd(UINT32_C(0));
+LoadLocalArrayVarValueCmd &kLoadLocalArrayVarValueCmd =
+    *new LoadLocalArrayVarValueCmd(UINT32_C(0));
+LoadLocalLongVarValueCmd &kLoadLocalLongVarValueCmd =
+    *new LoadLocalLongVarValueCmd(UINT32_C(0));
+LoadLocalDoubleVarValueCmd &kLoadLocalDoubleVarValueCmd =
+    *new LoadLocalDoubleVarValueCmd(UINT32_C(0));
+LoadLocalCharVarValueCmd &kLoadLocalCharVarValueCmd =
+    *new LoadLocalCharVarValueCmd(UINT32_C(0));
+LoadLocalStringVarValueCmd &kLoadLocalStringVarValueCmd =
+    *new LoadLocalStringVarValueCmd(UINT32_C(0));
+LoadLocalBoolVarValueCmd &kLoadLocalBoolVarValueCmd =
+    *new LoadLocalBoolVarValueCmd(UINT32_C(0));
 
 LoadGlobalVarAddressCmd &kLoadGlobalVarAddressCmd =
     *new LoadGlobalVarAddressCmd(UINT32_C(0));
@@ -417,6 +433,34 @@ const Cmd &CmdReader::GetNextCmd() {
       kLoadGlobalVarAddressCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kLoadGlobalVarAddressCmd;
       break;
+    case CmdId::kLoadLocalIntVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalIntVarValueCmd);
+      cmd = &kLoadLocalIntVarValueCmd;
+      break;
+    case CmdId::kLoadLocalArrayVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalArrayVarValueCmd);
+      cmd = &kLoadLocalArrayVarValueCmd;
+      break;
+    case CmdId::kLoadLocalLongVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalLongVarValueCmd);
+      cmd = &kLoadLocalLongVarValueCmd;
+      break;
+    case CmdId::kLoadLocalDoubleVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalDoubleVarValueCmd);
+      cmd = &kLoadLocalDoubleVarValueCmd;
+      break;
+    case CmdId::kLoadLocalCharVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalCharVarValueCmd);
+      cmd = &kLoadLocalCharVarValueCmd;
+      break;
+    case CmdId::kLoadLocalStringVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalStringVarValueCmd);
+      cmd = &kLoadLocalStringVarValueCmd;
+      break;
+    case CmdId::kLoadLocalBoolVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalBoolVarValueCmd);
+      cmd = &kLoadLocalBoolVarValueCmd;
+      break;
   }
 
   assert(cmd != nullptr);
@@ -448,6 +492,11 @@ inline void CmdReader::ReadJumpCmd(JumpCmd &cmd) {
 
 inline void CmdReader::ReadLoadGlobalVarValueCmd(
     LoadGlobalVarValueCmd &cmd) {
+  cmd.SetVarIndex(code_->ReadUint32());
+}
+
+inline void CmdReader::ReadLoadLocalVarValueCmd(
+    LoadLocalVarValueCmd &cmd) {
   cmd.SetVarIndex(code_->ReadUint32());
 }
 }

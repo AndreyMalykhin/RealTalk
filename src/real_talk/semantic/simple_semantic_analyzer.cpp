@@ -86,8 +86,9 @@
 #include "real_talk/semantic/string_lit.h"
 #include "real_talk/semantic/char_lit.h"
 #include "real_talk/semantic/bool_lit.h"
-#include "real_talk/semantic/var_def_analysis.h"
 #include "real_talk/semantic/arg_def_analysis.h"
+#include "real_talk/semantic/global_var_def_analysis.h"
+#include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/import_analysis.h"
@@ -1265,10 +1266,16 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
   unique_ptr<DataType> data_type_ptr =
       CreateDataType(*(var_def_node.GetDataType()));
   const DataType &data_type = *data_type_ptr;
-  DataStorage data_storage =
-      IsCurrentScopeGlobal() ? DataStorage::kGlobal : DataStorage::kLocal;
-  unique_ptr<DefAnalysis> def_analysis(
-      new VarDefAnalysis(move(data_type_ptr), data_storage));
+  unique_ptr<DefAnalysis> def_analysis;
+
+  if (IsCurrentScopeGlobal()) {
+    def_analysis.reset(new GlobalVarDefAnalysis(move(data_type_ptr)));
+  } else {
+    const uint32_t index_within_func = UINT32_C(777);
+    def_analysis.reset(
+        new LocalVarDefAnalysis(move(data_type_ptr), index_within_func));
+  }
+
   AddDefAnalysis(var_def_node, move(def_analysis));
 
   if (IsWithinImportProgram()) {

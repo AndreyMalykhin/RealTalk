@@ -6,14 +6,16 @@ namespace real_talk {
 namespace semantic {
 
 class ArgDefAnalysis;
-class VarDefAnalysis;
+class LocalVarDefAnalysis;
+class GlobalVarDefAnalysis;
 class FuncDefAnalysis;
 
 class DefAnalysisVisitor {
  public:
   virtual ~DefAnalysisVisitor() {}
   virtual void VisitArgDef(const ArgDefAnalysis &analysis) = 0;
-  virtual void VisitVarDef(const VarDefAnalysis &analysis) = 0;
+  virtual void VisitLocalVarDef(const LocalVarDefAnalysis &analysis) = 0;
+  virtual void VisitGlobalVarDef(const GlobalVarDefAnalysis &analysis) = 0;
   virtual void VisitFuncDef(const FuncDefAnalysis &analysis) = 0;
 };
 }

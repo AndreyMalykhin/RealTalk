@@ -34,7 +34,8 @@
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
 #include "real_talk/semantic/semantic_analysis.h"
-#include "real_talk/semantic/var_def_analysis.h"
+#include "real_talk/semantic/global_var_def_analysis.h"
+#include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/id_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
@@ -130,7 +131,8 @@ using real_talk::parser::ScopeNode;
 using real_talk::parser::ExprNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
-using real_talk::semantic::VarDefAnalysis;
+using real_talk::semantic::LocalVarDefAnalysis;
+using real_talk::semantic::GlobalVarDefAnalysis;
 using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::CommonExprAnalysis;
 using real_talk::semantic::ScopeAnalysis;
@@ -174,6 +176,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class StmtGrouper;
   class Scope;
   class IdNodeProcessor;
+  class VarDefNodeProcessor;
   class CreateGlobalVarCmdGenerator;
   class CreateLocalVarCmdGenerator;
   class CreateAndInitGlobalVarCmdGenerator;
@@ -241,8 +244,6 @@ class CodeGenerator::Impl: private NodeVisitor {
       const ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(const ArgDefNode &node) override;
   virtual void VisitScope(const ScopeNode &node) override;
-  template<typename TCreateGlobalVarCmdGenerator,
-           typename TCreateLocalVarCmdGenerator>
   void VisitVarDef(const VarDefNode &node);
   void VisitIf(const IfNode &node, uint32_t *branch_end_address_placeholder);
   void WriteCurrentCmdAddress(const vector<uint32_t> &address_placeholders);
@@ -799,23 +800,22 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     assert(false);
   }
 
-  virtual void VisitVarDef(const VarDefAnalysis &var_def_analysis) override {
-    if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
-      if (id_analysis_->IsAssignee()) {
-        assert(false);
-      } else {
-        const uint32_t var_index_placeholder =
-            LoadGlobalVarValueCmdGenerator().Generate(
-                var_def_analysis.GetDataType(), code_);
-        const string &id = id_node_->GetNameToken().GetValue();
-        assert(var_index_placeholder >= cmds_address_);
-        id_addresses_of_global_var_refs_->push_back(
-            IdAddress(id, var_index_placeholder - cmds_address_));
-      }
-    } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
+  virtual void VisitLocalVarDef(const LocalVarDefAnalysis&) override {
+    assert(false);
+  }
+
+  virtual void VisitGlobalVarDef(const GlobalVarDefAnalysis &var_def_analysis)
+      override {
+    if (id_analysis_->IsAssignee()) {
       assert(false);
     } else {
-      assert(false);
+      const uint32_t var_index_placeholder =
+          LoadGlobalVarValueCmdGenerator().Generate(
+              var_def_analysis.GetDataType(), code_);
+      const string &id = id_node_->GetNameToken().GetValue();
+      assert(var_index_placeholder >= cmds_address_);
+      id_addresses_of_global_var_refs_->push_back(
+          IdAddress(id, var_index_placeholder - cmds_address_));
     }
   }
 
@@ -827,6 +827,38 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
   const IdAnalysis *id_analysis_;
   uint32_t cmds_address_;
   vector<IdAddress> *id_addresses_of_global_var_refs_;
+  Code *code_;
+};
+
+class CodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
+ public:
+  void Process(const VarDefNode *var_def_node,
+               const DefAnalysis *var_def_analysis,
+               vector<string> *ids_of_global_var_defs,
+               Code *code) {
+    var_def_node_ = var_def_node;
+    ids_of_global_var_defs_ = ids_of_global_var_defs;
+    code_ = code;
+    var_def_analysis->Accept(*this);
+  }
+
+ private:
+  virtual void VisitLocalVarDef(const LocalVarDefAnalysis &analysis) override {
+    CreateLocalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
+  }
+
+  virtual void VisitGlobalVarDef(const GlobalVarDefAnalysis &analysis)
+      override {
+    CreateGlobalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
+    const string &id = var_def_node_->GetNameToken().GetValue();
+    ids_of_global_var_defs_->push_back(id);
+  }
+
+  virtual void VisitFuncDef(const FuncDefAnalysis&) override {assert(false);}
+  virtual void VisitArgDef(const ArgDefAnalysis&) override {assert(false);}
+
+  const VarDefNode *var_def_node_;
+  vector<string> *ids_of_global_var_defs_;
   Code *code_;
 };
 
@@ -973,31 +1005,19 @@ void CodeGenerator::Impl::VisitImport(const ImportNode &node) {
 
 void CodeGenerator::Impl::VisitVarDefWithoutInit(
     const VarDefWithoutInitNode &node) {
-  VisitVarDef<CreateGlobalVarCmdGenerator, CreateLocalVarCmdGenerator>(node);
+  VisitVarDef(node);
 }
 
 void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
   node.GetValue()->Accept(*this);
-  VisitVarDef<CreateAndInitGlobalVarCmdGenerator,
-              CreateAndInitLocalVarCmdGenerator>(node);
+  VisitVarDef(node);
 }
 
-template<typename TCreateGlobalVarCmdGenerator,
-         typename TCreateLocalVarCmdGenerator>
 void CodeGenerator::Impl::VisitVarDef(const VarDefNode &node) {
-  const VarDefAnalysis &var_def_analysis =
-      static_cast<const VarDefAnalysis&>(GetNodeAnalysis(node));
-
-  if (var_def_analysis.GetStorage() == DataStorage::kGlobal) {
-    TCreateGlobalVarCmdGenerator().Generate(
-        var_def_analysis.GetDataType(), code_);
-    ids_of_global_var_defs_.push_back(node.GetNameToken().GetValue());
-  } else if (var_def_analysis.GetStorage() == DataStorage::kLocal) {
-    TCreateLocalVarCmdGenerator().Generate(
-        var_def_analysis.GetDataType(), code_);
-  } else {
-    assert(false);
-  }
+  const DefAnalysis &analysis =
+      static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
+  VarDefNodeProcessor().Process(
+      &node, &analysis, &ids_of_global_var_defs_, code_);
 }
 
 void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {

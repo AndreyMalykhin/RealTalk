@@ -17,6 +17,7 @@
 #include "real_talk/code/destroy_local_vars_cmd.h"
 #include "real_talk/code/return_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
+#include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/code.h"
 
@@ -85,6 +86,14 @@ class CmdReaderTest: public Test {
 
   void TestLoadGlobalVarValueCmd(
       CmdId cmd_id, const LoadGlobalVarValueCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint32(expected_cmd.GetVarIndex());
+    TestGetNextCmd(code, expected_cmd);
+  }
+
+  void TestLoadLocalVarValueCmd(
+      CmdId cmd_id, const LoadLocalVarValueCmd &expected_cmd) {
     Code code;
     code.WriteCmdId(cmd_id);
     code.WriteUint32(expected_cmd.GetVarIndex());
@@ -555,6 +564,48 @@ TEST_F(CmdReaderTest, LoadGlobalArrayVarValueCmd) {
   uint32_t var_index = UINT32_C(7);
   LoadGlobalArrayVarValueCmd expected_cmd(var_index);
   TestLoadGlobalVarValueCmd(CmdId::kLoadGlobalArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalIntVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalIntVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalIntVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalLongVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalLongVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalLongVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalDoubleVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalDoubleVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalDoubleVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalBoolVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalBoolVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalBoolVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalCharVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalCharVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalCharVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalStringVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalStringVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalStringVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalArrayVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalArrayVarValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadGlobalVarAddressCmd) {

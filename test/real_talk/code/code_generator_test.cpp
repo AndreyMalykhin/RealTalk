@@ -41,7 +41,8 @@
 #include "real_talk/parser/void_data_type_node.h"
 #include "real_talk/parser/id_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
-#include "real_talk/semantic/var_def_analysis.h"
+#include "real_talk/semantic/local_var_def_analysis.h"
+#include "real_talk/semantic/global_var_def_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
@@ -139,7 +140,8 @@ using real_talk::parser::ReturnValueNode;
 using real_talk::parser::IdNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
-using real_talk::semantic::VarDefAnalysis;
+using real_talk::semantic::LocalVarDefAnalysis;
+using real_talk::semantic::GlobalVarDefAnalysis;
 using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::ExprAnalysis;
 using real_talk::semantic::CommonExprAnalysis;
@@ -228,7 +230,7 @@ class CodeGeneratorTest: public Test {
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(
-        new VarDefAnalysis(move(data_type), DataStorage::kGlobal));
+        new GlobalVarDefAnalysis(move(data_type)));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::Problems(), move(node_analyzes));
@@ -282,7 +284,7 @@ class CodeGeneratorTest: public Test {
     node_analyzes.insert(make_move_iterator(value_node_analyzes.begin()),
                          make_move_iterator(value_node_analyzes.end()));
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(
-        new VarDefAnalysis(move(data_type), DataStorage::kGlobal));
+        new GlobalVarDefAnalysis(move(data_type)));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::Problems(), move(node_analyzes));
@@ -336,8 +338,9 @@ class CodeGeneratorTest: public Test {
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     node_analyzes.insert(make_move_iterator(value_node_analyzes.begin()),
                          make_move_iterator(value_node_analyzes.end()));
+    uint32_t var_index_within_func = UINT32_C(0);
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(
-        new VarDefAnalysis(move(data_type), DataStorage::kLocal));
+        new LocalVarDefAnalysis(move(data_type), var_index_within_func));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::Problems(), move(node_analyzes));
@@ -381,8 +384,9 @@ class CodeGeneratorTest: public Test {
     ProgramNode program_node(move(program_stmt_nodes));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
+    uint32_t var_index_within_func = UINT32_C(0);
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(
-        new VarDefAnalysis(move(data_type), DataStorage::kLocal));
+        new LocalVarDefAnalysis(move(data_type), var_index_within_func));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::Problems(), move(node_analyzes));
@@ -728,8 +732,8 @@ class CodeGeneratorTest: public Test {
     ProgramNode program_node(move(program_stmt_nodes));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-        data_type.Clone(), DataStorage::kGlobal));
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
+        data_type.Clone()));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     bool is_id_assignee = false;
     unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
@@ -2094,14 +2098,17 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
       new ScopeAnalysis(else_body_local_vars_count));
   node_analyzes.insert(
       make_pair(else_body_node_ptr, move(else_body_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new VarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func2 = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new VarDefAnalysis(
-      unique_ptr<DataType>(new DoubleDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func3 = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new DoubleDataType()), var_index_within_func3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -2398,11 +2405,13 @@ TEST_F(CodeGeneratorTest, IfElseIfWithVarDefs) {
       new ScopeAnalysis(if_body_local_vars_count));
   node_analyzes.insert(
       make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new VarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func2 = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -2594,8 +2603,9 @@ TEST_F(CodeGeneratorTest, IfWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
       new ScopeAnalysis(if_body_local_vars_count));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -2762,8 +2772,9 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
       new ScopeAnalysis(loop_body_local_vars_count));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -2948,11 +2959,13 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> break_analysis(
       new ControlFlowTransferAnalysis(flow_local_vars_count));
   node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new VarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -3141,11 +3154,13 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> continue_analysis(
       new ControlFlowTransferAnalysis(flow_local_vars_count));
   node_analyzes.insert(make_pair(continue_node_ptr, move(continue_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new VarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -3247,8 +3262,9 @@ TEST_F(CodeGeneratorTest, FuncDefWithBody) {
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_vars_count));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), DataStorage::kLocal));
+  uint32_t var_index_within_func = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new ArgDefAnalysis(
       unique_ptr<DataType>(new LongDataType())));
@@ -3714,6 +3730,70 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
                                expected_cmd_id);
 }
 
+TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalIntVar) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  program_stmt_nodes.push_back(move(var_def_node));
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
+  unique_ptr<StmtNode> id_stmt_node(new ExprStmtNode(
+      move(id_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4))));
+  program_stmt_nodes.push_back(move(id_stmt_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  IntDataType data_type;
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      data_type.Clone(), var_index_within_func));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  bool is_id_assignee = false;
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      data_type.Clone(),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
+  node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kLoadLocalIntVarValue);
+  cmds_code->WriteUint32(var_index_within_func);
+  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(program_node, semantic_analysis, version, module_code);
+}
+
 // TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalIntVar) {
 //   vector< unique_ptr<StmtNode> > program_stmt_nodes;
 //   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3744,8 +3824,9 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
 
 //   SemanticAnalysis::NodeAnalyzes node_analyzes;
 //   IntDataType data_type;
-//   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new VarDefAnalysis(
-//       data_type.Clone(), DataStorage::kGlobal));
+//   uint 32_t var_index_within_func = UINT32_C(0);
+//   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+//       data_type.Clone(), var_index_within_func));
 //   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 //   bool is_id_assignee = true;
 //   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
