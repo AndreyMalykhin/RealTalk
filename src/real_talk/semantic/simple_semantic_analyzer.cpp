@@ -1271,9 +1271,23 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
   if (IsCurrentScopeGlobal()) {
     def_analysis.reset(new GlobalVarDefAnalysis(move(data_type_ptr)));
   } else {
-    const uint32_t index_within_func = UINT32_C(777);
-    def_analysis.reset(
-        new LocalVarDefAnalysis(move(data_type_ptr), index_within_func));
+    size_t index_within_func = 0;
+
+    for (const Scope *scope: reverse(scopes_stack_)) {
+      if (scope->GetType() == ScopeType::kGlobal) {
+        break;
+      }
+
+      index_within_func += scope->GetIdDefs().size();
+
+      if (scope->GetType() == ScopeType::kFunc) {
+        break;
+      }
+    }
+
+    assert(index_within_func <= numeric_limits<uint32_t>::max());
+    def_analysis.reset(new LocalVarDefAnalysis(
+        move(data_type_ptr), static_cast<uint32_t>(index_within_func)));
   }
 
   AddDefAnalysis(var_def_node, move(def_analysis));

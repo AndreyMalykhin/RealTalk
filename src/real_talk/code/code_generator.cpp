@@ -176,7 +176,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   class StmtGrouper;
   class Scope;
   class IdNodeProcessor;
-  class VarDefNodeProcessor;
+  template<typename TCreateLocalVarCmdGenerator,
+           typename TCreateGlobalVarCmdGenerator> class VarDefNodeProcessor;
   class CreateGlobalVarCmdGenerator;
   class CreateLocalVarCmdGenerator;
   class CreateAndInitGlobalVarCmdGenerator;
@@ -185,6 +186,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class CreateAndInitArrayCmdGenerator;
   class ReturnValueCmdGenerator;
   class LoadGlobalVarValueCmdGenerator;
+  class LoadLocalVarValueCmdGenerator;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -244,7 +246,6 @@ class CodeGenerator::Impl: private NodeVisitor {
       const ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(const ArgDefNode &node) override;
   virtual void VisitScope(const ScopeNode &node) override;
-  void VisitVarDef(const VarDefNode &node);
   void VisitIf(const IfNode &node, uint32_t *branch_end_address_placeholder);
   void WriteCurrentCmdAddress(const vector<uint32_t> &address_placeholders);
   void WriteJumpCmdStart(uint32_t local_vars_count);
@@ -779,6 +780,50 @@ class CodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::LoadLocalVarValueCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, uint32_t var_index, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+    code_->WriteUint32(var_index);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadLocalArrayVarValue);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadLocalBoolVarValue);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadLocalIntVarValue);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadLocalLongVarValue);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadLocalDoubleVarValue);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadLocalCharVarValue);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadLocalStringVarValue);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
  public:
   void Process(const IdNode *id_node,
@@ -800,8 +845,16 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     assert(false);
   }
 
-  virtual void VisitLocalVarDef(const LocalVarDefAnalysis&) override {
-    assert(false);
+  virtual void VisitLocalVarDef(const LocalVarDefAnalysis &var_def_analysis)
+      override {
+    if (id_analysis_->IsAssignee()) {
+      assert(false);
+    } else {
+      LoadLocalVarValueCmdGenerator().Generate(
+          var_def_analysis.GetDataType(),
+          var_def_analysis.GetIndexWithinFunc(),
+          code_);
+    }
   }
 
   virtual void VisitGlobalVarDef(const GlobalVarDefAnalysis &var_def_analysis)
@@ -830,6 +883,8 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
   Code *code_;
 };
 
+template<typename TCreateLocalVarCmdGenerator,
+         typename TCreateGlobalVarCmdGenerator>
 class CodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
  public:
   void Process(const VarDefNode *var_def_node,
@@ -844,12 +899,12 @@ class CodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
 
  private:
   virtual void VisitLocalVarDef(const LocalVarDefAnalysis &analysis) override {
-    CreateLocalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
+    TCreateLocalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
   }
 
   virtual void VisitGlobalVarDef(const GlobalVarDefAnalysis &analysis)
       override {
-    CreateGlobalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
+    TCreateGlobalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
     const string &id = var_def_node_->GetNameToken().GetValue();
     ids_of_global_var_defs_->push_back(id);
   }
@@ -1005,19 +1060,19 @@ void CodeGenerator::Impl::VisitImport(const ImportNode &node) {
 
 void CodeGenerator::Impl::VisitVarDefWithoutInit(
     const VarDefWithoutInitNode &node) {
-  VisitVarDef(node);
+  const DefAnalysis &analysis =
+      static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
+  VarDefNodeProcessor<CreateLocalVarCmdGenerator, CreateGlobalVarCmdGenerator>()
+      .Process(&node, &analysis, &ids_of_global_var_defs_, code_);
 }
 
 void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
   node.GetValue()->Accept(*this);
-  VisitVarDef(node);
-}
-
-void CodeGenerator::Impl::VisitVarDef(const VarDefNode &node) {
   const DefAnalysis &analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
-  VarDefNodeProcessor().Process(
-      &node, &analysis, &ids_of_global_var_defs_, code_);
+  VarDefNodeProcessor<CreateAndInitLocalVarCmdGenerator,
+                      CreateAndInitGlobalVarCmdGenerator>().Process(
+                          &node, &analysis, &ids_of_global_var_defs_, code_);
 }
 
 void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
