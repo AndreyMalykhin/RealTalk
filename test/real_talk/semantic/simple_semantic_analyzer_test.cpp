@@ -4730,7 +4730,7 @@ TEST_F(SimpleSemanticAnalyzerTest, BreakNotWithinLoopIsInvalid) {
   TestAnalyze(test_program);
 }
 
-TEST_F(SimpleSemanticAnalyzerTest, AssignToId) {
+TEST_F(SimpleSemanticAnalyzerTest, AssignWithId) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
@@ -4767,9 +4767,8 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignToId) {
       move(var_def_data_type)));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
-  unique_ptr<DataType> assign_data_type(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> assign_expr_analysis(
-      new CommonExprAnalysis(move(assign_data_type), ValueType::kRight));
+  unique_ptr<NodeSemanticAnalysis> assign_expr_analysis(new CommonExprAnalysis(
+      unique_ptr<DataType>(new VoidDataType()), ValueType::kRight));
   node_analyzes.insert(make_pair(assign_node_ptr, move(assign_expr_analysis)));
 
   IntDataType *id_data_type_ptr = new IntDataType();
@@ -4801,7 +4800,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignToId) {
   TestAnalyze(test_program);
 }
 
-TEST_F(SimpleSemanticAnalyzerTest, AssignToSubscript) {
+TEST_F(SimpleSemanticAnalyzerTest, AssignWithSubscript) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
@@ -4861,7 +4860,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignToSubscript) {
       unique_ptr<DataType>(new IntDataType())));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<NodeSemanticAnalysis> assign_expr_analysis(new CommonExprAnalysis(
-      unique_ptr<DataType>(new IntDataType()), ValueType::kRight));
+      unique_ptr<DataType>(new VoidDataType()), ValueType::kRight));
   node_analyzes.insert(make_pair(assign_node_ptr, move(assign_expr_analysis)));
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(

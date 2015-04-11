@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_SEMANTIC_DATA_TYPE_H_
 #define _REAL_TALK_SEMANTIC_DATA_TYPE_H_
 
+#include <cstdint>
 #include <string>
 #include <memory>
 #include <iostream>
@@ -11,9 +12,22 @@ namespace semantic {
 
 class DataTypeVisitor;
 
+enum class DataTypeId: uint8_t {
+  kInt = UINT8_C(1),
+  kLong,
+  kDouble,
+  kBool,
+  kChar,
+  kString,
+  kVoid,
+  kArray,
+  kFunc
+};
+
 class DataType {
  public:
   virtual ~DataType() {}
+  virtual DataTypeId GetId() const = 0;
   virtual std::string GetName() const = 0;
   virtual std::unique_ptr<DataType> Clone() const = 0;
   virtual void Accept(DataTypeVisitor &visitor) const = 0;

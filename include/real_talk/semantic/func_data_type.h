@@ -13,6 +13,7 @@ class FuncDataType: public DataType {
  public:
   FuncDataType(std::unique_ptr<DataType> return_data_type,
                std::vector< std::unique_ptr<DataType> > arg_data_types);
+  virtual DataTypeId GetId() const override;
   virtual std::string GetName() const override;
   virtual std::unique_ptr<DataType> Clone() const override;
   virtual void Accept(DataTypeVisitor &visitor) const override;

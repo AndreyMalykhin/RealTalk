@@ -16,6 +16,10 @@ ArrayDataType::ArrayDataType(unique_ptr<DataType> element_data_type)
   assert(element_data_type_);
 }
 
+DataTypeId ArrayDataType::GetId() const {
+  return DataTypeId::kArray;
+}
+
 string ArrayDataType::GetName() const {
   string name = element_data_type_->GetName();
   name += "[]";

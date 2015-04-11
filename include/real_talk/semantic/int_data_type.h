@@ -11,6 +11,7 @@ namespace semantic {
 
 class IntDataType: public DataType {
  public:
+  virtual DataTypeId GetId() const override;
   virtual std::string GetName() const override;
   virtual std::unique_ptr<DataType> Clone() const override;
   virtual void Accept(DataTypeVisitor &visitor) const override;

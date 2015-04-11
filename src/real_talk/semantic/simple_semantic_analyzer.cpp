@@ -210,7 +210,6 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   SemanticAnalysis Analyze();
 
  private:
-  enum class DataTypeId: uint8_t;
   enum class ScopeType: uint8_t;
   class AssigneeContext;
   class Scope;
@@ -606,66 +605,6 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedBySubscriptIndex
   virtual void VisitInt(const IntDataType&) override {result_ = true;}
 };
 
-enum class SimpleSemanticAnalyzer::Impl::DataTypeId: uint8_t {
-  kInt = UINT8_C(1),
-  kLong,
-  kDouble,
-  kBool,
-  kChar,
-  kString,
-  kVoid,
-  kArray,
-  kFunc
-};
-
-class SimpleSemanticAnalyzer::Impl::DataTypeIdResolver
-    : private DataTypeVisitor {
- public:
-  DataTypeId Resolve(const DataType &data_type) {
-    data_type.Accept(*this);
-    return id_;
-  }
-
- private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    id_ = DataTypeId::kArray;
-  }
-
-  virtual void VisitFunc(const FuncDataType&) override {
-    id_ = DataTypeId::kFunc;
-  }
-
-  virtual void VisitBool(const BoolDataType&) override {
-    id_ = DataTypeId::kBool;
-  }
-
-  virtual void VisitInt(const IntDataType&) override {
-    id_ = DataTypeId::kInt;
-  }
-
-  virtual void VisitLong(const LongDataType&) override {
-    id_ = DataTypeId::kLong;
-  }
-
-  virtual void VisitDouble(const DoubleDataType&) override {
-    id_ = DataTypeId::kDouble;
-  }
-
-  virtual void VisitChar(const CharDataType&) override {
-    id_ = DataTypeId::kChar;
-  }
-
-  virtual void VisitString(const StringDataType&) override {
-    id_ = DataTypeId::kString;
-  }
-
-  virtual void VisitVoid(const VoidDataType&) override {
-    id_ = DataTypeId::kVoid;
-  }
-
-  DataTypeId id_;
-};
-
 class SimpleSemanticAnalyzer::Impl::UnaryDataTypeDeductor
     : private DataTypeVisitor {
  public:
@@ -767,17 +706,15 @@ class SimpleSemanticAnalyzer::Impl::BinaryDataTypeDeductor {
    */
   unique_ptr<DataType> Deduct(const DataType &lhs, const DataType &rhs) const {
     const Workers &workers = GetWorkers();
-    const DataTypeId lhs_id = DataTypeIdResolver().Resolve(lhs);
-    const DataTypeId rhs_id = DataTypeIdResolver().Resolve(rhs);
     Workers::const_iterator worker_it =
-        workers.find(make_pair(lhs_id, rhs_id));
+        workers.find(make_pair(lhs.GetId(), rhs.GetId()));
 
-    if (worker_it == workers.end()) {
+    if (worker_it == workers.cend()) {
       return unique_ptr<DataType>();
     }
 
-    const Worker &worker = *(worker_it->second);
-    return worker(lhs, rhs);
+    Worker worker = worker_it->second;
+    return (*worker)(lhs, rhs);
   }
 
  protected:
@@ -804,21 +741,26 @@ class SimpleSemanticAnalyzer::Impl::AssignDataTypeDeductor
   virtual const Workers &GetWorkers() const override {
     static const Workers &workers = *new Workers({
         {make_pair(DataTypeId::kInt, DataTypeId::kInt),
-              &AssignDataTypeDeductor::LeftWorker},
+              &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kLong),
-              &AssignDataTypeDeductor::LeftWorker},
+              &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
-              &AssignDataTypeDeductor::LeftWorker},
+              &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kBool, DataTypeId::kBool),
-              &AssignDataTypeDeductor::LeftWorker},
+              &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kChar, DataTypeId::kChar),
-              &AssignDataTypeDeductor::LeftWorker},
+              &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kString, DataTypeId::kString),
-              &AssignDataTypeDeductor::LeftWorker},
+              &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kArray, DataTypeId::kArray),
               &AssignDataTypeDeductor::ArrayWorker}
       });
     return workers;
+  }
+
+  static unique_ptr<DataType> VoidWorker(
+      const DataType&, const DataType&) {
+    return unique_ptr<DataType>(new VoidDataType());
   }
 
   static unique_ptr<DataType> ArrayWorker(

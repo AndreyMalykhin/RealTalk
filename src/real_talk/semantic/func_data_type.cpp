@@ -23,6 +23,10 @@ FuncDataType::FuncDataType(
   assert(return_data_type_);
 }
 
+DataTypeId FuncDataType::GetId() const {
+  return DataTypeId::kFunc;
+}
+
 string FuncDataType::GetName() const {
   string name = return_data_type_->GetName();
   name += '(';

@@ -10,6 +10,10 @@ using std::ostream;
 namespace real_talk {
 namespace semantic {
 
+DataTypeId CharDataType::GetId() const {
+  return DataTypeId::kChar;
+}
+
 string CharDataType::GetName() const {
   return "char";
 }

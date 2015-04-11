@@ -10,6 +10,10 @@ using std::ostream;
 namespace real_talk {
 namespace semantic {
 
+DataTypeId BoolDataType::GetId() const {
+  return DataTypeId::kBool;
+}
+
 string BoolDataType::GetName() const {
   return "bool";
 }

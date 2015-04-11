@@ -19,6 +19,7 @@
 #include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
+#include "real_talk/code/store_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -614,6 +615,55 @@ TEST_F(CmdReaderTest, LoadGlobalVarAddressCmd) {
   Code code;
   code.WriteCmdId(CmdId::kLoadGlobalVarAddress);
   code.WriteUint32(var_index);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreIntCmd) {
+  StoreIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kStoreInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreLongCmd) {
+  StoreLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kStoreLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreDoubleCmd) {
+  StoreDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kStoreDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreBoolCmd) {
+  StoreBoolCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kStoreBool);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreCharCmd) {
+  StoreCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kStoreChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreStringCmd) {
+  StoreStringCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kStoreString);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreArrayCmd) {
+  StoreArrayCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kStoreArray);
   TestGetNextCmd(code, expected_cmd);
 }
 }

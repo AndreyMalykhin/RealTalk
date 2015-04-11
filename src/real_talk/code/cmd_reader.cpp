@@ -17,6 +17,7 @@
 #include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
+#include "real_talk/code/store_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -166,6 +167,14 @@ LoadLocalBoolVarValueCmd &kLoadLocalBoolVarValueCmd =
 
 LoadGlobalVarAddressCmd &kLoadGlobalVarAddressCmd =
     *new LoadGlobalVarAddressCmd(UINT32_C(0));
+
+const StoreIntCmd &kStoreIntCmd = *new StoreIntCmd();
+const StoreLongCmd &kStoreLongCmd = *new StoreLongCmd();
+const StoreDoubleCmd &kStoreDoubleCmd = *new StoreDoubleCmd();
+const StoreBoolCmd &kStoreBoolCmd = *new StoreBoolCmd();
+const StoreCharCmd &kStoreCharCmd = *new StoreCharCmd();
+const StoreStringCmd &kStoreStringCmd = *new StoreStringCmd();
+const StoreArrayCmd &kStoreArrayCmd = *new StoreArrayCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -460,6 +469,27 @@ const Cmd &CmdReader::GetNextCmd() {
     case CmdId::kLoadLocalBoolVarValue:
       ReadLoadLocalVarValueCmd(kLoadLocalBoolVarValueCmd);
       cmd = &kLoadLocalBoolVarValueCmd;
+      break;
+    case CmdId::kStoreInt:
+      cmd = &kStoreIntCmd;
+      break;
+    case CmdId::kStoreLong:
+      cmd = &kStoreLongCmd;
+      break;
+    case CmdId::kStoreDouble:
+      cmd = &kStoreDoubleCmd;
+      break;
+    case CmdId::kStoreBool:
+      cmd = &kStoreBoolCmd;
+      break;
+    case CmdId::kStoreChar:
+      cmd = &kStoreCharCmd;
+      break;
+    case CmdId::kStoreString:
+      cmd = &kStoreStringCmd;
+      break;
+    case CmdId::kStoreArray:
+      cmd = &kStoreArrayCmd;
       break;
   }
 

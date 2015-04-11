@@ -30,6 +30,7 @@
 #include "real_talk/parser/return_value_node.h"
 #include "real_talk/parser/return_without_value_node.h"
 #include "real_talk/parser/id_node.h"
+#include "real_talk/parser/assign_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -187,6 +188,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class ReturnValueCmdGenerator;
   class LoadGlobalVarValueCmdGenerator;
   class LoadLocalVarValueCmdGenerator;
+  class StoreCmdGenerator;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -859,17 +861,21 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
 
   virtual void VisitGlobalVarDef(const GlobalVarDefAnalysis &var_def_analysis)
       override {
+    uint32_t var_index_placeholder;
+
     if (id_analysis_->IsAssignee()) {
-      assert(false);
+      code_->WriteCmdId(CmdId::kLoadGlobalVarAddress);
+      var_index_placeholder = code_->GetPosition();
+      code_->WriteUint32(numeric_limits<uint32_t>::max());
     } else {
-      const uint32_t var_index_placeholder =
-          LoadGlobalVarValueCmdGenerator().Generate(
-              var_def_analysis.GetDataType(), code_);
-      const string &id = id_node_->GetNameToken().GetValue();
-      assert(var_index_placeholder >= cmds_address_);
-      id_addresses_of_global_var_refs_->push_back(
-          IdAddress(id, var_index_placeholder - cmds_address_));
+      var_index_placeholder = LoadGlobalVarValueCmdGenerator().Generate(
+          var_def_analysis.GetDataType(), code_);
     }
+
+    assert(var_index_placeholder >= cmds_address_);
+    const string &id = id_node_->GetNameToken().GetValue();
+    id_addresses_of_global_var_refs_->push_back(
+        IdAddress(id, var_index_placeholder - cmds_address_));
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis&) override {
@@ -914,6 +920,48 @@ class CodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
 
   const VarDefNode *var_def_node_;
   vector<string> *ids_of_global_var_defs_;
+  Code *code_;
+};
+
+class CodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreArray);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreBool);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreString);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
   Code *code_;
 };
 
@@ -1077,8 +1125,12 @@ void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
 
 void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
   node.GetExpr()->Accept(*this);
-  // TODO mb it's not always needed
-  code_->WriteCmdId(CmdId::kUnload);
+  const ExprAnalysis &analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetExpr())));
+
+  if (analysis.GetDataType() != VoidDataType()) {
+    code_->WriteCmdId(CmdId::kUnload);
+  }
 }
 
 void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
@@ -1293,7 +1345,17 @@ void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
 
 void CodeGenerator::Impl::VisitCall(const CallNode&) {}
 
-void CodeGenerator::Impl::VisitAssign(const AssignNode&) {}
+void CodeGenerator::Impl::VisitAssign(const AssignNode &node) {
+  const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
+      GetNodeAnalysis(*(node.GetLeftOperand())));
+  const ExprAnalysis &right_operand_analysis = static_cast<const ExprAnalysis&>(
+      GetNodeAnalysis(*(node.GetRightOperand())));
+  assert(left_operand_analysis.GetDataType()
+         == right_operand_analysis.GetDataType());
+  node.GetRightOperand()->Accept(*this);
+  node.GetLeftOperand()->Accept(*this);
+  StoreCmdGenerator().Generate(left_operand_analysis.GetDataType(), code_);
+}
 
 void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
 
