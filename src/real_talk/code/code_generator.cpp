@@ -53,6 +53,7 @@
 #include "real_talk/semantic/double_lit.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/cmd.h"
+#include "real_talk/code/cast_cmd_generator.h"
 #include "real_talk/code/code.h"
 
 using std::unique_ptr;
@@ -168,6 +169,7 @@ namespace code {
 
 class CodeGenerator::Impl: private NodeVisitor {
  public:
+  explicit Impl(const CastCmdGenerator &cast_cmd_generator);
   void Generate(const ProgramNode &program,
                 const SemanticAnalysis &semantic_analysis,
                 uint32_t version,
@@ -262,6 +264,7 @@ class CodeGenerator::Impl: private NodeVisitor {
                                 uint32_t cmds_address,
                                 uint32_t cmds_size);
 
+  const CastCmdGenerator &cast_cmd_generator_;
   const ProgramNode *program_;
   const SemanticAnalysis *semantic_analysis_;
   Code *code_;
@@ -965,7 +968,8 @@ class CodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-CodeGenerator::CodeGenerator(): impl_(new Impl()) {}
+CodeGenerator::CodeGenerator(const CastCmdGenerator &cast_cmd_generator)
+    : impl_(new Impl(cast_cmd_generator)) {}
 
 CodeGenerator::~CodeGenerator() {}
 
@@ -975,6 +979,9 @@ void CodeGenerator::Generate(const ProgramNode &program,
                              ostream &stream) {
   impl_->Generate(program, semantic_analysis, version, stream);
 }
+
+CodeGenerator::Impl::Impl(const CastCmdGenerator &cast_cmd_generator)
+    : cast_cmd_generator_(cast_cmd_generator) {}
 
 void CodeGenerator::Impl::Generate(
     const ProgramNode &program,
@@ -1116,11 +1123,22 @@ void CodeGenerator::Impl::VisitVarDefWithoutInit(
 
 void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
   node.GetValue()->Accept(*this);
-  const DefAnalysis &analysis =
+  const DefAnalysis &var_def_analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
+  const DataType &var_data_type = var_def_analysis.GetDataType();
+  const ExprAnalysis &value_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
+  const DataType &value_data_type = value_analysis.GetDataType();
+
+  if (var_data_type != value_data_type) {
+    CmdId cast_cmd_id =
+        cast_cmd_generator_.Generate(var_data_type, value_data_type);
+    code_->WriteCmdId(cast_cmd_id);
+  }
+
   VarDefNodeProcessor<CreateAndInitLocalVarCmdGenerator,
-                      CreateAndInitGlobalVarCmdGenerator>().Process(
-                          &node, &analysis, &ids_of_global_var_defs_, code_);
+                      CreateAndInitGlobalVarCmdGenerator>()
+      .Process(&node, &var_def_analysis, &ids_of_global_var_defs_, code_);
 }
 
 void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {

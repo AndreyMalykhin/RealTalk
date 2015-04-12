@@ -15,7 +15,7 @@ static_assert(std::numeric_limits<double>::is_iec559,
 static_assert(sizeof(double) == 8, "Size of 'double' must be 8 bytes");
 
 Code::Code(): size_(UINT32_C(0)),
-              capacity_(UINT32_C(1024)),
+              capacity_(UINT32_C(0)),
               bytes_(new unsigned char[capacity_]),
               current_byte_(bytes_.get()) {
 }
@@ -36,12 +36,11 @@ Code::Code(std::istream &stream) {
     stream.seekg(0, std::ios::end);
     std::streamoff stream_size = stream.tellg();
 
-    try {
-      capacity_ = boost::numeric_cast<uint32_t>(stream_size);
-    } catch (const boost::numeric::positive_overflow&) {
+    if (stream_size > std::numeric_limits<uint32_t>::max()) {
       throw CodeSizeOverflowError("Code size exceeds 32 bits");
     }
 
+    capacity_ = static_cast<uint32_t>(stream_size);
     bytes_.reset(new unsigned char[capacity_]);
     stream.seekg(0);
     stream.read(reinterpret_cast<char*>(bytes_.get()), capacity_);
@@ -205,7 +204,7 @@ std::string Code::ReadString() {
 }
 
 void Code::WriteString(const std::string &str) {
-  assert(boost::numeric_cast<uint32_t>(str.size()));
+  assert(str.size() <= std::numeric_limits<uint32_t>::max());
   const uint32_t size = static_cast<uint32_t>(str.size());
   WriteUint32(size);
   WriteBytes(reinterpret_cast<const unsigned char*>(str.data()), size);
@@ -251,20 +250,20 @@ void Code::EnsureCapacity(uint32_t bytes_count) {
     return;
   }
 
-  const uint32_t position = GetPosition();
-  const size_t new_capacity = capacity_ * 2;
-  std::unique_ptr<unsigned char[]> new_bytes_(new unsigned char[new_capacity]);
-  std::memcpy(new_bytes_.get(), bytes_.get(), capacity_);
+  const size_t new_capacity = (size_ + bytes_count) * 2U;
 
-  try {
-    capacity_ = boost::numeric_cast<uint32_t>(new_capacity);
-  } catch (const boost::numeric::positive_overflow&) {
+  if (new_capacity > std::numeric_limits<uint32_t>::max()
+      || new_capacity <= capacity_) {
     throw CodeSizeOverflowError("Code size exceeds 32 bits");
   }
 
+  const uint32_t position = GetPosition();
+  std::unique_ptr<unsigned char[]> new_bytes_(new unsigned char[new_capacity]);
+  std::memcpy(new_bytes_.get(), bytes_.get(), capacity_);
+  capacity_ = static_cast<uint32_t>(new_capacity);
   bytes_ = move(new_bytes_);
   current_byte_ = bytes_.get() + position;
-  assert(capacity_ >= size_);
+  assert(capacity_ >= size_ + bytes_count);
 }
 
 void Code::AfterWrite(uint32_t written_bytes_count) {

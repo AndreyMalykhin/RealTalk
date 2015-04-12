@@ -20,6 +20,7 @@
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
+#include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -664,6 +665,48 @@ TEST_F(CmdReaderTest, StoreArrayCmd) {
   StoreArrayCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kStoreArray);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CastCharToIntCmd) {
+  CastCharToIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCastCharToInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CastCharToLongCmd) {
+  CastCharToLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCastCharToLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CastCharToStringCmd) {
+  CastCharToStringCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCastCharToString);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CastIntToLongCmd) {
+  CastIntToLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCastIntToLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CastIntToDoubleCmd) {
+  CastIntToDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCastIntToDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CastDoubleToLongCmd) {
+  CastDoubleToLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCastDoubleToLong);
   TestGetNextCmd(code, expected_cmd);
 }
 }

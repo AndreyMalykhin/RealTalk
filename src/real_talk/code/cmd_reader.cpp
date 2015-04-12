@@ -18,6 +18,7 @@
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
+#include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -175,6 +176,13 @@ const StoreBoolCmd &kStoreBoolCmd = *new StoreBoolCmd();
 const StoreCharCmd &kStoreCharCmd = *new StoreCharCmd();
 const StoreStringCmd &kStoreStringCmd = *new StoreStringCmd();
 const StoreArrayCmd &kStoreArrayCmd = *new StoreArrayCmd();
+
+const CastCharToIntCmd &kCastCharToIntCmd = *new CastCharToIntCmd();
+const CastCharToLongCmd &kCastCharToLongCmd = *new CastCharToLongCmd();
+const CastCharToStringCmd &kCastCharToStringCmd = *new CastCharToStringCmd();
+const CastIntToLongCmd &kCastIntToLongCmd = *new CastIntToLongCmd();
+const CastIntToDoubleCmd &kCastIntToDoubleCmd = *new CastIntToDoubleCmd();
+const CastDoubleToLongCmd &kCastDoubleToLongCmd = *new CastDoubleToLongCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -490,6 +498,24 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kStoreArray:
       cmd = &kStoreArrayCmd;
+      break;
+    case CmdId::kCastCharToInt:
+      cmd = &kCastCharToIntCmd;
+      break;
+    case CmdId::kCastCharToLong:
+      cmd = &kCastCharToLongCmd;
+      break;
+    case CmdId::kCastCharToString:
+      cmd = &kCastCharToStringCmd;
+      break;
+    case CmdId::kCastIntToLong:
+      cmd = &kCastIntToLongCmd;
+      break;
+    case CmdId::kCastIntToDouble:
+      cmd = &kCastIntToDoubleCmd;
+      break;
+    case CmdId::kCastDoubleToLong:
+      cmd = &kCastDoubleToLongCmd;
       break;
   }
 

@@ -19,9 +19,11 @@ class SemanticAnalysis;
 
 namespace code {
 
+class CastCmdGenerator;
+
 class CodeGenerator {
  public:
-  CodeGenerator();
+  explicit CodeGenerator(const CastCmdGenerator &cast_cmd_generator);
   ~CodeGenerator();
   void Generate(const real_talk::parser::ProgramNode &program,
                 const real_talk::semantic::SemanticAnalysis &semantic_analysis,

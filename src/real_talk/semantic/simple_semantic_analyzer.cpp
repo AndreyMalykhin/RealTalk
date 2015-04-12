@@ -742,15 +742,27 @@ class SimpleSemanticAnalyzer::Impl::AssignDataTypeDeductor
     static const Workers &workers = *new Workers({
         {make_pair(DataTypeId::kInt, DataTypeId::kInt),
               &AssignDataTypeDeductor::VoidWorker},
+        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
+              &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kLong),
               &AssignDataTypeDeductor::VoidWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
+              &AssignDataTypeDeductor::VoidWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
+              &AssignDataTypeDeductor::VoidWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
+              &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
+              &AssignDataTypeDeductor::VoidWorker},
+        {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
               &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kBool, DataTypeId::kBool),
               &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kChar, DataTypeId::kChar),
               &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kString, DataTypeId::kString),
+              &AssignDataTypeDeductor::VoidWorker},
+        {make_pair(DataTypeId::kString, DataTypeId::kChar),
               &AssignDataTypeDeductor::VoidWorker},
         {make_pair(DataTypeId::kArray, DataTypeId::kArray),
               &AssignDataTypeDeductor::ArrayWorker}
@@ -765,9 +777,13 @@ class SimpleSemanticAnalyzer::Impl::AssignDataTypeDeductor
 
   static unique_ptr<DataType> ArrayWorker(
       const DataType &lhs, const DataType &rhs) {
-    return AssignDataTypeDeductor().Deduct(
-        static_cast<const ArrayDataType&>(lhs).GetElementDataType(),
-        static_cast<const ArrayDataType&>(rhs).GetElementDataType());
+    if (lhs != rhs
+        || IsVoidDataType().Check(lhs)
+        || IsVoidDataType().Check(rhs)) {
+      return unique_ptr<DataType>();
+    }
+
+    return unique_ptr<DataType>(new VoidDataType());
   }
 };
 
@@ -778,7 +794,15 @@ class SimpleSemanticAnalyzer::Impl::EqualDataTypeDeductor
     static const Workers &workers = *new Workers({
         {make_pair(DataTypeId::kInt, DataTypeId::kInt),
               &EqualDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kInt, DataTypeId::kLong),
+              &EqualDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
+              &EqualDataTypeDeductor::BoolWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kLong),
+              &EqualDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
+              &EqualDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
               &EqualDataTypeDeductor::BoolWorker},
         {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
               &EqualDataTypeDeductor::BoolWorker},
@@ -786,7 +810,11 @@ class SimpleSemanticAnalyzer::Impl::EqualDataTypeDeductor
               &EqualDataTypeDeductor::BoolWorker},
         {make_pair(DataTypeId::kChar, DataTypeId::kChar),
               &EqualDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kChar, DataTypeId::kString),
+              &EqualDataTypeDeductor::BoolWorker},
         {make_pair(DataTypeId::kString, DataTypeId::kString),
+              &EqualDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kString, DataTypeId::kChar),
               &EqualDataTypeDeductor::BoolWorker},
         {make_pair(DataTypeId::kArray, DataTypeId::kArray),
               &EqualDataTypeDeductor::ArrayWorker}
@@ -801,9 +829,13 @@ class SimpleSemanticAnalyzer::Impl::EqualDataTypeDeductor
 
   static unique_ptr<DataType> ArrayWorker(
       const DataType &lhs, const DataType &rhs) {
-    return EqualDataTypeDeductor().Deduct(
-        static_cast<const ArrayDataType&>(lhs).GetElementDataType(),
-        static_cast<const ArrayDataType&>(rhs).GetElementDataType());
+    if (lhs != rhs
+        || IsVoidDataType().Check(lhs)
+        || IsVoidDataType().Check(rhs)) {
+      return unique_ptr<DataType>();
+    }
+
+    return unique_ptr<DataType>(new BoolDataType());
   }
 };
 
@@ -824,7 +856,15 @@ class SimpleSemanticAnalyzer::Impl::LessDataTypeDeductor
     static const Workers &workers = *new Workers({
         {make_pair(DataTypeId::kInt, DataTypeId::kInt),
               &LessDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kInt, DataTypeId::kLong),
+              &LessDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
+              &LessDataTypeDeductor::BoolWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kLong),
+              &LessDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
+              &LessDataTypeDeductor::BoolWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
               &LessDataTypeDeductor::BoolWorker},
         {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
               &LessDataTypeDeductor::BoolWorker},
@@ -874,11 +914,10 @@ class SimpleSemanticAnalyzer::Impl::AndDataTypeDeductor
     : public BinaryDataTypeDeductor {
  public:
   virtual const Workers &GetWorkers() const override {
-    static const Workers &workers =
-        *new Workers({
-            {make_pair(DataTypeId::kBool, DataTypeId::kBool),
-                  &EqualDataTypeDeductor::LeftWorker}
-        });
+    static const Workers &workers = *new Workers({
+        {make_pair(DataTypeId::kBool, DataTypeId::kBool),
+              &EqualDataTypeDeductor::LeftWorker}
+      });
     return workers;
   }
 };
@@ -895,21 +934,27 @@ class SimpleSemanticAnalyzer::Impl::OrDataTypeDeductor
 
 class SimpleSemanticAnalyzer::Impl::MulDataTypeDeductor
     : public BinaryDataTypeDeductor {
- private:
+ public:
   const Workers &GetWorkers() const override {
     static const Workers &workers = *new Workers({
+        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
+              &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kInt, DataTypeId::kInt),
               &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kInt, DataTypeId::kLong),
               &LessDataTypeDeductor::RightWorker},
         {make_pair(DataTypeId::kInt, DataTypeId::kDouble),
               &LessDataTypeDeductor::RightWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
+              &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kInt),
               &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kLong),
               &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
               &LessDataTypeDeductor::RightWorker},
+        {make_pair(DataTypeId::kDouble, DataTypeId::kChar),
+              &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
               &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kDouble, DataTypeId::kLong),
@@ -925,36 +970,20 @@ class SimpleSemanticAnalyzer::Impl::DivDataTypeDeductor
     : public BinaryDataTypeDeductor {
  private:
   const Workers &GetWorkers() const override {
-    static const Workers &workers = *new Workers({
-        {make_pair(DataTypeId::kInt, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
-              &LessDataTypeDeductor::LeftWorker}
-      });
-    return workers;
+    return deductor_.GetWorkers();
   }
+
+  MulDataTypeDeductor deductor_;
 };
 
 class SimpleSemanticAnalyzer::Impl::SumDataTypeDeductor
     : public BinaryDataTypeDeductor {
- private:
+ public:
   const Workers &GetWorkers() const override {
     static const Workers &workers = *new Workers({
         {make_pair(DataTypeId::kString, DataTypeId::kString),
+              &LessDataTypeDeductor::LeftWorker},
+        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
               &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kInt, DataTypeId::kInt),
               &LessDataTypeDeductor::LeftWorker},
@@ -962,12 +991,16 @@ class SimpleSemanticAnalyzer::Impl::SumDataTypeDeductor
               &LessDataTypeDeductor::RightWorker},
         {make_pair(DataTypeId::kInt, DataTypeId::kDouble),
               &LessDataTypeDeductor::RightWorker},
+        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
+              &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kInt),
               &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kLong),
               &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
               &LessDataTypeDeductor::RightWorker},
+        {make_pair(DataTypeId::kDouble, DataTypeId::kChar),
+              &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
               &LessDataTypeDeductor::LeftWorker},
         {make_pair(DataTypeId::kDouble, DataTypeId::kLong),
@@ -983,28 +1016,10 @@ class SimpleSemanticAnalyzer::Impl::SubDataTypeDeductor
     : public BinaryDataTypeDeductor {
  private:
   const Workers &GetWorkers() const override {
-    static const Workers &workers = *new Workers({
-        {make_pair(DataTypeId::kInt, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kLong),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
-              &LessDataTypeDeductor::LeftWorker}
-      });
-    return workers;
+    return deductor_.GetWorkers();
   }
+
+  SumDataTypeDeductor deductor_;
 };
 
 SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(
@@ -1147,17 +1162,21 @@ void SimpleSemanticAnalyzer::Impl::VisitControlFlowTransfer(const TNode &node) {
     throw SemanticErrorException(move(error));
   }
 
-  size_t flow_local_vars_count = 0;
+  uint32_t flow_local_vars_count = 0;
 
   for (const Scope *scope: reverse(scopes_stack_)) {
-    flow_local_vars_count += scope->GetIdDefs().size();
+    assert(scope->GetIdDefs().size() <= numeric_limits<uint32_t>::max());
+    const uint32_t scope_local_vars_count =
+        static_cast<uint32_t>(scope->GetIdDefs().size());
+    assert(flow_local_vars_count + scope_local_vars_count
+           >= flow_local_vars_count);
+    flow_local_vars_count += scope_local_vars_count;
 
     if (scope->GetType() == ScopeType::kLoop) {
       break;
     }
   }
 
-  assert(flow_local_vars_count <= numeric_limits<uint32_t>::max());
   unique_ptr<NodeSemanticAnalysis> analysis(new ControlFlowTransferAnalysis(
       static_cast<uint32_t>(flow_local_vars_count)));
   node_analyzes_.insert(make_pair(&node, move(analysis)));
@@ -1213,21 +1232,24 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
   if (IsCurrentScopeGlobal()) {
     def_analysis.reset(new GlobalVarDefAnalysis(move(data_type_ptr)));
   } else {
-    size_t index_within_func = 0;
+    uint32_t index_within_func = UINT32_C(0);
 
     for (const Scope *scope: reverse(scopes_stack_)) {
       if (scope->GetType() == ScopeType::kGlobal) {
         break;
       }
 
-      index_within_func += scope->GetIdDefs().size();
+      assert(scope->GetIdDefs().size() <= numeric_limits<uint32_t>::max());
+      const uint32_t scope_local_vars_count =
+          static_cast<uint32_t>(scope->GetIdDefs().size());
+      assert(index_within_func + scope_local_vars_count >= index_within_func);
+      index_within_func += scope_local_vars_count;
 
       if (scope->GetType() == ScopeType::kFunc) {
         break;
       }
     }
 
-    assert(index_within_func <= numeric_limits<uint32_t>::max());
     def_analysis.reset(new LocalVarDefAnalysis(
         move(data_type_ptr), static_cast<uint32_t>(index_within_func)));
   }
