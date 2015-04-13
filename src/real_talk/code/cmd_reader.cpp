@@ -179,10 +179,11 @@ const StoreArrayCmd &kStoreArrayCmd = *new StoreArrayCmd();
 
 const CastCharToIntCmd &kCastCharToIntCmd = *new CastCharToIntCmd();
 const CastCharToLongCmd &kCastCharToLongCmd = *new CastCharToLongCmd();
+const CastCharToDoubleCmd &kCastCharToDoubleCmd = *new CastCharToDoubleCmd();
 const CastCharToStringCmd &kCastCharToStringCmd = *new CastCharToStringCmd();
 const CastIntToLongCmd &kCastIntToLongCmd = *new CastIntToLongCmd();
 const CastIntToDoubleCmd &kCastIntToDoubleCmd = *new CastIntToDoubleCmd();
-const CastDoubleToLongCmd &kCastDoubleToLongCmd = *new CastDoubleToLongCmd();
+const CastLongToDoubleCmd &kCastLongToDoubleCmd = *new CastLongToDoubleCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -505,6 +506,9 @@ const Cmd &CmdReader::GetNextCmd() {
     case CmdId::kCastCharToLong:
       cmd = &kCastCharToLongCmd;
       break;
+    case CmdId::kCastCharToDouble:
+      cmd = &kCastCharToDoubleCmd;
+      break;
     case CmdId::kCastCharToString:
       cmd = &kCastCharToStringCmd;
       break;
@@ -514,8 +518,8 @@ const Cmd &CmdReader::GetNextCmd() {
     case CmdId::kCastIntToDouble:
       cmd = &kCastIntToDoubleCmd;
       break;
-    case CmdId::kCastDoubleToLong:
-      cmd = &kCastDoubleToLongCmd;
+    case CmdId::kCastLongToDouble:
+      cmd = &kCastLongToDoubleCmd;
       break;
   }
 

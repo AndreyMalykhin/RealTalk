@@ -95,10 +95,11 @@ enum class CmdId: uint8_t {
   kStoreArray = UINT8_C(83),
   kCastCharToInt = UINT8_C(84),
   kCastCharToLong = UINT8_C(85),
-  kCastCharToString = UINT8_C(86),
-  kCastIntToLong = UINT8_C(87),
-  kCastIntToDouble = UINT8_C(88),
-  kCastDoubleToLong = UINT8_C(89),
+  kCastCharToDouble = UINT8_C(86),
+  kCastCharToString = UINT8_C(87),
+  kCastIntToLong = UINT8_C(88),
+  kCastIntToDouble = UINT8_C(89),
+  kCastLongToDouble = UINT8_C(90)
 };
 
 class Cmd {

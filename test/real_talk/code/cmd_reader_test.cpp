@@ -682,6 +682,13 @@ TEST_F(CmdReaderTest, CastCharToLongCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
+TEST_F(CmdReaderTest, CastCharToDoubleCmd) {
+  CastCharToDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCastCharToDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
 TEST_F(CmdReaderTest, CastCharToStringCmd) {
   CastCharToStringCmd expected_cmd;
   Code code;
@@ -703,10 +710,10 @@ TEST_F(CmdReaderTest, CastIntToDoubleCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, CastDoubleToLongCmd) {
-  CastDoubleToLongCmd expected_cmd;
+TEST_F(CmdReaderTest, CastLongToDoubleCmd) {
+  CastLongToDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCastDoubleToLong);
+  code.WriteCmdId(CmdId::kCastLongToDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 }

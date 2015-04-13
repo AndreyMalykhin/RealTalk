@@ -19,6 +19,12 @@ class CastCharToLongCmd: public Cmd {
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };
 
+class CastCharToDoubleCmd: public Cmd {
+ private:
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
+};
+
 class CastCharToStringCmd: public Cmd {
  private:
   virtual void Print(std::ostream&) const override {}
@@ -37,7 +43,7 @@ class CastIntToDoubleCmd: public Cmd {
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };
 
-class CastDoubleToLongCmd: public Cmd {
+class CastLongToDoubleCmd: public Cmd {
  private:
   virtual void Print(std::ostream&) const override {}
   virtual bool IsEqual(const Cmd&) const override {return true;}

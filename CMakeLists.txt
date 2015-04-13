@@ -59,6 +59,7 @@ add_library(real_talk
   src/real_talk/code/module.cpp
   src/real_talk/code/id_address.cpp
   src/real_talk/code/code.cpp
+  src/real_talk/code/simple_cast_cmd_generator.cpp
   src/real_talk/util/errors.cpp
 )
 add_executable(real_talk_tests
@@ -72,8 +73,9 @@ add_executable(real_talk_tests
   test/real_talk/code/code_generator_test.cpp
   test/real_talk/code/module_reader_test.cpp
   test/real_talk/code/cmd_reader_test.cpp
-  test/real_talk/util/endianness_test.cpp
   test/real_talk/code/test_utils.cpp
+  test/real_talk/code/simple_cast_cmd_generator_test.cpp
+  test/real_talk/util/endianness_test.cpp
   )
 target_include_directories(real_talk_tests PRIVATE test)
 target_link_libraries(real_talk_tests ${GMOCK_LIBRARY} ${Boost_LIBRARIES} real_talk)
