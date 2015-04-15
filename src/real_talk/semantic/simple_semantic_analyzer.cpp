@@ -195,17 +195,18 @@ using real_talk::parser::BinaryExprNode;
 using real_talk::parser::UnaryExprNode;
 using real_talk::parser::ScopeNode;
 using real_talk::parser::ControlFlowTransferNode;
+using real_talk::parser::NodeVisitor;
 using real_talk::util::FileNotFoundError;
 
 namespace real_talk {
 namespace semantic {
 
-class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
+class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
  public:
   Impl(
-      std::shared_ptr<real_talk::parser::ProgramNode> program,
-      const boost::filesystem::path &absolute_file_path,
-      const real_talk::parser::FileParser &file_parser,
+      shared_ptr<ProgramNode> program,
+      const path &absolute_file_path,
+      const FileParser &file_parser,
       const ImportFileSearcher &import_file_searcher,
       const LitParser &lit_parser);
   SemanticAnalysis Analyze();
@@ -216,7 +217,6 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   class Scope;
   class FileScope;
   class SemanticErrorException;
-  class DataTypeIdResolver;
   class DataTypeQuery;
   class IsVoidDataType;
   class IsDataTypeSupportedByFuncDef;
@@ -225,145 +225,139 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   class IsDataTypeSupportedByArrayAllocElement;
   class IsDataTypeSupportedByArrayAllocSize;
   class IsDataTypeSupportedByAssign;
-  class BinaryDataTypeDeductor;
+  class IsDataTypeSupportedByLogicalExpr;
+  class IsDataTypeSupportedByArithmeticExpr;
+  class IsDataTypeSupportedByGreater;
+  class IsDataTypeSupportedByEqual;
+  class IsDataTypeSupportedByNegative;
   class UnaryDataTypeDeductor;
-  class NotDataTypeDeductor;
-  class NegativeDataTypeDeductor;
-  class PreIncDataTypeDeductor;
-  class PreDecDataTypeDeductor;
   class SubscriptDataTypeDeductor;
   class CallDataTypeDeductor;
-  class LessDataTypeDeductor;
-  class LessOrEqualDataTypeDeductor;
-  class GreaterDataTypeDeductor;
-  class GreaterOrEqualDataTypeDeductor;
-  class EqualDataTypeDeductor;
-  class NotEqualDataTypeDeductor;
-  class AndDataTypeDeductor;
-  class OrDataTypeDeductor;
-  class MulDataTypeDeductor;
-  class DivDataTypeDeductor;
-  class SumDataTypeDeductor;
-  class SubDataTypeDeductor;
 
-  typedef std::unordered_map<std::string,
-                             const real_talk::parser::DefNode*> IdDefs;
-  typedef std::unordered_map<boost::filesystem::path,
-                             std::shared_ptr<
-                               real_talk::parser::ProgramNode>,
-                             boost::hash<
-                               boost::filesystem::path> > ImportPrograms;
+  typedef unordered_map<string, const DefNode*> IdDefs;
+  typedef
+  unordered_map<path, shared_ptr<ProgramNode>, hash<path> > ImportPrograms;
 
-  virtual void VisitAnd(const real_talk::parser::AndNode &node) override;
+  virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
-      const real_talk::parser::ArrayAllocWithoutInitNode &node) override;
+      const ArrayAllocWithoutInitNode &node) override;
   virtual void VisitArrayAllocWithInit(
-      const real_talk::parser::ArrayAllocWithInitNode &node) override;
-  virtual void VisitAssign(const real_talk::parser::AssignNode &node) override;
-  virtual void VisitBool(const real_talk::parser::BoolNode &node) override;
-  virtual void VisitBreak(const real_talk::parser::BreakNode &node) override;
-  virtual void VisitCall(const real_talk::parser::CallNode &node) override;
-  virtual void VisitChar(const real_talk::parser::CharNode &node) override;
+      const ArrayAllocWithInitNode &node) override;
+  virtual void VisitAssign(const AssignNode &node) override;
+  virtual void VisitBool(const BoolNode &node) override;
+  virtual void VisitBreak(const BreakNode &node) override;
+  virtual void VisitCall(const CallNode &node) override;
+  virtual void VisitChar(const CharNode &node) override;
   virtual void VisitContinue(
-      const real_talk::parser::ContinueNode &node) override;
-  virtual void VisitDiv(const real_talk::parser::DivNode &node) override;
-  virtual void VisitDouble(const real_talk::parser::DoubleNode &node) override;
-  virtual void VisitEqual(const real_talk::parser::EqualNode &node) override;
+      const ContinueNode &node) override;
+  virtual void VisitDiv(const DivNode &node) override;
+  virtual void VisitDouble(const DoubleNode &node) override;
+  virtual void VisitEqual(const EqualNode &node) override;
   virtual void VisitExprStmt(
-      const real_talk::parser::ExprStmtNode &node) override;
+      const ExprStmtNode &node) override;
   virtual void VisitFuncDefWithBody(
-      const real_talk::parser::FuncDefWithBodyNode &node) override;
+      const FuncDefWithBodyNode &node) override;
   virtual void VisitFuncDefWithoutBody(
-      const real_talk::parser::FuncDefWithoutBodyNode &node) override;
+      const FuncDefWithoutBodyNode &node) override;
   virtual void VisitGreater(
-      const real_talk::parser::GreaterNode &node) override;
+      const GreaterNode &node) override;
   virtual void VisitGreaterOrEqual(
-      const real_talk::parser::GreaterOrEqualNode &node) override;
+      const GreaterOrEqualNode &node) override;
   virtual void VisitIfElseIfElse(
-      const real_talk::parser::IfElseIfElseNode &node) override;
+      const IfElseIfElseNode &node) override;
   virtual void VisitIfElseIf(
-      const real_talk::parser::IfElseIfNode &node) override;
-  virtual void VisitImport(const real_talk::parser::ImportNode &node) override;
-  virtual void VisitInt(const real_talk::parser::IntNode &node) override;
-  virtual void VisitLess(const real_talk::parser::LessNode &node) override;
+      const IfElseIfNode &node) override;
+  virtual void VisitImport(const ImportNode &node) override;
+  virtual void VisitInt(const IntNode &node) override;
+  virtual void VisitLess(const LessNode &node) override;
   virtual void VisitLessOrEqual(
-      const real_talk::parser::LessOrEqualNode &node) override;
-  virtual void VisitLong(const real_talk::parser::LongNode &node) override;
-  virtual void VisitMul(const real_talk::parser::MulNode &node) override;
+      const LessOrEqualNode &node) override;
+  virtual void VisitLong(const LongNode &node) override;
+  virtual void VisitMul(const MulNode &node) override;
   virtual void VisitNegative(
-      const real_talk::parser::NegativeNode &node) override;
+      const NegativeNode &node) override;
   virtual void VisitNotEqual(
-      const real_talk::parser::NotEqualNode &node) override;
-  virtual void VisitNot(const real_talk::parser::NotNode &node) override;
-  virtual void VisitOr(const real_talk::parser::OrNode &node) override;
-  virtual void VisitPreDec(const real_talk::parser::PreDecNode &node) override;
-  virtual void VisitPreInc(const real_talk::parser::PreIncNode &node) override;
+      const NotEqualNode &node) override;
+  virtual void VisitNot(const NotNode &node) override;
+  virtual void VisitOr(const OrNode &node) override;
+  virtual void VisitPreDec(const PreDecNode &node) override;
+  virtual void VisitPreInc(const PreIncNode &node) override;
   virtual void VisitPreTestLoop(
-      const real_talk::parser::PreTestLoopNode &node) override;
+      const PreTestLoopNode &node) override;
   virtual void VisitProgram(
-      const real_talk::parser::ProgramNode &node) override;
-  virtual void VisitString(const real_talk::parser::StringNode &node) override;
+      const ProgramNode &node) override;
+  virtual void VisitString(const StringNode &node) override;
   virtual void VisitSubscript(
-      const real_talk::parser::SubscriptNode &node) override;
-  virtual void VisitSub(const real_talk::parser::SubNode &node) override;
-  virtual void VisitSum(const real_talk::parser::SumNode &node) override;
+      const SubscriptNode &node) override;
+  virtual void VisitSub(const SubNode &node) override;
+  virtual void VisitSum(const SumNode &node) override;
   virtual void VisitVarDefWithoutInit(
-      const real_talk::parser::VarDefWithoutInitNode &node) override;
+      const VarDefWithoutInitNode &node) override;
   virtual void VisitVarDefWithInit(
-      const real_talk::parser::VarDefWithInitNode &node) override;
+      const VarDefWithInitNode &node) override;
   virtual void VisitId(
-      const real_talk::parser::IdNode &node) override;
+      const IdNode &node) override;
   virtual void VisitIntDataType(
-      const real_talk::parser::IntDataTypeNode &node) override;
+      const IntDataTypeNode &node) override;
   virtual void VisitLongDataType(
-      const real_talk::parser::LongDataTypeNode &node) override;
+      const LongDataTypeNode &node) override;
   virtual void VisitDoubleDataType(
-      const real_talk::parser::DoubleDataTypeNode &node) override;
+      const DoubleDataTypeNode &node) override;
   virtual void VisitCharDataType(
-      const real_talk::parser::CharDataTypeNode &node) override;
+      const CharDataTypeNode &node) override;
   virtual void VisitStringDataType(
-      const real_talk::parser::StringDataTypeNode &node) override;
+      const StringDataTypeNode &node) override;
   virtual void VisitBoolDataType(
-      const real_talk::parser::BoolDataTypeNode &node) override;
+      const BoolDataTypeNode &node) override;
   virtual void VisitVoidDataType(
-      const real_talk::parser::VoidDataTypeNode &node) override;
+      const VoidDataTypeNode &node) override;
   virtual void VisitArrayDataType(
-      const real_talk::parser::ArrayDataTypeNode &node) override;
+      const ArrayDataTypeNode &node) override;
   virtual void VisitReturnValue(
-      const real_talk::parser::ReturnValueNode &node) override;
+      const ReturnValueNode &node) override;
   virtual void VisitReturnWithoutValue(
-      const real_talk::parser::ReturnWithoutValueNode &node) override;
+      const ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(
-      const real_talk::parser::ArgDefNode &node) override;
+      const ArgDefNode &node) override;
   virtual void VisitScope(
-      const real_talk::parser::ScopeNode &node) override;
-  void VisitBinaryExpr(const real_talk::parser::BinaryExprNode &expr_node,
+      const ScopeNode &node) override;
+
+  /**
+   * @param expr_data_type If null, will be deduced from operands
+   */
+  void VisitBinaryExpr(const BinaryExprNode &expr_node,
                        ValueType expr_value_type,
-                       const BinaryDataTypeDeductor &data_type_deductor);
-  void VisitUnaryExpr(const real_talk::parser::UnaryExprNode &expr_node,
+                       unique_ptr<DataType> expr_data_type,
+                       DataTypeQuery *data_type_support_query);
+
+  /**
+   * @param expr_data_type If null, will be deduced from operand
+   */
+  void VisitUnaryExpr(const UnaryExprNode &expr_node,
                       ValueType expr_value_type,
-                      UnaryDataTypeDeductor &data_type_deductor,
-                      const CommonExprAnalysis &operand_analysis);
-  void VisitBranch(const real_talk::parser::BranchNode &branch_node);
-  std::unique_ptr<DataType> VisitArrayAlloc(
-      const real_talk::parser::ArrayAllocNode &array_alloc_node,
+                      unique_ptr<DataType> expr_data_type,
+                      DataTypeQuery *data_type_support_query);
+
+  void VisitBranch(const BranchNode &branch_node);
+  unique_ptr<DataType> VisitArrayAlloc(
+      const ArrayAllocNode &array_alloc_node,
       size_t dimensions_count);
   const DataType &VisitVarDef(
-      const real_talk::parser::VarDefNode &var_def_node);
-  void VisitFuncDef(const real_talk::parser::FuncDefNode &func_def_node,
+      const VarDefNode &var_def_node);
+  void VisitFuncDef(const FuncDefNode &func_def_node,
                     bool &is_func_native,
-                    std::unique_ptr<DataType> &return_data_type);
-  const Scope *VisitReturn(const real_talk::parser::ReturnNode &return_node);
+                    unique_ptr<DataType> &return_data_type);
+  const Scope *VisitReturn(const ReturnNode &return_node);
   template<typename TError, typename TNode> void VisitControlFlowTransfer(
       const TNode &node);
-  std::unique_ptr<DataType> CreateDataType(
-      const real_talk::parser::DataTypeNode &data_type_node);
+  unique_ptr<DataType> CreateDataType(
+      const DataTypeNode &data_type_node);
   const CommonExprAnalysis &GetExprAnalysis(
-      const real_talk::parser::ExprNode *expr);
-  NodeSemanticAnalysis &GetNodeAnalysis(const real_talk::parser::Node *node);
-  const DataType &GetExprDataType(const real_talk::parser::ExprNode *expr);
+      const ExprNode *expr);
+  NodeSemanticAnalysis &GetNodeAnalysis(const Node *node);
+  const DataType &GetExprDataType(const ExprNode *expr);
   const DataType &GetFuncReturnDataType(
-      const real_talk::parser::FuncDefNode *func_def);
+      const FuncDefNode *func_def);
   bool IsCurrentScopeGlobal();
   Scope *GetCurrentScope();
 
@@ -374,27 +368,27 @@ class SimpleSemanticAnalyzer::Impl: private real_talk::parser::NodeVisitor {
   bool IsWithinImportProgram();
   bool IsAssigneeContext();
   bool IsDataTypeConvertible(const DataType &dest, const DataType &src);
-  const boost::filesystem::path &GetCurrentFilePath();
-  void AddDefAnalysis(const real_talk::parser::DefNode &def_node,
-                      std::unique_ptr<DefAnalysis> def_analysis);
-  void AddLitAnalysis(const real_talk::parser::LitNode *lit_node,
-                      std::unique_ptr<DataType> data_type,
-                      std::unique_ptr<Lit> lit);
-  void AddExprAnalysis(const real_talk::parser::ExprNode &expr_node,
-                       std::unique_ptr<DataType> data_type,
+  const path &GetCurrentFilePath();
+  void AddDefAnalysis(const DefNode &def_node,
+                      unique_ptr<DefAnalysis> def_analysis);
+  void AddLitAnalysis(const LitNode *lit_node,
+                      unique_ptr<DataType> data_type,
+                      unique_ptr<Lit> lit);
+  void AddExprAnalysis(const ExprNode &expr_node,
+                       unique_ptr<DataType> data_type,
                        ValueType value_type);
 
-  std::shared_ptr<real_talk::parser::ProgramNode> program_;
-  const boost::filesystem::path file_path_;
-  const real_talk::parser::FileParser &file_parser_;
+  shared_ptr<ProgramNode> program_;
+  const path file_path_;
+  const FileParser &file_parser_;
   const ImportFileSearcher &import_file_searcher_;
   const LitParser &lit_parser_;
-  std::vector< std::unique_ptr<SemanticProblem> > problems_;
+  vector< unique_ptr<SemanticProblem> > problems_;
   SemanticAnalysis::NodeAnalyzes node_analyzes_;
   ImportPrograms import_programs_;
-  std::vector<Scope*> scopes_stack_;
-  std::vector<FileScope*> file_scopes_stack_;
-  std::unique_ptr<DataType> current_data_type_;
+  vector<Scope*> scopes_stack_;
+  vector<FileScope*> file_scopes_stack_;
+  unique_ptr<DataType> current_data_type_;
   size_t dimensions_count_of_current_array_type_;
   size_t non_import_stmts_count_;
   vector<AssigneeContext*> assignee_contexts_stack_;
@@ -565,6 +559,62 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByAssign
   virtual void VisitString(const StringDataType&) override {result_ = true;}
 };
 
+class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByLogicalExpr
+    : public DataTypeQuery {
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    result_ = !IsVoidDataType().Check(data_type);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {result_ = true;}
+  virtual void VisitInt(const IntDataType&) override {result_ = true;}
+  virtual void VisitLong(const LongDataType&) override {result_ = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
+  virtual void VisitChar(const CharDataType&) override {result_ = true;}
+  virtual void VisitString(const StringDataType&) override {result_ = true;}
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByGreater
+    : public DataTypeQuery {
+ private:
+  virtual void VisitInt(const IntDataType&) override {result_ = true;}
+  virtual void VisitLong(const LongDataType&) override {result_ = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
+  virtual void VisitChar(const CharDataType&) override {result_ = true;}
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByEqual
+    : public DataTypeQuery {
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    result_ = !IsVoidDataType().Check(data_type);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {result_ = true;}
+  virtual void VisitInt(const IntDataType&) override {result_ = true;}
+  virtual void VisitLong(const LongDataType&) override {result_ = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
+  virtual void VisitChar(const CharDataType&) override {result_ = true;}
+  virtual void VisitString(const StringDataType&) override {result_ = true;}
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByArithmeticExpr
+    : public DataTypeQuery {
+ private:
+  virtual void VisitInt(const IntDataType&) override {result_ = true;}
+  virtual void VisitLong(const LongDataType&) override {result_ = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
+  virtual void VisitChar(const CharDataType&) override {result_ = true;}
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByNegative
+    : public DataTypeQuery {
+ private:
+  virtual void VisitInt(const IntDataType&) override {result_ = true;}
+  virtual void VisitLong(const LongDataType&) override {result_ = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
+};
+
 class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByFuncDef
     : public DataTypeQuery {
  private:
@@ -648,54 +698,6 @@ class SimpleSemanticAnalyzer::Impl::UnaryDataTypeDeductor
   virtual void VisitVoid(const VoidDataType&) override {}
 };
 
-class SimpleSemanticAnalyzer::Impl::NotDataTypeDeductor
-    : public UnaryDataTypeDeductor {
- private:
-  virtual void VisitBool(const BoolDataType&) override {
-    result_data_type_.reset(new BoolDataType());
-  }
-};
-
-class SimpleSemanticAnalyzer::Impl::NegativeDataTypeDeductor
-    : public UnaryDataTypeDeductor {
- private:
-  virtual void VisitInt(const IntDataType&) override {
-    result_data_type_.reset(new IntDataType());
-  }
-
-  virtual void VisitLong(const LongDataType&) override {
-    result_data_type_.reset(new LongDataType());
-  }
-
-  virtual void VisitDouble(const DoubleDataType&) override {
-    result_data_type_.reset(new DoubleDataType());
-  }
-};
-
-class SimpleSemanticAnalyzer::Impl::PreIncDataTypeDeductor
-    : public UnaryDataTypeDeductor {
- private:
-  virtual void VisitInt(const IntDataType&) override {
-    result_data_type_.reset(new IntDataType());
-  }
-
-  virtual void VisitLong(const LongDataType&) override {
-    result_data_type_.reset(new LongDataType());
-  }
-};
-
-class SimpleSemanticAnalyzer::Impl::PreDecDataTypeDeductor
-    : public UnaryDataTypeDeductor {
- private:
-  virtual void VisitInt(const IntDataType&) override {
-    result_data_type_.reset(new IntDataType());
-  }
-
-  virtual void VisitLong(const LongDataType&) override {
-    result_data_type_.reset(new LongDataType());
-  }
-};
-
 class SimpleSemanticAnalyzer::Impl::SubscriptDataTypeDeductor
     : public UnaryDataTypeDeductor {
  private:
@@ -710,329 +712,6 @@ class SimpleSemanticAnalyzer::Impl::CallDataTypeDeductor
   virtual void VisitFunc(const FuncDataType &data_type) override {
     result_data_type_ = data_type.GetReturnDataType().Clone();
   }
-};
-
-class SimpleSemanticAnalyzer::Impl::BinaryDataTypeDeductor {
- public:
-  virtual ~BinaryDataTypeDeductor() {}
-
-  /**
-   * @return Null if data types are not supported
-   */
-  unique_ptr<DataType> Deduct(const DataType &lhs, const DataType &rhs) const {
-    const Workers &workers = GetWorkers();
-    Workers::const_iterator worker_it =
-        workers.find(make_pair(lhs.GetId(), rhs.GetId()));
-
-    if (worker_it == workers.cend()) {
-      return unique_ptr<DataType>();
-    }
-
-    Worker worker = worker_it->second;
-    return (*worker)(lhs, rhs);
-  }
-
- protected:
-  typedef unique_ptr<DataType> (*Worker)(const DataType&, const DataType&);
-  typedef pair<DataTypeId, DataTypeId> WorkersKey;
-  typedef unordered_map< WorkersKey, Worker, hash<WorkersKey> > Workers;
-
-  static unique_ptr<DataType> LeftWorker(const DataType &lhs, const DataType&) {
-    return lhs.Clone();
-  }
-
-  static unique_ptr<DataType> RightWorker(
-      const DataType&, const DataType &rhs) {
-    return rhs.Clone();
-  }
-
- private:
-  virtual const Workers &GetWorkers() const = 0;
-};
-
-class SimpleSemanticAnalyzer::Impl::EqualDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- public:
-  virtual const Workers &GetWorkers() const override {
-    static const Workers &workers = *new Workers({
-        {make_pair(DataTypeId::kInt, DataTypeId::kInt),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kLong),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kDouble),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kLong),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kLong),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kChar),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kBool, DataTypeId::kBool),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kChar),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kInt),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kLong),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kDouble),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kString),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kString, DataTypeId::kString),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kString, DataTypeId::kChar),
-              &EqualDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kArray, DataTypeId::kArray),
-              &EqualDataTypeDeductor::ArrayWorker}
-      });
-    return workers;
-  }
-
- private:
-  static unique_ptr<DataType> BoolWorker(const DataType&, const DataType&) {
-    return unique_ptr<DataType>(new BoolDataType());
-  }
-
-  static unique_ptr<DataType> ArrayWorker(
-      const DataType &lhs, const DataType &rhs) {
-    if (lhs != rhs
-        || IsVoidDataType().Check(lhs)
-        || IsVoidDataType().Check(rhs)) {
-      return unique_ptr<DataType>();
-    }
-
-    return unique_ptr<DataType>(new BoolDataType());
-  }
-};
-
-class SimpleSemanticAnalyzer::Impl::NotEqualDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- private:
-  virtual const Workers &GetWorkers() const override {
-    return deductor_.GetWorkers();
-  }
-
-  EqualDataTypeDeductor deductor_;
-};
-
-class SimpleSemanticAnalyzer::Impl::LessDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- public:
-  const Workers &GetWorkers() const override {
-    static const Workers &workers = *new Workers({
-        {make_pair(DataTypeId::kInt, DataTypeId::kInt),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kLong),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kDouble),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kLong),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kLong),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kChar),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kChar),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kInt),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kLong),
-              &LessDataTypeDeductor::BoolWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kDouble),
-              &LessDataTypeDeductor::BoolWorker}
-      });
-    return workers;
-  }
-
- private:
-  static unique_ptr<DataType> BoolWorker(const DataType&, const DataType&) {
-    return unique_ptr<DataType>(new BoolDataType());
-  }
-};
-
-class SimpleSemanticAnalyzer::Impl::LessOrEqualDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- private:
-  const Workers &GetWorkers() const override {
-    return deductor_.GetWorkers();
-  }
-
-  LessDataTypeDeductor deductor_;
-};
-
-class SimpleSemanticAnalyzer::Impl::GreaterDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- private:
-  const Workers &GetWorkers() const override {
-    return deductor_.GetWorkers();
-  }
-
-  LessDataTypeDeductor deductor_;
-};
-
-class SimpleSemanticAnalyzer::Impl::GreaterOrEqualDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- private:
-  const Workers &GetWorkers() const override {
-    return deductor_.GetWorkers();
-  }
-
-  LessDataTypeDeductor deductor_;
-};
-
-class SimpleSemanticAnalyzer::Impl::AndDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- public:
-  virtual const Workers &GetWorkers() const override {
-    static const Workers &workers = *new Workers({
-        {make_pair(DataTypeId::kBool, DataTypeId::kBool),
-              &EqualDataTypeDeductor::LeftWorker}
-      });
-    return workers;
-  }
-};
-
-class SimpleSemanticAnalyzer::Impl::OrDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- private:
-  const Workers &GetWorkers() const override {
-    return deductor_.GetWorkers();
-  }
-
-  AndDataTypeDeductor deductor_;
-};
-
-class SimpleSemanticAnalyzer::Impl::MulDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- public:
-  const Workers &GetWorkers() const override {
-    static const Workers &workers = *new Workers({
-        {make_pair(DataTypeId::kChar, DataTypeId::kChar),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kInt),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kLong),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kLong),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kChar),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
-              &LessDataTypeDeductor::LeftWorker}
-      });
-    return workers;
-  }
-};
-
-class SimpleSemanticAnalyzer::Impl::DivDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- private:
-  const Workers &GetWorkers() const override {
-    return deductor_.GetWorkers();
-  }
-
-  MulDataTypeDeductor deductor_;
-};
-
-class SimpleSemanticAnalyzer::Impl::SumDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- public:
-  const Workers &GetWorkers() const override {
-    static const Workers &workers = *new Workers({
-        {make_pair(DataTypeId::kString, DataTypeId::kString),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kString, DataTypeId::kChar),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kString),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kInt),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kLong),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kChar, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kChar),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kLong),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kInt, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kChar),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kLong, DataTypeId::kDouble),
-              &LessDataTypeDeductor::RightWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kChar),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kInt),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kLong),
-              &LessDataTypeDeductor::LeftWorker},
-        {make_pair(DataTypeId::kDouble, DataTypeId::kDouble),
-              &LessDataTypeDeductor::LeftWorker}
-      });
-    return workers;
-  }
-};
-
-class SimpleSemanticAnalyzer::Impl::SubDataTypeDeductor
-    : public BinaryDataTypeDeductor {
- private:
-  const Workers &GetWorkers() const override {
-    return deductor_.GetWorkers();
-  }
-
-  SumDataTypeDeductor deductor_;
 };
 
 SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(
@@ -1893,117 +1572,168 @@ void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitAnd(const AndNode &and_node) {
-  VisitBinaryExpr(and_node, ValueType::kRight, AndDataTypeDeductor());
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByLogicalExpr data_type_support_query;
+  VisitBinaryExpr(and_node,
+                  ValueType::kRight,
+                  move(data_type),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitOr(const OrNode &or_node) {
-  VisitBinaryExpr(or_node, ValueType::kRight, OrDataTypeDeductor());
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByLogicalExpr data_type_support_query;
+  VisitBinaryExpr(or_node,
+                  ValueType::kRight,
+                  move(data_type),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitGreater(
     const GreaterNode &greater_node) {
-  VisitBinaryExpr(greater_node, ValueType::kRight, GreaterDataTypeDeductor());
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByGreater data_type_support_query;
+  VisitBinaryExpr(greater_node,
+                  ValueType::kRight,
+                  move(data_type),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitGreaterOrEqual(
     const GreaterOrEqualNode &greater_or_equal_node) {
-    VisitBinaryExpr(greater_or_equal_node,
-                    ValueType::kRight,
-                    GreaterOrEqualDataTypeDeductor());
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByGreater data_type_support_query;
+  VisitBinaryExpr(greater_or_equal_node,
+                  ValueType::kRight,
+                  move(data_type),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitEqual(const EqualNode &equal_node) {
-  VisitBinaryExpr(equal_node, ValueType::kRight, EqualDataTypeDeductor());
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByEqual data_type_support_query;
+  VisitBinaryExpr(equal_node,
+                  ValueType::kRight,
+                  move(data_type),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitNotEqual(
     const NotEqualNode &not_equal_node) {
-  VisitBinaryExpr(
-      not_equal_node, ValueType::kRight, NotEqualDataTypeDeductor());
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByEqual data_type_support_query;
+  VisitBinaryExpr(not_equal_node,
+                  ValueType::kRight,
+                  move(data_type),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitLess(const LessNode &less_node) {
-  VisitBinaryExpr(less_node, ValueType::kRight, LessDataTypeDeductor());
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByGreater data_type_support_query;
+  VisitBinaryExpr(less_node,
+                  ValueType::kRight,
+                  move(data_type),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitLessOrEqual(
     const LessOrEqualNode &less_or_equal_node) {
-  VisitBinaryExpr(
-      less_or_equal_node, ValueType::kRight, LessOrEqualDataTypeDeductor());
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByGreater data_type_support_query;
+  VisitBinaryExpr(less_or_equal_node,
+                  ValueType::kRight,
+                  move(data_type),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitDiv(const DivNode &div_node) {
-  VisitBinaryExpr(div_node, ValueType::kRight, DivDataTypeDeductor());
+  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
+  VisitBinaryExpr(div_node,
+                  ValueType::kRight,
+                  unique_ptr<DataType>(),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitMul(const MulNode &mul_node) {
-  VisitBinaryExpr(mul_node, ValueType::kRight, MulDataTypeDeductor());
+  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
+  VisitBinaryExpr(mul_node,
+                  ValueType::kRight,
+                  unique_ptr<DataType>(),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitSub(const SubNode &sub_node) {
-  VisitBinaryExpr(sub_node, ValueType::kRight, SubDataTypeDeductor());
+  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
+  VisitBinaryExpr(sub_node,
+                  ValueType::kRight,
+                  unique_ptr<DataType>(),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitSum(const SumNode &sum_node) {
-  VisitBinaryExpr(sum_node, ValueType::kRight, SumDataTypeDeductor());
+  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
+  VisitBinaryExpr(sum_node,
+                  ValueType::kRight,
+                  unique_ptr<DataType>(),
+                  &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitNot(const NotNode &not_node) {
   not_node.GetOperand()->Accept(*this);
-  const CommonExprAnalysis &operand_analysis =
-      GetExprAnalysis(not_node.GetOperand().get());
-  NotDataTypeDeductor data_type_deductor;
-  VisitUnaryExpr(
-      not_node, ValueType::kRight, data_type_deductor, operand_analysis);
+  unique_ptr<DataType> data_type(new BoolDataType());
+  IsDataTypeSupportedByLogicalExpr data_type_support_query;
+  VisitUnaryExpr(not_node,
+                 ValueType::kRight,
+                 move(data_type),
+                 &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode &pre_dec_node) {
   pre_dec_node.GetOperand()->Accept(*this);
-  const CommonExprAnalysis &operand_analysis =
-      GetExprAnalysis(pre_dec_node.GetOperand().get());
-  PreDecDataTypeDeductor data_type_deductor;
+  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
   VisitUnaryExpr(pre_dec_node,
                  ValueType::kRight,
-                 data_type_deductor,
-                 operand_analysis);
+                 unique_ptr<DataType>(),
+                 &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode &pre_inc_node) {
   pre_inc_node.GetOperand()->Accept(*this);
-  const CommonExprAnalysis &operand_analysis =
-      GetExprAnalysis(pre_inc_node.GetOperand().get());
-  PreIncDataTypeDeductor data_type_deductor;
+  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
   VisitUnaryExpr(pre_inc_node,
                  ValueType::kRight,
-                 data_type_deductor,
-                 operand_analysis);
+                 unique_ptr<DataType>(),
+                 &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitNegative(
     const NegativeNode &negative_node) {
   negative_node.GetOperand()->Accept(*this);
-  const CommonExprAnalysis &operand_analysis =
-      GetExprAnalysis(negative_node.GetOperand().get());
-  NegativeDataTypeDeductor data_type_deductor;
+  IsDataTypeSupportedByNegative data_type_support_query;
   VisitUnaryExpr(negative_node,
                  ValueType::kRight,
-                 data_type_deductor,
-                 operand_analysis);
+                 unique_ptr<DataType>(),
+                 &data_type_support_query);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitUnaryExpr(
     const UnaryExprNode &expr_node,
     ValueType expr_value_type,
-    UnaryDataTypeDeductor &data_type_deductor,
-    const CommonExprAnalysis &operand_analysis) {
+    unique_ptr<DataType> expr_data_type,
+    DataTypeQuery *data_type_support_query) {
+  const CommonExprAnalysis &operand_analysis =
+      GetExprAnalysis(expr_node.GetOperand().get());
   const DataType &operand_data_type = operand_analysis.GetDataType();
-  unique_ptr<DataType> expr_data_type =
-      data_type_deductor.Deduct(operand_data_type);
 
-  if (!expr_data_type) {
+  if (!data_type_support_query->Check(operand_data_type)) {
     unique_ptr<SemanticError> error(new UnaryExprWithUnsupportedTypeError(
         GetCurrentFilePath(), expr_node, operand_data_type.Clone()));
     throw SemanticErrorException(move(error));
+  }
+
+  if (!expr_data_type) {
+    expr_data_type = operand_data_type.Clone();
   }
 
   AddExprAnalysis(expr_node, move(expr_data_type), expr_value_type);
@@ -2012,23 +1742,48 @@ void SimpleSemanticAnalyzer::Impl::VisitUnaryExpr(
 void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
     const BinaryExprNode &expr_node,
     ValueType expr_value_type,
-    const BinaryDataTypeDeductor &data_type_deductor) {
+    unique_ptr<DataType> expr_data_type,
+    DataTypeQuery *data_type_support_query) {
   expr_node.GetLeftOperand()->Accept(*this);
   expr_node.GetRightOperand()->Accept(*this);
-  const DataType &left_operand_data_type =
-      GetExprDataType(expr_node.GetLeftOperand().get());
+  ExprAnalysis &left_operand_analysis = static_cast<ExprAnalysis&>(
+      GetNodeAnalysis(expr_node.GetLeftOperand().get()));
+  const DataType &left_operand_data_type = left_operand_analysis.GetDataType();
+  ExprAnalysis &right_operand_analysis = static_cast<ExprAnalysis&>(
+      GetNodeAnalysis(expr_node.GetRightOperand().get()));
   const DataType &right_operand_data_type =
-      GetExprDataType(expr_node.GetRightOperand().get());
-  unique_ptr<DataType> expr_data_type = data_type_deductor.Deduct(
-      left_operand_data_type, right_operand_data_type);
+      right_operand_analysis.GetDataType();
+  const DataType *final_operand_data_type = &left_operand_data_type;
 
-  if (!expr_data_type) {
+  if (left_operand_data_type != right_operand_data_type) {
+    const CastResolver::ResolvedCast resolved_cast = cast_resolver_.Resolve(
+        left_operand_data_type, right_operand_data_type);
+
+    if (!resolved_cast.IsSuccess()) {
+      unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
+          GetCurrentFilePath(),
+          expr_node,
+          left_operand_data_type.Clone(),
+          right_operand_data_type.Clone()));
+      throw SemanticErrorException(move(error));
+    }
+
+    final_operand_data_type = resolved_cast.GetFinalDataType();
+    // left_operand_analysis.SetCastedDataType(resolved_cast.GetLeftDataType());
+    // right_operand_analysis.SetCastedDataType(resolved_cast.GetRightDataType());
+  }
+
+  if (!data_type_support_query->Check(*final_operand_data_type)) {
     unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
         GetCurrentFilePath(),
         expr_node,
         left_operand_data_type.Clone(),
         right_operand_data_type.Clone()));
     throw SemanticErrorException(move(error));
+  }
+
+  if (!expr_data_type) {
+    expr_data_type = final_operand_data_type->Clone();
   }
 
   AddExprAnalysis(expr_node, move(expr_data_type), expr_value_type);
