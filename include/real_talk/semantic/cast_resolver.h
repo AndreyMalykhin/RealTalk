@@ -2,6 +2,8 @@
 #ifndef _REAL_TALK_SEMANTIC_CAST_RESOLVER_H_
 #define _REAL_TALK_SEMANTIC_CAST_RESOLVER_H_
 
+#include <iostream>
+
 namespace real_talk {
 namespace semantic {
 
@@ -30,7 +32,14 @@ class CastResolver {
      */
     const DataType *GetRightDataType() const;
 
+    /**
+     * @return Destination data type, to which cast was performed
+     */
     const DataType *GetFinalDataType() const;
+
+    friend bool operator==(const ResolvedCast &lhs, const ResolvedCast &rhs);
+    friend std::ostream &operator<<(
+        std::ostream &stream, const ResolvedCast &resolved_cast);
 
    private:
     bool is_success_;

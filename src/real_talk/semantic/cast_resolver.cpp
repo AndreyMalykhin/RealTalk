@@ -7,6 +7,7 @@
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/cast_resolver.h"
 
+using std::ostream;
 using std::unordered_map;
 using std::make_pair;
 using std::pair;
@@ -113,6 +114,30 @@ const DataType *CastResolver::ResolvedCast::GetFinalDataType() const {
   assert(is_success_);
   assert(left_data_type_ || right_data_type_);
   return left_data_type_ ? left_data_type_ : right_data_type_;
+}
+
+bool operator==(const CastResolver::ResolvedCast &lhs,
+                const CastResolver::ResolvedCast &rhs) {
+  return lhs.is_success_ == rhs.is_success_
+      && lhs.left_data_type_ == rhs.left_data_type_
+      && lhs.right_data_type_ == rhs.right_data_type_;
+}
+
+ostream &operator<<(
+    ostream &stream, const CastResolver::ResolvedCast &resolved_cast) {
+  stream << "is_success=" << resolved_cast.is_success_ << "; left_data_type=";
+
+  if (resolved_cast.left_data_type_) {
+    stream << *(resolved_cast.left_data_type_);
+  }
+
+  stream << "; right_data_type=";
+
+  if (resolved_cast.right_data_type_) {
+    stream << *(resolved_cast.right_data_type_);
+  }
+
+  return stream;
 }
 }
 }

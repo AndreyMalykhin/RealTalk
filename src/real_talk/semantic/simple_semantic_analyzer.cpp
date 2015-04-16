@@ -230,7 +230,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
   class IsDataTypeSupportedByGreater;
   class IsDataTypeSupportedByEqual;
   class IsDataTypeSupportedByNegative;
-  class UnaryDataTypeDeductor;
+  class DataTypeDeductor;
   class SubscriptDataTypeDeductor;
   class CallDataTypeDeductor;
 
@@ -365,6 +365,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
    * @return Null if not found
    */
   Scope *FindParentScope(ScopeType type);
+
   bool IsWithinImportProgram();
   bool IsAssigneeContext();
   bool IsDataTypeConvertible(const DataType &dest, const DataType &src);
@@ -670,13 +671,13 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedBySubscriptIndex
   virtual void VisitInt(const IntDataType&) override {result_ = true;}
 };
 
-class SimpleSemanticAnalyzer::Impl::UnaryDataTypeDeductor
+class SimpleSemanticAnalyzer::Impl::DataTypeDeductor
     : private DataTypeVisitor {
  public:
-  virtual ~UnaryDataTypeDeductor() {}
+  virtual ~DataTypeDeductor() {}
 
   /**
-   * @return nullptr if data type is not supported
+   * @return Null if data type is not supported
    */
   unique_ptr<DataType> Deduct(const DataType &data_type) {
     data_type.Accept(*this);
@@ -699,7 +700,7 @@ class SimpleSemanticAnalyzer::Impl::UnaryDataTypeDeductor
 };
 
 class SimpleSemanticAnalyzer::Impl::SubscriptDataTypeDeductor
-    : public UnaryDataTypeDeductor {
+    : public DataTypeDeductor {
  private:
   virtual void VisitArray(const ArrayDataType &data_type) override {
     result_data_type_ = data_type.GetElementDataType().Clone();
@@ -707,7 +708,7 @@ class SimpleSemanticAnalyzer::Impl::SubscriptDataTypeDeductor
 };
 
 class SimpleSemanticAnalyzer::Impl::CallDataTypeDeductor
-    : public UnaryDataTypeDeductor {
+    : public DataTypeDeductor {
  private:
   virtual void VisitFunc(const FuncDataType &data_type) override {
     result_data_type_ = data_type.GetReturnDataType().Clone();

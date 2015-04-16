@@ -71,6 +71,7 @@ add_executable(real_talk_tests
   test/real_talk/semantic/simple_semantic_analyzer_test.cpp
   test/real_talk/semantic/simple_import_file_searcher_test.cpp
   test/real_talk/semantic/simple_lit_parser_test.cpp
+  test/real_talk/semantic/cast_resolver_test.cpp
   test/real_talk/code/code_generator_test.cpp
   test/real_talk/code/module_reader_test.cpp
   test/real_talk/code/cmd_reader_test.cpp
