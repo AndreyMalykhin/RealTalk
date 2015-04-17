@@ -7,6 +7,7 @@
 #include "real_talk/semantic/data_type.h"
 #include "real_talk/semantic/cast_resolver.h"
 
+using std::unique_ptr;
 using std::ostream;
 using std::unordered_map;
 using std::make_pair;
@@ -54,21 +55,12 @@ const Casts &kCasts = *new Casts({
   });
 }
 
-bool CastResolver::CanCastTo(const DataType &dest_data_type,
-                             const DataType &src_data_type) const {
-  assert(dest_data_type != src_data_type);
-  Casts::const_iterator casts_it = kCasts.find(
-      make_pair(dest_data_type.GetId(), src_data_type.GetId()));
-  return casts_it != kCasts.cend()
-      && casts_it->second == Direction::kRightToLeft;
-}
-
 CastResolver::ResolvedCast CastResolver::Resolve(
     const DataType &left_data_type, const DataType &right_data_type) const {
   assert(left_data_type != right_data_type);
   bool is_success = false;
-  const DataType *casted_left_data_type = nullptr;
-  const DataType *casted_right_data_type = nullptr;
+  unique_ptr<DataType> casted_left_data_type;
+  unique_ptr<DataType> casted_right_data_type;
   Casts::const_iterator casts_it =
       kCasts.find(make_pair(left_data_type.GetId(), right_data_type.GetId()));
 
@@ -76,25 +68,25 @@ CastResolver::ResolvedCast CastResolver::Resolve(
     const Direction direction = casts_it->second;
 
     if (direction == Direction::kLeftToRight) {
-      casted_left_data_type = &right_data_type;
+      casted_left_data_type = right_data_type.Clone();
     } else {
-      casted_right_data_type = &left_data_type;
+      casted_right_data_type = left_data_type.Clone();
     }
 
     is_success = true;
   }
 
   return ResolvedCast(
-      is_success, casted_left_data_type, casted_right_data_type);
+      is_success, move(casted_left_data_type), move(casted_right_data_type));
 }
 
 CastResolver::ResolvedCast::ResolvedCast(
     bool is_success,
-    const DataType *left_data_type,
-    const DataType *right_data_type)
+    unique_ptr<DataType> left_data_type,
+    unique_ptr<DataType> right_data_type)
     : is_success_(is_success),
-      left_data_type_(left_data_type),
-      right_data_type_(right_data_type) {}
+      left_data_type_(move(left_data_type)),
+      right_data_type_(move(right_data_type)) {}
 
 bool CastResolver::ResolvedCast::IsSuccess() const {
   return is_success_;
@@ -102,25 +94,37 @@ bool CastResolver::ResolvedCast::IsSuccess() const {
 
 const DataType *CastResolver::ResolvedCast::GetLeftDataType() const {
   assert(is_success_);
-  return left_data_type_;
+  return left_data_type_.get();
 }
 
 const DataType *CastResolver::ResolvedCast::GetRightDataType() const {
   assert(is_success_);
-  return right_data_type_;
+  return right_data_type_.get();
 }
 
 const DataType *CastResolver::ResolvedCast::GetFinalDataType() const {
   assert(is_success_);
   assert(left_data_type_ || right_data_type_);
-  return left_data_type_ ? left_data_type_ : right_data_type_;
+  return left_data_type_ ? left_data_type_.get() : right_data_type_.get();
 }
 
 bool operator==(const CastResolver::ResolvedCast &lhs,
                 const CastResolver::ResolvedCast &rhs) {
-  return lhs.is_success_ == rhs.is_success_
-      && lhs.left_data_type_ == rhs.left_data_type_
-      && lhs.right_data_type_ == rhs.right_data_type_;
+  if (lhs.is_success_ == rhs.is_success_) {
+    return true;
+  }
+
+  if (lhs.left_data_type_
+      && rhs.left_data_type_
+      && *(lhs.left_data_type_) == *(rhs.left_data_type_)) {
+    return true;
+  }
+
+  if (!lhs.left_data_type_ && !rhs.left_data_type_) {
+    return true;
+  }
+
+  return false;
 }
 
 ostream &operator<<(

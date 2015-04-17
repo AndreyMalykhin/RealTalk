@@ -378,6 +378,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
   void AddExprAnalysis(const ExprNode &expr_node,
                        unique_ptr<DataType> data_type,
                        ValueType value_type);
+  bool CanCastTo(const DataType &dest_data_type, const DataType &src_data_type);
 
   shared_ptr<ProgramNode> program_;
   const path file_path_;
@@ -801,7 +802,7 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
     return;
   }
 
-  const bool is_value_castable = cast_resolver_.CanCastTo(
+  const bool is_value_castable = CanCastTo(
       func_def_return_data_type, value_data_type);
 
   if (!is_value_castable) {
@@ -933,7 +934,7 @@ void SimpleSemanticAnalyzer::Impl::VisitVarDefWithInit(
   }
 
   const bool is_value_castable =
-      cast_resolver_.CanCastTo(var_data_type, value_data_type);
+      CanCastTo(var_data_type, value_data_type);
 
   if (!is_value_castable) {
     unique_ptr<SemanticError> error(new VarDefWithIncompatibleValueTypeError(
@@ -1340,7 +1341,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
       continue;
     }
 
-    const bool is_actual_value_castable = cast_resolver_.CanCastTo(
+    const bool is_actual_value_castable = CanCastTo(
         expected_value_data_type, actual_value_data_type);
 
     if (!is_actual_value_castable) {
@@ -1505,7 +1506,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
     }
 
     if (call_arg_data_type != arg_def_data_type) {
-      const bool is_call_arg_castable = cast_resolver_.CanCastTo(
+      const bool is_call_arg_castable = CanCastTo(
           arg_def_data_type, call_arg_data_type);
 
       if (!is_call_arg_castable) {
@@ -1555,7 +1556,7 @@ void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
 
   if (assignee_data_type != value_data_type) {
     const bool is_value_castable =
-        cast_resolver_.CanCastTo(assignee_data_type, value_data_type);
+        CanCastTo(assignee_data_type, value_data_type);
 
     if (!is_value_castable) {
       unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(
@@ -2060,6 +2061,14 @@ bool SimpleSemanticAnalyzer::Impl::IsAssigneeContext() {
 const path &SimpleSemanticAnalyzer::Impl::GetCurrentFilePath() {
   assert(!file_scopes_stack_.empty());
   return file_scopes_stack_.back()->GetFilePath();
+}
+
+bool SimpleSemanticAnalyzer::Impl::CanCastTo(
+    const DataType &dest_data_type, const DataType &src_data_type) {
+  CastResolver::ResolvedCast resolved_cast =
+      cast_resolver_.Resolve(dest_data_type, src_data_type);
+  return resolved_cast.IsSuccess()
+      && resolved_cast.GetFinalDataType() == &dest_data_type;
 }
 
 SimpleSemanticAnalyzer::UnexpectedTokenError::UnexpectedTokenError(
