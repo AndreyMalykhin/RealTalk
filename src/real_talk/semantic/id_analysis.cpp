@@ -12,10 +12,11 @@ namespace semantic {
 
 IdAnalysis::IdAnalysis(
     unique_ptr<DataType> data_type,
+    unique_ptr<DataType> casted_data_type,
     ValueType value_type,
     const DefNode* def,
     bool is_assignee)
-    : base_analysis_(move(data_type), value_type),
+    : base_analysis_(move(data_type), move(casted_data_type), value_type),
       def_(def),
       is_assignee_(is_assignee) {
   assert(def_);
@@ -23,6 +24,14 @@ IdAnalysis::IdAnalysis(
 
 bool IdAnalysis::IsAssignee() const {
   return is_assignee_;
+}
+
+const DataType *IdAnalysis::GetCastedDataType() const {
+  return base_analysis_.GetCastedDataType();
+}
+
+void IdAnalysis::SetCastedDataType(unique_ptr<DataType> data_type) {
+  base_analysis_.SetCastedDataType(move(data_type));
 }
 
 const DataType &IdAnalysis::GetDataType() const {

@@ -10,14 +10,19 @@ namespace semantic {
 
 SubscriptAnalysis::SubscriptAnalysis(
     unique_ptr<DataType> data_type,
+    unique_ptr<DataType> casted_data_type,
     ValueType value_type,
     bool is_assignee)
-    : base_analysis_(move(data_type), value_type),
+    : base_analysis_(move(data_type), move(casted_data_type), value_type),
       is_assignee_(is_assignee) {
 }
 
 bool SubscriptAnalysis::IsAssignee() const {
   return is_assignee_;
+}
+
+const DataType *SubscriptAnalysis::GetCastedDataType() const {
+  return base_analysis_.GetCastedDataType();
 }
 
 const DataType &SubscriptAnalysis::GetDataType() const {

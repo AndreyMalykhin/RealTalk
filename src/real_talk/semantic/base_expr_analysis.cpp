@@ -9,9 +9,21 @@ namespace real_talk {
 namespace semantic {
 
 BaseExprAnalysis::BaseExprAnalysis(
-    unique_ptr<DataType> data_type, ValueType value_type)
-    : data_type_(move(data_type)), value_type_(value_type) {
+    unique_ptr<DataType> data_type,
+    unique_ptr<DataType> casted_data_type,
+    ValueType value_type)
+    : data_type_(move(data_type)),
+      casted_data_type_(move(casted_data_type)),
+      value_type_(value_type) {
   assert(data_type_);
+}
+
+const DataType *BaseExprAnalysis::GetCastedDataType() const {
+  return casted_data_type_.get();
+}
+
+void BaseExprAnalysis::SetCastedDataType(unique_ptr<DataType> data_type) {
+  casted_data_type_ = move(data_type);
 }
 
 const DataType &BaseExprAnalysis::GetDataType() const {

@@ -8,8 +8,18 @@ namespace real_talk {
 namespace semantic {
 
 CommonExprAnalysis::CommonExprAnalysis(
-    unique_ptr<DataType> data_type, ValueType value_type)
-    : base_analysis_(move(data_type), value_type) {
+    unique_ptr<DataType> data_type,
+    unique_ptr<DataType> casted_data_type,
+    ValueType value_type)
+    : base_analysis_(move(data_type), move(casted_data_type), value_type) {
+}
+
+const DataType *CommonExprAnalysis::GetCastedDataType() const {
+  return base_analysis_.GetCastedDataType();
+}
+
+void CommonExprAnalysis::SetCastedDataType(unique_ptr<DataType> data_type) {
+  base_analysis_.SetCastedDataType(move(data_type));
 }
 
 const DataType &CommonExprAnalysis::GetDataType() const {

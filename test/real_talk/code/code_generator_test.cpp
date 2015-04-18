@@ -559,15 +559,19 @@ class CodeGeneratorTest: public Test {
     ProgramNode program_node(move(program_stmt_nodes));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
+    unique_ptr<DataType> size_lit_casted_data_type1;
     unique_ptr<NodeSemanticAnalysis> size_lit_analysis1(new LitAnalysis(
         unique_ptr<DataType>(new IntDataType()),
+        move(size_lit_casted_data_type1),
         ValueType::kRight,
         unique_ptr<Lit>(new IntLit(INT32_C(1)))));
     node_analyzes.insert(
         make_pair(size_expr_node_ptr1, move(size_lit_analysis1)));
 
+    unique_ptr<DataType> size_lit_casted_data_type2;
     unique_ptr<NodeSemanticAnalysis> size_lit_analysis2(new LitAnalysis(
         unique_ptr<DataType>(new IntDataType()),
+        move(size_lit_casted_data_type2),
         ValueType::kRight,
         unique_ptr<Lit>(new IntLit(INT32_C(2)))));
     node_analyzes.insert(
@@ -577,8 +581,11 @@ class CodeGeneratorTest: public Test {
         new ArrayDataType(move(primitive_data_type)));
     unique_ptr<DataType> array_data_type2(
         new ArrayDataType(move(array_data_type1)));
+    unique_ptr<DataType> array_alloc_casted_data_type;
     unique_ptr<NodeSemanticAnalysis> array_alloc_analysis(
-        new CommonExprAnalysis(move(array_data_type2), ValueType::kRight));
+        new CommonExprAnalysis(move(array_data_type2),
+                               move(array_alloc_casted_data_type),
+                               ValueType::kRight));
     node_analyzes.insert(
         make_pair(array_alloc_node_ptr, move(array_alloc_analysis)));
 
@@ -666,8 +673,11 @@ class CodeGeneratorTest: public Test {
                          make_move_iterator(value_analyzes.end()));
     unique_ptr<DataType> array_data_type(
         new ArrayDataType(move(primitive_data_type)));
+    unique_ptr<DataType> array_alloc_casted_data_type;
     unique_ptr<NodeSemanticAnalysis> array_alloc_analysis(
-        new CommonExprAnalysis(move(array_data_type), ValueType::kRight));
+        new CommonExprAnalysis(move(array_data_type),
+                               move(array_alloc_casted_data_type),
+                               ValueType::kRight));
     node_analyzes.insert(
         make_pair(array_alloc_node_ptr, move(array_alloc_analysis)));
     SemanticAnalysis semantic_analysis(
@@ -814,8 +824,10 @@ class CodeGeneratorTest: public Test {
         data_type.Clone()));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     bool is_id_assignee = false;
+    unique_ptr<DataType> casted_data_type;
     unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
         data_type.Clone(),
+        move(casted_data_type),
         ValueType::kLeft,
         var_def_node_ptr,
         is_id_assignee));
@@ -886,8 +898,10 @@ class CodeGeneratorTest: public Test {
         data_type.Clone(), var_index_within_func));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     bool is_id_assignee = false;
+    unique_ptr<DataType> casted_data_type;
     unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
         data_type.Clone(),
+        move(casted_data_type),
         ValueType::kLeft,
         var_def_node_ptr,
         is_id_assignee));
@@ -964,14 +978,19 @@ class CodeGeneratorTest: public Test {
         new GlobalVarDefAnalysis(data_type.Clone()));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     bool is_id_assignee = true;
+    unique_ptr<DataType> id_casted_data_type;
     unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
         data_type.Clone(),
+        move(id_casted_data_type),
         ValueType::kLeft,
         var_def_node_ptr,
         is_id_assignee));
     node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+    unique_ptr<DataType> assign_casted_data_type;
     unique_ptr<NodeSemanticAnalysis> assign_analysis(new CommonExprAnalysis(
-        unique_ptr<DataType>(new VoidDataType()), ValueType::kRight));
+        unique_ptr<DataType>(new VoidDataType()),
+        move(assign_casted_data_type),
+        ValueType::kRight));
     node_analyzes.insert(make_pair(assign_node_ptr, move(assign_analysis)));
 
     SemanticAnalysis semantic_analysis(
@@ -1169,8 +1188,10 @@ TEST_F(CodeGeneratorTest, ExprStmt) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> int_lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   node_analyzes.insert(make_pair(int_node_ptr, move(int_lit_analysis)));
@@ -1211,8 +1232,10 @@ TEST_F(CodeGeneratorTest, ExprStmt) {
 TEST_F(CodeGeneratorTest, Int) {
   unique_ptr<LitNode> lit_node(new IntNode(
       TokenInfo(Token::kIntLit, "-7", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(-7)))));
   Code expected_code;
@@ -1224,8 +1247,10 @@ TEST_F(CodeGeneratorTest, Int) {
 TEST_F(CodeGeneratorTest, Long) {
   unique_ptr<LitNode> lit_node(new LongNode(
       TokenInfo(Token::kLongLit, "-77L", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new LongDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(-77)))));
   Code expected_code;
@@ -1237,8 +1262,10 @@ TEST_F(CodeGeneratorTest, Long) {
 TEST_F(CodeGeneratorTest, Bool) {
   unique_ptr<LitNode> lit_node(new BoolNode(
       TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   Code expected_code;
@@ -1250,8 +1277,10 @@ TEST_F(CodeGeneratorTest, Bool) {
 TEST_F(CodeGeneratorTest, String) {
   unique_ptr<LitNode> lit_node(new StringNode(
       TokenInfo(Token::kStringLit, "\"swagger\"", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new StringDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new StringLit("swagger"))));
   Code expected_code;
@@ -1263,8 +1292,10 @@ TEST_F(CodeGeneratorTest, String) {
 TEST_F(CodeGeneratorTest, Double) {
   unique_ptr<LitNode> lit_node(new DoubleNode(
       TokenInfo(Token::kDoubleLit, "7.77777777777", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new DoubleDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(7.77777777777))));
   Code expected_code;
@@ -1276,8 +1307,10 @@ TEST_F(CodeGeneratorTest, Double) {
 TEST_F(CodeGeneratorTest, Char) {
   unique_ptr<LitNode> lit_node(new CharNode(
       TokenInfo(Token::kCharLit, "'b'", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<LitAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('b'))));
   Code expected_code;
@@ -1299,12 +1332,14 @@ TEST_F(CodeGeneratorTest, Import) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis(new LitAnalysis(
+  unique_ptr<DataType> lit_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new StringDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new StringLit("file.rt"))));
   node_analyzes.insert(
-      make_pair(file_path_node_ptr, move(file_path_lit_analysis)));
+      make_pair(file_path_node_ptr, move(lit_analysis)));
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::Problems(), move(node_analyzes));
 
@@ -1342,8 +1377,10 @@ TEST_F(CodeGeneratorTest, GlobalIntVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new CharNode(
       TokenInfo(Token::kCharLit, "'7'", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new IntDataType());
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('7'))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1411,20 +1448,25 @@ TEST_F(CodeGeneratorTest, GlobalArrayVarDefWithInit) {
       new ArrayDataType(move(array_data_type1)));
 
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> size_lit_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> size_lit_analysis1(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(size_lit_casted_data_type1),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   value_node_analyzes.insert(
       make_pair(size_expr_node_ptr1, move(size_lit_analysis1)));
+  unique_ptr<DataType> size_lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> size_lit_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(size_lit_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   value_node_analyzes.insert(
       make_pair(size_expr_node_ptr2, move(size_lit_analysis2)));
-  unique_ptr<NodeSemanticAnalysis> value_analysis(
-      new CommonExprAnalysis(var_data_type->Clone(), ValueType::kRight));
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      var_data_type->Clone(), move(value_casted_data_type), ValueType::kRight));
   value_node_analyzes.insert(
       make_pair(value_node_ptr, move(value_analysis)));
 
@@ -1454,8 +1496,10 @@ TEST_F(CodeGeneratorTest, GlobalLongVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new LongDataType());
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1485,8 +1529,10 @@ TEST_F(CodeGeneratorTest, GlobalDoubleVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new DoubleDataType());
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1516,8 +1562,10 @@ TEST_F(CodeGeneratorTest, GlobalCharVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1541,8 +1589,10 @@ TEST_F(CodeGeneratorTest, GlobalStringVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new StringDataType());
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1572,8 +1622,10 @@ TEST_F(CodeGeneratorTest, GlobalBoolVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1596,8 +1648,10 @@ TEST_F(CodeGeneratorTest, LocalIntVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new CharNode(
       TokenInfo(Token::kCharLit, "'7'", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new IntDataType());
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('7'))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1665,20 +1719,25 @@ TEST_F(CodeGeneratorTest, LocalArrayVarDefWithInit) {
       new ArrayDataType(move(array_data_type1)));
 
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> size_lit_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> size_lit_analysis1(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(size_lit_casted_data_type1),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   value_node_analyzes.insert(
       make_pair(size_expr_node_ptr1, move(size_lit_analysis1)));
+  unique_ptr<DataType> size_lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> size_lit_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(size_lit_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   value_node_analyzes.insert(
       make_pair(size_expr_node_ptr2, move(size_lit_analysis2)));
-  unique_ptr<NodeSemanticAnalysis> value_analysis(
-      new CommonExprAnalysis(var_data_type->Clone(), ValueType::kRight));
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      var_data_type->Clone(), move(value_casted_data_type), ValueType::kRight));
   value_node_analyzes.insert(
       make_pair(value_node_ptr, move(value_analysis)));
 
@@ -1708,8 +1767,10 @@ TEST_F(CodeGeneratorTest, LocalLongVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new LongDataType());
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1739,8 +1800,10 @@ TEST_F(CodeGeneratorTest, LocalDoubleVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new DoubleDataType());
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1770,8 +1833,10 @@ TEST_F(CodeGeneratorTest, LocalCharVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1795,8 +1860,10 @@ TEST_F(CodeGeneratorTest, LocalStringVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new StringDataType());
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1826,8 +1893,10 @@ TEST_F(CodeGeneratorTest, LocalBoolVarDefWithInit) {
   unique_ptr<ExprNode> value_node(new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(3), UINT32_C(3))));
   SemanticAnalysis::NodeAnalyzes value_node_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   value_node_analyzes.insert(make_pair(value_node.get(), move(value_analysis)));
@@ -1908,13 +1977,17 @@ TEST_F(CodeGeneratorTest, IntArrayAllocWithInit) {
   value_nodes.push_back(move(value_node2));
 
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  unique_ptr<DataType> value_casted_data_type2(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> value_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('b'))));
   value_analyzes.insert(make_pair(value_node_ptr2, move(value_analysis2)));
@@ -1964,13 +2037,17 @@ TEST_F(CodeGeneratorTest, LongArrayAllocWithInit) {
   value_nodes.push_back(move(value_node2));
 
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new LongDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(1)))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  unique_ptr<DataType> value_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> value_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new LongDataType()),
+      move(value_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(2)))));
   value_analyzes.insert(make_pair(value_node_ptr2, move(value_analysis2)));
@@ -2006,13 +2083,17 @@ TEST_F(CodeGeneratorTest, DoubleArrayAllocWithInit) {
   value_nodes.push_back(move(value_node2));
 
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new DoubleDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(1.1))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  unique_ptr<DataType> value_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> value_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new DoubleDataType()),
+      move(value_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(2.2))));
   value_analyzes.insert(make_pair(value_node_ptr2, move(value_analysis2)));
@@ -2048,13 +2129,17 @@ TEST_F(CodeGeneratorTest, BoolArrayAllocWithInit) {
   value_nodes.push_back(move(value_node2));
 
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  unique_ptr<DataType> value_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> value_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(value_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   value_analyzes.insert(make_pair(value_node_ptr2, move(value_analysis2)));
@@ -2090,13 +2175,17 @@ TEST_F(CodeGeneratorTest, CharArrayAllocWithInit) {
   value_nodes.push_back(move(value_node2));
 
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  unique_ptr<DataType> value_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> value_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('b'))));
   value_analyzes.insert(make_pair(value_node_ptr2, move(value_analysis2)));
@@ -2132,13 +2221,17 @@ TEST_F(CodeGeneratorTest, StringArrayAllocWithInit) {
   value_nodes.push_back(move(value_node2));
 
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new StringDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new StringLit("a"))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+  unique_ptr<DataType> value_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> value_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new StringDataType()),
+      move(value_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new StringLit("b"))));
   value_analyzes.insert(make_pair(value_node_ptr2, move(value_analysis2)));
@@ -2248,28 +2341,38 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
       new ScopeAnalysis(else_body_local_vars_count));
   node_analyzes.insert(
       make_pair(else_body_node_ptr, move(else_body_analysis)));
+  unique_ptr<DataType> int_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(int_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(int_node_ptr, move(int_analysis)));
+  unique_ptr<DataType> int_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> int_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(int_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   node_analyzes.insert(make_pair(int_node_ptr2, move(int_analysis2)));
+  unique_ptr<DataType> int_casted_data_type3;
   unique_ptr<NodeSemanticAnalysis> int_analysis3(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(int_casted_data_type3),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(3)))));
   node_analyzes.insert(make_pair(int_node_ptr3, move(int_analysis3)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+  unique_ptr<DataType> bool_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> bool_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
@@ -2452,13 +2555,17 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new DoubleDataType()), var_index_within_func3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+  unique_ptr<DataType> bool_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> bool_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
@@ -2602,23 +2709,31 @@ TEST_F(CodeGeneratorTest, IfElseIfWithoutVarDefs) {
       new ScopeAnalysis(else_if_body_local_vars_count));
   node_analyzes.insert(
       make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
+  unique_ptr<DataType> int_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(int_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(int_node_ptr, move(int_analysis)));
+  unique_ptr<DataType> int_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> int_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(int_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   node_analyzes.insert(make_pair(int_node_ptr2, move(int_analysis2)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+  unique_ptr<DataType> bool_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> bool_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
@@ -2763,13 +2878,17 @@ TEST_F(CodeGeneratorTest, IfElseIfWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+  unique_ptr<DataType> bool_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> bool_analysis2(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type2),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
@@ -2870,13 +2989,17 @@ TEST_F(CodeGeneratorTest, IfWithoutVarDefs) {
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
       new ScopeAnalysis(if_body_local_vars_count));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
+  unique_ptr<DataType> int_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(int_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(int_node_ptr, move(int_analysis)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
@@ -2965,8 +3088,10 @@ TEST_F(CodeGeneratorTest, IfWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
@@ -3047,13 +3172,17 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
       new ScopeAnalysis(loop_body_local_vars_count));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
+  unique_ptr<DataType> int_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(int_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(int_node_ptr, move(int_analysis)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
@@ -3142,8 +3271,10 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
@@ -3228,8 +3359,10 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   unique_ptr<NodeSemanticAnalysis> break_analysis(
       new ControlFlowTransferAnalysis(flow_local_vars_count));
   node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
@@ -3341,8 +3474,10 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
@@ -3434,8 +3569,10 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   unique_ptr<NodeSemanticAnalysis> continue_analysis(
       new ControlFlowTransferAnalysis(flow_local_vars_count));
   node_analyzes.insert(make_pair(continue_node_ptr, move(continue_analysis)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
@@ -3544,8 +3681,10 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(bool_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
@@ -3786,8 +3925,10 @@ TEST_F(CodeGeneratorTest, ReturnIntValue) {
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> return_data_type(new IntDataType());
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
@@ -3811,8 +3952,10 @@ TEST_F(CodeGeneratorTest, ReturnLongValue) {
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> return_data_type(new LongDataType());
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new LongDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(7)))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
@@ -3836,8 +3979,10 @@ TEST_F(CodeGeneratorTest, ReturnDoubleValue) {
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> return_data_type(new DoubleDataType());
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new DoubleDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(7.7))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
@@ -3861,8 +4006,10 @@ TEST_F(CodeGeneratorTest, ReturnBoolValue) {
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> return_data_type(new BoolDataType());
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
@@ -3886,8 +4033,10 @@ TEST_F(CodeGeneratorTest, ReturnCharValue) {
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> return_data_type(new CharDataType());
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
@@ -3911,8 +4060,10 @@ TEST_F(CodeGeneratorTest, ReturnStringValue) {
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> return_data_type(new StringDataType());
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
       unique_ptr<DataType>(new StringDataType()),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new StringLit("ab"))));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
@@ -3958,8 +4109,11 @@ TEST_F(CodeGeneratorTest, ReturnArrayValue) {
       new ArrayDataType(unique_ptr<DataType>(new BoolDataType())));
 
   SemanticAnalysis::NodeAnalyzes value_analyzes;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
-      return_data_type->Clone(), ValueType::kRight));
+      return_data_type->Clone(),
+      move(value_casted_data_type),
+      ValueType::kRight));
   value_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
 
   Code expected_code;
@@ -4208,8 +4362,10 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalIntVar) {
   unique_ptr<ExprNode> value_node(new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(5))));
   IntDataType data_type;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       data_type.Clone(),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   Code value_code;
@@ -4232,8 +4388,10 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalLongVar) {
   unique_ptr<ExprNode> value_node(new LongNode(
       TokenInfo(Token::kLongLit, "7L", UINT32_C(5), UINT32_C(5))));
   LongDataType data_type;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       data_type.Clone(),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(7)))));
   Code value_code;
@@ -4256,8 +4414,10 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalDoubleVar) {
   unique_ptr<ExprNode> value_node(new DoubleNode(
       TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(5), UINT32_C(5))));
   DoubleDataType data_type;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       data_type.Clone(),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(7.7))));
   Code value_code;
@@ -4280,8 +4440,10 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalBoolVar) {
   unique_ptr<ExprNode> value_node(new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(5), UINT32_C(5))));
   BoolDataType data_type;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       data_type.Clone(),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   Code value_code;
@@ -4304,8 +4466,10 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalCharVar) {
   unique_ptr<ExprNode> value_node(new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(5), UINT32_C(5))));
   CharDataType data_type;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       data_type.Clone(),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   Code value_code;
@@ -4328,8 +4492,10 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalStringVar) {
   unique_ptr<ExprNode> value_node(new StringNode(
       TokenInfo(Token::kStringLit, "\"ab\"", UINT32_C(5), UINT32_C(5))));
   StringDataType data_type;
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new LitAnalysis(
       data_type.Clone(),
+      move(value_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new StringLit("ab"))));
   Code value_code;
@@ -4373,8 +4539,9 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalArrayVar) {
       TokenInfo(Token::kScopeEnd, "}", UINT32_C(8), UINT32_C(8))));
 
   ArrayDataType data_type(unique_ptr<DataType>(new IntDataType()));
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<ExprAnalysis> value_analysis(new CommonExprAnalysis(
-      data_type.Clone(), ValueType::kRight));
+      data_type.Clone(), move(value_casted_data_type), ValueType::kRight));
 
   Code value_code;
   value_code.WriteCmdId(CmdId::kCreateAndInitIntArray);

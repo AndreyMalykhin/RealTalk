@@ -9,9 +9,21 @@ namespace real_talk {
 namespace semantic {
 
 LitAnalysis::LitAnalysis(
-    unique_ptr<DataType> data_type, ValueType value_type, unique_ptr<Lit> lit)
-    : base_analysis_(move(data_type), value_type), lit_(move(lit)) {
+    unique_ptr<DataType> data_type,
+    unique_ptr<DataType> casted_data_type,
+    ValueType value_type,
+    unique_ptr<Lit> lit)
+    : base_analysis_(move(data_type), move(casted_data_type), value_type),
+      lit_(move(lit)) {
   assert(lit_);
+}
+
+const DataType *LitAnalysis::GetCastedDataType() const {
+  return base_analysis_.GetCastedDataType();
+}
+
+void LitAnalysis::SetCastedDataType(unique_ptr<DataType> data_type) {
+  base_analysis_.SetCastedDataType(move(data_type));
 }
 
 const DataType &LitAnalysis::GetDataType() const {

@@ -16,11 +16,17 @@ namespace semantic {
 
 class IdAnalysis: public ExprAnalysis {
  public:
+  /**
+   * @param casted_data_type Null if expr was not casted
+   */
   IdAnalysis(std::unique_ptr<DataType> data_type,
+             std::unique_ptr<DataType> casted_data_type,
              ValueType value_type,
              const real_talk::parser::DefNode* def,
              bool is_assignee);
   virtual const DataType &GetDataType() const override;
+  virtual const DataType *GetCastedDataType() const override;
+  virtual void SetCastedDataType(std::unique_ptr<DataType> data_type) override;
   virtual ValueType GetValueType() const override;
   const real_talk::parser::DefNode *GetDef() const;
   bool IsAssignee() const;

@@ -12,8 +12,18 @@ class DataType;
 
 class ExprAnalysis: public NodeSemanticAnalysis {
  public:
-  virtual const DataType &GetDataType() const = 0;
   virtual ValueType GetValueType() const = 0;
+  virtual const DataType &GetDataType() const = 0;
+
+  /**
+   * @return Null if expr was not casted
+   */
+  virtual const DataType *GetCastedDataType() const = 0;
+
+  /**
+   * @param data_type Null if expr was not casted
+   */
+  virtual void SetCastedDataType(std::unique_ptr<DataType> data_type) = 0;
 };
 }
 }
