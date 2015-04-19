@@ -44,6 +44,7 @@
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/arg_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
+#include "real_talk/semantic/return_analysis.h"
 #include "real_talk/semantic/def_analysis_visitor.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
@@ -144,6 +145,7 @@ using real_talk::semantic::FuncDefAnalysis;
 using real_talk::semantic::ExprAnalysis;
 using real_talk::semantic::IdAnalysis;
 using real_talk::semantic::DefAnalysis;
+using real_talk::semantic::ReturnAnalysis;
 using real_talk::semantic::DefAnalysisVisitor;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
@@ -252,7 +254,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   virtual void VisitScope(const ScopeNode &node) override;
   void VisitIf(const IfNode &node, uint32_t *branch_end_address_placeholder);
   void WriteCurrentCmdAddress(const vector<uint32_t> &address_placeholders);
-  void WriteJumpCmdStart(uint32_t local_vars_count);
+  void GenerateJumpCmdStart(uint32_t local_vars_count);
+  void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
   uint32_t GetCurrentCmdAddress() const;
   Scope *GetCurrentScope();
@@ -1123,19 +1126,11 @@ void CodeGenerator::Impl::VisitVarDefWithoutInit(
 
 void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
   node.GetValue()->Accept(*this);
-  const DefAnalysis &var_def_analysis =
-      static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
-  const DataType &var_data_type = var_def_analysis.GetDataType();
   const ExprAnalysis &value_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
-  const DataType &value_data_type = value_analysis.GetDataType();
-
-  if (var_data_type != value_data_type) {
-    CmdId cast_cmd_id =
-        cast_cmd_generator_.Generate(var_data_type, value_data_type);
-    code_->WriteCmdId(cast_cmd_id);
-  }
-
+  GenerateCastCmdIfNeeded(value_analysis);
+  const DefAnalysis &var_def_analysis =
+      static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   VarDefNodeProcessor<CreateAndInitLocalVarCmdGenerator,
                       CreateAndInitGlobalVarCmdGenerator>()
       .Process(&node, &var_def_analysis, &ids_of_global_var_defs_, code_);
@@ -1162,7 +1157,7 @@ void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
   node.GetBody()->Accept(*this);
   const ScopeAnalysis &body_analysis = static_cast<const ScopeAnalysis&>(
       GetNodeAnalysis(*(node.GetBody())));
-  WriteJumpCmdStart(body_analysis.GetLocalVarsCount());
+  GenerateJumpCmdStart(body_analysis.GetLocalVarsCount());
   code_->WriteUint32(start_address);
   WriteCurrentCmdAddress(scope.GetEndAddressPlaceholders());
 }
@@ -1170,7 +1165,7 @@ void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
 void CodeGenerator::Impl::VisitBreak(const BreakNode &node) {
   const ControlFlowTransferAnalysis &break_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
-  WriteJumpCmdStart(break_analysis.GetFlowLocalVarsCount());
+  GenerateJumpCmdStart(break_analysis.GetFlowLocalVarsCount());
   const uint32_t flow_end_address_placeholder = code_->GetPosition();
   GetCurrentScope()->GetEndAddressPlaceholders().push_back(
       flow_end_address_placeholder);
@@ -1180,7 +1175,7 @@ void CodeGenerator::Impl::VisitBreak(const BreakNode &node) {
 void CodeGenerator::Impl::VisitContinue(const ContinueNode &node) {
   const ControlFlowTransferAnalysis &continue_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
-  WriteJumpCmdStart(continue_analysis.GetFlowLocalVarsCount());
+  GenerateJumpCmdStart(continue_analysis.GetFlowLocalVarsCount());
   code_->WriteUint32(GetCurrentScope()->GetStartAddress());
 }
 
@@ -1254,7 +1249,7 @@ void CodeGenerator::Impl::VisitIf(
       code_->WriteUint32(body_analysis.GetLocalVarsCount());
     }
   } else {
-    WriteJumpCmdStart(body_analysis.GetLocalVarsCount());
+    GenerateJumpCmdStart(body_analysis.GetLocalVarsCount());
     *branch_end_address_placeholder = code_->GetPosition();
     code_->Skip(sizeof(uint32_t));
   }
@@ -1300,9 +1295,17 @@ void CodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
 
 void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   node.GetValue()->Accept(*this);
-  const ExprAnalysis &analysis =
+  const ExprAnalysis &value_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
-  ReturnValueCmdGenerator().Generate(analysis.GetDataType(), code_);
+  GenerateCastCmdIfNeeded(value_analysis);
+  const ReturnAnalysis &return_analysis =
+      static_cast<const ReturnAnalysis&>(GetNodeAnalysis(node));
+  const FuncDefAnalysis &func_def_analysis =
+      static_cast<const FuncDefAnalysis&>(
+          GetNodeAnalysis(*(return_analysis.GetFuncDef())));
+  const DataType &return_data_type =
+      func_def_analysis.GetDataType().GetReturnDataType();
+  ReturnValueCmdGenerator().Generate(return_data_type, code_);
 }
 
 void CodeGenerator::Impl::VisitReturnWithoutValue(
@@ -1315,10 +1318,13 @@ void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
   for (const std::unique_ptr<BoundedArraySizeNode> &size
            : reverse(node.GetSizes())) {
     size->GetValue()->Accept(*this);
+    const ExprAnalysis &size_analysis =
+        static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(size->GetValue())));
+    GenerateCastCmdIfNeeded(size_analysis);
   }
 
-  const CommonExprAnalysis &array_alloc_analysis =
-      static_cast<const CommonExprAnalysis&>(GetNodeAnalysis(node));
+  const ExprAnalysis &array_alloc_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   const size_t dimensions_count = node.GetSizes().size();
   assert(dimensions_count <= numeric_limits<uint8_t>::max());
   CreateArrayCmdGenerator().Generate(array_alloc_analysis.GetDataType(),
@@ -1330,10 +1336,13 @@ void CodeGenerator::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode &node) {
   for (const unique_ptr<ExprNode> &value: reverse(node.GetValues())) {
     value->Accept(*this);
+    const ExprAnalysis &value_analysis =
+        static_cast<const ExprAnalysis&>(GetNodeAnalysis(*value));
+    GenerateCastCmdIfNeeded(value_analysis);
   }
 
-  const CommonExprAnalysis &array_alloc_analysis =
-      static_cast<const CommonExprAnalysis&>(GetNodeAnalysis(node));
+  const ExprAnalysis &array_alloc_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   const size_t dimensions_count = node.GetSizes().size();
   assert(dimensions_count <= numeric_limits<uint8_t>::max());
   const size_t values_count = node.GetValues().size();
@@ -1525,7 +1534,7 @@ void CodeGenerator::Impl::WriteCurrentCmdAddress(
   code_->SetPosition(continue_address);
 }
 
-void CodeGenerator::Impl::WriteJumpCmdStart(uint32_t local_vars_count) {
+void CodeGenerator::Impl::GenerateJumpCmdStart(uint32_t local_vars_count) {
   if (local_vars_count > UINT32_C(0)) {
     code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
     code_->WriteUint32(local_vars_count);
@@ -1537,6 +1546,17 @@ void CodeGenerator::Impl::WriteJumpCmdStart(uint32_t local_vars_count) {
 CodeGenerator::Impl::Scope *CodeGenerator::Impl::GetCurrentScope() {
   assert(!scopes_stack_.empty());
   return scopes_stack_.back();
+}
+
+void CodeGenerator::Impl::GenerateCastCmdIfNeeded(
+    const ExprAnalysis &expr_analysis) {
+  if (!expr_analysis.GetCastedDataType()) {
+    return;
+  }
+
+  CmdId cmd_id = cast_cmd_generator_.Generate(
+      *(expr_analysis.GetCastedDataType()), expr_analysis.GetDataType());
+  code_->WriteCmdId(cmd_id);
 }
 }
 }

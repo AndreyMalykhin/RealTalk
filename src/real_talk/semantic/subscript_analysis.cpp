@@ -25,6 +25,10 @@ const DataType *SubscriptAnalysis::GetCastedDataType() const {
   return base_analysis_.GetCastedDataType();
 }
 
+void SubscriptAnalysis::SetCastedDataType(unique_ptr<DataType> data_type) {
+  base_analysis_.SetCastedDataType(move(data_type));
+}
+
 const DataType &SubscriptAnalysis::GetDataType() const {
   return base_analysis_.GetDataType();
 }

@@ -1019,10 +1019,11 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   IdNode *return_expr_node_ptr =
       new IdNode(TokenInfo(Token::kName, "name", UINT32_C(8), UINT32_C(8)));
   unique_ptr<ExprNode> return_expr_node(return_expr_node_ptr);
-  unique_ptr<StmtNode> return_stmt_node(new ReturnValueNode(
+  ReturnValueNode *return_stmt_node_ptr = new ReturnValueNode(
       TokenInfo(Token::kReturn, "return", UINT32_C(7), UINT32_C(7)),
       move(return_expr_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9)));
+  unique_ptr<StmtNode> return_stmt_node(return_stmt_node_ptr);
   body_stmt_nodes.push_back(move(return_stmt_node));
 
   ScopeNode *body_node_ptr = new ScopeNode(
@@ -1047,6 +1048,10 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> return_analysis(
+      new ReturnAnalysis(func_def_node_ptr));
+  node_analyzes.insert(make_pair(return_stmt_node_ptr, move(return_analysis)));
+
   uint32_t body_local_vars_count = UINT32_C(1);
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_vars_count));
@@ -1055,7 +1060,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   IntDataType *func_return_data_type_ptr = new IntDataType();
   unique_ptr<DataType> func_return_data_type(func_return_data_type_ptr);
   vector< unique_ptr<DataType> > func_arg_data_types;
-  func_arg_data_types.push_back(unique_ptr<DataType>(new IntDataType()));
+  func_arg_data_types.push_back(unique_ptr<DataType>(new CharDataType()));
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
@@ -2077,8 +2082,10 @@ TEST_F(SimpleSemanticAnalyzerTest,
   StringDataType *return_expr_data_type_ptr = new StringDataType();
   unique_ptr<DataType> return_expr_data_type(return_expr_data_type_ptr);
   bool is_id_assignee = false;
+  unique_ptr<DataType> return_expr_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(return_expr_data_type),
+      move(return_expr_casted_data_type),
       ValueType::kLeft,
       arg_def_node_ptr,
       is_id_assignee));
@@ -2333,8 +2340,8 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
       TokenInfo(Token::kName, "func", UINT32_C(8), UINT32_C(8)));
   unique_ptr<ExprNode> id_node(id_node_ptr);
   vector< unique_ptr<ExprNode> > call_arg_nodes;
-  IntNode *call_arg_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(10), UINT32_C(10)));
+  CharNode *call_arg_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(10), UINT32_C(10)));
   unique_ptr<ExprNode> call_arg_node(call_arg_node_ptr);
   call_arg_nodes.push_back(move(call_arg_node));
   CallNode *call_expr_node_ptr = new CallNode(
@@ -2351,7 +2358,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"7", INT32_C(7)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(1);
@@ -2382,23 +2389,30 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   unique_ptr<DataType> id_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
   bool is_id_assignee = false;
+  unique_ptr<DataType> id_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   unique_ptr<DataType> call_expr_data_type(new VoidDataType());
+  unique_ptr<DataType> call_expr_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> call_expr_analysis(new CommonExprAnalysis(
-      move(call_expr_data_type), ValueType::kRight));
+      move(call_expr_data_type),
+      move(call_expr_casted_data_type),
+      ValueType::kRight));
   node_analyzes.insert(make_pair(call_expr_node_ptr, move(call_expr_analysis)));
 
-  IntDataType *call_arg_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> call_arg_data_type(call_arg_data_type_ptr);
-  unique_ptr<Lit> call_arg_lit(new IntLit(INT32_C(7)));
+  unique_ptr<DataType> call_arg_data_type(new CharDataType());
+  unique_ptr<DataType> call_arg_casted_data_type(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> call_arg_lit_analysis(new LitAnalysis(
-      move(call_arg_data_type), ValueType::kRight, move(call_arg_lit)));
+      move(call_arg_data_type),
+      move(call_arg_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(
       make_pair(call_arg_node_ptr, move(call_arg_lit_analysis)));
 
@@ -2503,24 +2517,32 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
   func_arg_data_types.push_back(move(func_arg_data_type));
   unique_ptr<DataType> id_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   unique_ptr<DataType> call_expr_data_type(new VoidDataType());
+  unique_ptr<DataType> call_expr_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> call_expr_analysis(new CommonExprAnalysis(
-      move(call_expr_data_type), ValueType::kRight));
+      move(call_expr_data_type),
+      move(call_expr_casted_data_type),
+      ValueType::kRight));
   node_analyzes.insert(make_pair(call_expr_node_ptr, move(call_expr_analysis)));
 
   LongDataType *call_arg_data_type_ptr = new LongDataType();
   unique_ptr<DataType> call_arg_data_type(call_arg_data_type_ptr);
-  unique_ptr<Lit> call_arg_lit(new LongLit(INT64_C(7)));
+  unique_ptr<DataType> call_arg_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> call_arg_lit_analysis(new LitAnalysis(
-      move(call_arg_data_type), ValueType::kRight, move(call_arg_lit)));
+      move(call_arg_data_type),
+      move(call_arg_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
   node_analyzes.insert(
       make_pair(call_arg_node_ptr, move(call_arg_lit_analysis)));
 
@@ -2635,17 +2657,22 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
   func_arg_data_types.push_back(move(func_arg_data_type));
   unique_ptr<DataType> id_data_type(new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types)));
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   unique_ptr<DataType> call_expr_data_type(new VoidDataType());
+  unique_ptr<DataType> call_expr_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> call_expr_analysis(new CommonExprAnalysis(
-      move(call_expr_data_type), ValueType::kRight));
+      move(call_expr_data_type),
+      move(call_expr_casted_data_type),
+      ValueType::kRight));
   node_analyzes.insert(make_pair(call_expr_node_ptr, move(call_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -2708,9 +2735,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   unique_ptr<DataType> id_data_type(new IntDataType());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -2832,21 +2864,23 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
       new LocalVarDefAnalysis(move(var_data_type3), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
-  BoolDataType *if_cond_data_type_ptr1 = new BoolDataType();
-  unique_ptr<DataType> if_cond_data_type1(if_cond_data_type_ptr1);
+  unique_ptr<DataType> if_cond_data_type1(new BoolDataType());
+  unique_ptr<DataType> if_cond_casted_data_type1;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> if_cond_expr_analysis1(new IdAnalysis(
       move(if_cond_data_type1),
+      move(if_cond_casted_data_type1),
       ValueType::kLeft,
       var_def_node_ptr1,
       is_id_assignee));
   node_analyzes.insert(make_pair(if_cond_ptr1, move(if_cond_expr_analysis1)));
 
-  BoolDataType *if_cond_data_type_ptr2 = new BoolDataType();
-  unique_ptr<DataType> if_cond_data_type2(if_cond_data_type_ptr2);
+  unique_ptr<DataType> if_cond_data_type2(new BoolDataType());
+  unique_ptr<DataType> if_cond_casted_data_type2;
   bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> if_cond_expr_analysis2(new IdAnalysis(
       move(if_cond_data_type2),
+      move(if_cond_casted_data_type2),
       ValueType::kLeft,
       var_def_node_ptr1,
       is_id_assignee2));
@@ -2932,9 +2966,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *func_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  unique_ptr<FuncDataType> func_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
       move(func_data_type),
+      move(func_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
@@ -3065,11 +3101,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   }
 
-  BoolDataType *var_data_type_ptr = new BoolDataType();
-  unique_ptr<DataType> var_data_type(var_data_type_ptr);
+  unique_ptr<DataType> var_data_type(new BoolDataType());
+  unique_ptr<DataType> var_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis1(new IdAnalysis(
-      move(var_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
+      move(var_data_type),
+      move(var_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_expr_analysis1)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -3077,9 +3117,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *func_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  unique_ptr<FuncDataType> func_casted_data_type;
   bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis2(new IdAnalysis(
       move(func_data_type),
+      move(func_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -3237,21 +3279,23 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
       new LocalVarDefAnalysis(move(var_data_type4), var_index_within_func4));
   node_analyzes.insert(make_pair(var_def_node_ptr4, move(var_def_analysis4)));
 
-  BoolDataType *if_cond_data_type_ptr1 = new BoolDataType();
-  unique_ptr<DataType> if_cond_data_type1(if_cond_data_type_ptr1);
+  unique_ptr<DataType> if_cond_data_type1(new BoolDataType());
+  unique_ptr<DataType> if_cond_casted_data_type1;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> if_cond_expr_analysis1(new IdAnalysis(
       move(if_cond_data_type1),
+      move(if_cond_casted_data_type1),
       ValueType::kLeft,
       var_def_node_ptr1,
       is_id_assignee));
   node_analyzes.insert(make_pair(if_cond_ptr1, move(if_cond_expr_analysis1)));
 
-  BoolDataType *if_cond_data_type_ptr2 = new BoolDataType();
-  unique_ptr<DataType> if_cond_data_type2(if_cond_data_type_ptr2);
+  unique_ptr<DataType> if_cond_data_type2(new BoolDataType());
+  unique_ptr<DataType> if_cond_casted_data_type2;
   bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> if_cond_expr_analysis2(new IdAnalysis(
       move(if_cond_data_type2),
+      move(if_cond_casted_data_type2),
       ValueType::kLeft,
       var_def_node_ptr1,
       is_id_assignee2));
@@ -3344,9 +3388,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *func_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  unique_ptr<FuncDataType> func_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
       move(func_data_type),
+      move(func_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
@@ -3484,11 +3530,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   }
 
-  BoolDataType *var_data_type_ptr = new BoolDataType();
-  unique_ptr<DataType> var_data_type(var_data_type_ptr);
+  unique_ptr<DataType> var_data_type(new BoolDataType());
+  unique_ptr<DataType> var_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis1(new IdAnalysis(
-      move(var_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
+      move(var_data_type),
+      move(var_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_expr_analysis1)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -3496,9 +3546,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *func_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
+  unique_ptr<FuncDataType> func_casted_data_type;
   bool is_id_assignee2 = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis2(new IdAnalysis(
       move(func_data_type),
+      move(func_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -3732,47 +3784,52 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> file_path_expr_data_type1(new StringDataType());
-  unique_ptr<Lit> file_path_lit1(new StringLit("import.rt"));
+  unique_ptr<DataType> file_path_expr_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis1(new LitAnalysis(
       move(file_path_expr_data_type1),
+      move(file_path_expr_casted_data_type1),
       ValueType::kRight,
-      move(file_path_lit1)));
+      unique_ptr<Lit>(new StringLit("import.rt"))));
   node_analyzes.insert(
       make_pair(file_path_node_ptr1, move(file_path_lit_analysis1)));
 
   unique_ptr<DataType> file_path_expr_data_type2(new StringDataType());
-  unique_ptr<Lit> file_path_lit2(new StringLit("./import.rt"));
+  unique_ptr<DataType> file_path_expr_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis2(new LitAnalysis(
       move(file_path_expr_data_type2),
+      move(file_path_expr_casted_data_type2),
       ValueType::kRight,
-      move(file_path_lit2)));
+      unique_ptr<Lit>(new StringLit("./import.rt"))));
   node_analyzes.insert(
       make_pair(file_path_node_ptr2, move(file_path_lit_analysis2)));
 
   unique_ptr<DataType> file_path_expr_data_type3(new StringDataType());
-  unique_ptr<Lit> file_path_lit3(new StringLit("main.rt"));
+  unique_ptr<DataType> file_path_expr_casted_data_type3;
   unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis3(new LitAnalysis(
       move(file_path_expr_data_type3),
+      move(file_path_expr_casted_data_type3),
       ValueType::kRight,
-      move(file_path_lit3)));
+      unique_ptr<Lit>(new StringLit("main.rt"))));
   node_analyzes.insert(
       make_pair(file_path_node_ptr3, move(file_path_lit_analysis3)));
 
   unique_ptr<DataType> file_path_expr_data_type4(new StringDataType());
-  unique_ptr<Lit> file_path_lit4(new StringLit("import2.rt"));
+  unique_ptr<DataType> file_path_expr_casted_data_type4;
   unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis4(new LitAnalysis(
       move(file_path_expr_data_type4),
+      move(file_path_expr_casted_data_type4),
       ValueType::kRight,
-      move(file_path_lit4)));
+      unique_ptr<Lit>(new StringLit("import2.rt"))));
   node_analyzes.insert(
       make_pair(file_path_node_ptr4, move(file_path_lit_analysis4)));
 
   unique_ptr<DataType> file_path_expr_data_type5(new StringDataType());
-  unique_ptr<Lit> file_path_lit5(new StringLit("import.rt"));
+  unique_ptr<DataType> file_path_expr_casted_data_type5;
   unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis5(new LitAnalysis(
       move(file_path_expr_data_type5),
+      move(file_path_expr_casted_data_type5),
       ValueType::kRight,
-      move(file_path_lit5)));
+      unique_ptr<Lit>(new StringLit("import.rt"))));
   node_analyzes.insert(
       make_pair(file_path_node_ptr5, move(file_path_lit_analysis5)));
 
@@ -4357,11 +4414,15 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
       move(var_def_data_type2), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
 
-  BoolDataType *id_data_type_ptr = new BoolDataType();
-  unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  unique_ptr<DataType> id_data_type(new BoolDataType());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr1, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr1,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -4440,9 +4501,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   FuncDataType *id_data_type_ptr = new FuncDataType(
       move(func_return_data_type), move(func_arg_data_types));
   unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
@@ -4554,9 +4617,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> id_data_type(new BoolDataType());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr1, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr1,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -4688,9 +4756,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> id_data_type(new BoolDataType());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr1, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr1,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -4753,8 +4826,8 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithId) {
   IdNode *id_node_ptr = new IdNode(
       TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)));
   unique_ptr<ExprNode> id_node(id_node_ptr);
-  IntNode *lit_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(5)));
+  CharNode *lit_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(5), UINT32_C(5)));
   unique_ptr<ExprNode> lit_node(lit_node_ptr);
   AssignNode *assign_node_ptr = new AssignNode(
       TokenInfo(Token::kAssignOp, "=", UINT32_C(4), UINT32_C(4)),
@@ -4768,7 +4841,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithId) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"7", INT32_C(7)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> var_def_data_type(new IntDataType());
@@ -4776,22 +4849,31 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithId) {
       move(var_def_data_type)));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
+  unique_ptr<DataType> assign_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> assign_expr_analysis(new CommonExprAnalysis(
-      unique_ptr<DataType>(new VoidDataType()), ValueType::kRight));
+      unique_ptr<DataType>(new VoidDataType()),
+      move(assign_casted_data_type),
+      ValueType::kRight));
   node_analyzes.insert(make_pair(assign_node_ptr, move(assign_expr_analysis)));
 
-  IntDataType *id_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  unique_ptr<DataType> id_data_type(new IntDataType());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = true;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  IntDataType *lit_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> lit_data_type(lit_data_type_ptr);
-  unique_ptr<Lit> lit(new IntLit(INT32_C(7)));
+  unique_ptr<DataType> lit_data_type(new CharDataType());
+  unique_ptr<DataType> lit_casted_data_type(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
-      move(lit_data_type), ValueType::kRight, move(lit)));
+      move(lit_data_type),
+      move(lit_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -4845,8 +4927,8 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithSubscript) {
       move(id_node),
       move(id_node2));
   unique_ptr<ExprNode> subscript_node(subscript_node_ptr);
-  IntNode *lit_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(13), UINT32_C(13)));
+  CharNode *lit_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(13), UINT32_C(13)));
   unique_ptr<ExprNode> lit_node(lit_node_ptr);
   AssignNode *assign_node_ptr = new AssignNode(
       TokenInfo(Token::kAssignOp, "=", UINT32_C(12), UINT32_C(12)),
@@ -4868,38 +4950,49 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithSubscript) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new GlobalVarDefAnalysis(
       unique_ptr<DataType>(new IntDataType())));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  unique_ptr<DataType> assign_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> assign_expr_analysis(new CommonExprAnalysis(
-      unique_ptr<DataType>(new VoidDataType()), ValueType::kRight));
+      unique_ptr<DataType>(new VoidDataType()),
+      move(assign_casted_data_type),
+      ValueType::kRight));
   node_analyzes.insert(make_pair(assign_node_ptr, move(assign_expr_analysis)));
   bool is_id_assignee = false;
+  unique_ptr<DataType> id_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       array_data_type->Clone(),
+      move(id_casted_data_type),
       ValueType::kLeft,
       var_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> id_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(id_casted_data_type2),
       ValueType::kLeft,
       var_def_node_ptr2,
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
   bool is_subscript_assignee = true;
+  unique_ptr<DataType> subscript_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> subscript_analysis(new SubscriptAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(subscript_casted_data_type),
       ValueType::kLeft,
       is_subscript_assignee));
   node_analyzes.insert(make_pair(subscript_node_ptr, move(subscript_analysis)));
-  IntDataType *lit_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> lit_data_type(lit_data_type_ptr);
-  unique_ptr<Lit> lit(new IntLit(INT32_C(7)));
+  unique_ptr<DataType> lit_data_type(new CharDataType());
+  unique_ptr<DataType> lit_casted_data_type(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
-      move(lit_data_type), ValueType::kRight, move(lit)));
+      move(lit_data_type),
+      move(lit_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"7", INT32_C(7)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::Problems problems;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
@@ -4955,9 +5048,11 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithUnsupportedDataTypesIsInvalid) {
 
   IntDataType *id_data_type_ptr = new IntDataType();
   unique_ptr<DataType> id_data_type(id_data_type_ptr);
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = true;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kLeft,
       var_def_node_ptr,
       is_id_assignee));
@@ -4965,9 +5060,12 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithUnsupportedDataTypesIsInvalid) {
 
   StringDataType *lit_data_type_ptr = new StringDataType();
   unique_ptr<DataType> lit_data_type(lit_data_type_ptr);
-  unique_ptr<Lit> lit(new StringLit("7"));
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
-      move(lit_data_type), ValueType::kRight, move(lit)));
+      move(lit_data_type),
+      move(lit_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("7"))));
   node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -5016,11 +5114,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
   test_lit_parses.strings = {{"\"1\"", "1"}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  StringDataType *lit_data_type_ptr1 = new StringDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new StringLit("1"));
+  unique_ptr<DataType> lit_data_type1(new StringDataType());
+  unique_ptr<DataType> lit_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("1"))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
   SemanticAnalysis::Problems problems;
@@ -5047,8 +5147,8 @@ TEST_F(SimpleSemanticAnalyzerTest, Less) {
   IntNode *lit_node_ptr1 = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> lit_node1(lit_node_ptr1);
-  IntNode *lit_node_ptr2 = new IntNode(
-      TokenInfo(Token::kIntLit, "2", UINT32_C(2), UINT32_C(2)));
+  CharNode *lit_node_ptr2 = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(2), UINT32_C(2)));
   unique_ptr<ExprNode> lit_node2(lit_node_ptr2);
   LessNode *less_node_ptr = new LessNode(
       TokenInfo(Token::kLessOp, "<", UINT32_C(1), UINT32_C(1)),
@@ -5062,27 +5162,32 @@ TEST_F(SimpleSemanticAnalyzerTest, Less) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)},
-                          {"2", INT32_C(2)}};
+  test_lit_parses.ints = {{"1", INT32_C(1)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  IntDataType *lit_data_type_ptr2 = new IntDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new IntLit(INT32_C(2)));
+  unique_ptr<DataType> lit_data_type2(new CharDataType());
+  unique_ptr<DataType> lit_casted_data_type2(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> less_data_type(new BoolDataType());
+  unique_ptr<DataType> less_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> less_expr_analysis(new CommonExprAnalysis(
-      move(less_data_type), ValueType::kRight));
+      move(less_data_type), move(less_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(less_node_ptr, move(less_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -5169,16 +5274,20 @@ TEST_F(SimpleSemanticAnalyzerTest, LessWithUnsupportedDataTypesIsInvalid) {
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
     bool is_id_assignee = false;
+    unique_ptr<DataType> id_casted_data_type1;
     unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
         test_data.var_data_type->Clone(),
+        move(id_casted_data_type1),
         ValueType::kLeft,
         var_def_node_ptr,
         is_id_assignee));
     node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
     bool is_id_assignee2 = false;
+    unique_ptr<DataType> id_casted_data_type2;
     unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
         test_data.var_data_type->Clone(),
+        move(id_casted_data_type2),
         ValueType::kLeft,
         var_def_node_ptr,
         is_id_assignee2));
@@ -5232,23 +5341,28 @@ TEST_F(SimpleSemanticAnalyzerTest, And) {
                            {"true", true}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  BoolDataType *lit_data_type_ptr1 = new BoolDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new BoolLit(true));
+  unique_ptr<DataType> lit_data_type1(new BoolDataType());
+  unique_ptr<DataType> lit_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  BoolDataType *lit_data_type_ptr2 = new BoolDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new BoolLit(true));
+  unique_ptr<DataType> lit_data_type2(new BoolDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> and_data_type(new BoolDataType());
+  unique_ptr<DataType> and_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> and_expr_analysis(new CommonExprAnalysis(
-      move(and_data_type), ValueType::kRight));
+      move(and_data_type), move(and_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(and_node_ptr, move(and_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -5321,16 +5435,20 @@ TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -5383,23 +5501,28 @@ TEST_F(SimpleSemanticAnalyzerTest, Or) {
                            {"true", true}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  BoolDataType *lit_data_type_ptr1 = new BoolDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new BoolLit(true));
+  unique_ptr<DataType> lit_data_type1(new BoolDataType());
+  unique_ptr<DataType> lit_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  BoolDataType *lit_data_type_ptr2 = new BoolDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new BoolLit(true));
+  unique_ptr<DataType> lit_data_type2(new BoolDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> or_data_type(new BoolDataType());
+  unique_ptr<DataType> or_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> or_expr_analysis(new CommonExprAnalysis(
-      move(or_data_type), ValueType::kRight));
+      move(or_data_type), move(or_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(or_node_ptr, move(or_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -5472,16 +5595,20 @@ TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -5534,23 +5661,28 @@ TEST_F(SimpleSemanticAnalyzerTest, Mul) {
   test_lit_parses.doubles = {{"2.2", 2.2}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new DoubleDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  DoubleDataType *lit_data_type_ptr2 = new DoubleDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new DoubleLit(2.2));
+  unique_ptr<DataType> lit_data_type2(new DoubleDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(2.2))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> mul_data_type(new DoubleDataType());
+  unique_ptr<DataType> mul_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> mul_expr_analysis(new CommonExprAnalysis(
-      move(mul_data_type), ValueType::kRight));
+      move(mul_data_type), move(mul_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(mul_node_ptr, move(mul_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -5623,16 +5755,20 @@ TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -5685,23 +5821,28 @@ TEST_F(SimpleSemanticAnalyzerTest, Div) {
   test_lit_parses.doubles = {{"2.2", 2.2}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new DoubleDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  DoubleDataType *lit_data_type_ptr2 = new DoubleDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new DoubleLit(2.2));
+  unique_ptr<DataType> lit_data_type2(new DoubleDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(2.2))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> div_data_type(new DoubleDataType());
+  unique_ptr<DataType> div_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> div_expr_analysis(new CommonExprAnalysis(
-      move(div_data_type), ValueType::kRight));
+      move(div_data_type), move(div_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(div_node_ptr, move(div_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -5774,16 +5915,20 @@ TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -5836,23 +5981,28 @@ TEST_F(SimpleSemanticAnalyzerTest, Sum) {
   test_lit_parses.doubles = {{"2.2", 2.2}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new DoubleDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  DoubleDataType *lit_data_type_ptr2 = new DoubleDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new DoubleLit(2.2));
+  unique_ptr<DataType> lit_data_type2(new DoubleDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(2.2))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> sum_data_type(new DoubleDataType());
+  unique_ptr<DataType> sum_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> sum_expr_analysis(new CommonExprAnalysis(
-      move(sum_data_type), ValueType::kRight));
+      move(sum_data_type), move(sum_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(sum_node_ptr, move(sum_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -5925,16 +6075,20 @@ TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -5987,23 +6141,28 @@ TEST_F(SimpleSemanticAnalyzerTest, Sub) {
   test_lit_parses.doubles = {{"2.2", 2.2}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new DoubleDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  DoubleDataType *lit_data_type_ptr2 = new DoubleDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new DoubleLit(2.2));
+  unique_ptr<DataType> lit_data_type2(new DoubleDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(2.2))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> sub_data_type(new DoubleDataType());
+  unique_ptr<DataType> sub_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> sub_expr_analysis(new CommonExprAnalysis(
-      move(sub_data_type), ValueType::kRight));
+      move(sub_data_type), move(sub_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(sub_node_ptr, move(sub_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -6076,16 +6235,20 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -6116,8 +6279,8 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
 
 TEST_F(SimpleSemanticAnalyzerTest, Equal) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr1 = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
+  CharNode *lit_node_ptr1 = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> lit_node1(lit_node_ptr1);
   IntNode *lit_node_ptr2 = new IntNode(
       TokenInfo(Token::kIntLit, "2", UINT32_C(2), UINT32_C(2)));
@@ -6134,27 +6297,32 @@ TEST_F(SimpleSemanticAnalyzerTest, Equal) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)},
-                          {"2", INT32_C(2)}};
+  test_lit_parses.ints = {{"2", INT32_C(2)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new CharDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  IntDataType *lit_data_type_ptr2 = new IntDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new IntLit(INT32_C(2)));
+  unique_ptr<DataType> lit_data_type2(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> equal_data_type(new BoolDataType());
+  unique_ptr<DataType> equal_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> equal_expr_analysis(new CommonExprAnalysis(
-      move(equal_data_type), ValueType::kRight));
+      move(equal_data_type), move(equal_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(equal_node_ptr, move(equal_expr_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -6227,16 +6395,20 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -6267,8 +6439,8 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
 
 TEST_F(SimpleSemanticAnalyzerTest, LessOrEqual) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr1 = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
+  CharNode *lit_node_ptr1 = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> lit_node1(lit_node_ptr1);
   IntNode *lit_node_ptr2 = new IntNode(
       TokenInfo(Token::kIntLit, "2", UINT32_C(2), UINT32_C(2)));
@@ -6285,27 +6457,34 @@ TEST_F(SimpleSemanticAnalyzerTest, LessOrEqual) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)},
-                          {"2", INT32_C(2)}};
+  test_lit_parses.ints = {{"2", INT32_C(2)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new CharDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  IntDataType *lit_data_type_ptr2 = new IntDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new IntLit(INT32_C(2)));
+  unique_ptr<DataType> lit_data_type2(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> less_or_equal_data_type(new BoolDataType());
+  unique_ptr<DataType> less_or_equal_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> less_or_equal_expr_analysis(
-      new CommonExprAnalysis(move(less_or_equal_data_type), ValueType::kRight));
+      new CommonExprAnalysis(move(less_or_equal_data_type),
+                             move(less_or_equal_casted_data_type),
+                             ValueType::kRight));
   node_analyzes.insert(
       make_pair(less_or_equal_node_ptr, move(less_or_equal_expr_analysis)));
 
@@ -6380,16 +6559,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -6420,8 +6603,8 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
 TEST_F(SimpleSemanticAnalyzerTest, GreaterOrEqual) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr1 = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
+  CharNode *lit_node_ptr1 = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> lit_node1(lit_node_ptr1);
   IntNode *lit_node_ptr2 = new IntNode(
       TokenInfo(Token::kIntLit, "2", UINT32_C(2), UINT32_C(2)));
@@ -6438,27 +6621,33 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterOrEqual) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)},
-                          {"2", INT32_C(2)}};
+  test_lit_parses.ints = {{"2", INT32_C(2)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new CharDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  IntDataType *lit_data_type_ptr2 = new IntDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new IntLit(INT32_C(2)));
+  unique_ptr<DataType> lit_data_type2(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> greater_or_equal_data_type(new BoolDataType());
+  unique_ptr<DataType> greater_or_equal_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> greater_or_equal_expr_analysis(
       new CommonExprAnalysis(move(greater_or_equal_data_type),
+                             move(greater_or_equal_casted_data_type),
                              ValueType::kRight));
   node_analyzes.insert(make_pair(
       greater_or_equal_node_ptr, move(greater_or_equal_expr_analysis)));
@@ -6534,16 +6723,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -6574,8 +6767,8 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
 TEST_F(SimpleSemanticAnalyzerTest, NotEqual) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr1 = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
+  CharNode *lit_node_ptr1 = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> lit_node1(lit_node_ptr1);
   IntNode *lit_node_ptr2 = new IntNode(
       TokenInfo(Token::kIntLit, "2", UINT32_C(2), UINT32_C(2)));
@@ -6592,27 +6785,34 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqual) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)},
-                          {"2", INT32_C(2)}};
+  test_lit_parses.ints = {{"2", INT32_C(2)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new CharDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  IntDataType *lit_data_type_ptr2 = new IntDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new IntLit(INT32_C(2)));
+  unique_ptr<DataType> lit_data_type2(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> not_equal_data_type(new BoolDataType());
+  unique_ptr<DataType> not_equal_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> not_equal_expr_analysis(
-      new CommonExprAnalysis(move(not_equal_data_type), ValueType::kRight));
+      new CommonExprAnalysis(move(not_equal_data_type),
+                             move(not_equal_casted_data_type),
+                             ValueType::kRight));
   node_analyzes.insert(
       make_pair(not_equal_node_ptr, move(not_equal_expr_analysis)));
 
@@ -6686,16 +6886,20 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -6726,8 +6930,8 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
 
 TEST_F(SimpleSemanticAnalyzerTest, Greater) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  IntNode *lit_node_ptr1 = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
+  CharNode *lit_node_ptr1 = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> lit_node1(lit_node_ptr1);
   IntNode *lit_node_ptr2 = new IntNode(
       TokenInfo(Token::kIntLit, "2", UINT32_C(2), UINT32_C(2)));
@@ -6744,27 +6948,34 @@ TEST_F(SimpleSemanticAnalyzerTest, Greater) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)},
-                          {"2", INT32_C(2)}};
+  test_lit_parses.ints = {{"2", INT32_C(2)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  IntDataType *lit_data_type_ptr1 = new IntDataType();
-  unique_ptr<DataType> lit_data_type1(lit_data_type_ptr1);
-  unique_ptr<Lit> lit1(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> lit_data_type1(new CharDataType());
+  unique_ptr<DataType> lit_casted_data_type1(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> lit_analysis1(new LitAnalysis(
-      move(lit_data_type1), ValueType::kRight, move(lit1)));
+      move(lit_data_type1),
+      move(lit_casted_data_type1),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  IntDataType *lit_data_type_ptr2 = new IntDataType();
-  unique_ptr<DataType> lit_data_type2(lit_data_type_ptr2);
-  unique_ptr<Lit> lit2(new IntLit(INT32_C(2)));
+  unique_ptr<DataType> lit_data_type2(new IntDataType());
+  unique_ptr<DataType> lit_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> lit_analysis2(new LitAnalysis(
-      move(lit_data_type2), ValueType::kRight, move(lit2)));
+      move(lit_data_type2),
+      move(lit_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(2)))));
   node_analyzes.insert(make_pair(lit_node_ptr2, move(lit_analysis2)));
 
   unique_ptr<DataType> greater_data_type(new BoolDataType());
+  unique_ptr<DataType> greater_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> greater_expr_analysis(
-      new CommonExprAnalysis(move(greater_data_type), ValueType::kRight));
+      new CommonExprAnalysis(move(greater_data_type),
+                             move(greater_casted_data_type),
+                             ValueType::kRight));
   node_analyzes.insert(
       make_pair(greater_node_ptr, move(greater_expr_analysis)));
 
@@ -6838,16 +7049,20 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
+  unique_ptr<DataType> func_casted_data_type1;
   unique_ptr<NodeSemanticAnalysis> id_analysis1(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type1),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr1, move(id_analysis1)));
 
   bool is_id_assignee2 = false;
+  unique_ptr<DataType> func_casted_data_type2;
   unique_ptr<NodeSemanticAnalysis> id_analysis2(new IdAnalysis(
       func_data_type.Clone(),
+      move(func_casted_data_type2),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee2));
@@ -6881,8 +7096,8 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithoutInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
   vector< unique_ptr<BoundedArraySizeNode> > size_nodes;
-  IntNode *size_value_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(3), UINT32_C(3)));
+  CharNode *size_value_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(3), UINT32_C(3)));
   unique_ptr<ExprNode> size_value_node(size_value_node_ptr);
   unique_ptr<BoundedArraySizeNode> size_node(new BoundedArraySizeNode(
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
@@ -6901,21 +7116,24 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithoutInit) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> element_data_type(new IntDataType());
   unique_ptr<DataType> alloc_data_type(
       new ArrayDataType(move(element_data_type)));
+  unique_ptr<DataType> alloc_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> alloc_expr_analysis(new CommonExprAnalysis(
-      move(alloc_data_type), ValueType::kRight));
+      move(alloc_data_type), move(alloc_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(alloc_node_ptr, move(alloc_expr_analysis)));
 
-  IntDataType *size_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> size_data_type(size_data_type_ptr);
-  unique_ptr<Lit> size_lit(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> size_data_type(new CharDataType());
+  unique_ptr<DataType> size_casted_data_type(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> size_lit_analysis(new LitAnalysis(
-      move(size_data_type), ValueType::kRight, move(size_lit)));
+      move(size_data_type),
+      move(size_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7015,9 +7233,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   StringDataType *size_data_type_ptr = new StringDataType();
   unique_ptr<DataType> size_data_type(size_data_type_ptr);
-  unique_ptr<Lit> size_lit(new StringLit("1"));
+  unique_ptr<DataType> size_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> size_lit_analysis(new LitAnalysis(
-      move(size_data_type), ValueType::kRight, move(size_lit)));
+      move(size_data_type),
+      move(size_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("1"))));
   node_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7099,8 +7320,8 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
   size_nodes.push_back(move(size_node));
   vector< unique_ptr<ExprNode> > value_nodes;
-  IntNode *value_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "2", UINT32_C(6), UINT32_C(6)));
+  CharNode *value_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(6), UINT32_C(6)));
   unique_ptr<ExprNode> value_node(value_node_ptr);
   value_nodes.push_back(move(value_node));
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
@@ -7121,22 +7342,25 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"2", INT32_C(2)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   IntDataType *element_data_type_ptr = new IntDataType();
   unique_ptr<DataType> element_data_type(element_data_type_ptr);
   unique_ptr<DataType> alloc_data_type(
       new ArrayDataType(move(element_data_type)));
+  unique_ptr<DataType> alloc_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> alloc_expr_analysis(new CommonExprAnalysis(
-      move(alloc_data_type), ValueType::kRight));
+      move(alloc_data_type), move(alloc_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(alloc_node_ptr, move(alloc_expr_analysis)));
 
-  IntDataType *value_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> value_data_type(value_data_type_ptr);
-  unique_ptr<Lit> value_lit(new IntLit(INT32_C(2)));
+  unique_ptr<DataType> value_data_type(new CharDataType());
+  unique_ptr<DataType> value_casted_data_type(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> value_lit_analysis(new LitAnalysis(
-      move(value_data_type), ValueType::kRight, move(value_lit)));
+      move(value_data_type),
+      move(value_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(value_node_ptr, move(value_lit_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7294,9 +7518,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   StringDataType *value_data_type_ptr = new StringDataType();
   unique_ptr<DataType> value_data_type(value_data_type_ptr);
-  unique_ptr<Lit> value_lit(new StringLit("2"));
+  unique_ptr<DataType> value_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> value_lit_analysis(new LitAnalysis(
-      move(value_data_type), ValueType::kRight, move(value_lit)));
+      move(value_data_type),
+      move(value_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("2"))));
   node_analyzes.insert(make_pair(value_node_ptr, move(value_lit_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7342,8 +7569,8 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
   IdNode *id_node_ptr = new IdNode(
       TokenInfo(Token::kName, "var", UINT32_C(5), UINT32_C(5)));
   unique_ptr<ExprNode> id_node(id_node_ptr);
-  IntNode *index_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(7), UINT32_C(7)));
+  CharNode *index_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(7), UINT32_C(7)));
   unique_ptr<ExprNode> index_node(index_node_ptr);
   SubscriptNode *subscript_node_ptr = new SubscriptNode(
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
@@ -7358,7 +7585,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.ints = {{"1", INT32_C(1)}};
+  test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> element_data_type(new LongDataType());
@@ -7370,22 +7597,31 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
 
   unique_ptr<DataType> id_data_type(
       new ArrayDataType(unique_ptr<DataType>(new LongDataType())));
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  IntDataType *index_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> index_data_type(index_data_type_ptr);
-  unique_ptr<Lit> index_lit(new IntLit(INT32_C(1)));
+  unique_ptr<DataType> index_data_type(new CharDataType());
+  unique_ptr<DataType> index_casted_data_type(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> index_lit_analysis(new LitAnalysis(
-      move(index_data_type), ValueType::kRight, move(index_lit)));
+      move(index_data_type),
+      move(index_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(index_node_ptr, move(index_lit_analysis)));
 
   unique_ptr<DataType> subscript_data_type(new LongDataType());
+  unique_ptr<DataType> subscript_casted_data_type;
   bool is_subscript_assignee = false;
   unique_ptr<NodeSemanticAnalysis> subscript_expr_analysis(
       new SubscriptAnalysis(move(subscript_data_type),
+                            move(subscript_casted_data_type),
                             ValueType::kLeft,
                             is_subscript_assignee));
   node_analyzes.insert(
@@ -7443,9 +7679,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   unique_ptr<DataType> id_data_type(new LongDataType());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7508,9 +7749,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   StringDataType *index_data_type_ptr = new StringDataType();
   unique_ptr<DataType> index_data_type(index_data_type_ptr);
-  unique_ptr<Lit> index_lit(new StringLit("1"));
+  unique_ptr<DataType> index_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> index_lit_analysis(new LitAnalysis(
-      move(index_data_type), ValueType::kRight, move(index_lit)));
+      move(index_data_type),
+      move(index_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("1"))));
   node_analyzes.insert(make_pair(index_node_ptr, move(index_lit_analysis)));
 
   unique_ptr<DataType> var_data_type(
@@ -7521,9 +7765,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   unique_ptr<DataType> id_data_type(
       new ArrayDataType(unique_ptr<DataType>(new LongDataType())));
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7575,9 +7824,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Id) {
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   unique_ptr<DataType> id_data_type(new LongDataType());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      move(id_data_type), ValueType::kLeft, var_def_node_ptr, is_id_assignee));
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr,
+      is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7648,14 +7902,18 @@ TEST_F(SimpleSemanticAnalyzerTest, Not) {
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> not_data_type(new BoolDataType());
+  unique_ptr<DataType> not_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> not_expr_analysis(new CommonExprAnalysis(
-      move(not_data_type), ValueType::kRight));
+      move(not_data_type), move(not_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(not_node_ptr, move(not_expr_analysis)));
 
   unique_ptr<DataType> lit_data_type(new BoolDataType());
-  unique_ptr<Lit> lit(new BoolLit(false));
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
-      move(lit_data_type), ValueType::kRight, move(lit)));
+      move(lit_data_type),
+      move(lit_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -7724,9 +7982,11 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
@@ -7780,15 +8040,19 @@ TEST_F(SimpleSemanticAnalyzerTest, Negative) {
       unique_ptr<DataType>(new IntDataType())));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   bool is_id_assignee = false;
+  unique_ptr<DataType> id_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(id_casted_data_type),
       ValueType::kLeft,
       var_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+  unique_ptr<DataType> negative_expr_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> negative_expr_analysis(
-      new CommonExprAnalysis(
-          unique_ptr<DataType>(new IntDataType()), ValueType::kRight));
+      new CommonExprAnalysis(unique_ptr<DataType>(new IntDataType()),
+                             move(negative_expr_casted_data_type),
+                             ValueType::kRight));
   node_analyzes.insert(
       make_pair(negative_node_ptr, move(negative_expr_analysis)));
 
@@ -7859,9 +8123,11 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
@@ -7915,15 +8181,19 @@ TEST_F(SimpleSemanticAnalyzerTest, PreInc) {
       unique_ptr<DataType>(new IntDataType())));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   bool is_id_assignee = false;
+  unique_ptr<DataType> id_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(id_casted_data_type),
       ValueType::kLeft,
       var_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+  unique_ptr<DataType> pre_inc_expr_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> pre_inc_expr_analysis(
-      new CommonExprAnalysis(
-          unique_ptr<DataType>(new IntDataType()), ValueType::kRight));
+      new CommonExprAnalysis(unique_ptr<DataType>(new IntDataType()),
+                             move(pre_inc_expr_casted_data_type),
+                             ValueType::kRight));
   node_analyzes.insert(
       make_pair(pre_inc_node_ptr, move(pre_inc_expr_analysis)));
 
@@ -7994,9 +8264,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
@@ -8050,15 +8322,19 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDec) {
       unique_ptr<DataType>(new IntDataType())));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   bool is_id_assignee = false;
+  unique_ptr<DataType> id_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(id_casted_data_type),
       ValueType::kLeft,
       var_def_node_ptr,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+  unique_ptr<DataType> pre_dec_expr_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> pre_dec_expr_analysis(
-      new CommonExprAnalysis(
-          unique_ptr<DataType>(new IntDataType()), ValueType::kRight));
+      new CommonExprAnalysis(unique_ptr<DataType>(new IntDataType()),
+                             move(pre_dec_expr_casted_data_type),
+                             ValueType::kRight));
   node_analyzes.insert(
       make_pair(pre_dec_node_ptr, move(pre_dec_expr_analysis)));
 
@@ -8129,9 +8405,11 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
+  unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
       move(id_data_type),
+      move(id_casted_data_type),
       ValueType::kRight,
       func_def_node_ptr,
       is_id_assignee));
@@ -8172,8 +8450,10 @@ TEST_F(SimpleSemanticAnalyzerTest, String) {
   test_lit_parses.strings = {{"\"swag\"", "swag"}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> string_lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> string_lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new StringDataType()),
+      move(string_lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new StringLit("swag"))));
   node_analyzes.insert(make_pair(string_node_ptr, move(string_lit_analysis)));
@@ -8306,8 +8586,10 @@ TEST_F(SimpleSemanticAnalyzerTest, Char) {
   test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new CharDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(char_node_ptr, move(lit_analysis)));
@@ -8489,8 +8771,10 @@ TEST_F(SimpleSemanticAnalyzerTest, Int) {
   test_lit_parses.ints = {{"7", INT32_C(7)}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new IntDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   node_analyzes.insert(make_pair(int_node_ptr, move(lit_analysis)));
@@ -8574,8 +8858,10 @@ TEST_F(SimpleSemanticAnalyzerTest, Long) {
   test_lit_parses.longs = {{"7L", INT64_C(7)}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new LongDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(7)))));
   node_analyzes.insert(make_pair(long_node_ptr, move(lit_analysis)));
@@ -8659,8 +8945,10 @@ TEST_F(SimpleSemanticAnalyzerTest, Double) {
   test_lit_parses.doubles = {{"7.7", 7.7}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new DoubleDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(7.7))));
   node_analyzes.insert(make_pair(double_node_ptr, move(lit_analysis)));
@@ -8745,8 +9033,10 @@ TEST_F(SimpleSemanticAnalyzerTest, Bool) {
   test_lit_parses.bools = {{"false", false}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> lit_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> lit_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
+      move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(lit_analysis)));

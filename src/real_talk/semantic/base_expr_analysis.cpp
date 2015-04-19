@@ -34,15 +34,31 @@ ValueType BaseExprAnalysis::GetValueType() const {
   return value_type_;
 }
 
-bool operator==(const BaseExprAnalysis &lhs,
-                const BaseExprAnalysis &rhs) {
-  return *(lhs.data_type_) == *(rhs.data_type_)
-      && lhs.value_type_ == rhs.value_type_;
+bool operator==(const BaseExprAnalysis &lhs, const BaseExprAnalysis &rhs) {
+  if (*(lhs.data_type_) != *(rhs.data_type_)
+      || lhs.value_type_ != rhs.value_type_) {
+    return false;
+  } else if (lhs.casted_data_type_
+             && rhs.casted_data_type_
+             && *(lhs.casted_data_type_) != *(rhs.casted_data_type_)) {
+    return false;
+  } else if ((!lhs.casted_data_type_ && rhs.casted_data_type_)
+             || (lhs.casted_data_type_ && !rhs.casted_data_type_)) {
+    return false;
+  }
+
+  return true;
 }
 
 ostream &operator<<(ostream &stream, const BaseExprAnalysis &analysis) {
-  return stream << "data_type=" << *(analysis.data_type_) << "; value_type="
-                << analysis.value_type_;
+  stream << "data_type=" << *(analysis.data_type_) << "; value_type="
+         << analysis.value_type_ << "; casted_data_type=";
+
+  if (analysis.casted_data_type_) {
+    stream << *(analysis.casted_data_type_);
+  }
+
+  return stream;
 }
 }
 }

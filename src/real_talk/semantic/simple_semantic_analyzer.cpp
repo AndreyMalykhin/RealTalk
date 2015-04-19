@@ -221,9 +221,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
   class IsVoidDataType;
   class IsDataTypeSupportedByFuncDef;
   class IsDataTypeSupportedByVarDef;
-  class IsDataTypeSupportedBySubscriptIndex;
   class IsDataTypeSupportedByArrayAllocElement;
-  class IsDataTypeSupportedByArrayAllocSize;
   class IsDataTypeSupportedByAssign;
   class IsDataTypeSupportedByLogicalExpr;
   class IsDataTypeSupportedByArithmeticExpr;
@@ -563,16 +561,7 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByAssign
 class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByLogicalExpr
     : public DataTypeQuery {
  private:
-  virtual void VisitArray(const ArrayDataType &data_type) override {
-    result_ = !IsVoidDataType().Check(data_type);
-  }
-
   virtual void VisitBool(const BoolDataType&) override {result_ = true;}
-  virtual void VisitInt(const IntDataType&) override {result_ = true;}
-  virtual void VisitLong(const LongDataType&) override {result_ = true;}
-  virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
-  virtual void VisitChar(const CharDataType&) override {result_ = true;}
-  virtual void VisitString(const StringDataType&) override {result_ = true;}
 };
 
 class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByGreater
@@ -647,13 +636,6 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByVarDef
   virtual void VisitString(const StringDataType&) override {result_ = true;}
 };
 
-class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByArrayAllocSize
-    : public DataTypeQuery {
- private:
-  virtual void VisitInt(const IntDataType&) override {result_ = true;}
-  virtual void VisitLong(const LongDataType&) override {result_ = true;}
-};
-
 class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByArrayAllocElement
     : public DataTypeQuery {
  private:
@@ -663,12 +645,6 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByArrayAllocElement
   virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
   virtual void VisitChar(const CharDataType&) override {result_ = true;}
   virtual void VisitString(const StringDataType&) override {result_ = true;}
-};
-
-class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedBySubscriptIndex
-    : public DataTypeQuery {
- private:
-  virtual void VisitInt(const IntDataType&) override {result_ = true;}
 };
 
 class SimpleSemanticAnalyzer::Impl::DataTypeDeductor
@@ -1293,21 +1269,30 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
       VisitArrayAlloc(alloc_node, alloc_node.GetSizes().size());
   unique_ptr<DataType> &array_data_type = element_data_type;
   assert(!alloc_node.GetSizes().empty());
+  IntDataType expected_size_data_type;
 
   for (const unique_ptr<BoundedArraySizeNode> &size: alloc_node.GetSizes()) {
     array_data_type.reset(new ArrayDataType(move(array_data_type)));
     const ExprNode &size_value = *(size->GetValue());
     size_value.Accept(*this);
-    const DataType &size_data_type = GetExprDataType(&size_value);
+    ExprAnalysis &size_value_analysis = GetExprAnalysis(&size_value);
+    const DataType &actual_size_data_type = size_value_analysis.GetDataType();
 
-    if (!IsDataTypeSupportedByArrayAllocSize().Check(size_data_type)) {
-      unique_ptr<SemanticError> error(
-          new ArrayAllocWithUnsupportedSizeTypeError(
-              GetCurrentFilePath(),
-              alloc_node,
-              *size,
-              size_data_type.Clone()));
-      throw SemanticErrorException(move(error));
+    if (expected_size_data_type != actual_size_data_type) {
+      const bool is_size_castable =
+          CanCastTo(expected_size_data_type, actual_size_data_type);
+
+      if (!is_size_castable) {
+        unique_ptr<SemanticError> error(
+            new ArrayAllocWithUnsupportedSizeTypeError(
+                GetCurrentFilePath(),
+                alloc_node,
+                *size,
+                actual_size_data_type.Clone()));
+        throw SemanticErrorException(move(error));
+      }
+
+      size_value_analysis.SetCastedDataType(expected_size_data_type.Clone());
     }
   }
 
@@ -1428,15 +1413,25 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
     subscript_node.GetIndex()->Accept(*this);
   }
 
-  const DataType &index_data_type =
-      GetExprDataType(subscript_node.GetIndex().get());
+  IntDataType expected_index_data_type;
+  ExprAnalysis &index_analysis =
+      GetExprAnalysis(subscript_node.GetIndex().get());
+  const DataType &actual_index_data_type = index_analysis.GetDataType();
 
-  if (!IsDataTypeSupportedBySubscriptIndex().Check(index_data_type)) {
-    unique_ptr<SemanticError> error(new SubscriptWithUnsupportedIndexTypeError(
-        GetCurrentFilePath(),
-        subscript_node,
-        index_data_type.Clone()));
-    throw SemanticErrorException(move(error));
+  if (expected_index_data_type != actual_index_data_type) {
+    const bool is_index_castable =
+        CanCastTo(expected_index_data_type, actual_index_data_type);
+
+    if (!is_index_castable) {
+      unique_ptr<SemanticError> error(
+          new SubscriptWithUnsupportedIndexTypeError(
+              GetCurrentFilePath(),
+              subscript_node,
+              actual_index_data_type.Clone()));
+      throw SemanticErrorException(move(error));
+    }
+
+    index_analysis.SetCastedDataType(expected_index_data_type.Clone());
   }
 
   unique_ptr<DataType> subscript_casted_data_type;

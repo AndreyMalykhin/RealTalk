@@ -110,21 +110,18 @@ const DataType *CastResolver::ResolvedCast::GetFinalDataType() const {
 
 bool operator==(const CastResolver::ResolvedCast &lhs,
                 const CastResolver::ResolvedCast &rhs) {
-  if (lhs.is_success_ == rhs.is_success_) {
-    return true;
+  if (lhs.is_success_ != rhs.is_success_) {
+    return false;
+  } else if (lhs.left_data_type_
+             && rhs.left_data_type_
+             && *(lhs.left_data_type_) != *(rhs.left_data_type_)) {
+    return false;
+  } else if ((!lhs.left_data_type_ && rhs.left_data_type_)
+             || (lhs.left_data_type_ && !rhs.left_data_type_)) {
+    return false;
   }
 
-  if (lhs.left_data_type_
-      && rhs.left_data_type_
-      && *(lhs.left_data_type_) == *(rhs.left_data_type_)) {
-    return true;
-  }
-
-  if (!lhs.left_data_type_ && !rhs.left_data_type_) {
-    return true;
-  }
-
-  return false;
+  return true;
 }
 
 ostream &operator<<(
