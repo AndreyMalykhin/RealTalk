@@ -55,6 +55,7 @@ add_library(real_talk
   src/real_talk/semantic/simple_lit_parser.cpp
   src/real_talk/semantic/lit_parser.cpp
   src/real_talk/semantic/cast_resolver.cpp
+  src/real_talk/semantic/cast_handler.cpp
   src/real_talk/code/code_generator.cpp
   src/real_talk/code/cmd_reader.cpp
   src/real_talk/code/module_reader.cpp

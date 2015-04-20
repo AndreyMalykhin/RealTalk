@@ -94,6 +94,7 @@
 #include "real_talk/semantic/import_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
+#include "real_talk/semantic/return_analysis.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/simple_semantic_analyzer.h"
 #include "real_talk/semantic/import_file_searcher.h"
@@ -1447,10 +1448,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IntNode *int_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(11), UINT32_C(11)));
   unique_ptr<ExprNode> int_node(int_node_ptr);
-  unique_ptr<StmtNode> return_node(new ReturnValueNode(
+  ReturnValueNode *return_node_ptr = new ReturnValueNode(
       TokenInfo(Token::kReturn, "return", UINT32_C(10), UINT32_C(10)),
       move(int_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12))));
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> return_node(return_node_ptr);
   if_body_stmt_nodes.push_back(move(return_node));
 
   ScopeNode *if_body_node_ptr = new ScopeNode(
@@ -1494,6 +1496,10 @@ TEST_F(SimpleSemanticAnalyzerTest,
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> return_analysis(
+      new ReturnAnalysis(func_def_node_ptr));
+  node_analyzes.insert(make_pair(return_node_ptr, move(return_analysis)));
+
   uint32_t if_body_local_vars_count = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
       new ScopeAnalysis(if_body_local_vars_count));
@@ -2152,9 +2158,10 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnValueNotWithinFuncIsInvalid) {
 TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
-  unique_ptr<StmtNode> return_stmt_node(new ReturnWithoutValueNode(
+  ReturnWithoutValueNode *return_stmt_node_ptr = new ReturnWithoutValueNode(
       TokenInfo(Token::kReturn, "return", UINT32_C(5), UINT32_C(5)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6)));
+  unique_ptr<StmtNode> return_stmt_node(return_stmt_node_ptr);
   body_stmt_nodes.push_back(move(return_stmt_node));
 
   ScopeNode *body_node_ptr = new ScopeNode(
@@ -2179,6 +2186,10 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<NodeSemanticAnalysis> return_analysis(
+      new ReturnAnalysis(func_def_node_ptr));
+  node_analyzes.insert(make_pair(return_stmt_node_ptr, move(return_analysis)));
+
   uint32_t body_local_vars_count = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_vars_count));

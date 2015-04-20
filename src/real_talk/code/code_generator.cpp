@@ -1373,14 +1373,13 @@ void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
 void CodeGenerator::Impl::VisitCall(const CallNode&) {}
 
 void CodeGenerator::Impl::VisitAssign(const AssignNode &node) {
-  const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
-      GetNodeAnalysis(*(node.GetLeftOperand())));
+  node.GetRightOperand()->Accept(*this);
   const ExprAnalysis &right_operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetRightOperand())));
-  assert(left_operand_analysis.GetDataType()
-         == right_operand_analysis.GetDataType());
-  node.GetRightOperand()->Accept(*this);
+  GenerateCastCmdIfNeeded(right_operand_analysis);
   node.GetLeftOperand()->Accept(*this);
+  const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
+      GetNodeAnalysis(*(node.GetLeftOperand())));
   StoreCmdGenerator().Generate(left_operand_analysis.GetDataType(), code_);
 }
 

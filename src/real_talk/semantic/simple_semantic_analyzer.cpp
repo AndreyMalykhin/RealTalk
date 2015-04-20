@@ -97,6 +97,7 @@
 #include "real_talk/semantic/subscript_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
+#include "real_talk/semantic/return_analysis.h"
 #include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/data_type_visitor.h"
@@ -788,6 +789,10 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
 
     value_analysis.SetCastedDataType(expected_data_type.Clone());
   }
+
+  unique_ptr<NodeSemanticAnalysis> return_analysis(
+      new ReturnAnalysis(current_func_scope->GetFuncDef()));
+  node_analyzes_.insert(make_pair(&return_node, move(return_analysis)));
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitReturnWithoutValue(
@@ -805,6 +810,10 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnWithoutValue(
         new ReturnWithoutValueError(GetCurrentFilePath(), return_node));
     throw SemanticErrorException(move(error));
   }
+
+  unique_ptr<NodeSemanticAnalysis> return_analysis(
+      new ReturnAnalysis(current_func_scope->GetFuncDef()));
+  node_analyzes_.insert(make_pair(&return_node, move(return_analysis)));
 }
 
 const SimpleSemanticAnalyzer::Impl::Scope
