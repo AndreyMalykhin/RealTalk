@@ -8,22 +8,22 @@
 namespace real_talk {
 namespace code {
 
-class SimpleCastCmdGenerator: public CastCmdGenerator
-                            , private real_talk::semantic::CastHandler {
+class SimpleCastCmdGenerator: public CastCmdGenerator,
+                              private real_talk::semantic::CastHandler {
  public:
   virtual CmdId Generate(
       const real_talk::semantic::DataType &dest_data_type,
       const real_talk::semantic::DataType &src_data_type) const override;
 
  private:
-  void HandleCharToInt() override;
-  void HandleCharToLong() override;
-  void HandleCharToDouble() override;
-  void HandleCharToString() override;
-  void HandleIntToLong() override;
-  void HandleIntToDouble() override;
-  void HandleLongToDouble() override;
-  void HandleFail() override;
+  void HandleCharToInt() const override;
+  void HandleCharToLong() const override;
+  void HandleCharToDouble() const override;
+  void HandleCharToString() const override;
+  void HandleIntToLong() const override;
+  void HandleIntToDouble() const override;
+  void HandleLongToDouble() const override;
+  void HandleFail() const override;
 
   mutable CmdId cmd_id_;
 };

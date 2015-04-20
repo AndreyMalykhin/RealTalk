@@ -4,13 +4,14 @@
 
 #include <memory>
 #include <iostream>
+#include "real_talk/semantic/cast_handler.h"
 
 namespace real_talk {
 namespace semantic {
 
 class DataType;
 
-class CastResolver {
+class CastResolver: private CastHandler {
  public:
   class ResolvedCast {
    public:
@@ -23,15 +24,27 @@ class CastResolver {
      */
     bool IsSuccess() const;
 
+    void SetSuccess(bool is_success);
+
     /**
      * @return Null if left data type doesn't need cast
      */
     const DataType *GetLeftDataType() const;
 
     /**
+     * @param data_type Null if left data type doesn't need cast
+     */
+    void SetLeftDataType(std::unique_ptr<DataType> data_type);
+
+    /**
      * @return Null if right data type doesn't need cast
      */
     const DataType *GetRightDataType() const;
+
+    /**
+     * @param data_type Null if right data type doesn't need cast
+     */
+    void SetRightDataType(std::unique_ptr<DataType> data_type);
 
     /**
      * @return Destination data type, to which cast was performed
@@ -48,8 +61,25 @@ class CastResolver {
     std::unique_ptr<DataType> right_data_type_;
   };
 
+  CastResolver();
   ResolvedCast Resolve(
       const DataType &left_data_type, const DataType &right_data_type) const;
+
+ private:
+  void DoResolve() const;
+  void HandleCharToInt() const override;
+  void HandleCharToLong() const override;
+  void HandleCharToDouble() const override;
+  void HandleCharToString() const override;
+  void HandleIntToLong() const override;
+  void HandleIntToDouble() const override;
+  void HandleLongToDouble() const override;
+  void HandleFail() const override;
+
+  mutable const DataType *left_data_type_;
+  mutable const DataType *right_data_type_;
+  mutable Direction direction_;
+  mutable ResolvedCast resolved_cast_;
 };
 }
 }

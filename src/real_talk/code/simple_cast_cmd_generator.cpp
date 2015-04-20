@@ -14,34 +14,34 @@ CmdId SimpleCastCmdGenerator::Generate(
   return cmd_id_;
 }
 
-void SimpleCastCmdGenerator::HandleCharToInt() {
+void SimpleCastCmdGenerator::HandleCharToInt() const {
   cmd_id_ = CmdId::kCastCharToInt;
 }
 
-void SimpleCastCmdGenerator::HandleCharToLong() {
+void SimpleCastCmdGenerator::HandleCharToLong() const {
   cmd_id_ = CmdId::kCastCharToLong;
 }
 
-void SimpleCastCmdGenerator::HandleCharToDouble() {
+void SimpleCastCmdGenerator::HandleCharToDouble() const {
   cmd_id_ = CmdId::kCastCharToDouble;
 }
 
-void SimpleCastCmdGenerator::HandleCharToString() {
+void SimpleCastCmdGenerator::HandleCharToString() const {
   cmd_id_ = CmdId::kCastCharToString;
 }
 
-void SimpleCastCmdGenerator::HandleIntToLong() {
+void SimpleCastCmdGenerator::HandleIntToLong() const {
   cmd_id_ = CmdId::kCastIntToLong;
 }
 
-void SimpleCastCmdGenerator::HandleIntToDouble() {
+void SimpleCastCmdGenerator::HandleIntToDouble() const {
   cmd_id_ = CmdId::kCastIntToDouble;
 }
 
-void SimpleCastCmdGenerator::HandleLongToDouble() {
+void SimpleCastCmdGenerator::HandleLongToDouble() const {
   cmd_id_ = CmdId::kCastLongToDouble;
 }
 
-void SimpleCastCmdGenerator::HandleFail() {assert(false);}
+void SimpleCastCmdGenerator::HandleFail() const {assert(false);}
 }
 }

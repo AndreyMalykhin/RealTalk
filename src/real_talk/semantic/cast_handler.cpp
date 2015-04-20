@@ -43,9 +43,8 @@ void CastHandler::Handle(const DataType &left_data_type,
                          const DataType &right_data_type,
                          Direction direction) const {
   assert(left_data_type != right_data_type);
-  const HandlersKey key =
-      {left_data_type.GetId(), right_data_type.GetId(), direction};
-  Handlers::const_iterator handlers_it = kHandlers.find(key);
+  Handlers::const_iterator handlers_it = kHandlers.find(
+      {left_data_type.GetId(), right_data_type.GetId(), direction});
 
   if (handlers_it == kHandlers.cend()) {
     HandleFail();
@@ -53,7 +52,7 @@ void CastHandler::Handle(const DataType &left_data_type,
   }
 
   const Handler handler = handlers_it->second;
-  (*handler)();
+  (this->*handler)();
 }
 
 bool operator==(const CastHandler::HandlersKey &lhs,
@@ -63,7 +62,8 @@ bool operator==(const CastHandler::HandlersKey &lhs,
       && lhs.direction == rhs.direction;
 }
 
-size_t HandlersKeyHasher::operator()(const HandlersKey &key) const {
+size_t CastHandler::HandlersKeyHasher::operator()(
+    const CastHandler::HandlersKey &key) const {
   size_t hash = 0;
   hash_combine(hash, key.left_data_type);
   hash_combine(hash, key.right_data_type);

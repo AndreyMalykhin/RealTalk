@@ -28,17 +28,17 @@ class CastHandler {
     DataTypeId right_data_type;
     Direction direction;
   };
-  friend bool operator==(const HandlersKey &lhs, const HandlersKey &rhs);
 
   class HandlersKeyHasher {
    public:
     size_t operator()(const HandlersKey &key) const;
   };
 
-  typedef void (CastHandler::*Handler)();
+  typedef void (CastHandler::*Handler)() const;
   typedef std::unordered_map<
     HandlersKey, Handler, HandlersKeyHasher > Handlers;
 
+  friend bool operator==(const HandlersKey &lhs, const HandlersKey &rhs);
   virtual void HandleCharToInt() const = 0;
   virtual void HandleCharToLong() const = 0;
   virtual void HandleCharToDouble() const = 0;
