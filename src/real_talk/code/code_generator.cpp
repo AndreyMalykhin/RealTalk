@@ -42,7 +42,6 @@
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
-#include "real_talk/semantic/arg_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
 #include "real_talk/semantic/return_analysis.h"
 #include "real_talk/semantic/def_analysis_visitor.h"
@@ -140,7 +139,6 @@ using real_talk::semantic::LitAnalysis;
 using real_talk::semantic::CommonExprAnalysis;
 using real_talk::semantic::ScopeAnalysis;
 using real_talk::semantic::ControlFlowTransferAnalysis;
-using real_talk::semantic::ArgDefAnalysis;
 using real_talk::semantic::FuncDefAnalysis;
 using real_talk::semantic::ExprAnalysis;
 using real_talk::semantic::IdAnalysis;
@@ -849,14 +847,11 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
   }
 
  private:
-  virtual void VisitArgDef(const ArgDefAnalysis&) override {
-    assert(false);
-  }
-
   virtual void VisitLocalVarDef(const LocalVarDefAnalysis &var_def_analysis)
       override {
     if (id_analysis_->IsAssignee()) {
-      assert(false);
+      code_->WriteCmdId(CmdId::kLoadLocalVarAddress);
+      code_->WriteUint32(var_def_analysis.GetIndexWithinFunc());
     } else {
       LoadLocalVarValueCmdGenerator().Generate(
           var_def_analysis.GetDataType(),
@@ -922,7 +917,6 @@ class CodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis&) override {assert(false);}
-  virtual void VisitArgDef(const ArgDefAnalysis&) override {assert(false);}
 
   const VarDefNode *var_def_node_;
   vector<string> *ids_of_global_var_defs_;
@@ -1288,8 +1282,8 @@ void CodeGenerator::Impl::VisitFuncDefWithoutBody(
 }
 
 void CodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
-  const ArgDefAnalysis &analysis =
-      static_cast<const ArgDefAnalysis&>(GetNodeAnalysis(node));
+  const DefAnalysis &analysis =
+      static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   CreateAndInitLocalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
 }
 

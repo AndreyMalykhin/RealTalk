@@ -86,7 +86,6 @@
 #include "real_talk/semantic/string_lit.h"
 #include "real_talk/semantic/char_lit.h"
 #include "real_talk/semantic/bool_lit.h"
-#include "real_talk/semantic/arg_def_analysis.h"
 #include "real_talk/semantic/global_var_def_analysis.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
@@ -978,17 +977,7 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitArgDef(const ArgDefNode &arg_def_node) {
-  unique_ptr<DataType> data_type_ptr =
-      CreateDataType(*(arg_def_node.GetDataType()));
-  const DataType &data_type = *data_type_ptr;
-  unique_ptr<DefAnalysis> def_analysis(new ArgDefAnalysis(move(data_type_ptr)));
-  AddDefAnalysis(arg_def_node, move(def_analysis));
-
-  if (!IsDataTypeSupportedByVarDef().Check(data_type)) {
-    unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
-        GetCurrentFilePath(), arg_def_node, data_type.Clone()));
-    throw SemanticErrorException(move(error));
-  }
+  VisitVarDef(arg_def_node);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithBody(

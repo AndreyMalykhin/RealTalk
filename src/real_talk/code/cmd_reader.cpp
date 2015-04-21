@@ -17,6 +17,7 @@
 #include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
+#include "real_talk/code/load_local_var_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/code.h"
@@ -168,6 +169,8 @@ LoadLocalBoolVarValueCmd &kLoadLocalBoolVarValueCmd =
 
 LoadGlobalVarAddressCmd &kLoadGlobalVarAddressCmd =
     *new LoadGlobalVarAddressCmd(UINT32_C(0));
+LoadLocalVarAddressCmd &kLoadLocalVarAddressCmd =
+    *new LoadLocalVarAddressCmd(UINT32_C(0));
 
 const StoreIntCmd &kStoreIntCmd = *new StoreIntCmd();
 const StoreLongCmd &kStoreLongCmd = *new StoreLongCmd();
@@ -450,6 +453,10 @@ const Cmd &CmdReader::GetNextCmd() {
     case CmdId::kLoadGlobalVarAddress:
       kLoadGlobalVarAddressCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kLoadGlobalVarAddressCmd;
+      break;
+    case CmdId::kLoadLocalVarAddress:
+      kLoadLocalVarAddressCmd.SetVarIndex(code_->ReadUint32());
+      cmd = &kLoadLocalVarAddressCmd;
       break;
     case CmdId::kLoadLocalIntVarValue:
       ReadLoadLocalVarValueCmd(kLoadLocalIntVarValueCmd);

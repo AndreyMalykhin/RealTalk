@@ -86,7 +86,6 @@
 #include "real_talk/semantic/global_var_def_analysis.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
-#include "real_talk/semantic/arg_def_analysis.h"
 #include "real_talk/semantic/common_expr_analysis.h"
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/id_analysis.h"
@@ -514,14 +513,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
     unique_ptr<DataType> arg_data_type(new IntDataType());
-    unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new ArgDefAnalysis(
-        move(arg_data_type)));
+    uint32_t var_index_within_func = UINT32_C(0);
+    unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
+        move(arg_data_type), var_index_within_func));
     node_analyzes.insert(
         make_pair(arg_def_node_ptr, move(arg_def_analysis)));
     unique_ptr<DataType> var_data_type(new IntDataType());
-    uint32_t var_index_within_func = UINT32_C(1);
+    uint32_t var_index_within_func2 = UINT32_C(1);
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-        move(var_data_type), var_index_within_func));
+        move(var_data_type), var_index_within_func2));
     node_analyzes.insert(
         make_pair(var_def_node_ptr, move(var_def_analysis)));
 
@@ -1070,8 +1070,9 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> arg_data_type(new CharDataType());
+  uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new ArgDefAnalysis(move(arg_data_type)));
+      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   unique_ptr<DataType> return_expr_data_type(new CharDataType());
@@ -1599,8 +1600,9 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyWithArgsAndReturnValue) {
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
   unique_ptr<DataType> arg_data_type(new IntDataType());
+  uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new ArgDefAnalysis(move(arg_data_type)));
+      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   SemanticAnalysis::Problems problems;
@@ -1997,8 +1999,9 @@ TEST_F(SimpleSemanticAnalyzerTest, ArgDefWithUnsupportedDataTypeIsInvalid) {
         new FuncDefAnalysis(move(func_data_type), false, false));
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
-    unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-        new ArgDefAnalysis(test_data.arg_data_type->Clone()));
+    uint32_t var_index_within_func = UINT32_C(0);
+    unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
+        test_data.arg_data_type->Clone(), var_index_within_func));
     node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
     SemanticAnalysis::Problems problems;
@@ -2081,8 +2084,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> arg_data_type(new StringDataType());
+  uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new ArgDefAnalysis(move(arg_data_type)));
+      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   StringDataType *return_expr_data_type_ptr = new StringDataType();
@@ -2387,10 +2391,10 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
-  IntDataType *arg_data_type_ptr = new IntDataType();
-  unique_ptr<DataType> arg_data_type(arg_data_type_ptr);
+  unique_ptr<DataType> arg_data_type(new IntDataType());
+  uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new ArgDefAnalysis(move(arg_data_type)));
+      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -2518,8 +2522,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
 
   IntDataType *arg_def_data_type_ptr = new IntDataType();
   unique_ptr<DataType> arg_def_data_type(arg_def_data_type_ptr);
+  uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new ArgDefAnalysis(move(arg_def_data_type)));
+      new LocalVarDefAnalysis(move(arg_def_data_type), var_index_within_func));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -2658,8 +2663,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> arg_data_type(new IntDataType());
+  uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new ArgDefAnalysis(move(arg_data_type)));
+      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());

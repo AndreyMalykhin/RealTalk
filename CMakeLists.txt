@@ -39,7 +39,6 @@ add_library(real_talk
   src/real_talk/semantic/semantic_problems.cpp
   src/real_talk/semantic/local_var_def_analysis.cpp
   src/real_talk/semantic/global_var_def_analysis.cpp
-  src/real_talk/semantic/arg_def_analysis.cpp
   src/real_talk/semantic/func_def_analysis.cpp
   src/real_talk/semantic/base_expr_analysis.cpp
   src/real_talk/semantic/common_expr_analysis.cpp

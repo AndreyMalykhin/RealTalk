@@ -19,6 +19,7 @@
 #include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
+#include "real_talk/code/load_local_var_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/code.h"
@@ -615,6 +616,15 @@ TEST_F(CmdReaderTest, LoadGlobalVarAddressCmd) {
   LoadGlobalVarAddressCmd expected_cmd(var_index);
   Code code;
   code.WriteCmdId(CmdId::kLoadGlobalVarAddress);
+  code.WriteUint32(var_index);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalVarAddressCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalVarAddressCmd expected_cmd(var_index);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadLocalVarAddress);
   code.WriteUint32(var_index);
   TestGetNextCmd(code, expected_cmd);
 }
