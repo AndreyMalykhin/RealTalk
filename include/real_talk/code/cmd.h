@@ -75,6 +75,8 @@ enum class CmdId: uint8_t {
   kLoadLocalArrayVarValue,
   kLoadGlobalVarAddress,
   kLoadLocalVarAddress,
+  kLoadFuncAddress,
+  kLoadNativeFuncAddress,
   kStoreInt,
   kStoreLong,
   kStoreDouble,
@@ -100,7 +102,9 @@ enum class CmdId: uint8_t {
   kReturnBoolValue,
   kReturnCharValue,
   kReturnStringValue,
-  kReturnArrayValue
+  kReturnArrayValue,
+  kCall,
+  kCallNative
 };
 
 class Cmd {

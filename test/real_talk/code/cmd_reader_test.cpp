@@ -20,8 +20,12 @@
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/load_local_var_address_cmd.h"
+#include "real_talk/code/load_func_address_cmd.h"
+#include "real_talk/code/load_native_func_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/cast_cmd.h"
+#include "real_talk/code/call_cmd.h"
+#include "real_talk/code/call_native_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -724,6 +728,38 @@ TEST_F(CmdReaderTest, CastLongToDoubleCmd) {
   CastLongToDoubleCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kCastLongToDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadFuncAddressCmd) {
+  uint32_t func_index = UINT32_C(7);
+  LoadFuncAddressCmd expected_cmd(func_index);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadFuncAddress);
+  code.WriteUint32(func_index);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadNativeFuncAddressCmd) {
+  uint32_t func_index = UINT32_C(7);
+  LoadNativeFuncAddressCmd expected_cmd(func_index);
+  Code code;
+  code.WriteCmdId(CmdId::kLoadNativeFuncAddress);
+  code.WriteUint32(func_index);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CallCmd) {
+  CallCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCall);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CallNativeCmd) {
+  CallNativeCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kCallNative);
   TestGetNextCmd(code, expected_cmd);
 }
 }

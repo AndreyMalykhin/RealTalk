@@ -41,6 +41,7 @@
 #include "real_talk/parser/void_data_type_node.h"
 #include "real_talk/parser/id_node.h"
 #include "real_talk/parser/assign_node.h"
+#include "real_talk/parser/call_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/global_var_def_analysis.h"
@@ -145,6 +146,7 @@ using real_talk::parser::ReturnWithoutValueNode;
 using real_talk::parser::ReturnValueNode;
 using real_talk::parser::IdNode;
 using real_talk::parser::AssignNode;
+using real_talk::parser::CallNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -3924,7 +3926,7 @@ TEST_F(CodeGeneratorTest, FuncDefWithBody) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(1);
+  uint32_t body_local_vars_count = UINT32_C(2);
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_vars_count));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
@@ -5068,6 +5070,190 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeLocalArrayVar) {
                             value_code,
                             vector<TestCast>(),
                             expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, NotNativeCall) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  vector<TokenInfo> arg_def_separator_tokens;
+  unique_ptr<DataTypeNode> arg_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(3), UINT32_C(3))));
+  ArgDefNode *arg_def_node_ptr = new ArgDefNode(
+      move(arg_data_type_node),
+      TokenInfo(Token::kName, "arg", UINT32_C(4), UINT32_C(4)));
+  unique_ptr<ArgDefNode> arg_def_node(arg_def_node_ptr);
+  arg_def_nodes.push_back(move(arg_def_node));
+  arg_def_separator_tokens.push_back(
+      TokenInfo(Token::kSeparator, ",", UINT32_C(5), UINT32_C(5)));
+  unique_ptr<DataTypeNode> arg_data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(6), UINT32_C(6))));
+  ArgDefNode *arg_def_node_ptr2 = new ArgDefNode(
+      move(arg_data_type_node2),
+      TokenInfo(Token::kName, "arg2", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<ArgDefNode> arg_def_node2(arg_def_node_ptr2);
+  arg_def_nodes.push_back(move(arg_def_node2));
+
+  vector< unique_ptr<StmtNode> > body_stmt_nodes;
+  ScopeNode *body_node_ptr = new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(9), UINT32_C(9)),
+      move(body_stmt_nodes),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ScopeNode> body_node(body_node_ptr);
+
+  unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
+      TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
+  vector<TokenInfo> modifier_tokens;
+  FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
+      modifier_tokens,
+      move(return_data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
+      move(arg_def_nodes),
+      arg_def_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(8), UINT32_C(8)),
+      move(body_node));
+  unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
+  program_stmt_nodes.push_back(move(func_def_node));
+
+  IdNode *id_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "func", UINT32_C(11), UINT32_C(11)));
+  unique_ptr<ExprNode> id_node(id_node_ptr);
+  vector< unique_ptr<ExprNode> > arg_expr_nodes;
+  vector<TokenInfo> arg_expr_separator_tokens;
+  IntNode *arg_expr_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "1", UINT32_C(13), UINT32_C(13)));
+  unique_ptr<ExprNode> arg_expr_node(arg_expr_node_ptr);
+  arg_expr_nodes.push_back(move(arg_expr_node));
+  arg_expr_separator_tokens.push_back(
+      TokenInfo(Token::kSeparator, ",", UINT32_C(14), UINT32_C(14)));
+  CharNode *arg_expr_node_ptr2 = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(15), UINT32_C(15)));
+  unique_ptr<ExprNode> arg_expr_node2(arg_expr_node_ptr2);
+  arg_expr_nodes.push_back(move(arg_expr_node2));
+  CallNode *call_expr_node_ptr = new CallNode(
+      move(id_node),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(12), UINT32_C(12)),
+      move(arg_expr_nodes),
+      arg_expr_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(16), UINT32_C(16)));
+  unique_ptr<ExprNode> call_expr_node(call_expr_node_ptr);
+  unique_ptr<StmtNode> call_stmt_node(new ExprStmtNode(
+      move(call_expr_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(17), UINT32_C(17))));
+  program_stmt_nodes.push_back(move(call_stmt_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> return_data_type(new VoidDataType());
+  vector< unique_ptr<DataType> > arg_data_types;
+  arg_data_types.push_back(unique_ptr<DataType>(new LongDataType()));
+  arg_data_types.push_back(unique_ptr<DataType>(new IntDataType()));
+  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  bool is_func_has_return = false;
+  unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
+      unique_ptr<FuncDataType>(
+          static_cast<FuncDataType*>(func_data_type.Clone().release())),
+      is_func_native,
+      is_func_has_return));
+  node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func));
+  node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
+  uint32_t var_index_within_func2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> arg_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
+  node_analyzes.insert(make_pair(arg_def_node_ptr2, move(arg_def_analysis2)));
+  uint32_t body_local_vars_count = UINT32_C(2);
+  unique_ptr<NodeSemanticAnalysis> body_analysis(
+      new ScopeAnalysis(body_local_vars_count));
+  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+  unique_ptr<DataType> id_casted_data_type;
+  bool is_id_assignee = false;
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      func_data_type.Clone(),
+      move(id_casted_data_type),
+      ValueType::kRight,
+      func_def_node_ptr,
+      is_id_assignee));
+  node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+  unique_ptr<DataType> arg_expr_casted_data_type(new LongDataType());
+  unique_ptr<NodeSemanticAnalysis> arg_expr_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      move(arg_expr_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
+  node_analyzes.insert(make_pair(arg_expr_node_ptr, move(arg_expr_analysis)));
+  unique_ptr<DataType> arg_expr_casted_data_type2(new IntDataType());
+  unique_ptr<NodeSemanticAnalysis> arg_expr_analysis2(new LitAnalysis(
+      unique_ptr<DataType>(new CharDataType()),
+      move(arg_expr_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
+  node_analyzes.insert(make_pair(arg_expr_node_ptr2, move(arg_expr_analysis2)));
+  unique_ptr<DataType> call_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> call_analysis(new CommonExprAnalysis(
+      unique_ptr<DataType>(new VoidDataType()),
+      move(call_casted_data_type),
+      ValueType::kRight));
+  node_analyzes.insert(make_pair(call_expr_node_ptr, move(call_analysis)));
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  vector<TestCast> test_casts;
+  unique_ptr<DataType> dest_data_type(new IntDataType());
+  unique_ptr<DataType> src_data_type(new CharDataType());
+  TestCast test_cast =
+      {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
+  test_casts.push_back(move(test_cast));
+  unique_ptr<DataType> dest_data_type2(new LongDataType());
+  unique_ptr<DataType> src_data_type2(new IntDataType());
+  TestCast test_cast2 =
+      {move(dest_data_type2), move(src_data_type2), CmdId::kCastIntToLong};
+  test_casts.push_back(move(test_cast2));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kLoadCharValue);
+  cmds_code->WriteChar('a');
+  cmds_code->WriteCmdId(CmdId::kCastCharToInt);
+  cmds_code->WriteCmdId(CmdId::kLoadIntValue);
+  cmds_code->WriteInt32(INT32_C(1));
+  cmds_code->WriteCmdId(CmdId::kCastIntToLong);
+  cmds_code->WriteCmdId(CmdId::kLoadFuncAddress);
+  uint32_t func_ref_address = cmds_code->GetPosition();
+  uint32_t func_index = numeric_limits<uint32_t>::max();
+  cmds_code->WriteUint32(func_index);
+  cmds_code->WriteCmdId(CmdId::kCall);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  uint32_t func_def_address = cmds_code->GetPosition();
+  cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kReturn);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs = {{"func", func_ref_address}};
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(move(test_casts),
+               program_node,
+               semantic_analysis,
+               version,
+               module_code);
 }
 }
 }

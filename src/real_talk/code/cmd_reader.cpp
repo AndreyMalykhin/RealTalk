@@ -18,8 +18,12 @@
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/load_local_var_address_cmd.h"
+#include "real_talk/code/load_func_address_cmd.h"
+#include "real_talk/code/load_native_func_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/cast_cmd.h"
+#include "real_talk/code/call_cmd.h"
+#include "real_talk/code/call_native_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -171,6 +175,10 @@ LoadGlobalVarAddressCmd &kLoadGlobalVarAddressCmd =
     *new LoadGlobalVarAddressCmd(UINT32_C(0));
 LoadLocalVarAddressCmd &kLoadLocalVarAddressCmd =
     *new LoadLocalVarAddressCmd(UINT32_C(0));
+LoadFuncAddressCmd &kLoadFuncAddressCmd =
+    *new LoadFuncAddressCmd(UINT32_C(0));
+LoadNativeFuncAddressCmd &kLoadNativeFuncAddressCmd =
+    *new LoadNativeFuncAddressCmd(UINT32_C(0));
 
 const StoreIntCmd &kStoreIntCmd = *new StoreIntCmd();
 const StoreLongCmd &kStoreLongCmd = *new StoreLongCmd();
@@ -187,6 +195,9 @@ const CastCharToStringCmd &kCastCharToStringCmd = *new CastCharToStringCmd();
 const CastIntToLongCmd &kCastIntToLongCmd = *new CastIntToLongCmd();
 const CastIntToDoubleCmd &kCastIntToDoubleCmd = *new CastIntToDoubleCmd();
 const CastLongToDoubleCmd &kCastLongToDoubleCmd = *new CastLongToDoubleCmd();
+
+const CallCmd &kCallCmd = *new CallCmd();
+const CallNativeCmd &kCallNativeCmd = *new CallNativeCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -458,6 +469,14 @@ const Cmd &CmdReader::GetNextCmd() {
       kLoadLocalVarAddressCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kLoadLocalVarAddressCmd;
       break;
+    case CmdId::kLoadFuncAddress:
+      kLoadFuncAddressCmd.SetFuncIndex(code_->ReadUint32());
+      cmd = &kLoadFuncAddressCmd;
+      break;
+    case CmdId::kLoadNativeFuncAddress:
+      kLoadNativeFuncAddressCmd.SetFuncIndex(code_->ReadUint32());
+      cmd = &kLoadNativeFuncAddressCmd;
+      break;
     case CmdId::kLoadLocalIntVarValue:
       ReadLoadLocalVarValueCmd(kLoadLocalIntVarValueCmd);
       cmd = &kLoadLocalIntVarValueCmd;
@@ -527,6 +546,12 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kCastLongToDouble:
       cmd = &kCastLongToDoubleCmd;
+      break;
+    case CmdId::kCall:
+      cmd = &kCallCmd;
+      break;
+    case CmdId::kCallNative:
+      cmd = &kCallNativeCmd;
       break;
   }
 

@@ -31,6 +31,7 @@
 #include "real_talk/parser/return_without_value_node.h"
 #include "real_talk/parser/id_node.h"
 #include "real_talk/parser/assign_node.h"
+#include "real_talk/parser/call_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -131,6 +132,7 @@ using real_talk::parser::IfElseIfElseNode;
 using real_talk::parser::IfNode;
 using real_talk::parser::ScopeNode;
 using real_talk::parser::ExprNode;
+using real_talk::parser::CallNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -191,6 +193,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class LoadGlobalVarValueCmdGenerator;
   class LoadLocalVarValueCmdGenerator;
   class StoreCmdGenerator;
+  class CallCmdGenerator;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -837,10 +840,12 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
                const DefAnalysis *def_analysis,
                uint32_t cmds_address,
                vector<IdAddress> *id_addresses_of_global_var_refs,
+               vector<IdAddress> *id_addresses_of_func_refs,
                Code *code) {
     id_node_ = id_node;
     id_analysis_ = id_analysis;
     id_addresses_of_global_var_refs_ = id_addresses_of_global_var_refs;
+    id_addresses_of_func_refs_ = id_addresses_of_func_refs;
     code_ = code;
     cmds_address_ = cmds_address;
     def_analysis->Accept(*this);
@@ -879,14 +884,27 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
         IdAddress(id, var_index_placeholder - cmds_address_));
   }
 
-  virtual void VisitFuncDef(const FuncDefAnalysis&) override {
-    assert(false);
+  virtual void VisitFuncDef(const FuncDefAnalysis &func_def_analysis) override {
+    if (func_def_analysis.IsNative()) {
+      assert(false);
+    } else {
+      code_->WriteCmdId(CmdId::kLoadFuncAddress);
+    }
+
+    const uint32_t func_index_placeholder = code_->GetPosition();
+    const uint32_t func_index = numeric_limits<uint32_t>::max();
+    code_->WriteUint32(func_index);
+    assert(func_index_placeholder >= cmds_address_);
+    const string &id = id_node_->GetNameToken().GetValue();
+    id_addresses_of_func_refs_->push_back(
+        IdAddress(id, func_index_placeholder - cmds_address_));
   }
 
   const IdNode *id_node_;
   const IdAnalysis *id_analysis_;
   uint32_t cmds_address_;
   vector<IdAddress> *id_addresses_of_global_var_refs_;
+  vector<IdAddress> *id_addresses_of_func_refs_;
   Code *code_;
 };
 
@@ -961,6 +979,30 @@ class CodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
   virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class CodeGenerator::Impl::CallCmdGenerator: private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitFunc(const FuncDataType&) override {
+    code_->WriteCmdId(CmdId::kCall);
+  }
+
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitInt(const IntDataType&) override {assert(false);}
+  virtual void VisitLong(const LongDataType&) override {assert(false);}
+  virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
+  virtual void VisitChar(const CharDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
 
   Code *code_;
 };
@@ -1120,9 +1162,6 @@ void CodeGenerator::Impl::VisitVarDefWithoutInit(
 
 void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
   node.GetValue()->Accept(*this);
-  const ExprAnalysis &value_analysis =
-      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
-  GenerateCastCmdIfNeeded(value_analysis);
   const DefAnalysis &var_def_analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   VarDefNodeProcessor<CreateAndInitLocalVarCmdGenerator,
@@ -1289,9 +1328,6 @@ void CodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
 
 void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   node.GetValue()->Accept(*this);
-  const ExprAnalysis &value_analysis =
-      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
-  GenerateCastCmdIfNeeded(value_analysis);
   const ReturnAnalysis &return_analysis =
       static_cast<const ReturnAnalysis&>(GetNodeAnalysis(node));
   const FuncDefAnalysis &func_def_analysis =
@@ -1307,14 +1343,17 @@ void CodeGenerator::Impl::VisitReturnWithoutValue(
   code_->WriteCmdId(CmdId::kReturn);
 }
 
+void CodeGenerator::Impl::VisitScope(const ScopeNode &node) {
+  for (const unique_ptr<StmtNode> &stmt: node.GetStmts()) {
+    stmt->Accept(*this);
+  }
+}
+
 void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &node) {
   for (const std::unique_ptr<BoundedArraySizeNode> &size
            : reverse(node.GetSizes())) {
     size->GetValue()->Accept(*this);
-    const ExprAnalysis &size_analysis =
-        static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(size->GetValue())));
-    GenerateCastCmdIfNeeded(size_analysis);
   }
 
   const ExprAnalysis &array_alloc_analysis =
@@ -1330,9 +1369,6 @@ void CodeGenerator::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode &node) {
   for (const unique_ptr<ExprNode> &value: reverse(node.GetValues())) {
     value->Accept(*this);
-    const ExprAnalysis &value_analysis =
-        static_cast<const ExprAnalysis&>(GetNodeAnalysis(*value));
-    GenerateCastCmdIfNeeded(value_analysis);
   }
 
   const ExprAnalysis &array_alloc_analysis =
@@ -1359,23 +1395,33 @@ void CodeGenerator::Impl::VisitId(const IdNode &id) {
                             &def_analysis,
                             cmds_address_,
                             &id_addresses_of_global_var_refs_,
+                            &id_addresses_of_func_refs_,
                             code_);
 }
 
-void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
+void CodeGenerator::Impl::VisitCall(const CallNode &node) {
+  for (const unique_ptr<ExprNode> &arg: reverse(node.GetArgs())) {
+    arg->Accept(*this);
+  }
 
-void CodeGenerator::Impl::VisitCall(const CallNode&) {}
+  node.GetOperand()->Accept(*this);
+  const ExprAnalysis &operand_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetOperand())));
+  CallCmdGenerator().Generate(operand_analysis.GetDataType(), code_);
+}
 
 void CodeGenerator::Impl::VisitAssign(const AssignNode &node) {
   node.GetRightOperand()->Accept(*this);
-  const ExprAnalysis &right_operand_analysis = static_cast<const ExprAnalysis&>(
-      GetNodeAnalysis(*(node.GetRightOperand())));
-  GenerateCastCmdIfNeeded(right_operand_analysis);
   node.GetLeftOperand()->Accept(*this);
   const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetLeftOperand())));
   StoreCmdGenerator().Generate(left_operand_analysis.GetDataType(), code_);
+  const ExprAnalysis &assign_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
+  GenerateCastCmdIfNeeded(assign_analysis);
 }
+
+void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
 
 void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
 
@@ -1386,60 +1432,6 @@ void CodeGenerator::Impl::VisitEqual(const EqualNode&) {}
 void CodeGenerator::Impl::VisitGreater(const GreaterNode&) {}
 
 void CodeGenerator::Impl::VisitGreaterOrEqual(const GreaterOrEqualNode&) {}
-
-void CodeGenerator::Impl::VisitInt(const IntNode &node) {
-  code_->WriteCmdId(CmdId::kLoadIntValue);
-  const LitAnalysis &lit_analysis =
-      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
-  const int32_t value =
-      static_cast<const IntLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteInt32(value);
-}
-
-void CodeGenerator::Impl::VisitLong(const LongNode &node) {
-  code_->WriteCmdId(CmdId::kLoadLongValue);
-  const LitAnalysis &lit_analysis =
-      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
-  const int64_t value =
-      static_cast<const LongLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteInt64(value);
-}
-
-void CodeGenerator::Impl::VisitBool(const BoolNode &node) {
-  code_->WriteCmdId(CmdId::kLoadBoolValue);
-  const LitAnalysis &lit_analysis =
-      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
-  const bool value =
-      static_cast<const BoolLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteBool(value);
-}
-
-void CodeGenerator::Impl::VisitChar(const CharNode &node) {
-  code_->WriteCmdId(CmdId::kLoadCharValue);
-  const LitAnalysis &lit_analysis =
-      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
-  const char value =
-      static_cast<const CharLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteChar(value);
-}
-
-void CodeGenerator::Impl::VisitString(const StringNode &node) {
-  code_->WriteCmdId(CmdId::kLoadStringValue);
-  const LitAnalysis &lit_analysis =
-      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
-  const string &value =
-      static_cast<const StringLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteString(value);
-}
-
-void CodeGenerator::Impl::VisitDouble(const DoubleNode &node) {
-  code_->WriteCmdId(CmdId::kLoadDoubleValue);
-  const LitAnalysis &lit_analysis =
-      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
-  const double &value =
-      static_cast<const DoubleLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteDouble(value);
-}
 
 void CodeGenerator::Impl::VisitLess(const LessNode&) {}
 
@@ -1463,10 +1455,64 @@ void CodeGenerator::Impl::VisitSub(const SubNode&) {}
 
 void CodeGenerator::Impl::VisitSum(const SumNode&) {}
 
-void CodeGenerator::Impl::VisitScope(const ScopeNode &node) {
-  for (const unique_ptr<StmtNode> &stmt: node.GetStmts()) {
-    stmt->Accept(*this);
-  }
+void CodeGenerator::Impl::VisitInt(const IntNode &node) {
+  code_->WriteCmdId(CmdId::kLoadIntValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const int32_t value =
+      static_cast<const IntLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteInt32(value);
+  GenerateCastCmdIfNeeded(lit_analysis);
+}
+
+void CodeGenerator::Impl::VisitLong(const LongNode &node) {
+  code_->WriteCmdId(CmdId::kLoadLongValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const int64_t value =
+      static_cast<const LongLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteInt64(value);
+  GenerateCastCmdIfNeeded(lit_analysis);
+}
+
+void CodeGenerator::Impl::VisitBool(const BoolNode &node) {
+  code_->WriteCmdId(CmdId::kLoadBoolValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const bool value =
+      static_cast<const BoolLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteBool(value);
+  GenerateCastCmdIfNeeded(lit_analysis);
+}
+
+void CodeGenerator::Impl::VisitChar(const CharNode &node) {
+  code_->WriteCmdId(CmdId::kLoadCharValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const char value =
+      static_cast<const CharLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteChar(value);
+  GenerateCastCmdIfNeeded(lit_analysis);
+}
+
+void CodeGenerator::Impl::VisitString(const StringNode &node) {
+  code_->WriteCmdId(CmdId::kLoadStringValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const string &value =
+      static_cast<const StringLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteString(value);
+  GenerateCastCmdIfNeeded(lit_analysis);
+}
+
+void CodeGenerator::Impl::VisitDouble(const DoubleNode &node) {
+  code_->WriteCmdId(CmdId::kLoadDoubleValue);
+  const LitAnalysis &lit_analysis =
+      static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
+  const double &value =
+      static_cast<const DoubleLit&>(lit_analysis.GetLit()).GetValue();
+  code_->WriteDouble(value);
+  GenerateCastCmdIfNeeded(lit_analysis);
 }
 
 void CodeGenerator::Impl::VisitIntDataType(const IntDataTypeNode&) {
