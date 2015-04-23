@@ -1079,10 +1079,11 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
   }
 
   is_func_native = modifier_tokens.count(Token::kNative) != 0;
-  unique_ptr<FuncDataType> func_data_type(
-      new FuncDataType(return_data_type->Clone(), move(arg_data_types)));
+  unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+      return_data_type->Clone(), move(arg_data_types), is_func_native));
+  const bool is_func_has_return = false;
   unique_ptr<DefAnalysis> def_analysis(
-      new FuncDefAnalysis(move(func_data_type), is_func_native, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   AddDefAnalysis(func_def_node, move(def_analysis));
 }
 

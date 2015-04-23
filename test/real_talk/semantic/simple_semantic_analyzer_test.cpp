@@ -506,10 +506,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<DataType> return_data_type(new VoidDataType());
     vector< unique_ptr<DataType> > arg_data_types;
     arg_data_types.push_back(unique_ptr<DataType>(new IntDataType()));
+    bool is_func_native = false;
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-        move(return_data_type), move(arg_data_types)));
+        move(return_data_type), move(arg_data_types), is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
-        move(func_data_type), false, false));
+        move(func_data_type), is_func_has_return));
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
     unique_ptr<DataType> arg_data_type(new IntDataType());
@@ -575,10 +577,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
         make_pair(body_node_ptr, move(body_analysis)));
     unique_ptr<DataType> return_data_type(new VoidDataType());
     vector< unique_ptr<DataType> > arg_data_types;
+    bool is_func_native = false;
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-        move(return_data_type), move(arg_data_types)));
+        move(return_data_type), move(arg_data_types), is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
-        move(func_data_type), false, false));
+        move(func_data_type), is_func_has_return));
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
     unique_ptr<DataType> var_data_type(new IntDataType());
@@ -1062,10 +1066,12 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   unique_ptr<DataType> func_return_data_type(func_return_data_type_ptr);
   vector< unique_ptr<DataType> > func_arg_data_types;
   func_arg_data_types.push_back(unique_ptr<DataType>(new CharDataType()));
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
+  bool is_func_has_return = true;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, true));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1133,10 +1139,12 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyWithoutArgsAndReturnValue) {
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  unique_ptr<FuncDataType> func_data_type(
-      new FuncDataType(move(return_data_type), move(arg_data_types)));
+  bool is_func_native = false;
+  unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+      move(return_data_type), move(arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1185,10 +1193,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  unique_ptr<FuncDataType> func_data_type(
-      new FuncDataType(move(return_data_type), move(arg_data_types)));
+  bool is_func_native = true;
+  unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+      move(return_data_type), move(arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), true, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1268,18 +1278,22 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(make_pair(body_node_ptr1, move(body_analysis1)));
     unique_ptr<DataType> return_data_type1(new VoidDataType());
     vector< unique_ptr<DataType> > arg_data_types1;
+    bool is_func_native = false;
     unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
-        move(return_data_type1), move(arg_data_types1)));
+        move(return_data_type1), move(arg_data_types1), is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis1(new FuncDefAnalysis(
-        move(func_data_type1), false, false));
+        move(func_data_type1), is_func_has_return));
     node_analyzes.insert(
         make_pair(func_def_node_ptr1, move(func_def_analysis1)));
     unique_ptr<DataType> return_data_type2(new VoidDataType());
     vector< unique_ptr<DataType> > arg_data_types2;
+    bool is_func_native2 = false;
     unique_ptr<FuncDataType> func_data_type2(new FuncDataType(
-        move(return_data_type2), move(arg_data_types2)));
+        move(return_data_type2), move(arg_data_types2), is_func_native2));
+    bool is_func_has_return2 = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis2(new FuncDefAnalysis(
-        move(func_data_type2), false, false));
+        move(func_data_type2), is_func_has_return2));
     node_analyzes.insert(
         make_pair(func_def_node_ptr2, move(func_def_analysis2)));
 
@@ -1413,10 +1427,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> return_data_type1(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types1;
-  unique_ptr<FuncDataType> func_data_type1(
-      new FuncDataType(move(return_data_type1), move(arg_data_types1)));
+  bool is_func_native = false;
+  unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
+      move(return_data_type1), move(arg_data_types1), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis1(
-      new FuncDefAnalysis(move(func_data_type1), false, false));
+      new FuncDefAnalysis(move(func_data_type1), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr1, move(func_def_analysis1)));
 
@@ -1511,11 +1527,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
       new ScopeAnalysis(func_body_local_vars_count));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
 
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
       unique_ptr<DataType>(new IntDataType()),
-      vector< unique_ptr<DataType> >()));
+      vector< unique_ptr<DataType> >(),
+      is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1593,10 +1612,12 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyWithArgsAndReturnValue) {
   unique_ptr<DataType> func_return_data_type(func_return_data_type_ptr);
   vector< unique_ptr<DataType> > func_arg_data_types;
   func_arg_data_types.push_back(unique_ptr<DataType>(new IntDataType()));
+  bool is_func_native = true;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), true, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
   unique_ptr<DataType> arg_data_type(new IntDataType());
@@ -1646,10 +1667,12 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyAndArgsAndReturnValue) {
   VoidDataType *func_return_data_type_ptr = new VoidDataType();
   unique_ptr<DataType> func_return_data_type(func_return_data_type_ptr);
   vector< unique_ptr<DataType> > func_arg_data_types;
+  bool is_func_native = true;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), true, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1690,10 +1713,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  unique_ptr<FuncDataType> func_data_type(
-      new FuncDataType(move(return_data_type), move(arg_data_types)));
+  bool is_func_native = false;
+  unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+      move(return_data_type), move(arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -1764,18 +1789,22 @@ TEST_F(SimpleSemanticAnalyzerTest,
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<DataType> return_data_type1(new VoidDataType());
     vector< unique_ptr<DataType> > arg_data_types1;
+    bool is_func_native = true;
     unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
-        move(return_data_type1), move(arg_data_types1)));
+        move(return_data_type1), move(arg_data_types1), is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis1(new FuncDefAnalysis(
-        move(func_data_type1), true, false));
+        move(func_data_type1), is_func_has_return));
     node_analyzes.insert(
         make_pair(func_def_node_ptr1, move(func_def_analysis1)));
     unique_ptr<DataType> return_data_type2(new VoidDataType());
     vector< unique_ptr<DataType> > arg_data_types2;
+    bool is_func_native2 = true;
     unique_ptr<FuncDataType> func_data_type2(new FuncDataType(
-        move(return_data_type2), move(arg_data_types2)));
+        move(return_data_type2), move(arg_data_types2), is_func_native2));
+    bool is_func_has_return2 = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis2(new FuncDefAnalysis(
-        move(func_data_type2), true, false));
+        move(func_data_type2), is_func_has_return2));
     node_analyzes.insert(
         make_pair(func_def_node_ptr2, move(func_def_analysis2)));
 
@@ -1900,10 +1929,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> return_data_type1(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types1;
-  unique_ptr<FuncDataType> func_data_type1(
-      new FuncDataType(move(return_data_type1), move(arg_data_types1)));
+  bool is_func_native = false;
+  unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
+      move(return_data_type1), move(arg_data_types1), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis1(
-      new FuncDefAnalysis(move(func_data_type1), false, false));
+      new FuncDefAnalysis(move(func_data_type1), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr1, move(func_def_analysis1)));
 
@@ -1993,10 +2024,14 @@ TEST_F(SimpleSemanticAnalyzerTest, ArgDefWithUnsupportedDataTypeIsInvalid) {
     unique_ptr<DataType> func_return_data_type(func_return_data_type_ptr);
     vector< unique_ptr<DataType> > func_arg_data_types;
     func_arg_data_types.push_back(test_data.arg_data_type->Clone());
+    bool is_func_native = false;
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-        move(func_return_data_type), move(func_arg_data_types)));
+        move(func_return_data_type),
+        move(func_arg_data_types),
+        is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false, false));
+        new FuncDefAnalysis(move(func_data_type), is_func_has_return));
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
     uint32_t var_index_within_func = UINT32_C(0);
@@ -2076,10 +2111,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<DataType> func_return_data_type(func_return_data_type_ptr);
   vector< unique_ptr<DataType> > func_arg_data_types;
   func_arg_data_types.push_back(unique_ptr<DataType>(new StringDataType()));
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2202,10 +2239,12 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   VoidDataType *func_return_data_type_ptr = new VoidDataType();
   unique_ptr<DataType> func_return_data_type(func_return_data_type_ptr);
   vector< unique_ptr<DataType> > func_arg_data_types;
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
+  bool is_func_has_return = true;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, true));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2290,10 +2329,12 @@ TEST_F(SimpleSemanticAnalyzerTest,
   IntDataType *func_return_data_type_ptr = new IntDataType();
   unique_ptr<DataType> func_return_data_type(func_return_data_type_ptr);
   vector< unique_ptr<DataType> > func_arg_data_types;
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2384,10 +2425,12 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   arg_data_types.push_back(unique_ptr<DataType>(new IntDataType()));
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(return_data_type), move(arg_data_types)));
+      move(return_data_type), move(arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2402,7 +2445,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   unique_ptr<DataType> func_arg_data_type(new IntDataType());
   func_arg_data_types.push_back(move(func_arg_data_type));
   unique_ptr<DataType> id_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
   bool is_id_assignee = false;
   unique_ptr<DataType> id_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
@@ -2513,10 +2556,12 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   arg_data_types.push_back(unique_ptr<DataType>(new IntDataType()));
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(return_data_type), move(arg_data_types)));
+      move(return_data_type), move(arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2532,7 +2577,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
   unique_ptr<DataType> func_arg_data_type(new IntDataType());
   func_arg_data_types.push_back(move(func_arg_data_type));
   unique_ptr<DataType> id_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
   unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
@@ -2655,10 +2700,12 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
   arg_data_types.push_back(unique_ptr<DataType>(new IntDataType()));
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(return_data_type), move(arg_data_types)));
+      move(return_data_type), move(arg_data_types), is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-      new FuncDefAnalysis(move(func_data_type), false, false));
+      new FuncDefAnalysis(move(func_data_type), is_func_has_return));
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
@@ -2673,7 +2720,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
   unique_ptr<DataType> func_arg_data_type(new IntDataType());
   func_arg_data_types.push_back(move(func_arg_data_type));
   unique_ptr<DataType> id_data_type(new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types)));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native));
   unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
@@ -2967,21 +3014,25 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
       new ScopeAnalysis(func_body_local_vars_count));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
+  bool is_func_native = false;
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
     vector< unique_ptr<DataType> > func_arg_data_types;
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-        move(func_return_data_type), move(func_arg_data_types)));
+        move(func_return_data_type),
+        move(func_arg_data_types),
+        is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false, false));
+        new FuncDefAnalysis(move(func_data_type), is_func_has_return));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > func_arg_data_types;
   FuncDataType *func_data_type_ptr = new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native);
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
   unique_ptr<FuncDataType> func_casted_data_type;
   bool is_id_assignee = false;
@@ -3100,14 +3151,18 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
       new ScopeAnalysis(if_body_local_vars_count1));
   node_analyzes.insert(make_pair(if_body_node_ptr1, move(if_body_analysis1)));
+  bool is_func_native = false;
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
     vector< unique_ptr<DataType> > func_arg_data_types;
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-        move(func_return_data_type), move(func_arg_data_types)));
+        move(func_return_data_type),
+        move(func_arg_data_types),
+        is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false, false));
+        new FuncDefAnalysis(move(func_data_type), is_func_has_return));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
@@ -3132,7 +3187,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > func_arg_data_types;
   FuncDataType *func_data_type_ptr = new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native);
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
   unique_ptr<FuncDataType> func_casted_data_type;
   bool is_id_assignee2 = false;
@@ -3389,21 +3444,25 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
       new ScopeAnalysis(func_body_local_vars_count));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
+  bool is_func_native = false;
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
     vector< unique_ptr<DataType> > func_arg_data_types;
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-        move(func_return_data_type), move(func_arg_data_types)));
+        move(func_return_data_type),
+        move(func_arg_data_types),
+        is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false, false));
+        new FuncDefAnalysis(move(func_data_type), is_func_has_return));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > func_arg_data_types;
   FuncDataType *func_data_type_ptr = new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native);
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
   unique_ptr<FuncDataType> func_casted_data_type;
   bool is_id_assignee = false;
@@ -3529,14 +3588,18 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
       new ScopeAnalysis(if_body_local_vars_count1));
   node_analyzes.insert(make_pair(if_body_node_ptr1, move(if_body_analysis1)));
+  bool is_func_native = false;
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
     vector< unique_ptr<DataType> > func_arg_data_types;
     unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-        move(func_return_data_type), move(func_arg_data_types)));
+        move(func_return_data_type),
+        move(func_arg_data_types),
+        is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(
-        new FuncDefAnalysis(move(func_data_type), false, false));
+        new FuncDefAnalysis(move(func_data_type), is_func_has_return));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
@@ -3561,7 +3624,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > func_arg_data_types;
   FuncDataType *func_data_type_ptr = new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native);
   unique_ptr<FuncDataType> func_data_type(func_data_type_ptr);
   unique_ptr<FuncDataType> func_casted_data_type;
   bool is_id_assignee2 = false;
@@ -3789,10 +3852,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
   unique_ptr<DataType> func_return_data_type1(new VoidDataType());
   vector< unique_ptr<DataType> > func_arg_data_types1;
   func_arg_data_types1.push_back(unique_ptr<DataType>(new LongDataType()));
+  bool is_func_native = false;
   unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
-      move(func_return_data_type1), move(func_arg_data_types1)));
+      move(func_return_data_type1),
+      move(func_arg_data_types1),
+      is_func_native));
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis1(
-      new FuncDefAnalysis(move(func_data_type1), false, false));
+      new FuncDefAnalysis(move(func_data_type1), is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr1, move(func_def_analysis1)));
 
   unique_ptr<DataType> var_data_type3(new IntDataType());
@@ -4502,21 +4569,25 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
       new ScopeAnalysis(func_body_local_vars_count));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
+  bool is_func_native = false;
 
   {
     unique_ptr<DataType> func_return_data_type(new VoidDataType());
     vector< unique_ptr<DataType> > func_arg_data_types;
     unique_ptr<FuncDataType> func_def_data_type(new FuncDataType(
-        move(func_return_data_type), move(func_arg_data_types)));
+        move(func_return_data_type),
+        move(func_arg_data_types),
+        is_func_native));
+    bool is_func_has_return = false;
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
-        move(func_def_data_type), false, false));
+        move(func_def_data_type), is_func_has_return));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
   }
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > func_arg_data_types;
   FuncDataType *id_data_type_ptr = new FuncDataType(
-      move(func_return_data_type), move(func_arg_data_types));
+      move(func_return_data_type), move(func_arg_data_types), is_func_native);
   unique_ptr<DataType> id_data_type(id_data_type_ptr);
   unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
@@ -5443,12 +5514,14 @@ TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -5603,12 +5676,14 @@ TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -5763,12 +5838,14 @@ TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -5923,12 +6000,14 @@ TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -6083,12 +6162,14 @@ TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -6243,12 +6324,14 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -6403,12 +6486,14 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -6567,12 +6652,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -6731,12 +6818,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -6894,12 +6983,14 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -7057,12 +7148,14 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
-  FuncDataType func_data_type(move(return_data_type), move(arg_data_types));
+  bool is_func_native = false;
+  FuncDataType func_data_type(
+      move(return_data_type), move(arg_data_types), is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   bool is_id_assignee = false;
@@ -7988,14 +8081,16 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
       new ScopeAnalysis(body_local_vars_count));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
+  bool is_func_native = false;
   FuncDataType func_data_type(
       unique_ptr<DataType>(new VoidDataType()),
-      vector< unique_ptr<DataType> >());
+      vector< unique_ptr<DataType> >(),
+      is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
@@ -8129,14 +8224,16 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
       new ScopeAnalysis(body_local_vars_count));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
+  bool is_func_native = false;
   FuncDataType func_data_type(
       unique_ptr<DataType>(new VoidDataType()),
-      vector< unique_ptr<DataType> >());
+      vector< unique_ptr<DataType> >(),
+      is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
@@ -8270,14 +8367,16 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
       new ScopeAnalysis(body_local_vars_count));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
+  bool is_func_native = false;
   FuncDataType func_data_type(
       unique_ptr<DataType>(new VoidDataType()),
-      vector< unique_ptr<DataType> >());
+      vector< unique_ptr<DataType> >(),
+      is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());
@@ -8411,14 +8510,16 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
       new ScopeAnalysis(body_local_vars_count));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
+  bool is_func_native = false;
   FuncDataType func_data_type(
       unique_ptr<DataType>(new VoidDataType()),
-      vector< unique_ptr<DataType> >());
+      vector< unique_ptr<DataType> >(),
+      is_func_native);
+  bool is_func_has_return = false;
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       unique_ptr<FuncDataType>(
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
-      false,
-      false));
+      is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> id_data_type(func_data_type.Clone());

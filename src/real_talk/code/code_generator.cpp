@@ -885,12 +885,9 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis &func_def_analysis) override {
-    if (func_def_analysis.IsNative()) {
-      assert(false);
-    } else {
-      code_->WriteCmdId(CmdId::kLoadFuncAddress);
-    }
-
+    const bool is_native = func_def_analysis.GetDataType().IsNative();
+    code_->WriteCmdId(
+        is_native ? CmdId::kLoadNativeFuncAddress : CmdId::kLoadFuncAddress);
     const uint32_t func_index_placeholder = code_->GetPosition();
     const uint32_t func_index = numeric_limits<uint32_t>::max();
     code_->WriteUint32(func_index);
@@ -991,8 +988,8 @@ class CodeGenerator::Impl::CallCmdGenerator: private DataTypeVisitor {
   }
 
  private:
-  virtual void VisitFunc(const FuncDataType&) override {
-    code_->WriteCmdId(CmdId::kCall);
+  virtual void VisitFunc(const FuncDataType &data_type) override {
+    code_->WriteCmdId(data_type.IsNative() ? CmdId::kCallNative : CmdId::kCall);
   }
 
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}

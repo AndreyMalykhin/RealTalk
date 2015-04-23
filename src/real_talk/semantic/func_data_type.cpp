@@ -2,6 +2,7 @@
 #include <boost/iterator/indirect_iterator.hpp>
 #include <cassert>
 #include <vector>
+#include <string>
 #include "real_talk/semantic/func_data_type.h"
 #include "real_talk/semantic/data_type_visitor.h"
 
@@ -17,10 +18,16 @@ namespace semantic {
 
 FuncDataType::FuncDataType(
     unique_ptr<DataType> return_data_type,
-    vector< unique_ptr<DataType> > arg_data_types)
+    vector< unique_ptr<DataType> > arg_data_types,
+    bool is_native)
     : return_data_type_(move(return_data_type)),
-      arg_data_types_(move(arg_data_types)) {
+      arg_data_types_(move(arg_data_types)),
+      is_native_(is_native) {
   assert(return_data_type_);
+}
+
+bool FuncDataType::IsNative() const {
+  return is_native_;
 }
 
 DataTypeId FuncDataType::GetId() const {
@@ -28,13 +35,19 @@ DataTypeId FuncDataType::GetId() const {
 }
 
 string FuncDataType::GetName() const {
-  string name = return_data_type_->GetName();
+  string name;
+
+  if (is_native_) {
+    name += "native ";
+  }
+
+  name += return_data_type_->GetName();
   name += '(';
 
   if (!arg_data_types_.empty()) {
-    auto last_arg_data_type_it = arg_data_types_.end() - 1;
+    auto last_arg_data_type_it = arg_data_types_.cend() - 1;
 
-    for (auto arg_data_type_it = arg_data_types_.begin();
+    for (auto arg_data_type_it = arg_data_types_.cbegin();
          arg_data_type_it != last_arg_data_type_it;
          ++arg_data_type_it) {
       name += (*arg_data_type_it)->GetName();
@@ -56,7 +69,7 @@ unique_ptr<DataType> FuncDataType::Clone() const {
   }
 
   return unique_ptr<DataType>(new FuncDataType(
-      return_data_type_->Clone(), move(cloned_arg_data_types)));
+      return_data_type_->Clone(), move(cloned_arg_data_types), is_native_));
 }
 
 void FuncDataType::Accept(DataTypeVisitor &visitor) const {
@@ -74,6 +87,7 @@ const vector< unique_ptr<DataType> > &FuncDataType::GetArgDataTypes() const {
 bool FuncDataType::IsEqual(const DataType &data_type) const {
   const FuncDataType &rhs = static_cast<const FuncDataType&>(data_type);
   return *return_data_type_ == *(rhs.return_data_type_)
+      && is_native_ == rhs.is_native_
       && arg_data_types_.size() == rhs.arg_data_types_.size()
       && equal(make_indirect_iterator(arg_data_types_.begin()),
                make_indirect_iterator(arg_data_types_.end()),
