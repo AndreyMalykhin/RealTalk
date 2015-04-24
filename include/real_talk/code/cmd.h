@@ -77,6 +77,7 @@ enum class CmdId: uint8_t {
   kLoadLocalVarAddress,
   kLoadFuncAddress,
   kLoadNativeFuncAddress,
+  kLoadArrayElementValue,
   kStoreInt,
   kStoreLong,
   kStoreDouble,
