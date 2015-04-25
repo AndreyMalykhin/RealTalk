@@ -1143,6 +1143,122 @@ class CodeGeneratorTest: public Test {
                  version,
                  module_code);
   }
+
+  void TestNotAssigneeSubscriptWithArray(
+      unique_ptr<DataTypeNode> element_data_type_node,
+      const DataType &element_data_type,
+      CmdId expected_cmd_id) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+        move(element_data_type_node),
+        TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+        TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+    VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+        move(array_data_type_node),
+        TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)));
+    unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+    program_stmt_nodes.push_back(move(var_def_node));
+    IdNode *id_node_ptr = new IdNode(
+        TokenInfo(Token::kName, "var", UINT32_C(5), UINT32_C(5)));
+    unique_ptr<ExprNode> id_node(id_node_ptr);
+    CharNode *char_node_ptr = new CharNode(
+        TokenInfo(Token::kCharLit, "'a'", UINT32_C(7), UINT32_C(7)));
+    unique_ptr<ExprNode> char_node(char_node_ptr);
+    SubscriptNode *subscript_expr_node_ptr = new SubscriptNode(
+        TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
+        TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(8), UINT32_C(8)),
+        move(id_node),
+        move(char_node));
+    unique_ptr<ExprNode> subscript_expr_node(subscript_expr_node_ptr);
+    unique_ptr<StmtNode> subscript_stmt_node(new ExprStmtNode(
+        move(subscript_expr_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
+    program_stmt_nodes.push_back(move(subscript_stmt_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    unique_ptr<DataType> var_data_type(
+        new ArrayDataType(element_data_type.Clone()));
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
+        move(var_data_type)));
+    node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+    bool is_id_assignee = false;
+    unique_ptr<DataType> id_data_type(
+        new ArrayDataType(element_data_type.Clone()));
+    unique_ptr<DataType> id_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+        move(id_data_type),
+        move(id_casted_data_type),
+        ValueType::kLeft,
+        var_def_node_ptr,
+        is_id_assignee));
+    node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+    bool is_subscript_assignee = false;
+    unique_ptr<DataType> subscript_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> subscript_analysis(new SubscriptAnalysis(
+        element_data_type.Clone(),
+        move(subscript_casted_data_type),
+        ValueType::kLeft,
+        is_subscript_assignee));
+    node_analyzes.insert(
+        make_pair(subscript_expr_node_ptr, move(subscript_analysis)));
+    unique_ptr<DataType> char_casted_data_type(new IntDataType());
+    unique_ptr<NodeSemanticAnalysis> char_analysis(new LitAnalysis(
+        unique_ptr<DataType>(new CharDataType()),
+        move(char_casted_data_type),
+        ValueType::kRight,
+        unique_ptr<Lit>(new CharLit('a'))));
+    node_analyzes.insert(make_pair(char_node_ptr, move(char_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::Problems(), move(node_analyzes));
+
+    vector<TestCast> test_casts;
+    unique_ptr<DataType> dest_data_type(new IntDataType());
+    unique_ptr<DataType> src_data_type(new CharDataType());
+    TestCast test_cast =
+        {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
+    test_casts.push_back(move(test_cast));
+
+    unique_ptr<Code> cmds_code(new Code());
+    cmds_code->WriteCmdId(CmdId::kCreateGlobalArrayVar);
+    uint32_t var_index = numeric_limits<uint32_t>::max();
+    cmds_code->WriteUint32(var_index);
+    cmds_code->WriteCmdId(CmdId::kLoadCharValue);
+    cmds_code->WriteChar('a');
+    cmds_code->WriteCmdId(CmdId::kCastCharToInt);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
+    uint32_t var_index_placeholder = cmds_code->GetPosition();
+    cmds_code->WriteUint32(var_index);
+    cmds_code->WriteCmdId(expected_cmd_id);
+    cmds_code->WriteCmdId(CmdId::kUnload);
+    cmds_code->WriteCmdId(CmdId::kEndMain);
+    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+    vector<path> import_file_paths;
+    vector<string> ids_of_global_var_defs = {"var"};
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddress> id_addresses_of_global_var_refs =
+        {{"var", var_index_placeholder}};
+    vector<IdAddress> id_addresses_of_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module module(version,
+                  move(cmds_code),
+                  id_addresses_of_func_defs,
+                  ids_of_global_var_defs,
+                  ids_of_native_func_defs,
+                  id_addresses_of_func_refs,
+                  id_addresses_of_global_var_refs,
+                  import_file_paths);
+    Code module_code;
+    WriteModule(module, module_code);
+    TestGenerate(move(test_casts),
+                 program_node,
+                 semantic_analysis,
+                 version,
+                 module_code);
+  }
 };
 
 TEST_F(CodeGeneratorTest, GlobalIntVarDefWithoutInit) {
@@ -5430,116 +5546,78 @@ TEST_F(CodeGeneratorTest, NativeCall) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, NotAssigneeSubscript) {
-  vector< unique_ptr<StmtNode> > program_stmt_nodes;
-    unique_ptr<DataTypeNode> long_data_type_node(new LongDataTypeNode(
+TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfInts) {
+  unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  IntDataType element_data_type;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfIntsElementValue;
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfLongs) {
+  unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
-  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
-      move(long_data_type_node),
+  LongDataType element_data_type;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfLongsElementValue;
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfDoubles) {
+  unique_ptr<DataTypeNode> element_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  DoubleDataType element_data_type;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfDoublesElementValue;
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfBools) {
+  unique_ptr<DataTypeNode> element_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  BoolDataType element_data_type;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfBoolsElementValue;
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfChars) {
+  unique_ptr<DataTypeNode> element_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  CharDataType element_data_type;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfCharsElementValue;
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfStrings) {
+  unique_ptr<DataTypeNode> element_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  StringDataType element_data_type;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfStringsElementValue;
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
+  unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(int_data_type_node),
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
-  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
-      move(array_data_type_node),
-      TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)));
-  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
-  program_stmt_nodes.push_back(move(var_def_node));
-  IdNode *id_node_ptr = new IdNode(
-      TokenInfo(Token::kName, "var", UINT32_C(5), UINT32_C(5)));
-  unique_ptr<ExprNode> id_node(id_node_ptr);
-  CharNode *char_node_ptr = new CharNode(
-      TokenInfo(Token::kCharLit, "'a'", UINT32_C(7), UINT32_C(7)));
-  unique_ptr<ExprNode> char_node(char_node_ptr);
-  SubscriptNode *subscript_expr_node_ptr = new SubscriptNode(
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(8), UINT32_C(8)),
-      move(id_node),
-      move(char_node));
-  unique_ptr<ExprNode> subscript_expr_node(subscript_expr_node_ptr);
-  unique_ptr<StmtNode> subscript_stmt_node(new ExprStmtNode(
-      move(subscript_expr_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
-  program_stmt_nodes.push_back(move(subscript_stmt_node));
-  ProgramNode program_node(move(program_stmt_nodes));
-
-  SemanticAnalysis::NodeAnalyzes node_analyzes;
-  LongDataType long_data_type;
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
-      long_data_type.Clone()));
-  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  bool is_id_assignee = false;
-  unique_ptr<DataType> id_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-      long_data_type.Clone(),
-      move(id_casted_data_type),
-      ValueType::kLeft,
-      var_def_node_ptr,
-      is_id_assignee));
-  node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
-  bool is_subscript_assignee = false;
-  unique_ptr<DataType> subscript_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> subscript_analysis(new SubscriptAnalysis(
-      long_data_type.Clone(),
-      move(subscript_casted_data_type),
-      ValueType::kLeft,
-      is_subscript_assignee));
-  node_analyzes.insert(
-      make_pair(subscript_expr_node_ptr, move(subscript_analysis)));
-  unique_ptr<DataType> char_casted_data_type(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> char_analysis(new LitAnalysis(
-      unique_ptr<DataType>(new CharDataType()),
-      move(char_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new CharLit('a'))));
-  node_analyzes.insert(make_pair(char_node_ptr, move(char_analysis)));
-  SemanticAnalysis semantic_analysis(
-      SemanticAnalysis::Problems(), move(node_analyzes));
-
-  vector<TestCast> test_casts;
-  unique_ptr<DataType> dest_data_type(new IntDataType());
-  unique_ptr<DataType> src_data_type(new CharDataType());
-  TestCast test_cast =
-      {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
-  test_casts.push_back(move(test_cast));
-
-  unique_ptr<Code> cmds_code(new Code());
-  cmds_code->WriteCmdId(CmdId::kCreateGlobalArrayVar);
-  uint32_t var_index = numeric_limits<uint32_t>::max();
-  cmds_code->WriteUint32(var_index);
-  cmds_code->WriteCmdId(CmdId::kLoadCharValue);
-  cmds_code->WriteChar('a');
-  cmds_code->WriteCmdId(CmdId::kCastCharToInt);
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
-  uint32_t var_index_placeholder = cmds_code->GetPosition();
-  cmds_code->WriteUint32(var_index);
-  cmds_code->WriteCmdId(CmdId::kLoadArrayElementValue);
-  cmds_code->WriteCmdId(CmdId::kUnload);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
-
-  vector<path> import_file_paths;
-  vector<string> ids_of_global_var_defs = {"var"};
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs =
-      {{"var", var_index_placeholder}};
-  vector<IdAddress> id_addresses_of_func_refs;
-  uint32_t version = UINT32_C(1);
-  Module module(version,
-                move(cmds_code),
-                id_addresses_of_func_defs,
-                ids_of_global_var_defs,
-                ids_of_native_func_defs,
-                id_addresses_of_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
-  Code module_code;
-  WriteModule(module, module_code);
-  TestGenerate(move(test_casts),
-               program_node,
-               semantic_analysis,
-               version,
-               module_code);
+  ArrayDataType element_data_type(unique_ptr<DataType>(new IntDataType()));
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfArraysElementValue;
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_cmd_id);
 }
 }
 }

@@ -20,6 +20,7 @@
 #include "real_talk/code/load_local_var_address_cmd.h"
 #include "real_talk/code/load_func_address_cmd.h"
 #include "real_talk/code/load_native_func_address_cmd.h"
+#include "real_talk/code/load_element_value_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/call_cmd.h"
@@ -198,6 +199,21 @@ const CastLongToDoubleCmd &kCastLongToDoubleCmd = *new CastLongToDoubleCmd();
 
 const CallCmd &kCallCmd = *new CallCmd();
 const CallNativeCmd &kCallNativeCmd = *new CallNativeCmd();
+
+const LoadArrayOfIntsElementValueCmd &kLoadArrayOfIntsElementValueCmd =
+    *new LoadArrayOfIntsElementValueCmd();
+const LoadArrayOfLongsElementValueCmd &kLoadArrayOfLongsElementValueCmd =
+    *new LoadArrayOfLongsElementValueCmd();
+const LoadArrayOfDoublesElementValueCmd &kLoadArrayOfDoublesElementValueCmd =
+    *new LoadArrayOfDoublesElementValueCmd();
+const LoadArrayOfBoolsElementValueCmd &kLoadArrayOfBoolsElementValueCmd =
+    *new LoadArrayOfBoolsElementValueCmd();
+const LoadArrayOfCharsElementValueCmd &kLoadArrayOfCharsElementValueCmd =
+    *new LoadArrayOfCharsElementValueCmd();
+const LoadArrayOfStringsElementValueCmd &kLoadArrayOfStringsElementValueCmd =
+    *new LoadArrayOfStringsElementValueCmd();
+const LoadArrayOfArraysElementValueCmd &kLoadArrayOfArraysElementValueCmd =
+    *new LoadArrayOfArraysElementValueCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -552,6 +568,27 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kCallNative:
       cmd = &kCallNativeCmd;
+      break;
+    case CmdId::kLoadArrayOfIntsElementValue:
+      cmd = &kLoadArrayOfIntsElementValueCmd;
+      break;
+    case CmdId::kLoadArrayOfLongsElementValue:
+      cmd = &kLoadArrayOfLongsElementValueCmd;
+      break;
+    case CmdId::kLoadArrayOfDoublesElementValue:
+      cmd = &kLoadArrayOfDoublesElementValueCmd;
+      break;
+    case CmdId::kLoadArrayOfBoolsElementValue:
+      cmd = &kLoadArrayOfBoolsElementValueCmd;
+      break;
+    case CmdId::kLoadArrayOfCharsElementValue:
+      cmd = &kLoadArrayOfCharsElementValueCmd;
+      break;
+    case CmdId::kLoadArrayOfStringsElementValue:
+      cmd = &kLoadArrayOfStringsElementValueCmd;
+      break;
+    case CmdId::kLoadArrayOfArraysElementValue:
+      cmd = &kLoadArrayOfArraysElementValueCmd;
       break;
   }
 

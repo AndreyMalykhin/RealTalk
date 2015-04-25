@@ -32,6 +32,7 @@
 #include "real_talk/parser/id_node.h"
 #include "real_talk/parser/assign_node.h"
 #include "real_talk/parser/call_node.h"
+#include "real_talk/parser/subscript_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -45,6 +46,7 @@
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/func_def_analysis.h"
 #include "real_talk/semantic/return_analysis.h"
+#include "real_talk/semantic/subscript_analysis.h"
 #include "real_talk/semantic/def_analysis_visitor.h"
 #include "real_talk/semantic/int_lit.h"
 #include "real_talk/semantic/long_lit.h"
@@ -146,6 +148,7 @@ using real_talk::semantic::ExprAnalysis;
 using real_talk::semantic::IdAnalysis;
 using real_talk::semantic::DefAnalysis;
 using real_talk::semantic::ReturnAnalysis;
+using real_talk::semantic::SubscriptAnalysis;
 using real_talk::semantic::DefAnalysisVisitor;
 using real_talk::semantic::DataTypeVisitor;
 using real_talk::semantic::DataType;
@@ -192,6 +195,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   class ReturnValueCmdGenerator;
   class LoadGlobalVarValueCmdGenerator;
   class LoadLocalVarValueCmdGenerator;
+  class LoadElementValueCmdGenerator;
+  class LoadArrayElementValueCmdGenerator;
   class StoreCmdGenerator;
   class CallCmdGenerator;
 
@@ -1004,6 +1009,75 @@ class CodeGenerator::Impl::CallCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
+class CodeGenerator::Impl::LoadArrayElementValueCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfArraysElementValue);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfBoolsElementValue);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfIntsElementValue);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfLongsElementValue);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfDoublesElementValue);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfCharsElementValue);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfStringsElementValue);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class CodeGenerator::Impl::LoadElementValueCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    LoadArrayElementValueCmdGenerator().Generate(
+        data_type.GetElementDataType(), code_);
+  }
+
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitInt(const IntDataType&) override {assert(false);}
+  virtual void VisitLong(const LongDataType&) override {assert(false);}
+  virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
+  virtual void VisitChar(const CharDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
 
@@ -1418,7 +1492,23 @@ void CodeGenerator::Impl::VisitAssign(const AssignNode &node) {
   GenerateCastCmdIfNeeded(assign_analysis);
 }
 
-void CodeGenerator::Impl::VisitSubscript(const SubscriptNode&) {}
+void CodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
+  node.GetIndex()->Accept(*this);
+  node.GetOperand()->Accept(*this);
+  const SubscriptAnalysis &subscript_analysis =
+      static_cast<const SubscriptAnalysis&>(GetNodeAnalysis(node));
+  const ExprAnalysis &operand_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetOperand())));
+
+  if (subscript_analysis.IsAssignee()) {
+    assert(false);
+  } else {
+    LoadElementValueCmdGenerator().Generate(
+        operand_analysis.GetDataType(), code_);
+  }
+
+  GenerateCastCmdIfNeeded(subscript_analysis);
+}
 
 void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
 

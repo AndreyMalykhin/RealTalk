@@ -22,6 +22,7 @@
 #include "real_talk/code/load_local_var_address_cmd.h"
 #include "real_talk/code/load_func_address_cmd.h"
 #include "real_talk/code/load_native_func_address_cmd.h"
+#include "real_talk/code/load_element_value_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/call_cmd.h"
@@ -760,6 +761,55 @@ TEST_F(CmdReaderTest, CallNativeCmd) {
   CallNativeCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kCallNative);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfIntsElementValueCmd) {
+  LoadArrayOfIntsElementValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfIntsElementValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfLongsElementValueCmd) {
+  LoadArrayOfLongsElementValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfLongsElementValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfDoublesElementValueCmd) {
+  LoadArrayOfDoublesElementValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfDoublesElementValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfCharsElementValueCmd) {
+  LoadArrayOfCharsElementValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfCharsElementValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfBoolsElementValueCmd) {
+  LoadArrayOfBoolsElementValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfBoolsElementValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfStringsElementValueCmd) {
+  LoadArrayOfStringsElementValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfStringsElementValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfArraysElementValueCmd) {
+  LoadArrayOfArraysElementValueCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfArraysElementValue);
   TestGetNextCmd(code, expected_cmd);
 }
 }
