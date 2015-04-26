@@ -21,6 +21,7 @@
 #include "real_talk/code/load_func_address_cmd.h"
 #include "real_talk/code/load_native_func_address_cmd.h"
 #include "real_talk/code/load_element_value_cmd.h"
+#include "real_talk/code/load_element_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/call_cmd.h"
@@ -214,6 +215,21 @@ const LoadArrayOfStringsElementValueCmd &kLoadArrayOfStringsElementValueCmd =
     *new LoadArrayOfStringsElementValueCmd();
 const LoadArrayOfArraysElementValueCmd &kLoadArrayOfArraysElementValueCmd =
     *new LoadArrayOfArraysElementValueCmd();
+
+const LoadArrayOfIntsElementAddressCmd &kLoadArrayOfIntsElementAddressCmd =
+    *new LoadArrayOfIntsElementAddressCmd();
+const LoadArrayOfLongsElementAddressCmd &kLoadArrayOfLongsElementAddressCmd =
+    *new LoadArrayOfLongsElementAddressCmd();
+const LoadArrayOfDoublesElementAddressCmd &kLoadArrayOfDoublesElementAddressCmd =
+    *new LoadArrayOfDoublesElementAddressCmd();
+const LoadArrayOfBoolsElementAddressCmd &kLoadArrayOfBoolsElementAddressCmd =
+    *new LoadArrayOfBoolsElementAddressCmd();
+const LoadArrayOfCharsElementAddressCmd &kLoadArrayOfCharsElementAddressCmd =
+    *new LoadArrayOfCharsElementAddressCmd();
+const LoadArrayOfStringsElementAddressCmd &kLoadArrayOfStringsElementAddressCmd =
+    *new LoadArrayOfStringsElementAddressCmd();
+const LoadArrayOfArraysElementAddressCmd &kLoadArrayOfArraysElementAddressCmd =
+    *new LoadArrayOfArraysElementAddressCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -589,6 +605,27 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kLoadArrayOfArraysElementValue:
       cmd = &kLoadArrayOfArraysElementValueCmd;
+      break;
+    case CmdId::kLoadArrayOfIntsElementAddress:
+      cmd = &kLoadArrayOfIntsElementAddressCmd;
+      break;
+    case CmdId::kLoadArrayOfLongsElementAddress:
+      cmd = &kLoadArrayOfLongsElementAddressCmd;
+      break;
+    case CmdId::kLoadArrayOfDoublesElementAddress:
+      cmd = &kLoadArrayOfDoublesElementAddressCmd;
+      break;
+    case CmdId::kLoadArrayOfBoolsElementAddress:
+      cmd = &kLoadArrayOfBoolsElementAddressCmd;
+      break;
+    case CmdId::kLoadArrayOfCharsElementAddress:
+      cmd = &kLoadArrayOfCharsElementAddressCmd;
+      break;
+    case CmdId::kLoadArrayOfStringsElementAddress:
+      cmd = &kLoadArrayOfStringsElementAddressCmd;
+      break;
+    case CmdId::kLoadArrayOfArraysElementAddress:
+      cmd = &kLoadArrayOfArraysElementAddressCmd;
       break;
   }
 

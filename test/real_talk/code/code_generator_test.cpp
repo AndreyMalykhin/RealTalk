@@ -1259,6 +1259,141 @@ class CodeGeneratorTest: public Test {
                  version,
                  module_code);
   }
+
+  void TestAssigneeSubscriptWithArray(
+      unique_ptr<DataTypeNode> element_data_type_node,
+      unique_ptr<ExprNode> value_node,
+      const DataType &element_data_type,
+      unique_ptr<NodeSemanticAnalysis> value_analysis,
+      const Code &value_code,
+      CmdId store_cmd_id,
+      CmdId expected_cmd_id) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+        move(element_data_type_node),
+        TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+        TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+    VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+        move(array_data_type_node),
+        TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)));
+    unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+    program_stmt_nodes.push_back(move(var_def_node));
+    IdNode *id_node_ptr = new IdNode(
+        TokenInfo(Token::kName, "var", UINT32_C(5), UINT32_C(5)));
+    unique_ptr<ExprNode> id_node(id_node_ptr);
+    CharNode *char_node_ptr = new CharNode(
+        TokenInfo(Token::kCharLit, "'a'", UINT32_C(7), UINT32_C(7)));
+    unique_ptr<ExprNode> char_node(char_node_ptr);
+    SubscriptNode *subscript_node_ptr = new SubscriptNode(
+        TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
+        TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(8), UINT32_C(8)),
+        move(id_node),
+        move(char_node));
+    unique_ptr<ExprNode> subscript_node(subscript_node_ptr);
+    ExprNode *value_node_ptr = value_node.get();
+    AssignNode *assign_expr_node_ptr = new AssignNode(
+        TokenInfo(Token::kAssignOp, "=", UINT32_C(9), UINT32_C(9)),
+        move(subscript_node),
+        move(value_node));
+    unique_ptr<ExprNode> assign_expr_node(assign_expr_node_ptr);
+    unique_ptr<StmtNode> assign_stmt_node(new ExprStmtNode(
+        move(assign_expr_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(11), UINT32_C(11))));
+    program_stmt_nodes.push_back(move(assign_stmt_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    unique_ptr<DataType> var_data_type(
+        new ArrayDataType(element_data_type.Clone()));
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
+        move(var_data_type)));
+    node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+    bool is_id_assignee = false;
+    unique_ptr<DataType> id_data_type(
+        new ArrayDataType(element_data_type.Clone()));
+    unique_ptr<DataType> id_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+        move(id_data_type),
+        move(id_casted_data_type),
+        ValueType::kLeft,
+        var_def_node_ptr,
+        is_id_assignee));
+    node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+    bool is_subscript_assignee = true;
+    unique_ptr<DataType> subscript_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> subscript_analysis(new SubscriptAnalysis(
+        element_data_type.Clone(),
+        move(subscript_casted_data_type),
+        ValueType::kLeft,
+        is_subscript_assignee));
+    node_analyzes.insert(
+        make_pair(subscript_node_ptr, move(subscript_analysis)));
+    unique_ptr<DataType> char_casted_data_type(new IntDataType());
+    unique_ptr<NodeSemanticAnalysis> char_analysis(new LitAnalysis(
+        unique_ptr<DataType>(new CharDataType()),
+        move(char_casted_data_type),
+        ValueType::kRight,
+        unique_ptr<Lit>(new CharLit('a'))));
+    node_analyzes.insert(make_pair(char_node_ptr, move(char_analysis)));
+    node_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
+    unique_ptr<DataType> assign_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> assign_analysis(new CommonExprAnalysis(
+        unique_ptr<DataType>(new VoidDataType()),
+        move(assign_casted_data_type),
+        ValueType::kRight));
+    node_analyzes.insert(
+        make_pair(assign_expr_node_ptr, move(assign_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::Problems(), move(node_analyzes));
+
+    vector<TestCast> test_casts;
+    unique_ptr<DataType> dest_data_type(new IntDataType());
+    unique_ptr<DataType> src_data_type(new CharDataType());
+    TestCast test_cast =
+        {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
+    test_casts.push_back(move(test_cast));
+
+    unique_ptr<Code> cmds_code(new Code());
+    cmds_code->WriteCmdId(CmdId::kCreateGlobalArrayVar);
+    uint32_t var_index = numeric_limits<uint32_t>::max();
+    cmds_code->WriteUint32(var_index);
+    cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
+    cmds_code->WriteCmdId(CmdId::kLoadCharValue);
+    cmds_code->WriteChar('a');
+    cmds_code->WriteCmdId(CmdId::kCastCharToInt);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
+    uint32_t var_index_placeholder = cmds_code->GetPosition();
+    cmds_code->WriteUint32(var_index);
+    cmds_code->WriteCmdId(expected_cmd_id);
+    cmds_code->WriteCmdId(store_cmd_id);
+    cmds_code->WriteCmdId(CmdId::kEndMain);
+    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+    vector<path> import_file_paths;
+    vector<string> ids_of_global_var_defs = {"var"};
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddress> id_addresses_of_global_var_refs =
+        {{"var", var_index_placeholder}};
+    vector<IdAddress> id_addresses_of_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module module(version,
+                  move(cmds_code),
+                  id_addresses_of_func_defs,
+                  ids_of_global_var_defs,
+                  ids_of_native_func_defs,
+                  id_addresses_of_func_refs,
+                  id_addresses_of_global_var_refs,
+                  import_file_paths);
+    Code module_code;
+    WriteModule(module, module_code);
+    TestGenerate(move(test_casts),
+                 program_node,
+                 semantic_analysis,
+                 version,
+                 module_code);
+  }
 };
 
 TEST_F(CodeGeneratorTest, GlobalIntVarDefWithoutInit) {
@@ -5618,6 +5753,226 @@ TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
                                     expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfInts) {
+  unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  IntNode *value_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  IntDataType element_data_type;
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new IntDataType()),
+      move(value_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kLoadIntValue);
+  value_code.WriteInt32(INT32_C(7));
+  CmdId store_cmd_id = CmdId::kStoreInt;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfIntsElementAddress;
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      store_cmd_id,
+      expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfLongs) {
+  unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  LongNode *value_node_ptr = new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  LongDataType element_data_type;
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new LongDataType()),
+      move(value_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kLoadLongValue);
+  value_code.WriteInt64(INT64_C(7));
+  CmdId store_cmd_id = CmdId::kStoreLong;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfLongsElementAddress;
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      store_cmd_id,
+      expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfDoubles) {
+  unique_ptr<DataTypeNode> element_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  DoubleNode *value_node_ptr = new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  DoubleDataType element_data_type;
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new DoubleDataType()),
+      move(value_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(7.7))));
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kLoadDoubleValue);
+  value_code.WriteDouble(7.7);
+  CmdId store_cmd_id = CmdId::kStoreDouble;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfDoublesElementAddress;
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      store_cmd_id,
+      expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfBools) {
+  unique_ptr<DataTypeNode> element_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  BoolNode *value_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  BoolDataType element_data_type;
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new BoolDataType()),
+      move(value_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kLoadBoolValue);
+  value_code.WriteBool(true);
+  CmdId store_cmd_id = CmdId::kStoreBool;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfBoolsElementAddress;
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      store_cmd_id,
+      expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfChars) {
+  unique_ptr<DataTypeNode> element_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  CharNode *value_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  CharDataType element_data_type;
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new CharDataType()),
+      move(value_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kLoadCharValue);
+  value_code.WriteChar('a');
+  CmdId store_cmd_id = CmdId::kStoreChar;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfCharsElementAddress;
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      store_cmd_id,
+      expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfStrings) {
+  unique_ptr<DataTypeNode> element_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  StringNode *value_node_ptr = new StringNode(
+      TokenInfo(Token::kStringLit, "\"ab\"", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+  StringDataType element_data_type;
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
+      unique_ptr<DataType>(new StringDataType()),
+      move(value_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new StringLit("ab"))));
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kLoadStringValue);
+  value_code.WriteString("ab");
+  CmdId store_cmd_id = CmdId::kStoreString;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfStringsElementAddress;
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      store_cmd_id,
+      expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfArrays) {
+  unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(int_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  unique_ptr<PrimitiveDataTypeNode> int_data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
+  unique_ptr<UnboundedArraySizeNode> array_size_node(new UnboundedArraySizeNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  array_size_nodes.push_back(move(array_size_node));
+  vector< unique_ptr<ExprNode> > array_value_nodes;
+  vector<TokenInfo> array_value_separator_tokens;
+  ArrayAllocWithInitNode *value_node_ptr = new ArrayAllocWithInitNode(
+      TokenInfo(Token::kNew, "new", UINT32_C(10), UINT32_C(10)),
+      move(int_data_type_node2),
+      move(array_size_nodes),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(1), UINT32_C(1)),
+      move(array_value_nodes),
+      array_value_separator_tokens,
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+
+  ArrayDataType element_data_type(unique_ptr<DataType>(new IntDataType()));
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      element_data_type.Clone(),
+      move(value_casted_data_type),
+      ValueType::kRight));
+
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kCreateAndInitIntArray);
+  uint8_t dimensions_count = UINT8_C(1);
+  value_code.WriteUint8(dimensions_count);
+  uint32_t values_count = UINT32_C(0);
+  value_code.WriteUint32(values_count);
+
+  CmdId store_cmd_id = CmdId::kStoreArray;
+  CmdId expected_cmd_id = CmdId::kLoadArrayOfArraysElementAddress;
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      store_cmd_id,
+      expected_cmd_id);
 }
 }
 }

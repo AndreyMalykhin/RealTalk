@@ -23,6 +23,7 @@
 #include "real_talk/code/load_func_address_cmd.h"
 #include "real_talk/code/load_native_func_address_cmd.h"
 #include "real_talk/code/load_element_value_cmd.h"
+#include "real_talk/code/load_element_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/call_cmd.h"
@@ -810,6 +811,55 @@ TEST_F(CmdReaderTest, LoadArrayOfArraysElementValueCmd) {
   LoadArrayOfArraysElementValueCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kLoadArrayOfArraysElementValue);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfIntsElementAddressCmd) {
+  LoadArrayOfIntsElementAddressCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfIntsElementAddress);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfLongsElementAddressCmd) {
+  LoadArrayOfLongsElementAddressCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfLongsElementAddress);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfDoublesElementAddressCmd) {
+  LoadArrayOfDoublesElementAddressCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfDoublesElementAddress);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfCharsElementAddressCmd) {
+  LoadArrayOfCharsElementAddressCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfCharsElementAddress);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfBoolsElementAddressCmd) {
+  LoadArrayOfBoolsElementAddressCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfBoolsElementAddress);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfStringsElementAddressCmd) {
+  LoadArrayOfStringsElementAddressCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfStringsElementAddress);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadArrayOfArraysElementAddressCmd) {
+  LoadArrayOfArraysElementAddressCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLoadArrayOfArraysElementAddress);
   TestGetNextCmd(code, expected_cmd);
 }
 }

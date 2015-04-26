@@ -197,6 +197,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   class LoadLocalVarValueCmdGenerator;
   class LoadElementValueCmdGenerator;
   class LoadArrayElementValueCmdGenerator;
+  class LoadElementAddressCmdGenerator;
+  class LoadArrayElementAddressCmdGenerator;
   class StoreCmdGenerator;
   class CallCmdGenerator;
 
@@ -1078,6 +1080,75 @@ class CodeGenerator::Impl::LoadElementValueCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::LoadArrayElementAddressCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfArraysElementAddress);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfBoolsElementAddress);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfIntsElementAddress);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfLongsElementAddress);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfDoublesElementAddress);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfCharsElementAddress);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kLoadArrayOfStringsElementAddress);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class CodeGenerator::Impl::LoadElementAddressCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    LoadArrayElementAddressCmdGenerator().Generate(
+        data_type.GetElementDataType(), code_);
+  }
+
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitInt(const IntDataType&) override {assert(false);}
+  virtual void VisitLong(const LongDataType&) override {assert(false);}
+  virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
+  virtual void VisitChar(const CharDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
 
@@ -1501,7 +1572,8 @@ void CodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetOperand())));
 
   if (subscript_analysis.IsAssignee()) {
-    assert(false);
+    LoadElementAddressCmdGenerator().Generate(
+        operand_analysis.GetDataType(), code_);
   } else {
     LoadElementValueCmdGenerator().Generate(
         operand_analysis.GetDataType(), code_);
@@ -1512,9 +1584,11 @@ void CodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
 
 void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
 
-void CodeGenerator::Impl::VisitDiv(const DivNode&) {}
+void CodeGenerator::Impl::VisitOr(const OrNode&) {}
 
 void CodeGenerator::Impl::VisitEqual(const EqualNode&) {}
+
+void CodeGenerator::Impl::VisitNotEqual(const NotEqualNode&) {}
 
 void CodeGenerator::Impl::VisitGreater(const GreaterNode&) {}
 
@@ -1524,23 +1598,21 @@ void CodeGenerator::Impl::VisitLess(const LessNode&) {}
 
 void CodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode&) {}
 
+void CodeGenerator::Impl::VisitDiv(const DivNode&) {}
+
 void CodeGenerator::Impl::VisitMul(const MulNode&) {}
-
-void CodeGenerator::Impl::VisitNegative(const NegativeNode&) {}
-
-void CodeGenerator::Impl::VisitNotEqual(const NotEqualNode&) {}
-
-void CodeGenerator::Impl::VisitNot(const NotNode&) {}
-
-void CodeGenerator::Impl::VisitOr(const OrNode&) {}
-
-void CodeGenerator::Impl::VisitPreDec(const PreDecNode&) {}
-
-void CodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
 
 void CodeGenerator::Impl::VisitSub(const SubNode&) {}
 
 void CodeGenerator::Impl::VisitSum(const SumNode&) {}
+
+void CodeGenerator::Impl::VisitNot(const NotNode&) {}
+
+void CodeGenerator::Impl::VisitNegative(const NegativeNode&) {}
+
+void CodeGenerator::Impl::VisitPreDec(const PreDecNode&) {}
+
+void CodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
 
 void CodeGenerator::Impl::VisitInt(const IntNode &node) {
   code_->WriteCmdId(CmdId::kLoadIntValue);
