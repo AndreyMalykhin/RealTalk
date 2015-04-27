@@ -106,6 +106,8 @@ enum class CmdId: uint8_t {
   kCastIntToDouble,
   kCastLongToDouble,
   kJumpIfNot,
+  kImplicitJumpIfNot,
+  kImplicitJumpIf,
   kDirectJump,
   kDestroyLocalVarsAndJump,
   kDestroyLocalVars,
@@ -118,7 +120,9 @@ enum class CmdId: uint8_t {
   kReturnStringValue,
   kReturnArrayValue,
   kCall,
-  kCallNative
+  kCallNative,
+  kAnd,
+  kOr
 };
 
 class Cmd {

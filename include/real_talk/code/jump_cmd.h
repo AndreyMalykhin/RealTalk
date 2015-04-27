@@ -35,6 +35,18 @@ class DirectJumpCmd: public JumpCmd {
  public:
   inline explicit DirectJumpCmd(uint32_t address) noexcept: JumpCmd(address) {}
 };
+
+class ImplicitJumpIfNotCmd: public JumpCmd {
+ public:
+  inline explicit ImplicitJumpIfNotCmd(uint32_t address) noexcept
+      : JumpCmd(address) {}
+};
+
+class ImplicitJumpIfCmd: public JumpCmd {
+ public:
+  inline explicit ImplicitJumpIfCmd(uint32_t address) noexcept
+      : JumpCmd(address) {}
+};
 }
 }
 #endif

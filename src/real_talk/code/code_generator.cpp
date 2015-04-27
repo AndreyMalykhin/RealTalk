@@ -33,6 +33,8 @@
 #include "real_talk/parser/assign_node.h"
 #include "real_talk/parser/call_node.h"
 #include "real_talk/parser/subscript_node.h"
+#include "real_talk/parser/and_node.h"
+#include "real_talk/parser/or_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -201,6 +203,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   class LoadArrayElementAddressCmdGenerator;
   class StoreCmdGenerator;
   class CallCmdGenerator;
+  class AndCmdGenerator;
+  class OrCmdGenerator;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -1149,6 +1153,54 @@ class CodeGenerator::Impl::LoadElementAddressCmdGenerator
   Code *code_;
 };
 
+class CodeGenerator::Impl::AndCmdGenerator: private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kAnd);
+  }
+
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+  virtual void VisitInt(const IntDataType&) override {assert(false);}
+  virtual void VisitLong(const LongDataType&) override {assert(false);}
+  virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
+  virtual void VisitChar(const CharDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class CodeGenerator::Impl::OrCmdGenerator: private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kOr);
+  }
+
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+  virtual void VisitInt(const IntDataType&) override {assert(false);}
+  virtual void VisitLong(const LongDataType&) override {assert(false);}
+  virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
+  virtual void VisitChar(const CharDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
 
@@ -1582,9 +1634,31 @@ void CodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
   GenerateCastCmdIfNeeded(subscript_analysis);
 }
 
-void CodeGenerator::Impl::VisitAnd(const AndNode&) {}
+void CodeGenerator::Impl::VisitAnd(const AndNode &node) {
+  node.GetLeftOperand()->Accept(*this);
+  code_->WriteCmdId(CmdId::kImplicitJumpIfNot);
+  const uint32_t end_address_placeholder = code_->GetPosition();
+  code_->Skip(sizeof(uint32_t));
+  node.GetRightOperand()->Accept(*this);
+  const ExprAnalysis &and_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
+  AndCmdGenerator().Generate(and_analysis.GetDataType(), code_);
+  GenerateCastCmdIfNeeded(and_analysis);
+  WriteCurrentCmdAddress(vector<uint32_t>({end_address_placeholder}));
+}
 
-void CodeGenerator::Impl::VisitOr(const OrNode&) {}
+void CodeGenerator::Impl::VisitOr(const OrNode &node) {
+  node.GetLeftOperand()->Accept(*this);
+  code_->WriteCmdId(CmdId::kImplicitJumpIf);
+  const uint32_t end_address_placeholder = code_->GetPosition();
+  code_->Skip(sizeof(uint32_t));
+  node.GetRightOperand()->Accept(*this);
+  const ExprAnalysis &and_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
+  OrCmdGenerator().Generate(and_analysis.GetDataType(), code_);
+  GenerateCastCmdIfNeeded(and_analysis);
+  WriteCurrentCmdAddress(vector<uint32_t>({end_address_placeholder}));
+}
 
 void CodeGenerator::Impl::VisitEqual(const EqualNode&) {}
 

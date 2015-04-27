@@ -28,6 +28,8 @@
 #include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/call_cmd.h"
 #include "real_talk/code/call_native_cmd.h"
+#include "real_talk/code/and_cmd.h"
+#include "real_talk/code/or_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -457,6 +459,18 @@ TEST_F(CmdReaderTest, DirectJumpCmd) {
   TestJumpCmd(CmdId::kDirectJump, expected_cmd);
 }
 
+TEST_F(CmdReaderTest, ImplicitJumpIfNotCmd) {
+  uint32_t address = UINT32_C(7);
+  ImplicitJumpIfNotCmd expected_cmd(address);
+  TestJumpCmd(CmdId::kImplicitJumpIfNot, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ImplicitJumpIfCmd) {
+  uint32_t address = UINT32_C(7);
+  ImplicitJumpIfCmd expected_cmd(address);
+  TestJumpCmd(CmdId::kImplicitJumpIf, expected_cmd);
+}
+
 TEST_F(CmdReaderTest, DestroyLocalVarsAndJumpCmd) {
   uint32_t vars_count = UINT32_C(1);
   uint32_t address = UINT32_C(2);
@@ -860,6 +874,20 @@ TEST_F(CmdReaderTest, LoadArrayOfArraysElementAddressCmd) {
   LoadArrayOfArraysElementAddressCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kLoadArrayOfArraysElementAddress);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, AndCmd) {
+  AndCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kAnd);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, OrCmd) {
+  OrCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kOr);
   TestGetNextCmd(code, expected_cmd);
 }
 }

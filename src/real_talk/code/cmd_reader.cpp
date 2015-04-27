@@ -26,6 +26,8 @@
 #include "real_talk/code/cast_cmd.h"
 #include "real_talk/code/call_cmd.h"
 #include "real_talk/code/call_native_cmd.h"
+#include "real_talk/code/and_cmd.h"
+#include "real_talk/code/or_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -127,6 +129,10 @@ const CreateAndInitLocalBoolVarCmd &kCreateAndInitLocalBoolVarCmd =
     *new CreateAndInitLocalBoolVarCmd();
 
 JumpIfNotCmd &kJumpIfNotCmd = *new JumpIfNotCmd(UINT32_C(0));
+ImplicitJumpIfNotCmd &kImplicitJumpIfNotCmd =
+    *new ImplicitJumpIfNotCmd(UINT32_C(0));
+ImplicitJumpIfCmd &kImplicitJumpIfCmd =
+    *new ImplicitJumpIfCmd(UINT32_C(0));
 DirectJumpCmd &kDirectJumpCmd = *new DirectJumpCmd(UINT32_C(0));
 
 DestroyLocalVarsAndJumpCmd &kDestroyLocalVarsAndJumpCmd =
@@ -230,6 +236,9 @@ const LoadArrayOfStringsElementAddressCmd &kLoadArrayOfStringsElementAddressCmd 
     *new LoadArrayOfStringsElementAddressCmd();
 const LoadArrayOfArraysElementAddressCmd &kLoadArrayOfArraysElementAddressCmd =
     *new LoadArrayOfArraysElementAddressCmd();
+
+const AndCmd &kAndCmd = *new AndCmd();
+const OrCmd &kOrCmd = *new OrCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -427,6 +436,14 @@ const Cmd &CmdReader::GetNextCmd() {
     case CmdId::kJumpIfNot:
       ReadJumpCmd(kJumpIfNotCmd);
       cmd = &kJumpIfNotCmd;
+      break;
+    case CmdId::kImplicitJumpIfNot:
+      ReadJumpCmd(kImplicitJumpIfNotCmd);
+      cmd = &kImplicitJumpIfNotCmd;
+      break;
+    case CmdId::kImplicitJumpIf:
+      ReadJumpCmd(kImplicitJumpIfCmd);
+      cmd = &kImplicitJumpIfCmd;
       break;
     case CmdId::kDirectJump:
       ReadJumpCmd(kDirectJumpCmd);
@@ -626,6 +643,12 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kLoadArrayOfArraysElementAddress:
       cmd = &kLoadArrayOfArraysElementAddressCmd;
+      break;
+    case CmdId::kAnd:
+      cmd = &kAndCmd;
+      break;
+    case CmdId::kOr:
+      cmd = &kOrCmd;
       break;
   }
 

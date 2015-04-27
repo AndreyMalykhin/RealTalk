@@ -43,6 +43,8 @@
 #include "real_talk/parser/assign_node.h"
 #include "real_talk/parser/call_node.h"
 #include "real_talk/parser/subscript_node.h"
+#include "real_talk/parser/and_node.h"
+#include "real_talk/parser/or_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/global_var_def_analysis.h"
@@ -150,6 +152,8 @@ using real_talk::parser::IdNode;
 using real_talk::parser::AssignNode;
 using real_talk::parser::CallNode;
 using real_talk::parser::SubscriptNode;
+using real_talk::parser::AndNode;
+using real_talk::parser::OrNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -5973,6 +5977,180 @@ TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfArrays) {
       value_code,
       store_cmd_id,
       expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, And) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  BoolNode *bool_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> bool_node(bool_node_ptr);
+  BoolNode *bool_node_ptr2 = new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> bool_node2(bool_node_ptr2);
+  AndNode *and_expr_node_ptr = new AndNode(
+      TokenInfo(Token::kAndOp, "&&", UINT32_C(1), UINT32_C(1)),
+      move(bool_node),
+      move(bool_node2));
+  unique_ptr<ExprNode> and_expr_node(and_expr_node_ptr);
+  unique_ptr<StmtNode> and_stmt_node(new ExprStmtNode(
+      move(and_expr_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
+  program_stmt_nodes.push_back(move(and_stmt_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> bool_data_type(new BoolDataType());
+  unique_ptr<DataType> bool_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
+      move(bool_data_type),
+      move(bool_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+  unique_ptr<DataType> bool_data_type2(new BoolDataType());
+  unique_ptr<DataType> bool_casted_data_type2;
+  unique_ptr<NodeSemanticAnalysis> bool_analysis2(new LitAnalysis(
+      move(bool_data_type2),
+      move(bool_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(false))));
+  node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
+  unique_ptr<DataType> and_data_type(new BoolDataType());
+  unique_ptr<DataType> and_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> and_analysis(new CommonExprAnalysis(
+      move(and_data_type),
+      move(and_casted_data_type),
+      ValueType::kRight));
+  node_analyzes.insert(make_pair(and_expr_node_ptr, move(and_analysis)));
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(true);
+  cmds_code->WriteCmdId(CmdId::kImplicitJumpIfNot);
+  uint32_t expr_end_address_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(uint32_t));
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(false);
+  cmds_code->WriteCmdId(CmdId::kAnd);
+  uint32_t expr_end_address = cmds_code->GetPosition();
+  cmds_code->SetPosition(expr_end_address_placeholder);
+  cmds_code->WriteUint32(expr_end_address);
+  cmds_code->SetPosition(expr_end_address);
+  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(vector<TestCast>(),
+               program_node,
+               semantic_analysis,
+               version,
+               module_code);
+}
+
+TEST_F(CodeGeneratorTest, Or) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  BoolNode *bool_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> bool_node(bool_node_ptr);
+  BoolNode *bool_node_ptr2 = new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> bool_node2(bool_node_ptr2);
+  OrNode *or_expr_node_ptr = new OrNode(
+      TokenInfo(Token::kOrOp, "||", UINT32_C(1), UINT32_C(1)),
+      move(bool_node),
+      move(bool_node2));
+  unique_ptr<ExprNode> or_expr_node(or_expr_node_ptr);
+  unique_ptr<StmtNode> or_stmt_node(new ExprStmtNode(
+      move(or_expr_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
+  program_stmt_nodes.push_back(move(or_stmt_node));
+  ProgramNode program_node(move(program_stmt_nodes));
+
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> bool_data_type(new BoolDataType());
+  unique_ptr<DataType> bool_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
+      move(bool_data_type),
+      move(bool_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(true))));
+  node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
+  unique_ptr<DataType> bool_data_type2(new BoolDataType());
+  unique_ptr<DataType> bool_casted_data_type2;
+  unique_ptr<NodeSemanticAnalysis> bool_analysis2(new LitAnalysis(
+      move(bool_data_type2),
+      move(bool_casted_data_type2),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(false))));
+  node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
+  unique_ptr<DataType> or_data_type(new BoolDataType());
+  unique_ptr<DataType> or_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> or_analysis(new CommonExprAnalysis(
+      move(or_data_type),
+      move(or_casted_data_type),
+      ValueType::kRight));
+  node_analyzes.insert(make_pair(or_expr_node_ptr, move(or_analysis)));
+  SemanticAnalysis semantic_analysis(
+      SemanticAnalysis::Problems(), move(node_analyzes));
+
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(true);
+  cmds_code->WriteCmdId(CmdId::kImplicitJumpIf);
+  uint32_t expr_end_address_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(uint32_t));
+  cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
+  cmds_code->WriteBool(false);
+  cmds_code->WriteCmdId(CmdId::kOr);
+  uint32_t expr_end_address = cmds_code->GetPosition();
+  cmds_code->SetPosition(expr_end_address_placeholder);
+  cmds_code->WriteUint32(expr_end_address);
+  cmds_code->SetPosition(expr_end_address);
+  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kEndMain);
+  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+
+  vector<path> import_file_paths;
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddress> id_addresses_of_func_refs;
+  uint32_t version = UINT32_C(1);
+  Module module(version,
+                move(cmds_code),
+                id_addresses_of_func_defs,
+                ids_of_global_var_defs,
+                ids_of_native_func_defs,
+                id_addresses_of_func_refs,
+                id_addresses_of_global_var_refs,
+                import_file_paths);
+  Code module_code;
+  WriteModule(module, module_code);
+  TestGenerate(vector<TestCast>(),
+               program_node,
+               semantic_analysis,
+               version,
+               module_code);
 }
 }
 }
