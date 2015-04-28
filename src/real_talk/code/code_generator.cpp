@@ -35,6 +35,8 @@
 #include "real_talk/parser/subscript_node.h"
 #include "real_talk/parser/and_node.h"
 #include "real_talk/parser/or_node.h"
+#include "real_talk/parser/mul_node.h"
+#include "real_talk/parser/div_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -137,6 +139,8 @@ using real_talk::parser::IfNode;
 using real_talk::parser::ScopeNode;
 using real_talk::parser::ExprNode;
 using real_talk::parser::CallNode;
+using real_talk::parser::MulNode;
+using real_talk::parser::BinaryExprNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -205,6 +209,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   class CallCmdGenerator;
   class AndCmdGenerator;
   class OrCmdGenerator;
+  class MulCmdGenerator;
+  class DivCmdGenerator;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -265,6 +271,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   virtual void VisitArgDef(const ArgDefNode &node) override;
   virtual void VisitScope(const ScopeNode &node) override;
   void VisitIf(const IfNode &node, uint32_t *branch_end_address_placeholder);
+  template<typename TCmdGenerator> void VisitBinaryExpr(
+      const BinaryExprNode &node);
   void WriteCurrentCmdAddress(const vector<uint32_t> &address_placeholders);
   void GenerateJumpCmdStart(uint32_t local_vars_count);
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
@@ -1201,6 +1209,72 @@ class CodeGenerator::Impl::OrCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
+class CodeGenerator::Impl::MulCmdGenerator: private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kMulInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kMulLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kMulDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kMulChar);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class CodeGenerator::Impl::DivCmdGenerator: private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kDivInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kDivLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kDivDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kDivChar);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
 
@@ -1672,13 +1746,27 @@ void CodeGenerator::Impl::VisitLess(const LessNode&) {}
 
 void CodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode&) {}
 
-void CodeGenerator::Impl::VisitDiv(const DivNode&) {}
+void CodeGenerator::Impl::VisitDiv(const DivNode &node) {
+  VisitBinaryExpr<DivCmdGenerator>(node);
+}
 
-void CodeGenerator::Impl::VisitMul(const MulNode&) {}
+void CodeGenerator::Impl::VisitMul(const MulNode &node) {
+  VisitBinaryExpr<MulCmdGenerator>(node);
+}
 
 void CodeGenerator::Impl::VisitSub(const SubNode&) {}
 
 void CodeGenerator::Impl::VisitSum(const SumNode&) {}
+
+template<typename TCmdGenerator>
+void CodeGenerator::Impl::VisitBinaryExpr(const BinaryExprNode &node) {
+  node.GetLeftOperand()->Accept(*this);
+  node.GetRightOperand()->Accept(*this);
+  const ExprAnalysis &analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
+  TCmdGenerator().Generate(analysis.GetDataType(), code_);
+  GenerateCastCmdIfNeeded(analysis);
+}
 
 void CodeGenerator::Impl::VisitNot(const NotNode&) {}
 

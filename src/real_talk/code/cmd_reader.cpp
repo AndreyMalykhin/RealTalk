@@ -28,6 +28,8 @@
 #include "real_talk/code/call_native_cmd.h"
 #include "real_talk/code/and_cmd.h"
 #include "real_talk/code/or_cmd.h"
+#include "real_talk/code/mul_cmd.h"
+#include "real_talk/code/div_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -239,6 +241,16 @@ const LoadArrayOfArraysElementAddressCmd &kLoadArrayOfArraysElementAddressCmd =
 
 const AndCmd &kAndCmd = *new AndCmd();
 const OrCmd &kOrCmd = *new OrCmd();
+
+const MulCharCmd &kMulCharCmd = *new MulCharCmd();
+const MulIntCmd &kMulIntCmd = *new MulIntCmd();
+const MulLongCmd &kMulLongCmd = *new MulLongCmd();
+const MulDoubleCmd &kMulDoubleCmd = *new MulDoubleCmd();
+
+const DivCharCmd &kDivCharCmd = *new DivCharCmd();
+const DivIntCmd &kDivIntCmd = *new DivIntCmd();
+const DivLongCmd &kDivLongCmd = *new DivLongCmd();
+const DivDoubleCmd &kDivDoubleCmd = *new DivDoubleCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -649,6 +661,30 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kOr:
       cmd = &kOrCmd;
+      break;
+    case CmdId::kMulChar:
+      cmd = &kMulCharCmd;
+      break;
+    case CmdId::kMulInt:
+      cmd = &kMulIntCmd;
+      break;
+    case CmdId::kMulLong:
+      cmd = &kMulLongCmd;
+      break;
+    case CmdId::kMulDouble:
+      cmd = &kMulDoubleCmd;
+      break;
+    case CmdId::kDivChar:
+      cmd = &kDivCharCmd;
+      break;
+    case CmdId::kDivInt:
+      cmd = &kDivIntCmd;
+      break;
+    case CmdId::kDivLong:
+      cmd = &kDivLongCmd;
+      break;
+    case CmdId::kDivDouble:
+      cmd = &kDivDoubleCmd;
       break;
   }
 

@@ -122,7 +122,15 @@ enum class CmdId: uint8_t {
   kCall,
   kCallNative,
   kAnd,
-  kOr
+  kOr,
+  kMulChar,
+  kMulInt,
+  kMulLong,
+  kMulDouble,
+  kDivChar,
+  kDivInt,
+  kDivLong,
+  kDivDouble
 };
 
 class Cmd {

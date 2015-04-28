@@ -30,6 +30,8 @@
 #include "real_talk/code/call_native_cmd.h"
 #include "real_talk/code/and_cmd.h"
 #include "real_talk/code/or_cmd.h"
+#include "real_talk/code/mul_cmd.h"
+#include "real_talk/code/div_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -888,6 +890,62 @@ TEST_F(CmdReaderTest, OrCmd) {
   OrCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kOr);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, MulIntCmd) {
+  MulIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kMulInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, MulLongCmd) {
+  MulLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kMulLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, MulDoubleCmd) {
+  MulDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kMulDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, MulCharCmd) {
+  MulCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kMulChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DivCharCmd) {
+  DivCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDivChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DivIntCmd) {
+  DivIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDivInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DivLongCmd) {
+  DivLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDivLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DivDoubleCmd) {
+  DivDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDivDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 }
