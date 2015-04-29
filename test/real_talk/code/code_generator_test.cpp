@@ -47,6 +47,7 @@
 #include "real_talk/parser/or_node.h"
 #include "real_talk/parser/mul_node.h"
 #include "real_talk/parser/div_node.h"
+#include "real_talk/parser/sum_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/global_var_def_analysis.h"
@@ -158,6 +159,7 @@ using real_talk::parser::AndNode;
 using real_talk::parser::OrNode;
 using real_talk::parser::MulNode;
 using real_talk::parser::DivNode;
+using real_talk::parser::SumNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -6759,6 +6761,60 @@ TEST_F(CodeGeneratorTest, DivDouble) {
   operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
   operands_code.WriteDouble(2.2);
   CmdId expected_cmd_id = CmdId::kDivDouble;
+
+  TestBinaryExpr(left_operand_node_ptr,
+                 right_operand_node_ptr,
+                 move(expr_node),
+                 move(left_operand_analysis),
+                 move(right_operand_analysis),
+                 move(expr_data_type),
+                 move(test_casts),
+                 operands_code,
+                 expected_cmd_id);
+}
+
+TEST_F(CodeGeneratorTest, SumDouble) {
+  IntNode *left_operand_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
+  DoubleNode *right_operand_node_ptr = new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "2.2", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> right_operand_node(right_operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new SumNode(
+      TokenInfo(Token::kSumOp, "+", UINT32_C(1), UINT32_C(1)),
+      move(left_operand_node),
+      move(right_operand_node)));
+
+  unique_ptr<DataType> left_operand_data_type(new IntDataType());
+  unique_ptr<DataType> left_operand_casted_data_type(new DoubleDataType());
+  unique_ptr<NodeSemanticAnalysis> left_operand_analysis(new LitAnalysis(
+      move(left_operand_data_type),
+      move(left_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
+  unique_ptr<DataType> right_operand_data_type(new DoubleDataType());
+  unique_ptr<DataType> right_operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> right_operand_analysis(new LitAnalysis(
+      move(right_operand_data_type),
+      move(right_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(2.2))));
+  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+
+  vector<TestCast> test_casts;
+  unique_ptr<DataType> dest_data_type(new DoubleDataType());
+  unique_ptr<DataType> src_data_type(new IntDataType());
+  TestCast test_cast =
+      {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
+  test_casts.push_back(move(test_cast));
+
+  Code operands_code;
+  operands_code.WriteCmdId(CmdId::kLoadIntValue);
+  operands_code.WriteInt32(INT32_C(1));
+  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
+  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
+  operands_code.WriteDouble(2.2);
+  CmdId expected_cmd_id = CmdId::kSumDouble;
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,

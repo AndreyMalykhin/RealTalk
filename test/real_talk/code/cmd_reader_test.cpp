@@ -32,6 +32,7 @@
 #include "real_talk/code/or_cmd.h"
 #include "real_talk/code/mul_cmd.h"
 #include "real_talk/code/div_cmd.h"
+#include "real_talk/code/sum_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -946,6 +947,41 @@ TEST_F(CmdReaderTest, DivDoubleCmd) {
   DivDoubleCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kDivDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SumCharCmd) {
+  SumCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSumChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SumIntCmd) {
+  SumIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSumInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SumLongCmd) {
+  SumLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSumLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SumDoubleCmd) {
+  SumDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSumDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SumStringCmd) {
+  SumStringCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSumString);
   TestGetNextCmd(code, expected_cmd);
 }
 }

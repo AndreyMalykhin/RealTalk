@@ -30,6 +30,7 @@
 #include "real_talk/code/or_cmd.h"
 #include "real_talk/code/mul_cmd.h"
 #include "real_talk/code/div_cmd.h"
+#include "real_talk/code/sum_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -251,6 +252,12 @@ const DivCharCmd &kDivCharCmd = *new DivCharCmd();
 const DivIntCmd &kDivIntCmd = *new DivIntCmd();
 const DivLongCmd &kDivLongCmd = *new DivLongCmd();
 const DivDoubleCmd &kDivDoubleCmd = *new DivDoubleCmd();
+
+const SumCharCmd &kSumCharCmd = *new SumCharCmd();
+const SumIntCmd &kSumIntCmd = *new SumIntCmd();
+const SumLongCmd &kSumLongCmd = *new SumLongCmd();
+const SumDoubleCmd &kSumDoubleCmd = *new SumDoubleCmd();
+const SumStringCmd &kSumStringCmd = *new SumStringCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -685,6 +692,21 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kDivDouble:
       cmd = &kDivDoubleCmd;
+      break;
+    case CmdId::kSumChar:
+      cmd = &kSumCharCmd;
+      break;
+    case CmdId::kSumInt:
+      cmd = &kSumIntCmd;
+      break;
+    case CmdId::kSumLong:
+      cmd = &kSumLongCmd;
+      break;
+    case CmdId::kSumDouble:
+      cmd = &kSumDoubleCmd;
+      break;
+    case CmdId::kSumString:
+      cmd = &kSumStringCmd;
       break;
   }
 
