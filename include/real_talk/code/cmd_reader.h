@@ -10,8 +10,6 @@ namespace code {
 
 class Cmd;
 class Code;
-class CreateGlobalVarCmd;
-class CreateAndInitGlobalVarCmd;
 class CreateArrayCmd;
 class CreateAndInitArrayCmd;
 class JumpCmd;
@@ -25,8 +23,6 @@ class CmdReader {
   const Cmd &GetNextCmd();
 
  private:
-  void ReadCreateGlobalVarCmd(CreateGlobalVarCmd &cmd);
-  void ReadCreateAndInitGlobalVarCmd(CreateAndInitGlobalVarCmd &cmd);
   void ReadCreateArrayCmd(CreateArrayCmd &cmd);
   void ReadJumpCmd(JumpCmd &cmd);
   void ReadCreateAndInitArrayCmd(CreateAndInitArrayCmd &cmd);

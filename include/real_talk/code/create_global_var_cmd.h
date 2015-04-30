@@ -8,68 +8,18 @@ namespace real_talk {
 namespace code {
 
 class CreateGlobalVarCmd: public Cmd {
- public:
-  inline explicit CreateGlobalVarCmd(uint32_t var_index) noexcept
-      : var_index_(var_index) {}
-
-  inline void SetVarIndex(uint32_t var_index) noexcept {var_index_ = var_index;}
-  inline uint32_t GetVarIndex() const noexcept {return var_index_;}
-
  private:
-  virtual void Print(std::ostream &stream) const override {
-    stream << "var_index=" << var_index_;
-  }
-
-  virtual bool IsEqual(const Cmd &cmd) const override {
-    const CreateGlobalVarCmd &rhs =
-        static_cast<const CreateGlobalVarCmd&>(cmd);
-    return var_index_ == rhs.var_index_;
-  }
-
-  uint32_t var_index_;
+  virtual void Print(std::ostream&) const override {}
+  virtual bool IsEqual(const Cmd&) const override {return true;}
 };
 
-class CreateGlobalIntVarCmd: public CreateGlobalVarCmd {
- public:
-  inline explicit CreateGlobalIntVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
-};
-
-class CreateGlobalArrayVarCmd: public CreateGlobalVarCmd {
- public:
-  inline explicit CreateGlobalArrayVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
-};
-
-class CreateGlobalLongVarCmd: public CreateGlobalVarCmd {
- public:
-  inline explicit CreateGlobalLongVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
-};
-
-class CreateGlobalDoubleVarCmd: public CreateGlobalVarCmd {
- public:
-  inline explicit CreateGlobalDoubleVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
-};
-
-class CreateGlobalCharVarCmd: public CreateGlobalVarCmd {
- public:
-  inline explicit CreateGlobalCharVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
-};
-
-class CreateGlobalStringVarCmd: public CreateGlobalVarCmd {
- public:
-  inline explicit CreateGlobalStringVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
-};
-
-class CreateGlobalBoolVarCmd: public CreateGlobalVarCmd {
- public:
-  inline explicit CreateGlobalBoolVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
-};
+class CreateGlobalIntVarCmd: public CreateGlobalVarCmd {};
+class CreateGlobalArrayVarCmd: public CreateGlobalVarCmd {};
+class CreateGlobalLongVarCmd: public CreateGlobalVarCmd {};
+class CreateGlobalDoubleVarCmd: public CreateGlobalVarCmd {};
+class CreateGlobalCharVarCmd: public CreateGlobalVarCmd {};
+class CreateGlobalStringVarCmd: public CreateGlobalVarCmd {};
+class CreateGlobalBoolVarCmd: public CreateGlobalVarCmd {};
 }
 }
 #endif
