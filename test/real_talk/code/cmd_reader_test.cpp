@@ -33,6 +33,7 @@
 #include "real_talk/code/mul_cmd.h"
 #include "real_talk/code/div_cmd.h"
 #include "real_talk/code/sum_cmd.h"
+#include "real_talk/code/sub_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -982,6 +983,34 @@ TEST_F(CmdReaderTest, SumStringCmd) {
   SumStringCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kSumString);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SubCharCmd) {
+  SubCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSubChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SubIntCmd) {
+  SubIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSubInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SubLongCmd) {
+  SubLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSubLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, SubDoubleCmd) {
+  SubDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kSubDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 }

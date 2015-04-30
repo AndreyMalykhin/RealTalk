@@ -135,7 +135,11 @@ enum class CmdId: uint8_t {
   kSumInt,
   kSumLong,
   kSumDouble,
-  kSumString
+  kSumString,
+  kSubChar,
+  kSubInt,
+  kSubLong,
+  kSubDouble
 };
 
 class Cmd {

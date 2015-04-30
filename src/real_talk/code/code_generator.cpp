@@ -38,6 +38,7 @@
 #include "real_talk/parser/mul_node.h"
 #include "real_talk/parser/div_node.h"
 #include "real_talk/parser/sum_node.h"
+#include "real_talk/parser/sub_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -213,6 +214,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   class MulCmdGenerator;
   class DivCmdGenerator;
   class SumCmdGenerator;
+  class SubCmdGenerator;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -1313,6 +1315,39 @@ class CodeGenerator::Impl::SumCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
+class CodeGenerator::Impl::SubCmdGenerator: private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kSubInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kSubLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kSubDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kSubChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 CodeGenerator::CodeGenerator(const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
 
@@ -1792,7 +1827,9 @@ void CodeGenerator::Impl::VisitMul(const MulNode &node) {
   VisitBinaryExpr<MulCmdGenerator>(node);
 }
 
-void CodeGenerator::Impl::VisitSub(const SubNode&) {}
+void CodeGenerator::Impl::VisitSub(const SubNode &node) {
+  VisitBinaryExpr<SubCmdGenerator>(node);
+}
 
 void CodeGenerator::Impl::VisitSum(const SumNode &node) {
   VisitBinaryExpr<SumCmdGenerator>(node);

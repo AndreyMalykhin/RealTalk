@@ -31,6 +31,7 @@
 #include "real_talk/code/mul_cmd.h"
 #include "real_talk/code/div_cmd.h"
 #include "real_talk/code/sum_cmd.h"
+#include "real_talk/code/sub_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -258,6 +259,11 @@ const SumIntCmd &kSumIntCmd = *new SumIntCmd();
 const SumLongCmd &kSumLongCmd = *new SumLongCmd();
 const SumDoubleCmd &kSumDoubleCmd = *new SumDoubleCmd();
 const SumStringCmd &kSumStringCmd = *new SumStringCmd();
+
+const SubCharCmd &kSubCharCmd = *new SubCharCmd();
+const SubIntCmd &kSubIntCmd = *new SubIntCmd();
+const SubLongCmd &kSubLongCmd = *new SubLongCmd();
+const SubDoubleCmd &kSubDoubleCmd = *new SubDoubleCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -707,6 +713,18 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kSumString:
       cmd = &kSumStringCmd;
+      break;
+    case CmdId::kSubChar:
+      cmd = &kSubCharCmd;
+      break;
+    case CmdId::kSubInt:
+      cmd = &kSubIntCmd;
+      break;
+    case CmdId::kSubLong:
+      cmd = &kSubLongCmd;
+      break;
+    case CmdId::kSubDouble:
+      cmd = &kSubDoubleCmd;
       break;
   }
 
