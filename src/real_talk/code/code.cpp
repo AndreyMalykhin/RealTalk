@@ -2,6 +2,7 @@
 #include <boost/numeric/conversion/cast.hpp>
 #include <cassert>
 #include <string>
+#include <vector>
 #include <limits>
 #include "real_talk/code/code.h"
 #include "real_talk/util/endianness.h"
@@ -216,6 +217,31 @@ CmdId Code::ReadCmdId() {
 
 void Code::WriteCmdId(CmdId id) {
   WriteUint8(static_cast<uint8_t>(id));
+}
+
+IdAddresses Code::ReadIdAddresses() {
+  const std::string &id = ReadString();
+  std::vector<uint32_t> addresses;
+  const uint32_t size = ReadUint32();
+  addresses.reserve(size / sizeof(uint32_t));
+  const unsigned char * const addresses_end = current_byte_ + size;
+
+  while (current_byte_ != addresses_end) {
+    addresses.push_back(ReadUint32());
+  }
+
+  return IdAddresses(id, addresses);
+}
+
+void Code::WriteIdAddresses(const IdAddresses &id_addresses) {
+  WriteString(id_addresses.GetId());
+  const uint32_t size = id_addresses.GetAddresses().size() * sizeof(uint32_t);
+  assert(size / sizeof(uint32_t) == id_addresses.GetAddresses().size());
+  WriteUint32(size);
+
+  for (const uint32_t address: id_addresses.GetAddresses()) {
+    WriteUint32(address);
+  }
 }
 
 IdAddress Code::ReadIdAddress() {

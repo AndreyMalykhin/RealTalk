@@ -78,21 +78,21 @@ unique_ptr<Module> ModuleReader::Read(istream &code_stream) {
   }
 
   module_code.SetPosition(global_var_refs_metadata_address);
-  vector<IdAddress> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
   const unsigned char * const global_var_refs_metadata_end =
       module_code.GetDataAtPosition() + global_var_refs_metadata_size;
 
   while (module_code.GetDataAtPosition() != global_var_refs_metadata_end) {
-    id_addresses_of_global_var_refs.push_back(module_code.ReadIdAddress());
+    id_addresses_of_global_var_refs.push_back(module_code.ReadIdAddresses());
   }
 
   module_code.SetPosition(func_refs_metadata_address);
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   const unsigned char * const func_refs_metadata_end =
       module_code.GetDataAtPosition() + func_refs_metadata_size;
 
   while (module_code.GetDataAtPosition() != func_refs_metadata_end) {
-    id_addresses_of_func_refs.push_back(module_code.ReadIdAddress());
+    id_addresses_of_func_refs.push_back(module_code.ReadIdAddresses());
   }
 
   return unique_ptr<Module>(new Module(

@@ -1,4 +1,5 @@
 
+#include <vector>
 #include <string>
 #include "real_talk/code/id_address.h"
 
@@ -9,8 +10,7 @@ namespace real_talk {
 namespace code {
 
 IdAddress::IdAddress(const string &id, uint32_t address)
-    : id_(id), address_(address) {
-}
+    : id_(id), address_(address) {}
 
 const string &IdAddress::GetId() const {
   return id_;

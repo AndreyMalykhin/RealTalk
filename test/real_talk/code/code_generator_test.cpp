@@ -292,8 +292,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -357,8 +357,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -423,8 +423,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -472,8 +472,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -518,8 +518,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -636,8 +636,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -723,8 +723,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -808,8 +808,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -879,9 +879,9 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs =
-        {{"var", var_index_placeholder}};
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs =
+        {{"var", {var_index_placeholder}}};
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -950,8 +950,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -1040,9 +1040,9 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs =
-        {{"var", var_index_placeholder}};
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs =
+        {{"var", {var_index_placeholder}}};
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -1130,8 +1130,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -1244,9 +1244,9 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs =
-        {{"var", var_index_placeholder}};
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs =
+        {{"var", {var_index_placeholder}}};
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -1378,9 +1378,9 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs =
-        {{"var", var_index_placeholder}};
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs =
+        {{"var", {var_index_placeholder}}};
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -1441,8 +1441,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -1509,8 +1509,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -1576,8 +1576,8 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
@@ -1773,8 +1773,8 @@ TEST_F(CodeGeneratorTest, ExprStmt) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -1915,8 +1915,8 @@ TEST_F(CodeGeneratorTest, Import) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3030,8 +3030,8 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3221,8 +3221,8 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3380,8 +3380,8 @@ TEST_F(CodeGeneratorTest, IfElseIfWithoutVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3534,8 +3534,8 @@ TEST_F(CodeGeneratorTest, IfElseIfWithVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3628,8 +3628,8 @@ TEST_F(CodeGeneratorTest, IfWithoutVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3720,8 +3720,8 @@ TEST_F(CodeGeneratorTest, IfWithVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3814,8 +3814,8 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3905,8 +3905,8 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -3996,8 +3996,8 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -4115,8 +4115,8 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -4203,8 +4203,8 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -4319,8 +4319,8 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -4421,8 +4421,8 @@ TEST_F(CodeGeneratorTest, FuncDefWithBody) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -4498,8 +4498,8 @@ TEST_F(CodeGeneratorTest, ReturnWithoutValue) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -4839,8 +4839,8 @@ TEST_F(CodeGeneratorTest, FuncDefWithoutBody) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs = {{"func"}};
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -5693,8 +5693,9 @@ TEST_F(CodeGeneratorTest, NotNativeCall) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs = {{"func", func_ref_address}};
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs =
+      {{"func", {func_ref_address}}};
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -5863,8 +5864,9 @@ TEST_F(CodeGeneratorTest, NativeCall) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs = {"func"};
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs = {{"func", func_ref_address}};
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs =
+      {{"func", {func_ref_address}}};
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -6244,8 +6246,8 @@ TEST_F(CodeGeneratorTest, And) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
@@ -6331,8 +6333,8 @@ TEST_F(CodeGeneratorTest, Or) {
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
-  vector<IdAddress> id_addresses_of_global_var_refs;
-  vector<IdAddress> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),

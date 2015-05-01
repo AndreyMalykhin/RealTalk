@@ -59,6 +59,7 @@ add_library(real_talk
   src/real_talk/code/cmd_reader.cpp
   src/real_talk/code/module_reader.cpp
   src/real_talk/code/module.cpp
+  src/real_talk/code/id_addresses.cpp
   src/real_talk/code/id_address.cpp
   src/real_talk/code/code.cpp
   src/real_talk/code/simple_cast_cmd_generator.cpp

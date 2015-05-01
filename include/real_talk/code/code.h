@@ -5,10 +5,12 @@
 #include <boost/filesystem.hpp>
 #include <cstdint>
 #include <string>
+#include <vector>
 #include <memory>
 #include <iostream>
 #include <stdexcept>
 #include "real_talk/code/cmd.h"
+#include "real_talk/code/id_addresses.h"
 #include "real_talk/code/id_address.h"
 
 namespace real_talk {
@@ -50,6 +52,7 @@ class Code {
   char ReadChar();
   std::string ReadString();
   CmdId ReadCmdId();
+  IdAddresses ReadIdAddresses();
   IdAddress ReadIdAddress();
   boost::filesystem::path ReadFilePath();
   friend bool operator==(const Code &lhs, const Code &rhs);
@@ -113,6 +116,11 @@ class Code {
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
   void WriteCmdId(CmdId id);
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
+  void WriteIdAddresses(const IdAddresses &id_address);
 
   /**
    * @throws real_talk::code::Code::CodeSizeOverflowError

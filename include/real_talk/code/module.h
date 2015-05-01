@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include "real_talk/code/id_addresses.h"
 #include "real_talk/code/id_address.h"
 
 namespace real_talk {
@@ -21,17 +22,17 @@ class Module {
          const std::vector<IdAddress> &id_addresses_of_func_defs,
          const std::vector<std::string> &ids_of_global_var_defs,
          const std::vector<std::string> &ids_of_native_func_defs,
-         const std::vector<IdAddress> &id_addresses_of_func_refs,
-         const std::vector<IdAddress> &id_addresses_of_global_var_refs,
+         const std::vector<IdAddresses> &id_addresses_of_func_refs,
+         const std::vector<IdAddresses> &id_addresses_of_global_var_refs,
          const std::vector<boost::filesystem::path> &import_file_paths);
   Code &GetCmdsCode();
   const Code &GetCmdsCode() const;
   uint32_t GetVersion() const;
   const std::vector<IdAddress> &GetIdAddressesOfFuncDefs() const;
-  const std::vector<IdAddress> &GetIdAddressesOfFuncRefs() const;
+  const std::vector<IdAddresses> &GetIdAddressesOfFuncRefs() const;
   const std::vector<std::string> &GetIdsOfGlobalVarDefs() const;
   const std::vector<std::string> &GetIdsOfNativeFuncDefs() const;
-  const std::vector<IdAddress> &GetIdAddressesOfGlobalVarRefs() const;
+  const std::vector<IdAddresses> &GetIdAddressesOfGlobalVarRefs() const;
   const std::vector<boost::filesystem::path> &GetImportFilePaths() const;
   friend bool operator==(const Module &lhs, const Module &rhs);
   friend std::ostream &operator<<(std::ostream &stream, Module &module);
@@ -42,8 +43,8 @@ class Module {
   std::vector<IdAddress> id_addresses_of_func_defs_;
   std::vector<std::string> ids_of_global_var_defs_;
   std::vector<std::string> ids_of_native_func_defs_;
-  std::vector<IdAddress> id_addresses_of_func_refs_;
-  std::vector<IdAddress> id_addresses_of_global_var_refs_;
+  std::vector<IdAddresses> id_addresses_of_func_refs_;
+  std::vector<IdAddresses> id_addresses_of_global_var_refs_;
   std::vector<boost::filesystem::path> import_file_paths_;
 };
 }

@@ -2,6 +2,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <unordered_map>
 #include <cassert>
 #include <string>
 #include <vector>
@@ -73,6 +74,7 @@ using std::streamoff;
 using std::string;
 using std::vector;
 using std::numeric_limits;
+using std::unordered_map;
 using boost::numeric_cast;
 using boost::filesystem::path;
 using boost::adaptors::reverse;
@@ -216,6 +218,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   class SumCmdGenerator;
   class SubCmdGenerator;
 
+  typedef unordered_map<string, vector<uint32_t>> IdAddresses;
+
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
       const ArrayAllocWithoutInitNode &node) override;
@@ -286,7 +290,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   void GenerateCmdsSegment();
   void GenerateImportsSegment();
   void GenerateIdsSegment(const vector<string> &ids);
-  void GenerateIdAddressesSegment(const vector<IdAddress> &id_addresses);
+  void GenerateIdAddressesSegment(const Impl::IdAddresses &id_addresses);
   void GenerateMetadataSegments(uint32_t segments_metadata_address,
                                 uint32_t cmds_address,
                                 uint32_t cmds_size);
@@ -299,8 +303,8 @@ class CodeGenerator::Impl: private NodeVisitor {
   vector<string> ids_of_global_var_defs_;
   vector<string> ids_of_native_func_defs_;
   vector<IdAddress> id_addresses_of_func_defs_;
-  vector<IdAddress> id_addresses_of_global_var_refs_;
-  vector<IdAddress> id_addresses_of_func_refs_;
+  Impl::IdAddresses id_addresses_of_global_var_refs_;
+  Impl::IdAddresses id_addresses_of_func_refs_;
   vector<Scope*> scopes_stack_;
   uint32_t cmds_address_;
 };
@@ -860,8 +864,8 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
                const IdAnalysis *id_analysis,
                const DefAnalysis *def_analysis,
                uint32_t cmds_address,
-               vector<IdAddress> *id_addresses_of_global_var_refs,
-               vector<IdAddress> *id_addresses_of_func_refs,
+               Impl::IdAddresses *id_addresses_of_global_var_refs,
+               Impl::IdAddresses *id_addresses_of_func_refs,
                Code *code) {
     id_node_ = id_node;
     id_analysis_ = id_analysis;
@@ -901,8 +905,8 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
 
     assert(var_index_placeholder >= cmds_address_);
     const string &id = id_node_->GetNameToken().GetValue();
-    id_addresses_of_global_var_refs_->push_back(
-        IdAddress(id, var_index_placeholder - cmds_address_));
+    const uint32_t id_address = var_index_placeholder - cmds_address_;
+    (*id_addresses_of_global_var_refs_)[id].push_back(id_address);
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis &func_def_analysis) override {
@@ -914,15 +918,15 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     code_->WriteUint32(func_index);
     assert(func_index_placeholder >= cmds_address_);
     const string &id = id_node_->GetNameToken().GetValue();
-    id_addresses_of_func_refs_->push_back(
-        IdAddress(id, func_index_placeholder - cmds_address_));
+    const uint32_t id_address = func_index_placeholder - cmds_address_;
+    (*id_addresses_of_func_refs_)[id].push_back(id_address);
   }
 
   const IdNode *id_node_;
   const IdAnalysis *id_analysis_;
   uint32_t cmds_address_;
-  vector<IdAddress> *id_addresses_of_global_var_refs_;
-  vector<IdAddress> *id_addresses_of_func_refs_;
+  Impl::IdAddresses *id_addresses_of_global_var_refs_;
+  Impl::IdAddresses *id_addresses_of_func_refs_;
   Code *code_;
 };
 
@@ -1422,7 +1426,11 @@ void CodeGenerator::Impl::GenerateMetadataSegments(
       code_->GetPosition() - global_var_defs_metadata_address;
 
   const uint32_t func_defs_metadata_address = code_->GetPosition();
-  GenerateIdAddressesSegment(id_addresses_of_func_defs_);
+
+  for (const IdAddress &id_address: id_addresses_of_func_defs_) {
+    code_->WriteIdAddress(id_address);
+  }
+
   const uint32_t func_defs_metadata_size =
       code_->GetPosition() - func_defs_metadata_address;
 
@@ -1471,9 +1479,11 @@ void CodeGenerator::Impl::GenerateIdsSegment(const vector<string> &ids) {
 }
 
 void CodeGenerator::Impl::GenerateIdAddressesSegment(
-    const vector<IdAddress> &id_addresses) {
-  for (const IdAddress &id_address: id_addresses) {
-    code_->WriteIdAddress(id_address);
+    const Impl::IdAddresses &id_addresses) {
+  for (const auto &id_addresses_pair: id_addresses) {
+    const string &id = id_addresses_pair.first;
+    const vector<uint32_t> &addresses = id_addresses_pair.second;
+    code_->WriteIdAddresses(real_talk::code::IdAddresses(id, addresses));
   }
 }
 

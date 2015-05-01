@@ -8,6 +8,7 @@
 #include <iostream>
 #include "real_talk/util/endianness.h"
 #include "real_talk/code/id_address.h"
+#include "real_talk/code/id_addresses.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/test_utils.h"
 #include "real_talk/code/code.h"
@@ -31,9 +32,9 @@ void WriteIdsSegment(
 }
 
 void WriteIdAddressesSegment(
-    Code &module_code, const std::vector<IdAddress> &id_addresses) {
-  for (const IdAddress &id_address: id_addresses) {
-    module_code.WriteIdAddress(id_address);
+    Code &module_code, const std::vector<IdAddresses> &id_addresses) {
+  for (const IdAddresses &id_addresses_item: id_addresses) {
+    module_code.WriteIdAddresses(id_addresses_item);
   }
 }
 }
@@ -63,7 +64,11 @@ void WriteModule(const Module &module, Code &module_code) {
       module_code.GetPosition() - global_var_defs_metadata_address;
 
   uint32_t func_defs_metadata_address = module_code.GetPosition();
-  WriteIdAddressesSegment(module_code, module.GetIdAddressesOfFuncDefs());
+
+  for (const IdAddress &id_address: module.GetIdAddressesOfFuncDefs()) {
+    module_code.WriteIdAddress(id_address);
+  }
+
   uint32_t func_defs_metadata_size =
       module_code.GetPosition() - func_defs_metadata_address;
 

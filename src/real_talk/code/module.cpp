@@ -25,8 +25,8 @@ Module::Module(
     const vector<IdAddress> &id_addresses_of_func_defs,
     const vector<string> &ids_of_global_var_defs,
     const vector<string> &ids_of_native_func_defs,
-    const vector<IdAddress> &id_addresses_of_func_refs,
-    const vector<IdAddress> &id_addresses_of_global_var_refs,
+    const vector<IdAddresses> &id_addresses_of_func_refs,
+    const vector<IdAddresses> &id_addresses_of_global_var_refs,
     const vector<path> &import_file_paths)
     : version_(version),
       cmds_code_(move(cmds_code)),
@@ -55,7 +55,7 @@ const vector<IdAddress> &Module::GetIdAddressesOfFuncDefs() const {
   return id_addresses_of_func_defs_;
 }
 
-const vector<IdAddress> &Module::GetIdAddressesOfFuncRefs() const {
+const vector<IdAddresses> &Module::GetIdAddressesOfFuncRefs() const {
   return id_addresses_of_func_refs_;
 }
 
@@ -67,7 +67,7 @@ const vector<string> &Module::GetIdsOfNativeFuncDefs() const {
   return ids_of_native_func_defs_;
 }
 
-const vector<IdAddress> &Module::GetIdAddressesOfGlobalVarRefs() const {
+const vector<IdAddresses> &Module::GetIdAddressesOfGlobalVarRefs() const {
   return id_addresses_of_global_var_refs_;
 }
 
@@ -112,9 +112,9 @@ ostream &operator<<(ostream &stream, Module &module) {
 
   stream << "id_addresses_of_func_refs=\n";
 
-  for (const IdAddress &id_address_of_func_ref:
+  for (const IdAddresses &id_addresses_of_func_ref:
            module.GetIdAddressesOfFuncRefs()) {
-    stream << id_address_of_func_ref << "\n";
+    stream << id_addresses_of_func_ref << "\n";
   }
 
   stream << "ids_of_global_var_defs=\n";
@@ -126,9 +126,9 @@ ostream &operator<<(ostream &stream, Module &module) {
 
   stream << "id_addresses_of_global_var_refs=\n";
 
-  for (const IdAddress &id_address_of_global_var_ref:
+  for (const IdAddresses &id_addresses_of_global_var_ref:
            module.GetIdAddressesOfGlobalVarRefs()) {
-    stream << id_address_of_global_var_ref << "\n";
+    stream << id_addresses_of_global_var_ref << "\n";
   }
 
   stream << "cmds_code_position=" << module.GetCmdsCode().GetPosition()

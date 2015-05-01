@@ -13,6 +13,7 @@
 #include "real_talk/code/module_reader.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/id_address.h"
+#include "real_talk/code/id_addresses.h"
 #include "real_talk/code/test_utils.h"
 #include "real_talk/code/code.h"
 
@@ -65,19 +66,21 @@ TEST_F(ModuleReaderTest, Read) {
   {
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
-    cmds_code->WriteUint32(UINT32_C(7));
     cmds_code->WriteCmdId(CmdId::kEndMain);
+    cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
     cmds_code->WriteCmdId(CmdId::kEndFuncs);
     cmds_code->SetPosition(UINT32_C(0));
     vector<path> import_file_paths = {"src/class.rt", "src/class2.rt"};
     vector<string> ids_of_global_var_defs = {"var", "var2"};
-    vector<IdAddress> id_addresses_of_func_defs = {{"func", UINT32_C(1)},
-                                                   {"func2", UINT32_C(2)}};
+    vector<IdAddress> id_addresses_of_func_defs =
+        {{"func", UINT32_C(1)}, {"func2", UINT32_C(2)}};
     vector<string> ids_of_native_func_defs = {"native_func", "native_func2"};
-    vector<IdAddress> id_addresses_of_global_var_refs = {{"var", UINT32_C(3)},
-                                                         {"var2", UINT32_C(4)}};
-    vector<IdAddress> id_addresses_of_func_refs = {{"func", UINT32_C(5)},
-                                                   {"func2", UINT32_C(6)}};
+    vector<IdAddresses> id_addresses_of_global_var_refs =
+        {{"var", {UINT32_C(3), UINT32_C(4)}},
+         {"var2", {UINT32_C(5), UINT32_C(6)}}};
+    vector<IdAddresses> id_addresses_of_func_refs =
+        {{"func", {UINT32_C(7), UINT32_C(8)}},
+         {"func2", {UINT32_C(9), UINT32_C(10)}}};
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
@@ -100,8 +103,8 @@ TEST_F(ModuleReaderTest, Read) {
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
-    vector<IdAddress> id_addresses_of_global_var_refs;
-    vector<IdAddress> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
