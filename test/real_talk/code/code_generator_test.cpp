@@ -2984,44 +2984,56 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t else_if_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t else_if_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
   cmds_code->WriteCmdId(CmdId::kUnload);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
-  uint32_t branch_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
 
   uint32_t else_if_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(else_if_address_placeholder);
-  cmds_code->WriteUint32(else_if_address);
+  int32_t else_if_offset = static_cast<int32_t>(else_if_address)
+                           - (static_cast<int32_t>(else_if_offset_placeholder)
+                              + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(else_if_offset_placeholder);
+  cmds_code->WriteInt32(else_if_offset);
   cmds_code->SetPosition(else_if_address);
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(false);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t else_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t else_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(2));
   cmds_code->WriteCmdId(CmdId::kUnload);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
-  uint32_t branch_end_address_placeholder2 = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
 
   uint32_t else_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(else_address_placeholder);
-  cmds_code->WriteUint32(else_address);
+  int32_t else_offset = static_cast<int32_t>(else_address)
+                        - (static_cast<int32_t>(else_offset_placeholder)
+                           + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(else_offset_placeholder);
+  cmds_code->WriteInt32(else_offset);
   cmds_code->SetPosition(else_address);
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(3));
   cmds_code->WriteCmdId(CmdId::kUnload);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(branch_end_address_placeholder);
-  cmds_code->WriteUint32(branch_end_address);
-  cmds_code->SetPosition(branch_end_address_placeholder2);
-  cmds_code->WriteUint32(branch_end_address);
+  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
+                              - (static_cast<int32_t>(branch_end_offset_placeholder)
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder);
+  cmds_code->WriteInt32(branch_end_offset);
+  cmds_code->SetPosition(branch_end_offset_placeholder2);
+  int32_t branch_end_offset2 = static_cast<int32_t>(branch_end_address)
+                               - (static_cast<int32_t>(branch_end_offset_placeholder2)
+                                  + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -3169,7 +3181,6 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::Problems(), move(node_analyzes));
 
@@ -3177,42 +3188,54 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t else_if_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t else_if_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   cmds_code->WriteUint32(if_body_local_vars_count);
-  uint32_t branch_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
 
   uint32_t else_if_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(else_if_address_placeholder);
-  cmds_code->WriteUint32(else_if_address);
+  int32_t else_if_offset = static_cast<int32_t>(else_if_address)
+                           - (static_cast<int32_t>(else_if_offset_placeholder)
+                              + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(else_if_offset_placeholder);
+  cmds_code->WriteInt32(else_if_offset);
   cmds_code->SetPosition(else_if_address);
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(false);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t else_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t else_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   cmds_code->WriteUint32(else_if_body_local_vars_count);
-  uint32_t branch_end_address_placeholder2 = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
 
   uint32_t else_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(else_address_placeholder);
-  cmds_code->WriteUint32(else_address);
+  int32_t else_offset = static_cast<int32_t>(else_address)
+                        - (static_cast<int32_t>(else_offset_placeholder)
+                           + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(else_offset_placeholder);
+  cmds_code->WriteInt32(else_offset);
   cmds_code->SetPosition(else_address);
   cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
   cmds_code->WriteUint32(else_body_local_vars_count);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(branch_end_address_placeholder);
-  cmds_code->WriteUint32(branch_end_address);
-  cmds_code->SetPosition(branch_end_address_placeholder2);
-  cmds_code->WriteUint32(branch_end_address);
+  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
+                              - (static_cast<int32_t>(branch_end_offset_placeholder)
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder);
+  cmds_code->WriteInt32(branch_end_offset);
+  int32_t branch_end_offset2 = static_cast<int32_t>(branch_end_address)
+                               - (static_cast<int32_t>(branch_end_offset_placeholder2)
+                                  + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder2);
+  cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -3345,33 +3368,42 @@ TEST_F(CodeGeneratorTest, IfElseIfWithoutVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t else_if_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t else_if_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
   cmds_code->WriteCmdId(CmdId::kUnload);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
-  uint32_t branch_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
 
   uint32_t else_if_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(else_if_address_placeholder);
-  cmds_code->WriteUint32(else_if_address);
+  int32_t else_if_offset = static_cast<int32_t>(else_if_address)
+                           - (static_cast<int32_t>(else_if_offset_placeholder)
+                              + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(else_if_offset_placeholder);
+  cmds_code->WriteInt32(else_if_offset);
   cmds_code->SetPosition(else_if_address);
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(false);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t branch_end_address_placeholder2 = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(2));
   cmds_code->WriteCmdId(CmdId::kUnload);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(branch_end_address_placeholder);
-  cmds_code->WriteUint32(branch_end_address);
-  cmds_code->SetPosition(branch_end_address_placeholder2);
-  cmds_code->WriteUint32(branch_end_address);
+  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
+                              - (static_cast<int32_t>(branch_end_offset_placeholder)
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder);
+  cmds_code->WriteInt32(branch_end_offset);
+  int32_t branch_end_offset2 = static_cast<int32_t>(branch_end_address)
+                               - (static_cast<int32_t>(branch_end_offset_placeholder2)
+                                  + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder2);
+  cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -3500,32 +3532,41 @@ TEST_F(CodeGeneratorTest, IfElseIfWithVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t else_if_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t else_if_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   cmds_code->WriteUint32(if_body_local_vars_count);
-  uint32_t branch_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
 
   uint32_t else_if_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(else_if_address_placeholder);
-  cmds_code->WriteUint32(else_if_address);
+  int32_t else_if_offset = static_cast<int32_t>(else_if_address)
+                           - (static_cast<int32_t>(else_if_offset_placeholder)
+                              + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(else_if_offset_placeholder);
+  cmds_code->WriteInt32(else_if_offset);
   cmds_code->SetPosition(else_if_address);
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(false);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t branch_end_address_placeholder2 = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
   cmds_code->WriteUint32(else_if_body_local_vars_count);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(branch_end_address_placeholder);
-  cmds_code->WriteUint32(branch_end_address);
-  cmds_code->SetPosition(branch_end_address_placeholder2);
-  cmds_code->WriteUint32(branch_end_address);
+  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
+                              - (static_cast<int32_t>(branch_end_offset_placeholder)
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder);
+  cmds_code->WriteInt32(branch_end_offset);
+  int32_t branch_end_offset2 = static_cast<int32_t>(branch_end_address)
+                               - (static_cast<int32_t>(branch_end_offset_placeholder2)
+                                  + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder2);
+  cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -3611,15 +3652,18 @@ TEST_F(CodeGeneratorTest, IfWithoutVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t branch_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
   cmds_code->WriteCmdId(CmdId::kUnload);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(branch_end_address_placeholder);
-  cmds_code->WriteUint32(branch_end_address);
+  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
+                              - (static_cast<int32_t>(branch_end_offset_placeholder)
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder);
+  cmds_code->WriteInt32(branch_end_offset);
   cmds_code->SetPosition(branch_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -3703,15 +3747,18 @@ TEST_F(CodeGeneratorTest, IfWithVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t branch_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
   cmds_code->WriteUint32(if_body_local_vars_count);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(branch_end_address_placeholder);
-  cmds_code->WriteUint32(branch_end_address);
+  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
+                              - (static_cast<int32_t>(branch_end_offset_placeholder)
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(branch_end_offset_placeholder);
+  cmds_code->WriteInt32(branch_end_offset);
   cmds_code->SetPosition(branch_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -3795,17 +3842,23 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t loop_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
   cmds_code->WriteCmdId(CmdId::kUnload);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
-  cmds_code->WriteUint32(loop_start_address);
+  int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
+                              - (static_cast<int32_t>(cmds_code->GetPosition())
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(loop_start_offset);
 
   uint32_t loop_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(loop_end_address_placeholder);
-  cmds_code->WriteUint32(loop_end_address);
+  int32_t loop_end_offset = static_cast<int32_t>(loop_end_address)
+                            - (static_cast<int32_t>(loop_end_offset_placeholder)
+                               + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(loop_end_offset_placeholder);
+  cmds_code->WriteInt32(loop_end_offset);
   cmds_code->SetPosition(loop_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -3887,16 +3940,22 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t loop_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   cmds_code->WriteUint32(loop_body_local_vars_count);
-  cmds_code->WriteUint32(loop_start_address);
+  int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
+                              - (static_cast<int32_t>(cmds_code->GetPosition())
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(loop_start_offset);
 
   uint32_t loop_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(loop_end_address_placeholder);
-  cmds_code->WriteUint32(loop_end_address);
+  int32_t loop_end_offset = static_cast<int32_t>(loop_end_address)
+                            - (static_cast<int32_t>(loop_end_offset_placeholder)
+                               + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(loop_end_offset_placeholder);
+  cmds_code->WriteInt32(loop_end_offset);
   cmds_code->SetPosition(loop_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -3975,19 +4034,28 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t loop_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kDirectJump);
-  uint32_t loop_end_address_placeholder2 = cmds_code->GetPosition();
-  cmds_code->WriteUint32(loop_end_address_placeholder2);
+  uint32_t loop_end_offset_placeholder2 = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kDirectJump);
-  cmds_code->WriteUint32(loop_start_address);
+  int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
+                              - (static_cast<int32_t>(cmds_code->GetPosition())
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(loop_start_offset);
 
   uint32_t loop_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(loop_end_address_placeholder);
-  cmds_code->WriteUint32(loop_end_address);
-  cmds_code->SetPosition(loop_end_address_placeholder2);
-  cmds_code->WriteUint32(loop_end_address);
+  int32_t loop_end_offset = static_cast<int32_t>(loop_end_address)
+                            - (static_cast<int32_t>(loop_end_offset_placeholder)
+                               + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(loop_end_offset_placeholder);
+  cmds_code->WriteInt32(loop_end_offset);
+  int32_t loop_end_offset2 = static_cast<int32_t>(loop_end_address)
+                             - (static_cast<int32_t>(loop_end_offset_placeholder2)
+                                + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(loop_end_offset_placeholder2);
+  cmds_code->WriteInt32(loop_end_offset2);
   cmds_code->SetPosition(loop_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -4090,23 +4158,32 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t loop_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   cmds_code->WriteUint32(flow_local_vars_count);
-  uint32_t loop_end_address_placeholder2 = cmds_code->GetPosition();
-  cmds_code->WriteUint32(loop_end_address_placeholder2);
+  uint32_t loop_end_offset_placeholder2 = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   cmds_code->WriteUint32(loop_body_local_vars_count);
-  cmds_code->WriteUint32(loop_start_address);
+  int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
+                              - (static_cast<int32_t>(cmds_code->GetPosition())
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(loop_start_offset);
 
   uint32_t loop_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(loop_end_address_placeholder);
-  cmds_code->WriteUint32(loop_end_address);
-  cmds_code->SetPosition(loop_end_address_placeholder2);
-  cmds_code->WriteUint32(loop_end_address);
+  int32_t loop_end_offset = static_cast<int32_t>(loop_end_address)
+                            - (static_cast<int32_t>(loop_end_offset_placeholder)
+                               + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(loop_end_offset_placeholder);
+  cmds_code->WriteInt32(loop_end_offset);
+  int32_t loop_end_offset2 = static_cast<int32_t>(loop_end_address)
+                             - (static_cast<int32_t>(loop_end_offset_placeholder2)
+                                + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(loop_end_offset_placeholder2);
+  cmds_code->WriteInt32(loop_end_offset2);
   cmds_code->SetPosition(loop_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -4185,16 +4262,25 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t loop_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kDirectJump);
-  cmds_code->WriteUint32(loop_start_address);
+  int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
+                              - (static_cast<int32_t>(cmds_code->GetPosition())
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(loop_start_offset);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
-  cmds_code->WriteUint32(loop_start_address);
+  int32_t loop_start_offset2 = static_cast<int32_t>(loop_start_address)
+                               - (static_cast<int32_t>(cmds_code->GetPosition())
+                                  + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(loop_start_offset2);
 
   uint32_t loop_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(loop_end_address_placeholder);
-  cmds_code->WriteUint32(loop_end_address);
+  int32_t loop_end_offset = static_cast<int32_t>(loop_end_address)
+                            - (static_cast<int32_t>(loop_end_offset_placeholder)
+                               + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(loop_end_offset_placeholder);
+  cmds_code->WriteInt32(loop_end_offset);
   cmds_code->SetPosition(loop_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -4297,20 +4383,29 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
-  uint32_t loop_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   cmds_code->WriteUint32(flow_local_vars_count);
-  cmds_code->WriteUint32(loop_start_address);
+  int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
+                              - (static_cast<int32_t>(cmds_code->GetPosition())
+                                 + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(loop_start_offset);
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   cmds_code->WriteUint32(loop_body_local_vars_count);
-  cmds_code->WriteUint32(loop_start_address);
+  int32_t loop_start_offset2 = static_cast<int32_t>(loop_start_address)
+                               - (static_cast<int32_t>(cmds_code->GetPosition())
+                                  + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->WriteInt32(loop_start_offset2);
 
   uint32_t loop_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(loop_end_address_placeholder);
-  cmds_code->WriteUint32(loop_end_address);
+  int32_t loop_end_offset = static_cast<int32_t>(loop_end_address)
+                            - (static_cast<int32_t>(loop_end_offset_placeholder)
+                               + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(loop_end_offset_placeholder);
+  cmds_code->WriteInt32(loop_end_offset);
   cmds_code->SetPosition(loop_end_address);
   cmds_code->WriteCmdId(CmdId::kEndMain);
   cmds_code->WriteCmdId(CmdId::kEndFuncs);
@@ -6229,14 +6324,17 @@ TEST_F(CodeGeneratorTest, And) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kImplicitJumpIfNot);
-  uint32_t expr_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t expr_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(false);
   cmds_code->WriteCmdId(CmdId::kAnd);
   uint32_t expr_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(expr_end_address_placeholder);
-  cmds_code->WriteUint32(expr_end_address);
+  int32_t expr_end_offset = static_cast<int32_t>(expr_end_address)
+                            - (static_cast<int32_t>(expr_end_offset_placeholder)
+                               + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(expr_end_offset_placeholder);
+  cmds_code->WriteInt32(expr_end_offset);
   cmds_code->SetPosition(expr_end_address);
   cmds_code->WriteCmdId(CmdId::kUnload);
   cmds_code->WriteCmdId(CmdId::kEndMain);
@@ -6316,14 +6414,17 @@ TEST_F(CodeGeneratorTest, Or) {
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(true);
   cmds_code->WriteCmdId(CmdId::kImplicitJumpIf);
-  uint32_t expr_end_address_placeholder = cmds_code->GetPosition();
-  cmds_code->Skip(sizeof(uint32_t));
+  uint32_t expr_end_offset_placeholder = cmds_code->GetPosition();
+  cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadBoolValue);
   cmds_code->WriteBool(false);
   cmds_code->WriteCmdId(CmdId::kOr);
   uint32_t expr_end_address = cmds_code->GetPosition();
-  cmds_code->SetPosition(expr_end_address_placeholder);
-  cmds_code->WriteUint32(expr_end_address);
+  int32_t expr_end_offset = static_cast<int32_t>(expr_end_address)
+                            - (static_cast<int32_t>(expr_end_offset_placeholder)
+                               + static_cast<int32_t>(sizeof(int32_t)));
+  cmds_code->SetPosition(expr_end_offset_placeholder);
+  cmds_code->WriteInt32(expr_end_offset);
   cmds_code->SetPosition(expr_end_address);
   cmds_code->WriteCmdId(CmdId::kUnload);
   cmds_code->WriteCmdId(CmdId::kEndMain);

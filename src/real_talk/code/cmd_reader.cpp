@@ -132,15 +132,15 @@ const CreateAndInitLocalStringVarCmd &kCreateAndInitLocalStringVarCmd =
 const CreateAndInitLocalBoolVarCmd &kCreateAndInitLocalBoolVarCmd =
     *new CreateAndInitLocalBoolVarCmd();
 
-JumpIfNotCmd &kJumpIfNotCmd = *new JumpIfNotCmd(UINT32_C(0));
+JumpIfNotCmd &kJumpIfNotCmd = *new JumpIfNotCmd(INT32_C(0));
 ImplicitJumpIfNotCmd &kImplicitJumpIfNotCmd =
-    *new ImplicitJumpIfNotCmd(UINT32_C(0));
+    *new ImplicitJumpIfNotCmd(INT32_C(0));
 ImplicitJumpIfCmd &kImplicitJumpIfCmd =
-    *new ImplicitJumpIfCmd(UINT32_C(0));
-DirectJumpCmd &kDirectJumpCmd = *new DirectJumpCmd(UINT32_C(0));
+    *new ImplicitJumpIfCmd(INT32_C(0));
+DirectJumpCmd &kDirectJumpCmd = *new DirectJumpCmd(INT32_C(0));
 
 DestroyLocalVarsAndJumpCmd &kDestroyLocalVarsAndJumpCmd =
-    *new DestroyLocalVarsAndJumpCmd(UINT32_C(1), UINT32_C(0));
+    *new DestroyLocalVarsAndJumpCmd(UINT32_C(1), INT32_C(0));
 DestroyLocalVarsCmd &kDestroyLocalVarsCmd =
     *new DestroyLocalVarsCmd(UINT32_C(1));
 
@@ -462,7 +462,7 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kDestroyLocalVarsAndJump:
       kDestroyLocalVarsAndJumpCmd.SetVarsCount(code_->ReadUint32());
-      kDestroyLocalVarsAndJumpCmd.SetAddress(code_->ReadUint32());
+      kDestroyLocalVarsAndJumpCmd.SetOffset(code_->ReadInt32());
       cmd = &kDestroyLocalVarsAndJumpCmd;
       break;
     case CmdId::kDestroyLocalVars:
@@ -729,7 +729,7 @@ inline void CmdReader::ReadCreateAndInitArrayCmd(
 }
 
 inline void CmdReader::ReadJumpCmd(JumpCmd &cmd) {
-  cmd.SetAddress(code_->ReadUint32());
+  cmd.SetOffset(code_->ReadInt32());
 }
 
 inline void CmdReader::ReadLoadGlobalVarValueCmd(

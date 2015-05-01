@@ -9,43 +9,43 @@ namespace code {
 
 class JumpCmd: public Cmd {
  public:
-  inline explicit JumpCmd(uint32_t address) noexcept: address_(address) {}
-  inline void SetAddress(uint32_t address) noexcept {address_ = address;}
-  inline uint32_t GetAddress() const noexcept {return address_;}
+  inline explicit JumpCmd(int32_t offset) noexcept: offset_(offset) {}
+  inline void SetOffset(int32_t offset) noexcept {offset_ = offset;}
+  inline int32_t GetOffset() const noexcept {return offset_;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
-    stream << "address=" << address_;
+    stream << "offset=" << offset_;
   }
 
   virtual bool IsEqual(const Cmd &cmd) const override {
     const JumpCmd &rhs = static_cast<const JumpCmd&>(cmd);
-    return address_ == rhs.address_;
+    return offset_ == rhs.offset_;
   }
 
-  uint32_t address_;
+  int32_t offset_;
 };
 
 class JumpIfNotCmd: public JumpCmd {
  public:
-  inline explicit JumpIfNotCmd(uint32_t address) noexcept: JumpCmd(address) {}
+  inline explicit JumpIfNotCmd(int32_t offset) noexcept: JumpCmd(offset) {}
 };
 
 class DirectJumpCmd: public JumpCmd {
  public:
-  inline explicit DirectJumpCmd(uint32_t address) noexcept: JumpCmd(address) {}
+  inline explicit DirectJumpCmd(int32_t offset) noexcept: JumpCmd(offset) {}
 };
 
 class ImplicitJumpIfNotCmd: public JumpCmd {
  public:
-  inline explicit ImplicitJumpIfNotCmd(uint32_t address) noexcept
-      : JumpCmd(address) {}
+  inline explicit ImplicitJumpIfNotCmd(int32_t offset) noexcept
+      : JumpCmd(offset) {}
 };
 
 class ImplicitJumpIfCmd: public JumpCmd {
  public:
-  inline explicit ImplicitJumpIfCmd(uint32_t address) noexcept
-      : JumpCmd(address) {}
+  inline explicit ImplicitJumpIfCmd(int32_t offset) noexcept
+      : JumpCmd(offset) {}
 };
 }
 }

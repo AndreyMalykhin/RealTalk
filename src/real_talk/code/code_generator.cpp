@@ -281,7 +281,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   void VisitIf(const IfNode &node, uint32_t *branch_end_address_placeholder);
   template<typename TCmdGenerator> void VisitBinaryExpr(
       const BinaryExprNode &node);
-  void WriteCurrentCmdAddress(const vector<uint32_t> &address_placeholders);
+  void WriteCurrentCmdOffset(const vector<uint32_t> &offset_placeholders);
   void GenerateJumpCmdStart(uint32_t local_vars_count);
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
@@ -1529,19 +1529,24 @@ void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
 }
 
 void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
-  const uint32_t start_address = GetCurrentCmdAddress();
+  const uint32_t start_address = code_->GetPosition();
   node.GetCond()->Accept(*this);
   Scope scope(start_address, scopes_stack_);
   code_->WriteCmdId(CmdId::kJumpIfNot);
-  const uint32_t end_address_placeholder = code_->GetPosition();
-  scope.GetEndAddressPlaceholders().push_back(end_address_placeholder);
-  code_->Skip(sizeof(uint32_t));
+  const uint32_t end_offset_placeholder = code_->GetPosition();
+  scope.GetEndAddressPlaceholders().push_back(end_offset_placeholder);
+  code_->Skip(sizeof(int32_t));
   node.GetBody()->Accept(*this);
   const ScopeAnalysis &body_analysis = static_cast<const ScopeAnalysis&>(
       GetNodeAnalysis(*(node.GetBody())));
   GenerateJumpCmdStart(body_analysis.GetLocalVarsCount());
-  code_->WriteUint32(start_address);
-  WriteCurrentCmdAddress(scope.GetEndAddressPlaceholders());
+  const int64_t start_offset = static_cast<int64_t>(start_address)
+                               - (static_cast<int64_t>(code_->GetPosition())
+                                  + static_cast<int64_t>(sizeof(int32_t)));
+  assert(start_offset <= numeric_limits<int32_t>::max());
+  assert(start_offset >= numeric_limits<int32_t>::min());
+  code_->WriteInt32(static_cast<int32_t>(start_offset));
+  WriteCurrentCmdOffset(scope.GetEndAddressPlaceholders());
 }
 
 void CodeGenerator::Impl::VisitBreak(const BreakNode &node) {
@@ -1551,26 +1556,32 @@ void CodeGenerator::Impl::VisitBreak(const BreakNode &node) {
   const uint32_t flow_end_address_placeholder = code_->GetPosition();
   GetCurrentScope()->GetEndAddressPlaceholders().push_back(
       flow_end_address_placeholder);
-  code_->Skip(sizeof(uint32_t));
+  code_->Skip(sizeof(int32_t));
 }
 
 void CodeGenerator::Impl::VisitContinue(const ContinueNode &node) {
   const ControlFlowTransferAnalysis &continue_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
   GenerateJumpCmdStart(continue_analysis.GetFlowLocalVarsCount());
-  code_->WriteUint32(GetCurrentScope()->GetStartAddress());
+  const int64_t scope_start_offset =
+      static_cast<int64_t>(GetCurrentScope()->GetStartAddress())
+      - (static_cast<int64_t>(code_->GetPosition())
+         + static_cast<int64_t>(sizeof(int32_t)));
+  assert(scope_start_offset <= numeric_limits<int32_t>::max());
+  assert(scope_start_offset >= numeric_limits<int32_t>::min());
+  code_->WriteInt32(static_cast<int32_t>(scope_start_offset));
 }
 
 void CodeGenerator::Impl::VisitIfElseIfElse(
     const IfElseIfElseNode &if_else_if_else) {
-  vector<uint32_t> branch_end_address_placeholders;
-  uint32_t branch_end_address_placeholder;
-  VisitIf(*(if_else_if_else.GetIf()), &branch_end_address_placeholder);
-  branch_end_address_placeholders.push_back(branch_end_address_placeholder);
+  vector<uint32_t> branch_end_offset_placeholders;
+  uint32_t branch_end_offset_placeholder;
+  VisitIf(*(if_else_if_else.GetIf()), &branch_end_offset_placeholder);
+  branch_end_offset_placeholders.push_back(branch_end_offset_placeholder);
 
   for (const unique_ptr<ElseIfNode> &else_if: if_else_if_else.GetElseIfs()) {
-    VisitIf(*(else_if->GetIf()), &branch_end_address_placeholder);
-    branch_end_address_placeholders.push_back(branch_end_address_placeholder);
+    VisitIf(*(else_if->GetIf()), &branch_end_offset_placeholder);
+    branch_end_offset_placeholders.push_back(branch_end_offset_placeholder);
   }
 
   if_else_if_else.GetElseBody()->Accept(*this);
@@ -1582,7 +1593,7 @@ void CodeGenerator::Impl::VisitIfElseIfElse(
     code_->WriteUint32(else_body_analysis.GetLocalVarsCount());
   }
 
-  WriteCurrentCmdAddress(branch_end_address_placeholders);
+  WriteCurrentCmdOffset(branch_end_offset_placeholders);
 }
 
 void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode &if_else_if) {
@@ -1591,52 +1602,52 @@ void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode &if_else_if) {
     return;
   }
 
-  vector<uint32_t> branch_end_address_placeholders;
-  uint32_t branch_end_address_placeholder;
-  VisitIf(*(if_else_if.GetIf()), &branch_end_address_placeholder);
-  branch_end_address_placeholders.push_back(branch_end_address_placeholder);
+  vector<uint32_t> branch_end_offset_placeholders;
+  uint32_t branch_end_offset_placeholder;
+  VisitIf(*(if_else_if.GetIf()), &branch_end_offset_placeholder);
+  branch_end_offset_placeholders.push_back(branch_end_offset_placeholder);
   auto last_else_if_it = if_else_if.GetElseIfs().cend() - 1;
 
   for (auto else_if_it = if_else_if.GetElseIfs().cbegin();
        else_if_it != last_else_if_it;
        ++else_if_it) {
     const unique_ptr<IfNode> &if_node = (**else_if_it).GetIf();
-    VisitIf(*if_node, &branch_end_address_placeholder);
-    branch_end_address_placeholders.push_back(branch_end_address_placeholder);
+    VisitIf(*if_node, &branch_end_offset_placeholder);
+    branch_end_offset_placeholders.push_back(branch_end_offset_placeholder);
   }
 
   const unique_ptr<IfNode> &if_node = (**last_else_if_it).GetIf();
   VisitIf(*if_node, nullptr);
-  WriteCurrentCmdAddress(branch_end_address_placeholders);
+  WriteCurrentCmdOffset(branch_end_offset_placeholders);
 }
 
 /**
- * @param branch_end_address_placeholder If not null, generates jump to the end
+ * @param branch_end_offset_placeholder If not null, generates jump to the end
  * of branch and stores here address of placeholder, that needs to be filled
- * with the address of branch end
+ * with the offset of branch end
  */
 void CodeGenerator::Impl::VisitIf(
-    const IfNode &node, uint32_t *branch_end_address_placeholder) {
+    const IfNode &node, uint32_t *branch_end_offset_placeholder) {
   node.GetCond()->Accept(*this);
   code_->WriteCmdId(CmdId::kJumpIfNot);
-  const uint32_t jump_address_placeholder = code_->GetPosition();
-  code_->Skip(sizeof(uint32_t));
+  const uint32_t body_end_offset_placeholder = code_->GetPosition();
+  code_->Skip(sizeof(int32_t));
   node.GetBody()->Accept(*this);
   const ScopeAnalysis &body_analysis =
       static_cast<const ScopeAnalysis&>(GetNodeAnalysis(*node.GetBody()));
 
-  if (branch_end_address_placeholder == nullptr) {
+  if (branch_end_offset_placeholder == nullptr) {
     if (body_analysis.GetLocalVarsCount() > 0) {
       code_->WriteCmdId(CmdId::kDestroyLocalVars);
       code_->WriteUint32(body_analysis.GetLocalVarsCount());
     }
   } else {
     GenerateJumpCmdStart(body_analysis.GetLocalVarsCount());
-    *branch_end_address_placeholder = code_->GetPosition();
-    code_->Skip(sizeof(uint32_t));
+    *branch_end_offset_placeholder = code_->GetPosition();
+    code_->Skip(sizeof(int32_t));
   }
 
-  WriteCurrentCmdAddress(vector<uint32_t>({jump_address_placeholder}));
+  WriteCurrentCmdOffset(vector<uint32_t>({body_end_offset_placeholder}));
 }
 
 void CodeGenerator::Impl::VisitFuncDefWithBody(
@@ -1793,26 +1804,26 @@ void CodeGenerator::Impl::VisitAnd(const AndNode &node) {
   node.GetLeftOperand()->Accept(*this);
   code_->WriteCmdId(CmdId::kImplicitJumpIfNot);
   const uint32_t end_address_placeholder = code_->GetPosition();
-  code_->Skip(sizeof(uint32_t));
+  code_->Skip(sizeof(int32_t));
   node.GetRightOperand()->Accept(*this);
   const ExprAnalysis &and_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   AndCmdGenerator().Generate(and_analysis.GetDataType(), code_);
   GenerateCastCmdIfNeeded(and_analysis);
-  WriteCurrentCmdAddress(vector<uint32_t>({end_address_placeholder}));
+  WriteCurrentCmdOffset(vector<uint32_t>({end_address_placeholder}));
 }
 
 void CodeGenerator::Impl::VisitOr(const OrNode &node) {
   node.GetLeftOperand()->Accept(*this);
   code_->WriteCmdId(CmdId::kImplicitJumpIf);
   const uint32_t end_address_placeholder = code_->GetPosition();
-  code_->Skip(sizeof(uint32_t));
+  code_->Skip(sizeof(int32_t));
   node.GetRightOperand()->Accept(*this);
   const ExprAnalysis &and_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   OrCmdGenerator().Generate(and_analysis.GetDataType(), code_);
   GenerateCastCmdIfNeeded(and_analysis);
-  WriteCurrentCmdAddress(vector<uint32_t>({end_address_placeholder}));
+  WriteCurrentCmdOffset(vector<uint32_t>({end_address_placeholder}));
 }
 
 void CodeGenerator::Impl::VisitEqual(const EqualNode&) {}
@@ -1966,17 +1977,21 @@ uint32_t CodeGenerator::Impl::GetCurrentCmdAddress() const {
   return code_->GetPosition() - cmds_address_;
 }
 
-void CodeGenerator::Impl::WriteCurrentCmdAddress(
-    const vector<uint32_t> &address_placeholders) {
-  const uint32_t current_address = GetCurrentCmdAddress();
-  const uint32_t continue_address = code_->GetPosition();
+void CodeGenerator::Impl::WriteCurrentCmdOffset(
+    const vector<uint32_t> &offset_placeholders) {
+  const uint32_t current_address = code_->GetPosition();
 
-  for (const uint32_t address_placeholder: address_placeholders) {
-    code_->SetPosition(address_placeholder);
-    code_->WriteUint32(current_address);
+  for (const uint32_t offset_placeholder: offset_placeholders) {
+    code_->SetPosition(offset_placeholder);
+    const int64_t offset = static_cast<int64_t>(current_address)
+                           - (static_cast<int64_t>(offset_placeholder)
+                              + static_cast<int64_t>(sizeof(int32_t)));
+    assert(offset <= numeric_limits<int32_t>::max());
+    assert(offset >= numeric_limits<int32_t>::min());
+    code_->WriteInt32(static_cast<int32_t>(offset));
   }
 
-  code_->SetPosition(continue_address);
+  code_->SetPosition(current_address);
 }
 
 void CodeGenerator::Impl::GenerateJumpCmdStart(uint32_t local_vars_count) {

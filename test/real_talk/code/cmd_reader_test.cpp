@@ -93,7 +93,7 @@ class CmdReaderTest: public Test {
   void TestJumpCmd(CmdId cmd_id, const JumpCmd &expected_cmd) {
     Code code;
     code.WriteCmdId(cmd_id);
-    code.WriteUint32(expected_cmd.GetAddress());
+    code.WriteInt32(expected_cmd.GetOffset());
     TestGetNextCmd(code, expected_cmd);
   }
 
@@ -436,37 +436,37 @@ TEST_F(CmdReaderTest, CreateAndInitStringArrayCmd) {
 }
 
 TEST_F(CmdReaderTest, JumpIfNotCmd) {
-  uint32_t address = UINT32_C(7);
-  JumpIfNotCmd expected_cmd(address);
+  int32_t offset = INT32_C(7);
+  JumpIfNotCmd expected_cmd(offset);
   TestJumpCmd(CmdId::kJumpIfNot, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DirectJumpCmd) {
-  uint32_t address = UINT32_C(2);
-  DirectJumpCmd expected_cmd(address);
+  int32_t offset = INT32_C(2);
+  DirectJumpCmd expected_cmd(offset);
   TestJumpCmd(CmdId::kDirectJump, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, ImplicitJumpIfNotCmd) {
-  uint32_t address = UINT32_C(7);
-  ImplicitJumpIfNotCmd expected_cmd(address);
+  int32_t offset = INT32_C(7);
+  ImplicitJumpIfNotCmd expected_cmd(offset);
   TestJumpCmd(CmdId::kImplicitJumpIfNot, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, ImplicitJumpIfCmd) {
-  uint32_t address = UINT32_C(7);
-  ImplicitJumpIfCmd expected_cmd(address);
+  int32_t offset = INT32_C(7);
+  ImplicitJumpIfCmd expected_cmd(offset);
   TestJumpCmd(CmdId::kImplicitJumpIf, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalVarsAndJumpCmd) {
   uint32_t vars_count = UINT32_C(1);
-  uint32_t address = UINT32_C(2);
-  DestroyLocalVarsAndJumpCmd expected_cmd(vars_count, address);
+  int32_t offset = INT32_C(2);
+  DestroyLocalVarsAndJumpCmd expected_cmd(vars_count, offset);
   Code code;
   code.WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
   code.WriteUint32(vars_count);
-  code.WriteUint32(address);
+  code.WriteInt32(offset);
   TestGetNextCmd(code, expected_cmd);
 }
 

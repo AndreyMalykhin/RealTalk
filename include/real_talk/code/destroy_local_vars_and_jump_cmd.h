@@ -10,27 +10,27 @@ namespace code {
 class DestroyLocalVarsAndJumpCmd: public Cmd {
  public:
   inline explicit DestroyLocalVarsAndJumpCmd(
-      uint32_t vars_count, uint32_t address) noexcept
-      : vars_count_(vars_count), address_(address) {assert(vars_count > 0);}
+      uint32_t vars_count, int32_t offset) noexcept
+      : vars_count_(vars_count), offset_(offset) {assert(vars_count > 0);}
 
   inline void SetVarsCount(uint32_t count) noexcept {vars_count_ = count;}
   inline uint32_t GetVarsCount() const noexcept {return vars_count_;}
-  inline void SetAddress(uint32_t address) noexcept {address_ = address;}
-  inline uint32_t GetAddress() const noexcept {return address_;}
+  inline void SetOffset(int32_t offset) noexcept {offset_ = offset;}
+  inline int32_t GetOffset() const noexcept {return offset_;}
 
  private:
   virtual void Print(std::ostream &stream) const override {
-    stream << "vars_count=" << vars_count_ << "; address=" << address_;
+    stream << "vars_count=" << vars_count_ << "; offset=" << offset_;
   }
 
   virtual bool IsEqual(const Cmd &cmd) const override {
     const DestroyLocalVarsAndJumpCmd &rhs =
         static_cast<const DestroyLocalVarsAndJumpCmd&>(cmd);
-    return vars_count_ == rhs.vars_count_ && address_ == rhs.address_;
+    return vars_count_ == rhs.vars_count_ && offset_ == rhs.offset_;
   }
 
   uint32_t vars_count_;
-  uint32_t address_;
+  int32_t offset_;
 };
 }
 }
