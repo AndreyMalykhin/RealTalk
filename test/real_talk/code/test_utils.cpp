@@ -42,11 +42,11 @@ void WriteIdAddressesSegment(
 void WriteModule(const Module &module, Code &module_code) {
   module_code.WriteUint32(module.GetVersion());
   uint32_t segments_metadata_address = module_code.GetPosition();
-  module_code.Skip(14 * sizeof(uint32_t));
+  module_code.Skip(17 * sizeof(uint32_t));
 
   uint32_t cmds_address = module_code.GetPosition();
-  uint32_t cmds_size = module.GetCmdsCode().GetSize();
-  module_code.WriteBytes(module.GetCmdsCode().GetData(), cmds_size);
+  module_code.WriteBytes(
+      module.GetCmdsCode().GetData(), module.GetCmdsCode().GetSize());
 
   uint32_t imports_metadata_address = module_code.GetPosition();
 
@@ -88,8 +88,15 @@ void WriteModule(const Module &module, Code &module_code) {
   uint32_t func_refs_metadata_size =
       module_code.GetPosition() - func_refs_metadata_address;
 
+  uint32_t native_func_refs_metadata_address = module_code.GetPosition();
+  WriteIdAddressesSegment(module_code, module.GetIdAddressesOfNativeFuncRefs());
+  uint32_t native_func_refs_metadata_size =
+      module_code.GetPosition() - native_func_refs_metadata_address;
+
   module_code.SetPosition(segments_metadata_address);
-  WriteSegmentMetadata(module_code, cmds_address, cmds_size);
+  module_code.WriteUint32(cmds_address);
+  module_code.WriteUint32(module.GetMainCmdsCodeSize());
+  module_code.WriteUint32(module.GetFuncCmdsCodeSize());
   WriteSegmentMetadata(
       module_code, imports_metadata_address, imports_metadata_size);
   WriteSegmentMetadata(module_code,
@@ -107,6 +114,9 @@ void WriteModule(const Module &module, Code &module_code) {
   WriteSegmentMetadata(module_code,
                        func_refs_metadata_address,
                        func_refs_metadata_size);
+  WriteSegmentMetadata(module_code,
+                       native_func_refs_metadata_address,
+                       native_func_refs_metadata_size);
 }
 }
 }

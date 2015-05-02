@@ -1,6 +1,5 @@
 
 #include <cassert>
-#include "real_talk/code/end_cmd.h"
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/create_local_var_cmd.h"
 #include "real_talk/code/unload_cmd.h"
@@ -18,8 +17,6 @@
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/load_local_var_address_cmd.h"
-#include "real_talk/code/load_func_address_cmd.h"
-#include "real_talk/code/load_native_func_address_cmd.h"
 #include "real_talk/code/load_element_value_cmd.h"
 #include "real_talk/code/load_element_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
@@ -37,9 +34,6 @@
 namespace real_talk {
 namespace code {
 namespace {
-
-const EndMainCmd &kEndMainCmd = *new EndMainCmd();
-const EndFuncsCmd &kEndFuncsCmd = *new EndFuncsCmd();
 
 const CreateGlobalIntVarCmd &kCreateGlobalIntVarCmd =
     *new CreateGlobalIntVarCmd();
@@ -79,6 +73,9 @@ LoadBoolValueCmd &kLoadBoolValueCmd = *new LoadBoolValueCmd(false);
 LoadCharValueCmd &kLoadCharValueCmd = *new LoadCharValueCmd('\0');
 LoadStringValueCmd &kLoadStringValueCmd = *new LoadStringValueCmd("");
 LoadDoubleValueCmd &kLoadDoubleValueCmd = *new LoadDoubleValueCmd(0.0);
+LoadFuncValueCmd &kLoadFuncValueCmd = *new LoadFuncValueCmd(UINT32_C(0));
+LoadNativeFuncValueCmd &kLoadNativeFuncValueCmd =
+    *new LoadNativeFuncValueCmd(UINT32_C(0));
 
 const CreateAndInitGlobalIntVarCmd &kCreateAndInitGlobalIntVarCmd =
     *new CreateAndInitGlobalIntVarCmd();
@@ -187,10 +184,6 @@ LoadGlobalVarAddressCmd &kLoadGlobalVarAddressCmd =
     *new LoadGlobalVarAddressCmd(UINT32_C(0));
 LoadLocalVarAddressCmd &kLoadLocalVarAddressCmd =
     *new LoadLocalVarAddressCmd(UINT32_C(0));
-LoadFuncAddressCmd &kLoadFuncAddressCmd =
-    *new LoadFuncAddressCmd(UINT32_C(0));
-LoadNativeFuncAddressCmd &kLoadNativeFuncAddressCmd =
-    *new LoadNativeFuncAddressCmd(UINT32_C(0));
 
 const StoreIntCmd &kStoreIntCmd = *new StoreIntCmd();
 const StoreLongCmd &kStoreLongCmd = *new StoreLongCmd();
@@ -279,12 +272,6 @@ const Cmd &CmdReader::GetNextCmd() {
   const Cmd *cmd = nullptr;
 
   switch (code_->ReadCmdId()) {
-    case CmdId::kEndMain:
-      cmd = &kEndMainCmd;
-      break;
-    case CmdId::kEndFuncs:
-      cmd = &kEndFuncsCmd;
-      break;
     case CmdId::kCreateGlobalIntVar:
       cmd = &kCreateGlobalIntVarCmd;
       break;
@@ -529,13 +516,13 @@ const Cmd &CmdReader::GetNextCmd() {
       kLoadLocalVarAddressCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kLoadLocalVarAddressCmd;
       break;
-    case CmdId::kLoadFuncAddress:
-      kLoadFuncAddressCmd.SetFuncIndex(code_->ReadUint32());
-      cmd = &kLoadFuncAddressCmd;
+    case CmdId::kLoadFuncValue:
+      kLoadFuncValueCmd.SetAddress(code_->ReadUint32());
+      cmd = &kLoadFuncValueCmd;
       break;
-    case CmdId::kLoadNativeFuncAddress:
-      kLoadNativeFuncAddressCmd.SetFuncIndex(code_->ReadUint32());
-      cmd = &kLoadNativeFuncAddressCmd;
+    case CmdId::kLoadNativeFuncValue:
+      kLoadNativeFuncValueCmd.SetFuncIndex(code_->ReadUint32());
+      cmd = &kLoadNativeFuncValueCmd;
       break;
     case CmdId::kLoadLocalIntVarValue:
       ReadLoadLocalVarValueCmd(kLoadLocalIntVarValueCmd);

@@ -3,7 +3,6 @@
 #include <gmock/gmock.h>
 #include <string>
 #include "real_talk/code/cmd_reader.h"
-#include "real_talk/code/end_cmd.h"
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/create_local_var_cmd.h"
 #include "real_talk/code/load_value_cmd.h"
@@ -20,8 +19,6 @@
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/load_local_var_address_cmd.h"
-#include "real_talk/code/load_func_address_cmd.h"
-#include "real_talk/code/load_native_func_address_cmd.h"
 #include "real_talk/code/load_element_value_cmd.h"
 #include "real_talk/code/load_element_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
@@ -113,20 +110,6 @@ class CmdReaderTest: public Test {
     TestGetNextCmd(code, expected_cmd);
   }
 };
-
-TEST_F(CmdReaderTest, EndMainCmd) {
-  EndMainCmd expected_cmd;
-  Code code;
-  code.WriteCmdId(CmdId::kEndMain);
-  TestGetNextCmd(code, expected_cmd);
-}
-
-TEST_F(CmdReaderTest, EndFuncsCmd) {
-  EndFuncsCmd expected_cmd;
-  Code code;
-  code.WriteCmdId(CmdId::kEndFuncs);
-  TestGetNextCmd(code, expected_cmd);
-}
 
 TEST_F(CmdReaderTest, CreateGlobalIntVarCmd) {
   CreateGlobalIntVarCmd expected_cmd;
@@ -735,20 +718,20 @@ TEST_F(CmdReaderTest, CastLongToDoubleCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadFuncAddressCmd) {
-  uint32_t func_index = UINT32_C(7);
-  LoadFuncAddressCmd expected_cmd(func_index);
+TEST_F(CmdReaderTest, LoadFuncValueCmd) {
+  uint32_t address = UINT32_C(7);
+  LoadFuncValueCmd expected_cmd(address);
   Code code;
-  code.WriteCmdId(CmdId::kLoadFuncAddress);
-  code.WriteUint32(func_index);
+  code.WriteCmdId(CmdId::kLoadFuncValue);
+  code.WriteUint32(address);
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadNativeFuncAddressCmd) {
+TEST_F(CmdReaderTest, LoadNativeFuncValueCmd) {
   uint32_t func_index = UINT32_C(7);
-  LoadNativeFuncAddressCmd expected_cmd(func_index);
+  LoadNativeFuncValueCmd expected_cmd(func_index);
   Code code;
-  code.WriteCmdId(CmdId::kLoadNativeFuncAddress);
+  code.WriteCmdId(CmdId::kLoadNativeFuncValue);
   code.WriteUint32(func_index);
   TestGetNextCmd(code, expected_cmd);
 }

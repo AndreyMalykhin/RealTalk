@@ -278,7 +278,14 @@ class CodeGenerator::Impl: private NodeVisitor {
       const ReturnWithoutValueNode &node) override;
   virtual void VisitArgDef(const ArgDefNode &node) override;
   virtual void VisitScope(const ScopeNode &node) override;
-  void VisitIf(const IfNode &node, uint32_t *branch_end_address_placeholder);
+
+  /**
+   * @param branch_end_offset_placeholder If not null, generates jump to the end
+   * of branch and stores here address of placeholder, that needs to be filled
+   * with the offset of branch end
+   */
+  void VisitIf(const IfNode &node, uint32_t *branch_end_offset_placeholder);
+
   template<typename TCmdGenerator> void VisitBinaryExpr(
       const BinaryExprNode &node);
   void WriteCurrentCmdOffset(const vector<uint32_t> &offset_placeholders);
@@ -287,13 +294,19 @@ class CodeGenerator::Impl: private NodeVisitor {
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
   uint32_t GetCurrentCmdAddress() const;
   Scope *GetCurrentScope();
-  void GenerateCmdsSegment();
+
+  /**
+   * @return Address of the end of main cmds
+   */
+  uint32_t GenerateCmdsSegment();
+
   void GenerateImportsSegment();
   void GenerateIdsSegment(const vector<string> &ids);
   void GenerateIdAddressesSegment(const Impl::IdAddresses &id_addresses);
   void GenerateMetadataSegments(uint32_t segments_metadata_address,
                                 uint32_t cmds_address,
-                                uint32_t cmds_size);
+                                uint32_t main_cmds_size,
+                                uint32_t func_cmds_size);
 
   const CastCmdGenerator &cast_cmd_generator_;
   const ProgramNode *program_;
@@ -305,6 +318,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   vector<IdAddress> id_addresses_of_func_defs_;
   Impl::IdAddresses id_addresses_of_global_var_refs_;
   Impl::IdAddresses id_addresses_of_func_refs_;
+  Impl::IdAddresses id_addresses_of_native_func_refs_;
   vector<Scope*> scopes_stack_;
   uint32_t cmds_address_;
 };
@@ -866,11 +880,13 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
                uint32_t cmds_address,
                Impl::IdAddresses *id_addresses_of_global_var_refs,
                Impl::IdAddresses *id_addresses_of_func_refs,
+               Impl::IdAddresses *id_addresses_of_native_func_refs,
                Code *code) {
     id_node_ = id_node;
     id_analysis_ = id_analysis;
     id_addresses_of_global_var_refs_ = id_addresses_of_global_var_refs;
     id_addresses_of_func_refs_ = id_addresses_of_func_refs;
+    id_addresses_of_native_func_refs_ = id_addresses_of_native_func_refs;
     code_ = code;
     cmds_address_ = cmds_address;
     def_analysis->Accept(*this);
@@ -911,15 +927,25 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
 
   virtual void VisitFuncDef(const FuncDefAnalysis &func_def_analysis) override {
     const bool is_native = func_def_analysis.GetDataType().IsNative();
-    code_->WriteCmdId(
-        is_native ? CmdId::kLoadNativeFuncAddress : CmdId::kLoadFuncAddress);
-    const uint32_t func_index_placeholder = code_->GetPosition();
-    const uint32_t func_index = numeric_limits<uint32_t>::max();
-    code_->WriteUint32(func_index);
-    assert(func_index_placeholder >= cmds_address_);
+    CmdId cmd;
+    Impl::IdAddresses *id_addresses_of_func_refs;
+
+    if (is_native) {
+      cmd = CmdId::kLoadNativeFuncValue;
+      id_addresses_of_func_refs = id_addresses_of_native_func_refs_;
+    } else {
+      cmd = CmdId::kLoadFuncValue;
+      id_addresses_of_func_refs = id_addresses_of_func_refs_;
+    }
+
+    code_->WriteCmdId(cmd);
+    const uint32_t func_value_placeholder = code_->GetPosition();
+    const uint32_t func_value = numeric_limits<uint32_t>::max();
+    code_->WriteUint32(func_value);
+    assert(func_value_placeholder >= cmds_address_);
     const string &id = id_node_->GetNameToken().GetValue();
-    const uint32_t id_address = func_index_placeholder - cmds_address_;
-    (*id_addresses_of_func_refs_)[id].push_back(id_address);
+    const uint32_t id_address = func_value_placeholder - cmds_address_;
+    (*id_addresses_of_func_refs)[id].push_back(id_address);
   }
 
   const IdNode *id_node_;
@@ -927,6 +953,7 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
   uint32_t cmds_address_;
   Impl::IdAddresses *id_addresses_of_global_var_refs_;
   Impl::IdAddresses *id_addresses_of_func_refs_;
+  Impl::IdAddresses *id_addresses_of_native_func_refs_;
   Code *code_;
 };
 
@@ -1377,11 +1404,13 @@ void CodeGenerator::Impl::Generate(
 
   code.WriteUint32(version);
   const uint32_t segments_metadata_address = code.GetPosition();
-  code.Skip(14 * sizeof(uint32_t));
+  code.Skip(17 * sizeof(uint32_t));
   cmds_address_ = code.GetPosition();
-  GenerateCmdsSegment();
-  const uint32_t cmds_size = code.GetPosition() - cmds_address_;
-  GenerateMetadataSegments(segments_metadata_address, cmds_address_, cmds_size);
+  const uint32_t main_cmds_end_address = GenerateCmdsSegment();
+  const uint32_t main_cmds_size = main_cmds_end_address - cmds_address_;
+  const uint32_t func_cmds_size = code.GetPosition() - main_cmds_end_address;
+  GenerateMetadataSegments(
+      segments_metadata_address, cmds_address_, main_cmds_size, func_cmds_size);
 
   stream.exceptions(ios::failbit | ios::badbit);
   stream.write(reinterpret_cast<char*>(code.GetData()), code.GetSize());
@@ -1393,28 +1422,30 @@ void CodeGenerator::Impl::Generate(
   ids_of_native_func_defs_.clear();
   id_addresses_of_global_var_refs_.clear();
   id_addresses_of_func_refs_.clear();
+  id_addresses_of_native_func_refs_.clear();
 }
 
-void CodeGenerator::Impl::GenerateCmdsSegment() {
+uint32_t CodeGenerator::Impl::GenerateCmdsSegment() {
   const StmtGrouper::GroupedStmts &stmts = StmtGrouper().Group(program_);
 
   for (const StmtNode *non_func_def: stmts.non_func_defs) {
     non_func_def->Accept(*this);
   }
 
-  code_->WriteCmdId(CmdId::kEndMain);
+  const uint32_t main_cmds_end = code_->GetPosition();
 
   for (const FuncDefNode *func_def: stmts.func_defs) {
     func_def->Accept(*this);
   }
 
-  code_->WriteCmdId(CmdId::kEndFuncs);
+  return main_cmds_end;
 }
 
 void CodeGenerator::Impl::GenerateMetadataSegments(
     uint32_t segments_metadata_address,
     uint32_t cmds_address,
-    uint32_t cmds_size) {
+    uint32_t main_cmds_size,
+    uint32_t func_cmds_size) {
   const uint32_t imports_metadata_address = code_->GetPosition();
   GenerateImportsSegment();
   const uint32_t imports_metadata_size =
@@ -1449,9 +1480,15 @@ void CodeGenerator::Impl::GenerateMetadataSegments(
   const uint32_t func_refs_metadata_size =
       code_->GetPosition() - func_refs_metadata_address;
 
+  const uint32_t native_func_refs_metadata_address = code_->GetPosition();
+  GenerateIdAddressesSegment(id_addresses_of_native_func_refs_);
+  const uint32_t native_func_refs_metadata_size =
+      code_->GetPosition() - native_func_refs_metadata_address;
+
   code_->SetPosition(segments_metadata_address);
   code_->WriteUint32(cmds_address);
-  code_->WriteUint32(cmds_size);
+  code_->WriteUint32(main_cmds_size);
+  code_->WriteUint32(func_cmds_size);
   code_->WriteUint32(imports_metadata_address);
   code_->WriteUint32(imports_metadata_size);
   code_->WriteUint32(global_var_defs_metadata_address);
@@ -1464,6 +1501,8 @@ void CodeGenerator::Impl::GenerateMetadataSegments(
   code_->WriteUint32(global_var_refs_metadata_size);
   code_->WriteUint32(func_refs_metadata_address);
   code_->WriteUint32(func_refs_metadata_size);
+  code_->WriteUint32(native_func_refs_metadata_address);
+  code_->WriteUint32(native_func_refs_metadata_size);
 }
 
 void CodeGenerator::Impl::GenerateImportsSegment() {
@@ -1621,11 +1660,6 @@ void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode &if_else_if) {
   WriteCurrentCmdOffset(branch_end_offset_placeholders);
 }
 
-/**
- * @param branch_end_offset_placeholder If not null, generates jump to the end
- * of branch and stores here address of placeholder, that needs to be filled
- * with the offset of branch end
- */
 void CodeGenerator::Impl::VisitIf(
     const IfNode &node, uint32_t *branch_end_offset_placeholder) {
   node.GetCond()->Accept(*this);
@@ -1756,6 +1790,7 @@ void CodeGenerator::Impl::VisitId(const IdNode &id) {
                             cmds_address_,
                             &id_addresses_of_global_var_refs_,
                             &id_addresses_of_func_refs_,
+                            &id_addresses_of_native_func_refs_,
                             code_);
 }
 

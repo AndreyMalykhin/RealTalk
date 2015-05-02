@@ -66,9 +66,9 @@ TEST_F(ModuleReaderTest, Read) {
   {
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
     cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
     cmds_code->SetPosition(UINT32_C(0));
     vector<path> import_file_paths = {"src/class.rt", "src/class2.rt"};
     vector<string> ids_of_global_var_defs = {"var", "var2"};
@@ -81,13 +81,18 @@ TEST_F(ModuleReaderTest, Read) {
     vector<IdAddresses> id_addresses_of_func_refs =
         {{"func", {UINT32_C(7), UINT32_C(8)}},
          {"func2", {UINT32_C(9), UINT32_C(10)}}};
+    vector<IdAddresses> id_addresses_of_native_func_refs =
+        {{"func3", {UINT32_C(11), UINT32_C(12)}},
+         {"func4", {UINT32_C(13), UINT32_C(14)}}};
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
+                           main_cmds_code_size,
                            id_addresses_of_func_defs,
                            ids_of_global_var_defs,
                            ids_of_native_func_defs,
                            id_addresses_of_func_refs,
+                           id_addresses_of_native_func_refs,
                            id_addresses_of_global_var_refs,
                            import_file_paths);
     TestData test_data = {move(expected_module)};
@@ -96,8 +101,6 @@ TEST_F(ModuleReaderTest, Read) {
 
   {
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
     cmds_code->SetPosition(UINT32_C(0));
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -105,13 +108,17 @@ TEST_F(ModuleReaderTest, Read) {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
+    uint32_t main_cmds_code_size = UINT32_C(0);
     Module expected_module(version,
                            move(cmds_code),
+                           main_cmds_code_size,
                            id_addresses_of_func_defs,
                            ids_of_global_var_defs,
                            ids_of_native_func_defs,
                            id_addresses_of_func_refs,
+                           id_addresses_of_native_func_refs,
                            id_addresses_of_global_var_refs,
                            import_file_paths);
     TestData test_data = {move(expected_module)};

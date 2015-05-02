@@ -10,9 +10,7 @@ namespace real_talk {
 namespace code {
 
 enum class CmdId: uint8_t {
-  kEndMain = UINT8_C(1),
-  kEndFuncs,
-  kCreateGlobalIntVar,
+  kCreateGlobalIntVar = UINT8_C(1),
   kCreateGlobalArrayVar,
   kCreateGlobalLongVar,
   kCreateGlobalDoubleVar,
@@ -59,6 +57,8 @@ enum class CmdId: uint8_t {
   kLoadCharValue,
   kLoadStringValue,
   kLoadDoubleValue,
+  kLoadFuncValue,
+  kLoadNativeFuncValue,
   kLoadGlobalIntVarValue,
   kLoadGlobalLongVarValue,
   kLoadGlobalDoubleVarValue,
@@ -75,8 +75,6 @@ enum class CmdId: uint8_t {
   kLoadLocalArrayVarValue,
   kLoadGlobalVarAddress,
   kLoadLocalVarAddress,
-  kLoadFuncAddress,
-  kLoadNativeFuncAddress,
   kLoadArrayOfIntsElementValue,
   kLoadArrayOfLongsElementValue,
   kLoadArrayOfDoublesElementValue,

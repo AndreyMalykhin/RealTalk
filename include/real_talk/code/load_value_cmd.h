@@ -118,6 +118,53 @@ class LoadDoubleValueCmd: public Cmd {
 
   double value_;
 };
+
+class LoadFuncValueCmd: public Cmd {
+ public:
+  inline explicit LoadFuncValueCmd(uint32_t address) noexcept
+      : address_(address) {}
+
+  inline void SetAddress(uint32_t address) noexcept {address_ = address;}
+  inline uint32_t GetAddress() const noexcept {return address_;}
+
+ private:
+  virtual void Print(std::ostream &stream) const override {
+    stream << "address=" << address_;
+  }
+
+  virtual bool IsEqual(const Cmd &cmd) const override {
+    const LoadFuncValueCmd &rhs =
+        static_cast<const LoadFuncValueCmd&>(cmd);
+    return address_ == rhs.address_;
+  }
+
+  uint32_t address_;
+};
+
+class LoadNativeFuncValueCmd: public Cmd {
+ public:
+  inline explicit LoadNativeFuncValueCmd(uint32_t func_index) noexcept
+      : func_index_(func_index) {}
+
+  inline void SetFuncIndex(uint32_t func_index) noexcept {
+    func_index_ = func_index;
+  }
+
+  inline uint32_t GetFuncIndex() const noexcept {return func_index_;}
+
+ private:
+  virtual void Print(std::ostream &stream) const override {
+    stream << "func_index=" << func_index_;
+  }
+
+  virtual bool IsEqual(const Cmd &cmd) const override {
+    const LoadNativeFuncValueCmd &rhs =
+        static_cast<const LoadNativeFuncValueCmd&>(cmd);
+    return func_index_ == rhs.func_index_;
+  }
+
+  uint32_t func_index_;
+};
 }
 }
 #endif

@@ -77,7 +77,6 @@
 #include "real_talk/semantic/double_lit.h"
 #include "real_talk/semantic/char_lit.h"
 #include "real_talk/code/cmd.h"
-#include "real_talk/code/end_cmd.h"
 #include "real_talk/code/id_address.h"
 #include "real_talk/code/module_reader.h"
 #include "real_talk/code/module.h"
@@ -285,8 +284,7 @@ class CodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
@@ -294,13 +292,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -350,8 +351,7 @@ class CodeGeneratorTest: public Test {
     }
 
     cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
@@ -359,13 +359,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -416,8 +419,7 @@ class CodeGeneratorTest: public Test {
     }
 
     cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -425,13 +427,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -465,8 +470,7 @@ class CodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -474,13 +478,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -511,8 +518,7 @@ class CodeGeneratorTest: public Test {
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
     cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -520,13 +526,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -617,8 +626,7 @@ class CodeGeneratorTest: public Test {
     uint8_t dimensions_count = UINT8_C(2);
     cmds_code->WriteUint8(dimensions_count);
     cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<TestCast> test_casts;
     unique_ptr<DataType> dest_data_type(new IntDataType());
@@ -638,13 +646,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -716,8 +727,7 @@ class CodeGeneratorTest: public Test {
     cmds_code->WriteUint8(dimensions_count);
     cmds_code->WriteUint32(values_count);
     cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -725,13 +735,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -799,10 +812,9 @@ class CodeGeneratorTest: public Test {
         SemanticAnalysis::Problems(), move(node_analyzes));
 
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(CmdId::kEndMain);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
     uint32_t func_def_address = cmds_code->GetPosition();
     cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -810,13 +822,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -872,8 +887,7 @@ class CodeGeneratorTest: public Test {
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
@@ -882,13 +896,16 @@ class CodeGeneratorTest: public Test {
     vector<IdAddresses> id_addresses_of_global_var_refs =
         {{"var", {var_index_placeholder}}};
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -943,8 +960,7 @@ class CodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteUint32(var_index_within_func);
     cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -952,13 +968,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -1033,8 +1052,7 @@ class CodeGeneratorTest: public Test {
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
@@ -1043,13 +1061,16 @@ class CodeGeneratorTest: public Test {
     vector<IdAddresses> id_addresses_of_global_var_refs =
         {{"var", {var_index_placeholder}}};
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -1123,8 +1144,7 @@ class CodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kLoadLocalVarAddress);
     cmds_code->WriteUint32(var_index_within_func);
     cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -1132,13 +1152,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -1237,8 +1260,7 @@ class CodeGeneratorTest: public Test {
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
@@ -1247,13 +1269,16 @@ class CodeGeneratorTest: public Test {
     vector<IdAddresses> id_addresses_of_global_var_refs =
         {{"var", {var_index_placeholder}}};
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -1371,8 +1396,7 @@ class CodeGeneratorTest: public Test {
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(store_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
@@ -1381,13 +1405,16 @@ class CodeGeneratorTest: public Test {
     vector<IdAddresses> id_addresses_of_global_var_refs =
         {{"var", {var_index_placeholder}}};
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -1434,8 +1461,7 @@ class CodeGeneratorTest: public Test {
     cmds_code->WriteBytes(operands_code.GetData(), operands_code.GetSize());
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
@@ -1443,13 +1469,16 @@ class CodeGeneratorTest: public Test {
     vector<string> ids_of_native_func_defs;
     vector<IdAddresses> id_addresses_of_global_var_refs;
     vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
     uint32_t version = UINT32_C(1);
     Module module(version,
                   move(cmds_code),
+                  main_cmds_code_size,
                   id_addresses_of_func_defs,
                   ids_of_global_var_defs,
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
                   id_addresses_of_global_var_refs,
                   import_file_paths);
     Code module_code;
@@ -1460,142 +1489,6 @@ class CodeGeneratorTest: public Test {
                  version,
                  module_code);
   }
-
-  /*
-  void TestMul(unique_ptr<ExprNode> left_operand_node,
-               unique_ptr<ExprNode> right_operand_node,
-               unique_ptr<NodeSemanticAnalysis> left_operand_analysis,
-               unique_ptr<NodeSemanticAnalysis> right_operand_analysis,
-               unique_ptr<DataType> mul_data_type,
-               vector<TestCast> test_casts,
-               const Code &operands_code,
-               CmdId expected_cmd_id) {
-    vector< unique_ptr<StmtNode> > program_stmt_nodes;
-    ExprNode *left_operand_node_ptr = left_operand_node.get();
-    ExprNode *right_operand_node_ptr = right_operand_node.get();
-    MulNode *mul_expr_node_ptr = new MulNode(
-        TokenInfo(Token::kMulOp, "*", UINT32_C(1), UINT32_C(1)),
-        move(left_operand_node),
-        move(right_operand_node));
-    unique_ptr<ExprNode> mul_expr_node(mul_expr_node_ptr);
-    unique_ptr<StmtNode> mul_stmt_node(new ExprStmtNode(
-        move(mul_expr_node),
-        TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
-    program_stmt_nodes.push_back(move(mul_stmt_node));
-    ProgramNode program_node(move(program_stmt_nodes));
-
-    SemanticAnalysis::NodeAnalyzes node_analyzes;
-    node_analyzes.insert(
-        make_pair(left_operand_node_ptr, move(left_operand_analysis)));
-    node_analyzes.insert(
-        make_pair(right_operand_node_ptr, move(right_operand_analysis)));
-    unique_ptr<DataType> mul_casted_data_type;
-    unique_ptr<NodeSemanticAnalysis> mul_analysis(new CommonExprAnalysis(
-        move(mul_data_type),
-        move(mul_casted_data_type),
-        ValueType::kRight));
-    node_analyzes.insert(make_pair(mul_expr_node_ptr, move(mul_analysis)));
-    SemanticAnalysis semantic_analysis(
-        SemanticAnalysis::Problems(), move(node_analyzes));
-
-    unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteBytes(operands_code.GetData(), operands_code.GetSize());
-    cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
-
-    vector<path> import_file_paths;
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    uint32_t version = UINT32_C(1);
-    Module module(version,
-                  move(cmds_code),
-                  id_addresses_of_func_defs,
-                  ids_of_global_var_defs,
-                  ids_of_native_func_defs,
-                  id_addresses_of_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
-    Code module_code;
-    WriteModule(module, module_code);
-    TestGenerate(move(test_casts),
-                 program_node,
-                 semantic_analysis,
-                 version,
-                 module_code);
-  }
-
-  void TestDiv(unique_ptr<ExprNode> left_operand_node,
-               unique_ptr<ExprNode> right_operand_node,
-               unique_ptr<NodeSemanticAnalysis> left_operand_analysis,
-               unique_ptr<NodeSemanticAnalysis> right_operand_analysis,
-               unique_ptr<DataType> div_data_type,
-               vector<TestCast> test_casts,
-               const Code &operands_code,
-               CmdId expected_cmd_id) {
-    vector< unique_ptr<StmtNode> > program_stmt_nodes;
-    ExprNode *left_operand_node_ptr = left_operand_node.get();
-    ExprNode *right_operand_node_ptr = right_operand_node.get();
-    DivNode *div_expr_node_ptr = new DivNode(
-        TokenInfo(Token::kDivOp, "/", UINT32_C(1), UINT32_C(1)),
-        move(left_operand_node),
-        move(right_operand_node));
-    unique_ptr<ExprNode> div_expr_node(div_expr_node_ptr);
-    unique_ptr<StmtNode> div_stmt_node(new ExprStmtNode(
-        move(div_expr_node),
-        TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
-    program_stmt_nodes.push_back(move(div_stmt_node));
-    ProgramNode program_node(move(program_stmt_nodes));
-
-    SemanticAnalysis::NodeAnalyzes node_analyzes;
-    node_analyzes.insert(
-        make_pair(left_operand_node_ptr, move(left_operand_analysis)));
-    node_analyzes.insert(
-        make_pair(right_operand_node_ptr, move(right_operand_analysis)));
-    unique_ptr<DataType> div_casted_data_type;
-    unique_ptr<NodeSemanticAnalysis> div_analysis(new CommonExprAnalysis(
-        move(div_data_type),
-        move(div_casted_data_type),
-        ValueType::kRight));
-    node_analyzes.insert(make_pair(div_expr_node_ptr, move(div_analysis)));
-    SemanticAnalysis semantic_analysis(
-        SemanticAnalysis::Problems(), move(node_analyzes));
-
-    unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteBytes(operands_code.GetData(), operands_code.GetSize());
-    cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kUnload);
-    cmds_code->WriteCmdId(CmdId::kEndMain);
-    cmds_code->WriteCmdId(CmdId::kEndFuncs);
-
-    vector<path> import_file_paths;
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    uint32_t version = UINT32_C(1);
-    Module module(version,
-                  move(cmds_code),
-                  id_addresses_of_func_defs,
-                  ids_of_global_var_defs,
-                  ids_of_native_func_defs,
-                  id_addresses_of_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
-    Code module_code;
-    WriteModule(module, module_code);
-    TestGenerate(move(test_casts),
-                 program_node,
-                 semantic_analysis,
-                 version,
-                 module_code);
-  }
-  */
 };
 
 TEST_F(CodeGeneratorTest, GlobalIntVarDefWithoutInit) {
@@ -1766,8 +1659,7 @@ TEST_F(CodeGeneratorTest, ExprStmt) {
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(7));
   cmds_code->WriteCmdId(CmdId::kUnload);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -1775,13 +1667,16 @@ TEST_F(CodeGeneratorTest, ExprStmt) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -1908,8 +1803,7 @@ TEST_F(CodeGeneratorTest, Import) {
       SemanticAnalysis::Problems(), move(node_analyzes));
 
   unique_ptr<Code> cmds_code(new Code());
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths = {"file.rt"};
   vector<string> ids_of_global_var_defs;
@@ -1917,13 +1811,16 @@ TEST_F(CodeGeneratorTest, Import) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -3035,8 +2932,7 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
                                   + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -3044,13 +2940,16 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -3237,8 +3136,7 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->SetPosition(branch_end_offset_placeholder2);
   cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -3246,13 +3144,16 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -3405,8 +3306,7 @@ TEST_F(CodeGeneratorTest, IfElseIfWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_offset_placeholder2);
   cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -3414,13 +3314,16 @@ TEST_F(CodeGeneratorTest, IfElseIfWithoutVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -3568,8 +3471,7 @@ TEST_F(CodeGeneratorTest, IfElseIfWithVarDefs) {
   cmds_code->SetPosition(branch_end_offset_placeholder2);
   cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -3577,13 +3479,16 @@ TEST_F(CodeGeneratorTest, IfElseIfWithVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -3665,8 +3570,7 @@ TEST_F(CodeGeneratorTest, IfWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_offset_placeholder);
   cmds_code->WriteInt32(branch_end_offset);
   cmds_code->SetPosition(branch_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -3674,13 +3578,16 @@ TEST_F(CodeGeneratorTest, IfWithoutVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -3760,8 +3667,7 @@ TEST_F(CodeGeneratorTest, IfWithVarDefs) {
   cmds_code->SetPosition(branch_end_offset_placeholder);
   cmds_code->WriteInt32(branch_end_offset);
   cmds_code->SetPosition(branch_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -3769,13 +3675,16 @@ TEST_F(CodeGeneratorTest, IfWithVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -3860,8 +3769,7 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_offset_placeholder);
   cmds_code->WriteInt32(loop_end_offset);
   cmds_code->SetPosition(loop_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -3869,13 +3777,16 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -3957,8 +3868,7 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_offset_placeholder);
   cmds_code->WriteInt32(loop_end_offset);
   cmds_code->SetPosition(loop_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -3966,13 +3876,16 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -4057,8 +3970,7 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_offset_placeholder2);
   cmds_code->WriteInt32(loop_end_offset2);
   cmds_code->SetPosition(loop_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -4066,13 +3978,16 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -4185,8 +4100,7 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_offset_placeholder2);
   cmds_code->WriteInt32(loop_end_offset2);
   cmds_code->SetPosition(loop_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -4194,13 +4108,16 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -4282,8 +4199,7 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_offset_placeholder);
   cmds_code->WriteInt32(loop_end_offset);
   cmds_code->SetPosition(loop_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -4291,13 +4207,16 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -4407,8 +4326,7 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_offset_placeholder);
   cmds_code->WriteInt32(loop_end_offset);
   cmds_code->SetPosition(loop_end_address);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -4416,13 +4334,16 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -4505,12 +4426,11 @@ TEST_F(CodeGeneratorTest, FuncDefWithBody) {
       SemanticAnalysis::Problems(), move(node_analyzes));
 
   unique_ptr<Code> cmds_code(new Code());
-  cmds_code->WriteCmdId(CmdId::kEndMain);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -4518,13 +4438,16 @@ TEST_F(CodeGeneratorTest, FuncDefWithBody) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -4584,10 +4507,9 @@ TEST_F(CodeGeneratorTest, ReturnWithoutValue) {
       SemanticAnalysis::Problems(), move(node_analyzes));
 
   unique_ptr<Code> cmds_code(new Code());
-  cmds_code->WriteCmdId(CmdId::kEndMain);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kReturn);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -4595,13 +4517,16 @@ TEST_F(CodeGeneratorTest, ReturnWithoutValue) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -4927,8 +4852,7 @@ TEST_F(CodeGeneratorTest, FuncDefWithoutBody) {
       SemanticAnalysis::Problems(), move(node_analyzes));
 
   unique_ptr<Code> cmds_code(new Code());
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -4936,13 +4860,16 @@ TEST_F(CodeGeneratorTest, FuncDefWithoutBody) {
   vector<string> ids_of_native_func_defs = {{"func"}};
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -5772,17 +5699,16 @@ TEST_F(CodeGeneratorTest, NotNativeCall) {
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
   cmds_code->WriteCmdId(CmdId::kCastIntToLong);
-  cmds_code->WriteCmdId(CmdId::kLoadFuncAddress);
+  cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
   uint32_t func_ref_address = cmds_code->GetPosition();
-  uint32_t func_index = numeric_limits<uint32_t>::max();
-  cmds_code->WriteUint32(func_index);
+  uint32_t func_address = numeric_limits<uint32_t>::max();
+  cmds_code->WriteUint32(func_address);
   cmds_code->WriteCmdId(CmdId::kCall);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -5791,13 +5717,16 @@ TEST_F(CodeGeneratorTest, NotNativeCall) {
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs =
       {{"func", {func_ref_address}}};
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -5947,28 +5876,30 @@ TEST_F(CodeGeneratorTest, NativeCall) {
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
   cmds_code->WriteCmdId(CmdId::kCastIntToLong);
-  cmds_code->WriteCmdId(CmdId::kLoadNativeFuncAddress);
+  cmds_code->WriteCmdId(CmdId::kLoadNativeFuncValue);
   uint32_t func_ref_address = cmds_code->GetPosition();
   uint32_t func_index = numeric_limits<uint32_t>::max();
   cmds_code->WriteUint32(func_index);
   cmds_code->WriteCmdId(CmdId::kCallNative);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs = {"func"};
   vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs =
+  vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs =
       {{"func", {func_ref_address}}};
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -6337,8 +6268,7 @@ TEST_F(CodeGeneratorTest, And) {
   cmds_code->WriteInt32(expr_end_offset);
   cmds_code->SetPosition(expr_end_address);
   cmds_code->WriteCmdId(CmdId::kUnload);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -6346,13 +6276,16 @@ TEST_F(CodeGeneratorTest, And) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;
@@ -6427,8 +6360,7 @@ TEST_F(CodeGeneratorTest, Or) {
   cmds_code->WriteInt32(expr_end_offset);
   cmds_code->SetPosition(expr_end_address);
   cmds_code->WriteCmdId(CmdId::kUnload);
-  cmds_code->WriteCmdId(CmdId::kEndMain);
-  cmds_code->WriteCmdId(CmdId::kEndFuncs);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
@@ -6436,13 +6368,16 @@ TEST_F(CodeGeneratorTest, Or) {
   vector<string> ids_of_native_func_defs;
   vector<IdAddresses> id_addresses_of_global_var_refs;
   vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
+                main_cmds_code_size,
                 id_addresses_of_func_defs,
                 ids_of_global_var_defs,
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
+                id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs,
                 import_file_paths);
   Code module_code;

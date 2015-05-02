@@ -23,7 +23,8 @@ unique_ptr<Module> ModuleReader::Read(istream &code_stream) {
   Code module_code(code_stream);
   const uint32_t version = module_code.ReadUint32();
   const uint32_t cmds_address = module_code.ReadUint32();
-  const uint32_t cmds_size = module_code.ReadUint32();
+  const uint32_t main_cmds_size = module_code.ReadUint32();
+  const uint32_t func_cmds_size = module_code.ReadUint32();
   const uint32_t imports_metadata_address = module_code.ReadUint32();
   const uint32_t imports_metadata_size = module_code.ReadUint32();
   const uint32_t global_var_defs_metadata_address = module_code.ReadUint32();
@@ -36,10 +37,12 @@ unique_ptr<Module> ModuleReader::Read(istream &code_stream) {
   const uint32_t global_var_refs_metadata_size = module_code.ReadUint32();
   const uint32_t func_refs_metadata_address = module_code.ReadUint32();
   const uint32_t func_refs_metadata_size = module_code.ReadUint32();
+  const uint32_t native_func_refs_metadata_address = module_code.ReadUint32();
+  const uint32_t native_func_refs_metadata_size = module_code.ReadUint32();
 
   module_code.SetPosition(cmds_address);
-  unique_ptr<Code> cmds_code(
-      new Code(module_code.GetDataAtPosition(), cmds_size));
+  unique_ptr<Code> cmds_code(new Code(
+      module_code.GetDataAtPosition(), main_cmds_size + func_cmds_size));
 
   module_code.SetPosition(imports_metadata_address);
   vector<path> import_file_paths;
@@ -95,13 +98,24 @@ unique_ptr<Module> ModuleReader::Read(istream &code_stream) {
     id_addresses_of_func_refs.push_back(module_code.ReadIdAddresses());
   }
 
+  module_code.SetPosition(native_func_refs_metadata_address);
+  vector<IdAddresses> id_addresses_of_native_func_refs;
+  const unsigned char * const native_func_refs_metadata_end =
+      module_code.GetDataAtPosition() + native_func_refs_metadata_size;
+
+  while (module_code.GetDataAtPosition() != native_func_refs_metadata_end) {
+    id_addresses_of_native_func_refs.push_back(module_code.ReadIdAddresses());
+  }
+
   return unique_ptr<Module>(new Module(
       version,
       move(cmds_code),
+      main_cmds_size,
       id_addresses_of_func_defs,
       ids_of_global_var_defs,
       ids_of_native_func_defs,
       id_addresses_of_func_refs,
+      id_addresses_of_native_func_refs,
       id_addresses_of_global_var_refs,
       import_file_paths));
 }
