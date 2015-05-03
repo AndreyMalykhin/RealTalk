@@ -16,7 +16,7 @@ namespace parser {
 class SimpleParser: public Parser {
  public:
   explicit SimpleParser(std::unique_ptr<real_talk::lexer::Lexer> lexer);
-  ~SimpleParser();
+  virtual ~SimpleParser() override;
   virtual std::shared_ptr<ProgramNode> Parse() override;
 
  private:

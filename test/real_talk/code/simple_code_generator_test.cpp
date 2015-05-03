@@ -81,7 +81,7 @@
 #include "real_talk/code/module_reader.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/cmd_reader.h"
-#include "real_talk/code/code_generator.h"
+#include "real_talk/code/simple_code_generator.h"
 #include "real_talk/code/code.h"
 #include "real_talk/code/cast_cmd_generator.h"
 #include "real_talk/code/test_utils.h"
@@ -208,7 +208,7 @@ class CastCmdGeneratorMock: public CastCmdGenerator {
   MOCK_CONST_METHOD2(Generate, CmdId(const DataType&, const DataType&));
 };
 
-class CodeGeneratorTest: public Test {
+class SimpleCodeGeneratorTest: public Test {
  protected:
   virtual void SetUp() override {
   }
@@ -239,7 +239,7 @@ class CodeGeneratorTest: public Test {
           .RetiresOnSaturation();
     }
 
-    CodeGenerator generator(cast_cmd_generator);
+    SimpleCodeGenerator generator(cast_cmd_generator);
     stringstream actual_stream;
     generator.Generate(program_node, semantic_analysis, version, actual_stream);
 
@@ -1491,7 +1491,7 @@ class CodeGeneratorTest: public Test {
   }
 };
 
-TEST_F(CodeGeneratorTest, GlobalIntVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalIntVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new IntDataType());
@@ -1499,7 +1499,7 @@ TEST_F(CodeGeneratorTest, GlobalIntVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateGlobalIntVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalArrayVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalArrayVarDefWithoutInit) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> array_data_type_node1(new ArrayDataTypeNode(
@@ -1522,7 +1522,7 @@ TEST_F(CodeGeneratorTest, GlobalArrayVarDefWithoutInit) {
                               CmdId::kCreateGlobalArrayVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalLongVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalLongVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new LongDataType());
@@ -1530,7 +1530,7 @@ TEST_F(CodeGeneratorTest, GlobalLongVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateGlobalLongVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalDoubleVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalDoubleVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new DoubleDataType());
@@ -1538,7 +1538,7 @@ TEST_F(CodeGeneratorTest, GlobalDoubleVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateGlobalDoubleVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalCharVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalCharVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new CharDataType());
@@ -1546,7 +1546,7 @@ TEST_F(CodeGeneratorTest, GlobalCharVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateGlobalCharVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalStringVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalStringVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new StringDataType());
@@ -1554,7 +1554,7 @@ TEST_F(CodeGeneratorTest, GlobalStringVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateGlobalStringVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalBoolVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalBoolVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new BoolDataType());
@@ -1562,7 +1562,7 @@ TEST_F(CodeGeneratorTest, GlobalBoolVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateGlobalBoolVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalIntVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalIntVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new IntDataType());
@@ -1570,7 +1570,7 @@ TEST_F(CodeGeneratorTest, LocalIntVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateLocalIntVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalArrayVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalArrayVarDefWithoutInit) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> array_data_type_node1(new ArrayDataTypeNode(
@@ -1593,7 +1593,7 @@ TEST_F(CodeGeneratorTest, LocalArrayVarDefWithoutInit) {
                              CmdId::kCreateLocalArrayVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalLongVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalLongVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new LongDataType());
@@ -1601,7 +1601,7 @@ TEST_F(CodeGeneratorTest, LocalLongVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateLocalLongVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalDoubleVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalDoubleVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new DoubleDataType());
@@ -1609,7 +1609,7 @@ TEST_F(CodeGeneratorTest, LocalDoubleVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateLocalDoubleVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalCharVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalCharVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new CharDataType());
@@ -1617,7 +1617,7 @@ TEST_F(CodeGeneratorTest, LocalCharVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateLocalCharVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalStringVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalStringVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new StringDataType());
@@ -1625,7 +1625,7 @@ TEST_F(CodeGeneratorTest, LocalStringVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateLocalStringVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalBoolVarDefWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalBoolVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new BoolDataType());
@@ -1633,7 +1633,7 @@ TEST_F(CodeGeneratorTest, LocalBoolVarDefWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateLocalBoolVar);
 }
 
-TEST_F(CodeGeneratorTest, ExprStmt) {
+TEST_F(SimpleCodeGeneratorTest, ExprStmt) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   IntNode *int_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(0)));
@@ -1688,7 +1688,7 @@ TEST_F(CodeGeneratorTest, ExprStmt) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, Int) {
+TEST_F(SimpleCodeGeneratorTest, Int) {
   unique_ptr<LitNode> lit_node(new IntNode(
       TokenInfo(Token::kIntLit, "-7", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> lit_casted_data_type;
@@ -1703,7 +1703,7 @@ TEST_F(CodeGeneratorTest, Int) {
   TestLit(move(lit_node), move(lit_analysis), expected_code);
 }
 
-TEST_F(CodeGeneratorTest, Long) {
+TEST_F(SimpleCodeGeneratorTest, Long) {
   unique_ptr<LitNode> lit_node(new LongNode(
       TokenInfo(Token::kLongLit, "-77L", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> lit_casted_data_type;
@@ -1718,7 +1718,7 @@ TEST_F(CodeGeneratorTest, Long) {
   TestLit(move(lit_node), move(lit_analysis), expected_code);
 }
 
-TEST_F(CodeGeneratorTest, Bool) {
+TEST_F(SimpleCodeGeneratorTest, Bool) {
   unique_ptr<LitNode> lit_node(new BoolNode(
       TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> lit_casted_data_type;
@@ -1733,7 +1733,7 @@ TEST_F(CodeGeneratorTest, Bool) {
   TestLit(move(lit_node), move(lit_analysis), expected_code);
 }
 
-TEST_F(CodeGeneratorTest, String) {
+TEST_F(SimpleCodeGeneratorTest, String) {
   unique_ptr<LitNode> lit_node(new StringNode(
       TokenInfo(Token::kStringLit, "\"swagger\"", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> lit_casted_data_type;
@@ -1748,7 +1748,7 @@ TEST_F(CodeGeneratorTest, String) {
   TestLit(move(lit_node), move(lit_analysis), expected_code);
 }
 
-TEST_F(CodeGeneratorTest, Double) {
+TEST_F(SimpleCodeGeneratorTest, Double) {
   unique_ptr<LitNode> lit_node(new DoubleNode(
       TokenInfo(Token::kDoubleLit, "7.77777777777", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> lit_casted_data_type;
@@ -1763,7 +1763,7 @@ TEST_F(CodeGeneratorTest, Double) {
   TestLit(move(lit_node), move(lit_analysis), expected_code);
 }
 
-TEST_F(CodeGeneratorTest, Char) {
+TEST_F(SimpleCodeGeneratorTest, Char) {
   unique_ptr<LitNode> lit_node(new CharNode(
       TokenInfo(Token::kCharLit, "'b'", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> lit_casted_data_type;
@@ -1778,7 +1778,7 @@ TEST_F(CodeGeneratorTest, Char) {
   TestLit(move(lit_node), move(lit_analysis), expected_code);
 }
 
-TEST_F(CodeGeneratorTest, Import) {
+TEST_F(SimpleCodeGeneratorTest, Import) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   StringNode *file_path_node_ptr = new StringNode(
       TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
@@ -1832,7 +1832,7 @@ TEST_F(CodeGeneratorTest, Import) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, GlobalIntVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalIntVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new CharNode(
@@ -1864,7 +1864,7 @@ TEST_F(CodeGeneratorTest, GlobalIntVarDefWithInit) {
                            CmdId::kCreateAndInitGlobalIntVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalArrayVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalArrayVarDefWithInit) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
@@ -1949,7 +1949,7 @@ TEST_F(CodeGeneratorTest, GlobalArrayVarDefWithInit) {
                            CmdId::kCreateAndInitGlobalArrayVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalLongVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalLongVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new LongDataType());
@@ -1982,7 +1982,7 @@ TEST_F(CodeGeneratorTest, GlobalLongVarDefWithInit) {
                            CmdId::kCreateAndInitGlobalLongVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalDoubleVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalDoubleVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new DoubleDataType());
@@ -2015,7 +2015,7 @@ TEST_F(CodeGeneratorTest, GlobalDoubleVarDefWithInit) {
                            CmdId::kCreateAndInitGlobalDoubleVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalCharVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalCharVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new CharDataType());
@@ -2041,7 +2041,7 @@ TEST_F(CodeGeneratorTest, GlobalCharVarDefWithInit) {
                            CmdId::kCreateAndInitGlobalCharVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalStringVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalStringVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new StringDataType());
@@ -2074,7 +2074,7 @@ TEST_F(CodeGeneratorTest, GlobalStringVarDefWithInit) {
                            CmdId::kCreateAndInitGlobalStringVar);
 }
 
-TEST_F(CodeGeneratorTest, GlobalBoolVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, GlobalBoolVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new BoolDataType());
@@ -2100,7 +2100,7 @@ TEST_F(CodeGeneratorTest, GlobalBoolVarDefWithInit) {
                            CmdId::kCreateAndInitGlobalBoolVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalIntVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalIntVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new CharNode(
@@ -2132,7 +2132,7 @@ TEST_F(CodeGeneratorTest, LocalIntVarDefWithInit) {
                           CmdId::kCreateAndInitLocalIntVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalArrayVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalArrayVarDefWithInit) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
@@ -2217,7 +2217,7 @@ TEST_F(CodeGeneratorTest, LocalArrayVarDefWithInit) {
                           CmdId::kCreateAndInitLocalArrayVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalLongVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalLongVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new LongDataType());
@@ -2250,7 +2250,7 @@ TEST_F(CodeGeneratorTest, LocalLongVarDefWithInit) {
                           CmdId::kCreateAndInitLocalLongVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalDoubleVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalDoubleVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new DoubleDataType());
@@ -2283,7 +2283,7 @@ TEST_F(CodeGeneratorTest, LocalDoubleVarDefWithInit) {
                           CmdId::kCreateAndInitLocalDoubleVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalCharVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalCharVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new CharDataType());
@@ -2309,7 +2309,7 @@ TEST_F(CodeGeneratorTest, LocalCharVarDefWithInit) {
                           CmdId::kCreateAndInitLocalCharVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalStringVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalStringVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new StringDataType());
@@ -2342,7 +2342,7 @@ TEST_F(CodeGeneratorTest, LocalStringVarDefWithInit) {
                           CmdId::kCreateAndInitLocalStringVar);
 }
 
-TEST_F(CodeGeneratorTest, LocalBoolVarDefWithInit) {
+TEST_F(SimpleCodeGeneratorTest, LocalBoolVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new BoolDataType());
@@ -2368,7 +2368,7 @@ TEST_F(CodeGeneratorTest, LocalBoolVarDefWithInit) {
                           CmdId::kCreateAndInitLocalBoolVar);
 }
 
-TEST_F(CodeGeneratorTest, IntArrayAllocWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, IntArrayAllocWithoutInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new IntDataType());
@@ -2376,7 +2376,7 @@ TEST_F(CodeGeneratorTest, IntArrayAllocWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateIntArray);
 }
 
-TEST_F(CodeGeneratorTest, LongArrayAllocWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, LongArrayAllocWithoutInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new LongDataType());
@@ -2384,7 +2384,7 @@ TEST_F(CodeGeneratorTest, LongArrayAllocWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateLongArray);
 }
 
-TEST_F(CodeGeneratorTest, DoubleArrayAllocWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, DoubleArrayAllocWithoutInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new DoubleDataType());
@@ -2392,7 +2392,7 @@ TEST_F(CodeGeneratorTest, DoubleArrayAllocWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateDoubleArray);
 }
 
-TEST_F(CodeGeneratorTest, BoolArrayAllocWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, BoolArrayAllocWithoutInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new BoolDataType());
@@ -2400,7 +2400,7 @@ TEST_F(CodeGeneratorTest, BoolArrayAllocWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateBoolArray);
 }
 
-TEST_F(CodeGeneratorTest, CharArrayAllocWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, CharArrayAllocWithoutInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new CharDataType());
@@ -2408,7 +2408,7 @@ TEST_F(CodeGeneratorTest, CharArrayAllocWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateCharArray);
 }
 
-TEST_F(CodeGeneratorTest, StringArrayAllocWithoutInit) {
+TEST_F(SimpleCodeGeneratorTest, StringArrayAllocWithoutInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new StringDataType());
@@ -2416,7 +2416,7 @@ TEST_F(CodeGeneratorTest, StringArrayAllocWithoutInit) {
       move(data_type_node), move(data_type), CmdId::kCreateStringArray);
 }
 
-TEST_F(CodeGeneratorTest, IntArrayAllocWithInit) {
+TEST_F(SimpleCodeGeneratorTest, IntArrayAllocWithInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new IntDataType());
@@ -2476,7 +2476,7 @@ TEST_F(CodeGeneratorTest, IntArrayAllocWithInit) {
                          CmdId::kCreateAndInitIntArray);
 }
 
-TEST_F(CodeGeneratorTest, LongArrayAllocWithInit) {
+TEST_F(SimpleCodeGeneratorTest, LongArrayAllocWithInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new LongDataType());
@@ -2536,7 +2536,7 @@ TEST_F(CodeGeneratorTest, LongArrayAllocWithInit) {
                          CmdId::kCreateAndInitLongArray);
 }
 
-TEST_F(CodeGeneratorTest, DoubleArrayAllocWithInit) {
+TEST_F(SimpleCodeGeneratorTest, DoubleArrayAllocWithInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new DoubleDataType());
@@ -2596,7 +2596,7 @@ TEST_F(CodeGeneratorTest, DoubleArrayAllocWithInit) {
                          CmdId::kCreateAndInitDoubleArray);
 }
 
-TEST_F(CodeGeneratorTest, BoolArrayAllocWithInit) {
+TEST_F(SimpleCodeGeneratorTest, BoolArrayAllocWithInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new BoolDataType());
@@ -2642,7 +2642,7 @@ TEST_F(CodeGeneratorTest, BoolArrayAllocWithInit) {
                          CmdId::kCreateAndInitBoolArray);
 }
 
-TEST_F(CodeGeneratorTest, CharArrayAllocWithInit) {
+TEST_F(SimpleCodeGeneratorTest, CharArrayAllocWithInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new CharDataType());
@@ -2688,7 +2688,7 @@ TEST_F(CodeGeneratorTest, CharArrayAllocWithInit) {
                          CmdId::kCreateAndInitCharArray);
 }
 
-TEST_F(CodeGeneratorTest, StringArrayAllocWithInit) {
+TEST_F(SimpleCodeGeneratorTest, StringArrayAllocWithInit) {
   unique_ptr<PrimitiveDataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(1), UINT32_C(1))));
   unique_ptr<DataType> data_type(new StringDataType());
@@ -2748,7 +2748,7 @@ TEST_F(CodeGeneratorTest, StringArrayAllocWithInit) {
                          CmdId::kCreateAndInitStringArray);
 }
 
-TEST_F(CodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   IntNode *int_node_ptr = new IntNode(
@@ -2961,7 +2961,7 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3165,7 +3165,7 @@ TEST_F(CodeGeneratorTest, IfElseIfElseWithVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, IfElseIfWithoutVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   IntNode *int_node_ptr = new IntNode(
@@ -3335,7 +3335,7 @@ TEST_F(CodeGeneratorTest, IfElseIfWithoutVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, IfElseIfWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3500,7 +3500,7 @@ TEST_F(CodeGeneratorTest, IfElseIfWithVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, IfWithoutVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   IntNode *int_node_ptr = new IntNode(
@@ -3599,7 +3599,7 @@ TEST_F(CodeGeneratorTest, IfWithoutVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, IfWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3696,7 +3696,7 @@ TEST_F(CodeGeneratorTest, IfWithVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, PreTestLoopWithoutVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
   IntNode *int_node_ptr = new IntNode(
@@ -3798,7 +3798,7 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithoutVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3897,7 +3897,7 @@ TEST_F(CodeGeneratorTest, PreTestLoopWithVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
   BreakNode *break_node_ptr = new BreakNode(
@@ -3999,7 +3999,7 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
@@ -4129,7 +4129,7 @@ TEST_F(CodeGeneratorTest, BreakWithinLoopWithVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
   ContinueNode *continue_node_ptr = new ContinueNode(
@@ -4228,7 +4228,7 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
@@ -4355,7 +4355,7 @@ TEST_F(CodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, FuncDefWithBody) {
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
@@ -4459,7 +4459,7 @@ TEST_F(CodeGeneratorTest, FuncDefWithBody) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, ReturnWithoutValue) {
+TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
   unique_ptr<StmtNode> return_node(new ReturnWithoutValueNode(
@@ -4538,7 +4538,7 @@ TEST_F(CodeGeneratorTest, ReturnWithoutValue) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, ReturnIntValue) {
+TEST_F(SimpleCodeGeneratorTest, ReturnIntValue) {
   CharNode *value_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(5), UINT32_C(5)));
   unique_ptr<ExprNode> value_node(value_node_ptr);
@@ -4576,7 +4576,7 @@ TEST_F(CodeGeneratorTest, ReturnIntValue) {
                   expected_code);
 }
 
-TEST_F(CodeGeneratorTest, ReturnLongValue) {
+TEST_F(SimpleCodeGeneratorTest, ReturnLongValue) {
   IntNode *value_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(5)));
   unique_ptr<ExprNode> value_node(value_node_ptr);
@@ -4614,7 +4614,7 @@ TEST_F(CodeGeneratorTest, ReturnLongValue) {
                   expected_code);
 }
 
-TEST_F(CodeGeneratorTest, ReturnDoubleValue) {
+TEST_F(SimpleCodeGeneratorTest, ReturnDoubleValue) {
   IntNode *value_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "7", UINT32_C(5), UINT32_C(5)));
   unique_ptr<ExprNode> value_node(value_node_ptr);
@@ -4652,7 +4652,7 @@ TEST_F(CodeGeneratorTest, ReturnDoubleValue) {
                   expected_code);
 }
 
-TEST_F(CodeGeneratorTest, ReturnBoolValue) {
+TEST_F(SimpleCodeGeneratorTest, ReturnBoolValue) {
   BoolNode *value_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(5), UINT32_C(5)));
   unique_ptr<ExprNode> value_node(value_node_ptr);
@@ -4682,7 +4682,7 @@ TEST_F(CodeGeneratorTest, ReturnBoolValue) {
                   expected_code);
 }
 
-TEST_F(CodeGeneratorTest, ReturnCharValue) {
+TEST_F(SimpleCodeGeneratorTest, ReturnCharValue) {
   CharNode *value_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(5), UINT32_C(5)));
   unique_ptr<ExprNode> value_node(value_node_ptr);
@@ -4712,7 +4712,7 @@ TEST_F(CodeGeneratorTest, ReturnCharValue) {
                   expected_code);
 }
 
-TEST_F(CodeGeneratorTest, ReturnStringValue) {
+TEST_F(SimpleCodeGeneratorTest, ReturnStringValue) {
   CharNode *value_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(5), UINT32_C(5)));
   unique_ptr<ExprNode> value_node(value_node_ptr);
@@ -4750,7 +4750,7 @@ TEST_F(CodeGeneratorTest, ReturnStringValue) {
                   expected_code);
 }
 
-TEST_F(CodeGeneratorTest, ReturnArrayValue) {
+TEST_F(SimpleCodeGeneratorTest, ReturnArrayValue) {
   unique_ptr<PrimitiveDataTypeNode> bool_data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(7), UINT32_C(7))));
   vector< unique_ptr<UnboundedArraySizeNode> > array_sizes;
@@ -4803,7 +4803,7 @@ TEST_F(CodeGeneratorTest, ReturnArrayValue) {
                   expected_code);
 }
 
-TEST_F(CodeGeneratorTest, FuncDefWithoutBody) {
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithoutBody) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<ArgDefNode> > arg_def_nodes;
   unique_ptr<DataTypeNode> arg_data_type_node(new LongDataTypeNode(
@@ -4881,7 +4881,7 @@ TEST_F(CodeGeneratorTest, FuncDefWithoutBody) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalIntVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalIntVar) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   IntDataType data_type;
@@ -4891,7 +4891,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalIntVar) {
       move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalLongVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalLongVar) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   LongDataType data_type;
@@ -4901,7 +4901,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalLongVar) {
       move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalDoubleVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalDoubleVar) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   DoubleDataType data_type;
@@ -4911,7 +4911,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalDoubleVar) {
       move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalBoolVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalBoolVar) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   BoolDataType data_type;
@@ -4921,7 +4921,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalBoolVar) {
       move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalCharVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalCharVar) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "bool", UINT32_C(0), UINT32_C(0))));
   CharDataType data_type;
@@ -4931,7 +4931,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalCharVar) {
       move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalStringVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalStringVar) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   StringDataType data_type;
@@ -4941,7 +4941,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalStringVar) {
       move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
   unique_ptr<DataTypeNode> long_data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
@@ -4957,7 +4957,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
                                expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalIntVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalIntVar) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   CmdId create_var_cmd_id = CmdId::kCreateLocalIntVar;
@@ -4966,7 +4966,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalIntVar) {
       move(data_type_node), IntDataType(), create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalLongVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalLongVar) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   CmdId create_var_cmd_id = CmdId::kCreateLocalLongVar;
@@ -4975,7 +4975,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalLongVar) {
       move(data_type_node), LongDataType(), create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalDoubleVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalDoubleVar) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "long", UINT32_C(0), UINT32_C(0))));
   CmdId create_var_cmd_id = CmdId::kCreateLocalDoubleVar;
@@ -4986,7 +4986,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalDoubleVar) {
                               expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalBoolVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalBoolVar) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   CmdId create_var_cmd_id = CmdId::kCreateLocalBoolVar;
@@ -4995,7 +4995,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalBoolVar) {
       move(data_type_node), BoolDataType(), create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalCharVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalCharVar) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   CmdId create_var_cmd_id = CmdId::kCreateLocalCharVar;
@@ -5004,7 +5004,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalCharVar) {
       move(data_type_node), CharDataType(), create_var_cmd_id, expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalStringVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalStringVar) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   CmdId create_var_cmd_id = CmdId::kCreateLocalStringVar;
@@ -5015,7 +5015,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalStringVar) {
                               expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalArrayVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalArrayVar) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
@@ -5031,7 +5031,7 @@ TEST_F(CodeGeneratorTest, IdAsNotAssigneeLocalArrayVar) {
       expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalIntVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalIntVar) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new CharNode(
@@ -5070,7 +5070,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalIntVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalLongVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalLongVar) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new IntNode(
@@ -5109,7 +5109,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalLongVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalDoubleVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalDoubleVar) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new IntNode(
@@ -5148,7 +5148,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalDoubleVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalBoolVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalBoolVar) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new BoolNode(
@@ -5175,7 +5175,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalBoolVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalCharVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalCharVar) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new CharNode(
@@ -5202,7 +5202,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalCharVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalStringVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalStringVar) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new CharNode(
@@ -5241,7 +5241,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalStringVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalArrayVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalArrayVar) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
@@ -5291,7 +5291,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeGlobalArrayVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeLocalIntVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeLocalIntVar) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new CharNode(
@@ -5330,7 +5330,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeLocalIntVar) {
                            expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeLocalLongVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeLocalLongVar) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new IntNode(
@@ -5369,7 +5369,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeLocalLongVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeLocalDoubleVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeLocalDoubleVar) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new IntNode(
@@ -5408,7 +5408,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeLocalDoubleVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeLocalBoolVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeLocalBoolVar) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new BoolNode(
@@ -5435,7 +5435,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeLocalBoolVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeLocalCharVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeLocalCharVar) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new CharNode(
@@ -5462,7 +5462,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeLocalCharVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeLocalStringVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeLocalStringVar) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   unique_ptr<ExprNode> value_node(new CharNode(
@@ -5501,7 +5501,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeLocalStringVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, IdAsAssigneeLocalArrayVar) {
+TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeLocalArrayVar) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
@@ -5551,7 +5551,7 @@ TEST_F(CodeGeneratorTest, IdAsAssigneeLocalArrayVar) {
                             expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, NotNativeCall) {
+TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<ArgDefNode> > arg_def_nodes;
   vector<TokenInfo> arg_def_separator_tokens;
@@ -5738,7 +5738,7 @@ TEST_F(CodeGeneratorTest, NotNativeCall) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, NativeCall) {
+TEST_F(SimpleCodeGeneratorTest, NativeCall) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<ArgDefNode> > arg_def_nodes;
   vector<TokenInfo> arg_def_separator_tokens;
@@ -5911,7 +5911,7 @@ TEST_F(CodeGeneratorTest, NativeCall) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfInts) {
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfInts) {
   unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   IntDataType element_data_type;
@@ -5921,7 +5921,7 @@ TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfInts) {
                                     expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfLongs) {
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfLongs) {
   unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   LongDataType element_data_type;
@@ -5931,7 +5931,7 @@ TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfLongs) {
                                     expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfDoubles) {
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfDoubles) {
   unique_ptr<DataTypeNode> element_data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   DoubleDataType element_data_type;
@@ -5941,7 +5941,7 @@ TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfDoubles) {
                                     expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfBools) {
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfBools) {
   unique_ptr<DataTypeNode> element_data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   BoolDataType element_data_type;
@@ -5951,7 +5951,7 @@ TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfBools) {
                                     expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfChars) {
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfChars) {
   unique_ptr<DataTypeNode> element_data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   CharDataType element_data_type;
@@ -5961,7 +5961,7 @@ TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfChars) {
                                     expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfStrings) {
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfStrings) {
   unique_ptr<DataTypeNode> element_data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   StringDataType element_data_type;
@@ -5971,7 +5971,7 @@ TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfStrings) {
                                     expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
@@ -5985,7 +5985,7 @@ TEST_F(CodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
                                     expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfInts) {
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfInts) {
   unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   IntNode *value_node_ptr = new IntNode(
@@ -6013,7 +6013,7 @@ TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfInts) {
       expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfLongs) {
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfLongs) {
   unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   LongNode *value_node_ptr = new LongNode(
@@ -6041,7 +6041,7 @@ TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfLongs) {
       expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfDoubles) {
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfDoubles) {
   unique_ptr<DataTypeNode> element_data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   DoubleNode *value_node_ptr = new DoubleNode(
@@ -6069,7 +6069,7 @@ TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfDoubles) {
       expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfBools) {
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfBools) {
   unique_ptr<DataTypeNode> element_data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   BoolNode *value_node_ptr = new BoolNode(
@@ -6097,7 +6097,7 @@ TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfBools) {
       expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfChars) {
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfChars) {
   unique_ptr<DataTypeNode> element_data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   CharNode *value_node_ptr = new CharNode(
@@ -6125,7 +6125,7 @@ TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfChars) {
       expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfStrings) {
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfStrings) {
   unique_ptr<DataTypeNode> element_data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   StringNode *value_node_ptr = new StringNode(
@@ -6153,7 +6153,7 @@ TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfStrings) {
       expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfArrays) {
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfArrays) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
@@ -6205,7 +6205,7 @@ TEST_F(CodeGeneratorTest, AssigneeSubscriptWithArrayOfArrays) {
       expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, And) {
+TEST_F(SimpleCodeGeneratorTest, And) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(0), UINT32_C(0)));
@@ -6297,7 +6297,7 @@ TEST_F(CodeGeneratorTest, And) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, Or) {
+TEST_F(SimpleCodeGeneratorTest, Or) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(0), UINT32_C(0)));
@@ -6389,7 +6389,7 @@ TEST_F(CodeGeneratorTest, Or) {
                module_code);
 }
 
-TEST_F(CodeGeneratorTest, MulChar) {
+TEST_F(SimpleCodeGeneratorTest, MulChar) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6435,7 +6435,7 @@ TEST_F(CodeGeneratorTest, MulChar) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, MulInt) {
+TEST_F(SimpleCodeGeneratorTest, MulInt) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6489,7 +6489,7 @@ TEST_F(CodeGeneratorTest, MulInt) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, MulLong) {
+TEST_F(SimpleCodeGeneratorTest, MulLong) {
   IntNode *left_operand_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6543,7 +6543,7 @@ TEST_F(CodeGeneratorTest, MulLong) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, MulDouble) {
+TEST_F(SimpleCodeGeneratorTest, MulDouble) {
   IntNode *left_operand_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6597,7 +6597,7 @@ TEST_F(CodeGeneratorTest, MulDouble) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, DivChar) {
+TEST_F(SimpleCodeGeneratorTest, DivChar) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6643,7 +6643,7 @@ TEST_F(CodeGeneratorTest, DivChar) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, DivInt) {
+TEST_F(SimpleCodeGeneratorTest, DivInt) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6697,7 +6697,7 @@ TEST_F(CodeGeneratorTest, DivInt) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, DivLong) {
+TEST_F(SimpleCodeGeneratorTest, DivLong) {
   IntNode *left_operand_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6751,7 +6751,7 @@ TEST_F(CodeGeneratorTest, DivLong) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, DivDouble) {
+TEST_F(SimpleCodeGeneratorTest, DivDouble) {
   IntNode *left_operand_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6805,7 +6805,7 @@ TEST_F(CodeGeneratorTest, DivDouble) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SumChar) {
+TEST_F(SimpleCodeGeneratorTest, SumChar) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6851,7 +6851,7 @@ TEST_F(CodeGeneratorTest, SumChar) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SumInt) {
+TEST_F(SimpleCodeGeneratorTest, SumInt) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6905,7 +6905,7 @@ TEST_F(CodeGeneratorTest, SumInt) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SumLong) {
+TEST_F(SimpleCodeGeneratorTest, SumLong) {
   IntNode *left_operand_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -6959,7 +6959,7 @@ TEST_F(CodeGeneratorTest, SumLong) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SumDouble) {
+TEST_F(SimpleCodeGeneratorTest, SumDouble) {
   IntNode *left_operand_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -7013,7 +7013,7 @@ TEST_F(CodeGeneratorTest, SumDouble) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SumString) {
+TEST_F(SimpleCodeGeneratorTest, SumString) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -7067,7 +7067,7 @@ TEST_F(CodeGeneratorTest, SumString) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SubChar) {
+TEST_F(SimpleCodeGeneratorTest, SubChar) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -7113,7 +7113,7 @@ TEST_F(CodeGeneratorTest, SubChar) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SubInt) {
+TEST_F(SimpleCodeGeneratorTest, SubInt) {
   CharNode *left_operand_node_ptr = new CharNode(
       TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -7167,7 +7167,7 @@ TEST_F(CodeGeneratorTest, SubInt) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SubLong) {
+TEST_F(SimpleCodeGeneratorTest, SubLong) {
   IntNode *left_operand_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
@@ -7221,7 +7221,7 @@ TEST_F(CodeGeneratorTest, SubLong) {
                  expected_cmd_id);
 }
 
-TEST_F(CodeGeneratorTest, SubDouble) {
+TEST_F(SimpleCodeGeneratorTest, SubDouble) {
   IntNode *left_operand_node_ptr = new IntNode(
       TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);

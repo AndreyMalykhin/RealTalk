@@ -61,7 +61,7 @@
 #include "real_talk/semantic/char_lit.h"
 #include "real_talk/semantic/string_lit.h"
 #include "real_talk/semantic/double_lit.h"
-#include "real_talk/code/code_generator.h"
+#include "real_talk/code/simple_code_generator.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/cast_cmd_generator.h"
 #include "real_talk/code/code.h"
@@ -182,7 +182,7 @@ using real_talk::semantic::DoubleLit;
 namespace real_talk {
 namespace code {
 
-class CodeGenerator::Impl: private NodeVisitor {
+class SimpleCodeGenerator::Impl: private NodeVisitor {
  public:
   explicit Impl(const CastCmdGenerator &cast_cmd_generator);
   void Generate(const ProgramNode &program,
@@ -323,7 +323,7 @@ class CodeGenerator::Impl: private NodeVisitor {
   uint32_t cmds_address_;
 };
 
-class CodeGenerator::Impl::Scope {
+class SimpleCodeGenerator::Impl::Scope {
  public:
   Scope(uint32_t start_address, vector<Scope*> &scopes_stack)
       : start_address_(start_address), scopes_stack_(scopes_stack) {
@@ -348,7 +348,7 @@ class CodeGenerator::Impl::Scope {
   vector<Scope*> &scopes_stack_;
 };
 
-class CodeGenerator::Impl::StmtGrouper: private NodeVisitor {
+class SimpleCodeGenerator::Impl::StmtGrouper: private NodeVisitor {
  public:
   struct GroupedStmts {
     vector<const StmtNode*> non_func_defs;
@@ -474,7 +474,7 @@ class CodeGenerator::Impl::StmtGrouper: private NodeVisitor {
   vector<const FuncDefNode*> func_defs_;
 };
 
-class CodeGenerator::Impl::CreateGlobalVarCmdGenerator
+class SimpleCodeGenerator::Impl::CreateGlobalVarCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -517,7 +517,7 @@ class CodeGenerator::Impl::CreateGlobalVarCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
+class SimpleCodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -560,7 +560,7 @@ class CodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::CreateAndInitLocalVarCmdGenerator
+class SimpleCodeGenerator::Impl::CreateAndInitLocalVarCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -603,7 +603,7 @@ class CodeGenerator::Impl::CreateAndInitLocalVarCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::CreateLocalVarCmdGenerator
+class SimpleCodeGenerator::Impl::CreateLocalVarCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -646,7 +646,7 @@ class CodeGenerator::Impl::CreateLocalVarCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::CreateArrayCmdGenerator
+class SimpleCodeGenerator::Impl::CreateArrayCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(
@@ -691,7 +691,7 @@ class CodeGenerator::Impl::CreateArrayCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::CreateAndInitArrayCmdGenerator
+class SimpleCodeGenerator::Impl::CreateAndInitArrayCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type,
@@ -739,7 +739,7 @@ class CodeGenerator::Impl::CreateAndInitArrayCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::ReturnValueCmdGenerator
+class SimpleCodeGenerator::Impl::ReturnValueCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -782,7 +782,7 @@ class CodeGenerator::Impl::ReturnValueCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
+class SimpleCodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
     : private DataTypeVisitor {
  public:
   uint32_t Generate(const DataType &data_type, Code *code) {
@@ -828,7 +828,7 @@ class CodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::LoadLocalVarValueCmdGenerator
+class SimpleCodeGenerator::Impl::LoadLocalVarValueCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, uint32_t var_index, Code *code) {
@@ -872,7 +872,7 @@ class CodeGenerator::Impl::LoadLocalVarValueCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
+class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
  public:
   void Process(const IdNode *id_node,
                const IdAnalysis *id_analysis,
@@ -959,7 +959,7 @@ class CodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
 
 template<typename TCreateLocalVarCmdGenerator,
          typename TCreateGlobalVarCmdGenerator>
-class CodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
+class SimpleCodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
  public:
   void Process(const VarDefNode *var_def_node,
                const DefAnalysis *var_def_analysis,
@@ -990,7 +990,7 @@ class CodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
   Code *code_;
 };
 
-class CodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1032,7 +1032,7 @@ class CodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-class CodeGenerator::Impl::CallCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::CallCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1056,7 +1056,7 @@ class CodeGenerator::Impl::CallCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-class CodeGenerator::Impl::LoadArrayElementValueCmdGenerator
+class SimpleCodeGenerator::Impl::LoadArrayElementValueCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -1099,7 +1099,7 @@ class CodeGenerator::Impl::LoadArrayElementValueCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::LoadElementValueCmdGenerator
+class SimpleCodeGenerator::Impl::LoadElementValueCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -1125,7 +1125,7 @@ class CodeGenerator::Impl::LoadElementValueCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::LoadArrayElementAddressCmdGenerator
+class SimpleCodeGenerator::Impl::LoadArrayElementAddressCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -1168,7 +1168,7 @@ class CodeGenerator::Impl::LoadArrayElementAddressCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::LoadElementAddressCmdGenerator
+class SimpleCodeGenerator::Impl::LoadElementAddressCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -1194,7 +1194,7 @@ class CodeGenerator::Impl::LoadElementAddressCmdGenerator
   Code *code_;
 };
 
-class CodeGenerator::Impl::AndCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::AndCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1218,7 +1218,7 @@ class CodeGenerator::Impl::AndCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-class CodeGenerator::Impl::OrCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::OrCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1242,7 +1242,7 @@ class CodeGenerator::Impl::OrCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-class CodeGenerator::Impl::MulCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::MulCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1275,7 +1275,7 @@ class CodeGenerator::Impl::MulCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-class CodeGenerator::Impl::DivCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::DivCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1308,7 +1308,7 @@ class CodeGenerator::Impl::DivCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-class CodeGenerator::Impl::SumCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::SumCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1344,7 +1344,7 @@ class CodeGenerator::Impl::SumCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-class CodeGenerator::Impl::SubCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::SubCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1377,22 +1377,22 @@ class CodeGenerator::Impl::SubCmdGenerator: private DataTypeVisitor {
   Code *code_;
 };
 
-CodeGenerator::CodeGenerator(const CastCmdGenerator &cast_cmd_generator)
+SimpleCodeGenerator::SimpleCodeGenerator(const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
 
-CodeGenerator::~CodeGenerator() {}
+SimpleCodeGenerator::~SimpleCodeGenerator() {}
 
-void CodeGenerator::Generate(const ProgramNode &program,
+void SimpleCodeGenerator::Generate(const ProgramNode &program,
                              const SemanticAnalysis &semantic_analysis,
                              uint32_t version,
                              ostream &stream) {
   impl_->Generate(program, semantic_analysis, version, stream);
 }
 
-CodeGenerator::Impl::Impl(const CastCmdGenerator &cast_cmd_generator)
+SimpleCodeGenerator::Impl::Impl(const CastCmdGenerator &cast_cmd_generator)
     : cast_cmd_generator_(cast_cmd_generator) {}
 
-void CodeGenerator::Impl::Generate(
+void SimpleCodeGenerator::Impl::Generate(
     const ProgramNode &program,
     const SemanticAnalysis &semantic_analysis,
     uint32_t version,
@@ -1425,7 +1425,7 @@ void CodeGenerator::Impl::Generate(
   id_addresses_of_native_func_refs_.clear();
 }
 
-uint32_t CodeGenerator::Impl::GenerateCmdsSegment() {
+uint32_t SimpleCodeGenerator::Impl::GenerateCmdsSegment() {
   const StmtGrouper::GroupedStmts &stmts = StmtGrouper().Group(program_);
 
   for (const StmtNode *non_func_def: stmts.non_func_defs) {
@@ -1441,7 +1441,7 @@ uint32_t CodeGenerator::Impl::GenerateCmdsSegment() {
   return main_cmds_end;
 }
 
-void CodeGenerator::Impl::GenerateMetadataSegments(
+void SimpleCodeGenerator::Impl::GenerateMetadataSegments(
     uint32_t segments_metadata_address,
     uint32_t cmds_address,
     uint32_t main_cmds_size,
@@ -1505,19 +1505,19 @@ void CodeGenerator::Impl::GenerateMetadataSegments(
   code_->WriteUint32(native_func_refs_metadata_size);
 }
 
-void CodeGenerator::Impl::GenerateImportsSegment() {
+void SimpleCodeGenerator::Impl::GenerateImportsSegment() {
   for (const path &import_file_path: import_file_paths_) {
     code_->WriteFilePath(import_file_path);
   }
 }
 
-void CodeGenerator::Impl::GenerateIdsSegment(const vector<string> &ids) {
+void SimpleCodeGenerator::Impl::GenerateIdsSegment(const vector<string> &ids) {
   for (const string &id: ids) {
     code_->WriteString(id);
   }
 }
 
-void CodeGenerator::Impl::GenerateIdAddressesSegment(
+void SimpleCodeGenerator::Impl::GenerateIdAddressesSegment(
     const Impl::IdAddresses &id_addresses) {
   for (const auto &id_addresses_pair: id_addresses) {
     const string &id = id_addresses_pair.first;
@@ -1526,13 +1526,13 @@ void CodeGenerator::Impl::GenerateIdAddressesSegment(
   }
 }
 
-void CodeGenerator::Impl::VisitProgram(const ProgramNode &node) {
+void SimpleCodeGenerator::Impl::VisitProgram(const ProgramNode &node) {
   for (const unique_ptr<StmtNode> &stmt: node.GetStmts()) {
     stmt->Accept(*this);
   }
 }
 
-void CodeGenerator::Impl::VisitImport(const ImportNode &node) {
+void SimpleCodeGenerator::Impl::VisitImport(const ImportNode &node) {
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(*node.GetFilePath()));
   const path file_path(
@@ -1540,7 +1540,7 @@ void CodeGenerator::Impl::VisitImport(const ImportNode &node) {
   import_file_paths_.push_back(file_path);
 }
 
-void CodeGenerator::Impl::VisitVarDefWithoutInit(
+void SimpleCodeGenerator::Impl::VisitVarDefWithoutInit(
     const VarDefWithoutInitNode &node) {
   const DefAnalysis &analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
@@ -1548,7 +1548,8 @@ void CodeGenerator::Impl::VisitVarDefWithoutInit(
       .Process(&node, &analysis, &ids_of_global_var_defs_, code_);
 }
 
-void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
+void SimpleCodeGenerator::Impl::VisitVarDefWithInit(
+    const VarDefWithInitNode &node) {
   node.GetValue()->Accept(*this);
   const DefAnalysis &var_def_analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
@@ -1557,7 +1558,7 @@ void CodeGenerator::Impl::VisitVarDefWithInit(const VarDefWithInitNode &node) {
       .Process(&node, &var_def_analysis, &ids_of_global_var_defs_, code_);
 }
 
-void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
+void SimpleCodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
   node.GetExpr()->Accept(*this);
   const ExprAnalysis &analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetExpr())));
@@ -1567,7 +1568,7 @@ void CodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
   }
 }
 
-void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
+void SimpleCodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
   const uint32_t start_address = code_->GetPosition();
   node.GetCond()->Accept(*this);
   Scope scope(start_address, scopes_stack_);
@@ -1588,7 +1589,7 @@ void CodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
   WriteCurrentCmdOffset(scope.GetEndAddressPlaceholders());
 }
 
-void CodeGenerator::Impl::VisitBreak(const BreakNode &node) {
+void SimpleCodeGenerator::Impl::VisitBreak(const BreakNode &node) {
   const ControlFlowTransferAnalysis &break_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
   GenerateJumpCmdStart(break_analysis.GetFlowLocalVarsCount());
@@ -1598,7 +1599,7 @@ void CodeGenerator::Impl::VisitBreak(const BreakNode &node) {
   code_->Skip(sizeof(int32_t));
 }
 
-void CodeGenerator::Impl::VisitContinue(const ContinueNode &node) {
+void SimpleCodeGenerator::Impl::VisitContinue(const ContinueNode &node) {
   const ControlFlowTransferAnalysis &continue_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
   GenerateJumpCmdStart(continue_analysis.GetFlowLocalVarsCount());
@@ -1611,7 +1612,7 @@ void CodeGenerator::Impl::VisitContinue(const ContinueNode &node) {
   code_->WriteInt32(static_cast<int32_t>(scope_start_offset));
 }
 
-void CodeGenerator::Impl::VisitIfElseIfElse(
+void SimpleCodeGenerator::Impl::VisitIfElseIfElse(
     const IfElseIfElseNode &if_else_if_else) {
   vector<uint32_t> branch_end_offset_placeholders;
   uint32_t branch_end_offset_placeholder;
@@ -1635,7 +1636,7 @@ void CodeGenerator::Impl::VisitIfElseIfElse(
   WriteCurrentCmdOffset(branch_end_offset_placeholders);
 }
 
-void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode &if_else_if) {
+void SimpleCodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode &if_else_if) {
   if (if_else_if.GetElseIfs().empty()) {
     VisitIf(*if_else_if.GetIf(), nullptr);
     return;
@@ -1660,7 +1661,7 @@ void CodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode &if_else_if) {
   WriteCurrentCmdOffset(branch_end_offset_placeholders);
 }
 
-void CodeGenerator::Impl::VisitIf(
+void SimpleCodeGenerator::Impl::VisitIf(
     const IfNode &node, uint32_t *branch_end_offset_placeholder) {
   node.GetCond()->Accept(*this);
   code_->WriteCmdId(CmdId::kJumpIfNot);
@@ -1684,7 +1685,7 @@ void CodeGenerator::Impl::VisitIf(
   WriteCurrentCmdOffset(vector<uint32_t>({body_end_offset_placeholder}));
 }
 
-void CodeGenerator::Impl::VisitFuncDefWithBody(
+void SimpleCodeGenerator::Impl::VisitFuncDefWithBody(
     const FuncDefWithBodyNode &node) {
   const uint32_t start_address = GetCurrentCmdAddress();
 
@@ -1708,19 +1709,19 @@ void CodeGenerator::Impl::VisitFuncDefWithBody(
   id_addresses_of_func_defs_.push_back(IdAddress(id, start_address));
 }
 
-void CodeGenerator::Impl::VisitFuncDefWithoutBody(
+void SimpleCodeGenerator::Impl::VisitFuncDefWithoutBody(
     const FuncDefWithoutBodyNode &node) {
   const string &id = node.GetNameToken().GetValue();
   ids_of_native_func_defs_.push_back(id);
 }
 
-void CodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
+void SimpleCodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
   const DefAnalysis &analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   CreateAndInitLocalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
 }
 
-void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
+void SimpleCodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   node.GetValue()->Accept(*this);
   const ReturnAnalysis &return_analysis =
       static_cast<const ReturnAnalysis&>(GetNodeAnalysis(node));
@@ -1732,18 +1733,18 @@ void CodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   ReturnValueCmdGenerator().Generate(return_data_type, code_);
 }
 
-void CodeGenerator::Impl::VisitReturnWithoutValue(
+void SimpleCodeGenerator::Impl::VisitReturnWithoutValue(
     const ReturnWithoutValueNode&) {
   code_->WriteCmdId(CmdId::kReturn);
 }
 
-void CodeGenerator::Impl::VisitScope(const ScopeNode &node) {
+void SimpleCodeGenerator::Impl::VisitScope(const ScopeNode &node) {
   for (const unique_ptr<StmtNode> &stmt: node.GetStmts()) {
     stmt->Accept(*this);
   }
 }
 
-void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
+void SimpleCodeGenerator::Impl::VisitArrayAllocWithoutInit(
     const ArrayAllocWithoutInitNode &node) {
   for (const std::unique_ptr<BoundedArraySizeNode> &size
            : reverse(node.GetSizes())) {
@@ -1759,7 +1760,7 @@ void CodeGenerator::Impl::VisitArrayAllocWithoutInit(
                                      code_);
 }
 
-void CodeGenerator::Impl::VisitArrayAllocWithInit(
+void SimpleCodeGenerator::Impl::VisitArrayAllocWithInit(
     const ArrayAllocWithInitNode &node) {
   for (const unique_ptr<ExprNode> &value: reverse(node.GetValues())) {
     value->Accept(*this);
@@ -1778,7 +1779,7 @@ void CodeGenerator::Impl::VisitArrayAllocWithInit(
       code_);
 }
 
-void CodeGenerator::Impl::VisitId(const IdNode &id) {
+void SimpleCodeGenerator::Impl::VisitId(const IdNode &id) {
   const IdAnalysis &id_analysis =
       static_cast<const IdAnalysis&>(GetNodeAnalysis(id));
   const DefNode *def = id_analysis.GetDef();
@@ -1794,7 +1795,7 @@ void CodeGenerator::Impl::VisitId(const IdNode &id) {
                             code_);
 }
 
-void CodeGenerator::Impl::VisitCall(const CallNode &node) {
+void SimpleCodeGenerator::Impl::VisitCall(const CallNode &node) {
   for (const unique_ptr<ExprNode> &arg: reverse(node.GetArgs())) {
     arg->Accept(*this);
   }
@@ -1805,7 +1806,7 @@ void CodeGenerator::Impl::VisitCall(const CallNode &node) {
   CallCmdGenerator().Generate(operand_analysis.GetDataType(), code_);
 }
 
-void CodeGenerator::Impl::VisitAssign(const AssignNode &node) {
+void SimpleCodeGenerator::Impl::VisitAssign(const AssignNode &node) {
   node.GetRightOperand()->Accept(*this);
   node.GetLeftOperand()->Accept(*this);
   const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
@@ -1816,7 +1817,7 @@ void CodeGenerator::Impl::VisitAssign(const AssignNode &node) {
   GenerateCastCmdIfNeeded(assign_analysis);
 }
 
-void CodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
+void SimpleCodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
   node.GetIndex()->Accept(*this);
   node.GetOperand()->Accept(*this);
   const SubscriptAnalysis &subscript_analysis =
@@ -1835,7 +1836,7 @@ void CodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
   GenerateCastCmdIfNeeded(subscript_analysis);
 }
 
-void CodeGenerator::Impl::VisitAnd(const AndNode &node) {
+void SimpleCodeGenerator::Impl::VisitAnd(const AndNode &node) {
   node.GetLeftOperand()->Accept(*this);
   code_->WriteCmdId(CmdId::kImplicitJumpIfNot);
   const uint32_t end_address_placeholder = code_->GetPosition();
@@ -1848,7 +1849,7 @@ void CodeGenerator::Impl::VisitAnd(const AndNode &node) {
   WriteCurrentCmdOffset(vector<uint32_t>({end_address_placeholder}));
 }
 
-void CodeGenerator::Impl::VisitOr(const OrNode &node) {
+void SimpleCodeGenerator::Impl::VisitOr(const OrNode &node) {
   node.GetLeftOperand()->Accept(*this);
   code_->WriteCmdId(CmdId::kImplicitJumpIf);
   const uint32_t end_address_placeholder = code_->GetPosition();
@@ -1861,36 +1862,37 @@ void CodeGenerator::Impl::VisitOr(const OrNode &node) {
   WriteCurrentCmdOffset(vector<uint32_t>({end_address_placeholder}));
 }
 
-void CodeGenerator::Impl::VisitEqual(const EqualNode&) {}
+void SimpleCodeGenerator::Impl::VisitEqual(const EqualNode&) {}
 
-void CodeGenerator::Impl::VisitNotEqual(const NotEqualNode&) {}
+void SimpleCodeGenerator::Impl::VisitNotEqual(const NotEqualNode&) {}
 
-void CodeGenerator::Impl::VisitGreater(const GreaterNode&) {}
+void SimpleCodeGenerator::Impl::VisitGreater(const GreaterNode&) {}
 
-void CodeGenerator::Impl::VisitGreaterOrEqual(const GreaterOrEqualNode&) {}
+void SimpleCodeGenerator::Impl::VisitGreaterOrEqual(
+    const GreaterOrEqualNode&) {}
 
-void CodeGenerator::Impl::VisitLess(const LessNode&) {}
+void SimpleCodeGenerator::Impl::VisitLess(const LessNode&) {}
 
-void CodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode&) {}
+void SimpleCodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode&) {}
 
-void CodeGenerator::Impl::VisitDiv(const DivNode &node) {
+void SimpleCodeGenerator::Impl::VisitDiv(const DivNode &node) {
   VisitBinaryExpr<DivCmdGenerator>(node);
 }
 
-void CodeGenerator::Impl::VisitMul(const MulNode &node) {
+void SimpleCodeGenerator::Impl::VisitMul(const MulNode &node) {
   VisitBinaryExpr<MulCmdGenerator>(node);
 }
 
-void CodeGenerator::Impl::VisitSub(const SubNode &node) {
+void SimpleCodeGenerator::Impl::VisitSub(const SubNode &node) {
   VisitBinaryExpr<SubCmdGenerator>(node);
 }
 
-void CodeGenerator::Impl::VisitSum(const SumNode &node) {
+void SimpleCodeGenerator::Impl::VisitSum(const SumNode &node) {
   VisitBinaryExpr<SumCmdGenerator>(node);
 }
 
 template<typename TCmdGenerator>
-void CodeGenerator::Impl::VisitBinaryExpr(const BinaryExprNode &node) {
+void SimpleCodeGenerator::Impl::VisitBinaryExpr(const BinaryExprNode &node) {
   node.GetLeftOperand()->Accept(*this);
   node.GetRightOperand()->Accept(*this);
   const ExprAnalysis &analysis =
@@ -1899,15 +1901,15 @@ void CodeGenerator::Impl::VisitBinaryExpr(const BinaryExprNode &node) {
   GenerateCastCmdIfNeeded(analysis);
 }
 
-void CodeGenerator::Impl::VisitNot(const NotNode&) {}
+void SimpleCodeGenerator::Impl::VisitNot(const NotNode&) {}
 
-void CodeGenerator::Impl::VisitNegative(const NegativeNode&) {}
+void SimpleCodeGenerator::Impl::VisitNegative(const NegativeNode&) {}
 
-void CodeGenerator::Impl::VisitPreDec(const PreDecNode&) {}
+void SimpleCodeGenerator::Impl::VisitPreDec(const PreDecNode&) {}
 
-void CodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
+void SimpleCodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
 
-void CodeGenerator::Impl::VisitInt(const IntNode &node) {
+void SimpleCodeGenerator::Impl::VisitInt(const IntNode &node) {
   code_->WriteCmdId(CmdId::kLoadIntValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
@@ -1917,7 +1919,7 @@ void CodeGenerator::Impl::VisitInt(const IntNode &node) {
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
-void CodeGenerator::Impl::VisitLong(const LongNode &node) {
+void SimpleCodeGenerator::Impl::VisitLong(const LongNode &node) {
   code_->WriteCmdId(CmdId::kLoadLongValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
@@ -1927,7 +1929,7 @@ void CodeGenerator::Impl::VisitLong(const LongNode &node) {
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
-void CodeGenerator::Impl::VisitBool(const BoolNode &node) {
+void SimpleCodeGenerator::Impl::VisitBool(const BoolNode &node) {
   code_->WriteCmdId(CmdId::kLoadBoolValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
@@ -1937,7 +1939,7 @@ void CodeGenerator::Impl::VisitBool(const BoolNode &node) {
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
-void CodeGenerator::Impl::VisitChar(const CharNode &node) {
+void SimpleCodeGenerator::Impl::VisitChar(const CharNode &node) {
   code_->WriteCmdId(CmdId::kLoadCharValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
@@ -1947,7 +1949,7 @@ void CodeGenerator::Impl::VisitChar(const CharNode &node) {
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
-void CodeGenerator::Impl::VisitString(const StringNode &node) {
+void SimpleCodeGenerator::Impl::VisitString(const StringNode &node) {
   code_->WriteCmdId(CmdId::kLoadStringValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
@@ -1957,7 +1959,7 @@ void CodeGenerator::Impl::VisitString(const StringNode &node) {
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
-void CodeGenerator::Impl::VisitDouble(const DoubleNode &node) {
+void SimpleCodeGenerator::Impl::VisitDouble(const DoubleNode &node) {
   code_->WriteCmdId(CmdId::kLoadDoubleValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
@@ -1967,39 +1969,39 @@ void CodeGenerator::Impl::VisitDouble(const DoubleNode &node) {
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
-void CodeGenerator::Impl::VisitIntDataType(const IntDataTypeNode&) {
+void SimpleCodeGenerator::Impl::VisitIntDataType(const IntDataTypeNode&) {
   assert(false);
 }
 
-void CodeGenerator::Impl::VisitLongDataType(const LongDataTypeNode&) {
+void SimpleCodeGenerator::Impl::VisitLongDataType(const LongDataTypeNode&) {
   assert(false);
 }
 
-void CodeGenerator::Impl::VisitDoubleDataType(const DoubleDataTypeNode&) {
+void SimpleCodeGenerator::Impl::VisitDoubleDataType(const DoubleDataTypeNode&) {
   assert(false);
 }
 
-void CodeGenerator::Impl::VisitCharDataType(const CharDataTypeNode&) {
+void SimpleCodeGenerator::Impl::VisitCharDataType(const CharDataTypeNode&) {
   assert(false);
 }
 
-void CodeGenerator::Impl::VisitStringDataType(const StringDataTypeNode&) {
+void SimpleCodeGenerator::Impl::VisitStringDataType(const StringDataTypeNode&) {
   assert(false);
 }
 
-void CodeGenerator::Impl::VisitBoolDataType(const BoolDataTypeNode&) {
+void SimpleCodeGenerator::Impl::VisitBoolDataType(const BoolDataTypeNode&) {
   assert(false);
 }
 
-void CodeGenerator::Impl::VisitVoidDataType(const VoidDataTypeNode&) {
+void SimpleCodeGenerator::Impl::VisitVoidDataType(const VoidDataTypeNode&) {
   assert(false);
 }
 
-void CodeGenerator::Impl::VisitArrayDataType(const ArrayDataTypeNode&) {
+void SimpleCodeGenerator::Impl::VisitArrayDataType(const ArrayDataTypeNode&) {
   assert(false);
 }
 
-const NodeSemanticAnalysis &CodeGenerator::Impl::GetNodeAnalysis(
+const NodeSemanticAnalysis &SimpleCodeGenerator::Impl::GetNodeAnalysis(
     const Node &node) const {
   SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
       semantic_analysis_->GetNodeAnalyzes().find(&node);
@@ -2007,12 +2009,12 @@ const NodeSemanticAnalysis &CodeGenerator::Impl::GetNodeAnalysis(
   return *(node_analysis_it->second);
 }
 
-uint32_t CodeGenerator::Impl::GetCurrentCmdAddress() const {
+uint32_t SimpleCodeGenerator::Impl::GetCurrentCmdAddress() const {
   assert(code_->GetPosition() >= cmds_address_);
   return code_->GetPosition() - cmds_address_;
 }
 
-void CodeGenerator::Impl::WriteCurrentCmdOffset(
+void SimpleCodeGenerator::Impl::WriteCurrentCmdOffset(
     const vector<uint32_t> &offset_placeholders) {
   const uint32_t current_address = code_->GetPosition();
 
@@ -2029,7 +2031,8 @@ void CodeGenerator::Impl::WriteCurrentCmdOffset(
   code_->SetPosition(current_address);
 }
 
-void CodeGenerator::Impl::GenerateJumpCmdStart(uint32_t local_vars_count) {
+void SimpleCodeGenerator::Impl::GenerateJumpCmdStart(
+    uint32_t local_vars_count) {
   if (local_vars_count > UINT32_C(0)) {
     code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
     code_->WriteUint32(local_vars_count);
@@ -2038,12 +2041,12 @@ void CodeGenerator::Impl::GenerateJumpCmdStart(uint32_t local_vars_count) {
   }
 }
 
-CodeGenerator::Impl::Scope *CodeGenerator::Impl::GetCurrentScope() {
+SimpleCodeGenerator::Impl::Scope *SimpleCodeGenerator::Impl::GetCurrentScope() {
   assert(!scopes_stack_.empty());
   return scopes_stack_.back();
 }
 
-void CodeGenerator::Impl::GenerateCastCmdIfNeeded(
+void SimpleCodeGenerator::Impl::GenerateCastCmdIfNeeded(
     const ExprAnalysis &expr_analysis) {
   if (!expr_analysis.GetCastedDataType()) {
     return;

@@ -49,13 +49,14 @@ add_library(real_talk
   src/real_talk/semantic/scope_analysis.cpp
   src/real_talk/semantic/control_flow_transfer_analysis.cpp
   src/real_talk/semantic/return_analysis.cpp
+  src/real_talk/semantic/semantic_analyzer.cpp
   src/real_talk/semantic/simple_semantic_analyzer.cpp
   src/real_talk/semantic/simple_import_file_searcher.cpp
   src/real_talk/semantic/simple_lit_parser.cpp
   src/real_talk/semantic/lit_parser.cpp
   src/real_talk/semantic/cast_resolver.cpp
   src/real_talk/semantic/cast_handler.cpp
-  src/real_talk/code/code_generator.cpp
+  src/real_talk/code/simple_code_generator.cpp
   src/real_talk/code/cmd_reader.cpp
   src/real_talk/code/module_reader.cpp
   src/real_talk/code/module.cpp
@@ -74,7 +75,7 @@ add_executable(real_talk_tests
   test/real_talk/semantic/simple_import_file_searcher_test.cpp
   test/real_talk/semantic/simple_lit_parser_test.cpp
   test/real_talk/semantic/cast_resolver_test.cpp
-  test/real_talk/code/code_generator_test.cpp
+  test/real_talk/code/simple_code_generator_test.cpp
   test/real_talk/code/module_reader_test.cpp
   test/real_talk/code/cmd_reader_test.cpp
   test/real_talk/code/test_utils.cpp
