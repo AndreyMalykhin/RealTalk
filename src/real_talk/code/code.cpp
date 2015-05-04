@@ -235,7 +235,10 @@ IdAddresses Code::ReadIdAddresses() {
 
 void Code::WriteIdAddresses(const IdAddresses &id_addresses) {
   WriteString(id_addresses.GetId());
-  const uint32_t size = id_addresses.GetAddresses().size() * sizeof(uint32_t);
+  assert(id_addresses.GetAddresses().size()
+         <= std::numeric_limits<uint32_t>::max());
+  const uint32_t size = static_cast<uint32_t>(
+      id_addresses.GetAddresses().size()) * sizeof(uint32_t);
   assert(size / sizeof(uint32_t) == id_addresses.GetAddresses().size());
   WriteUint32(size);
 

@@ -337,15 +337,23 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
                       DataTypeQuery *data_type_support_query);
 
   void VisitBranch(const BranchNode &branch_node);
+
+  /**
+   * @return Element data type
+   */
   unique_ptr<DataType> VisitArrayAlloc(
-      const ArrayAllocNode &array_alloc_node,
-      size_t dimensions_count);
-  const DataType &VisitVarDef(
-      const VarDefNode &var_def_node);
+      const ArrayAllocNode &array_alloc_node, size_t dimensions_count);
+
+  const DataType &VisitVarDef(const VarDefNode &var_def_node);
   void VisitFuncDef(const FuncDefNode &func_def_node,
                     bool &is_func_native,
                     unique_ptr<DataType> &return_data_type);
+
+  /**
+   * @return Current function scope
+   */
   const Scope *VisitReturn(const ReturnNode &return_node);
+
   template<typename TError, typename TNode> void VisitControlFlowTransfer(
       const TNode &node);
   unique_ptr<DataType> CreateDataType(const DataTypeNode &data_type_node);
@@ -401,9 +409,7 @@ class SimpleSemanticAnalyzer::Impl::SemanticErrorException
       : runtime_error(""), error_(move(error)) {
   }
 
-  unique_ptr<SemanticError> GetError() {
-    return move(error_);
-  }
+  unique_ptr<SemanticError> GetError() {return move(error_);}
 
  private:
   unique_ptr<SemanticError> error_;
@@ -1313,7 +1319,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
   }
 
   const vector< unique_ptr<ExprNode> > &values = alloc_node.GetValues();
-  assert(values.size() <= numeric_limits<uint32_t>::max());
+  assert(values.size() <= numeric_limits<int32_t>::max());
   auto value_end_it = values.cend();
 
   for (auto value_it = values.cbegin();

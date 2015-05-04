@@ -40,6 +40,7 @@
 #include "real_talk/parser/div_node.h"
 #include "real_talk/parser/sum_node.h"
 #include "real_talk/parser/sub_node.h"
+#include "real_talk/parser/equal_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -211,12 +212,14 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class LoadArrayElementAddressCmdGenerator;
   class StoreCmdGenerator;
   class CallCmdGenerator;
+  class BinaryExprCmdGenerator;
   class AndCmdGenerator;
   class OrCmdGenerator;
   class MulCmdGenerator;
   class DivCmdGenerator;
   class SumCmdGenerator;
   class SubCmdGenerator;
+  class EqualCmdGenerator;
 
   typedef unordered_map<string, vector<uint32_t>> IdAddresses;
 
@@ -286,8 +289,8 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
    */
   void VisitIf(const IfNode &node, uint32_t *branch_end_offset_placeholder);
 
-  template<typename TCmdGenerator> void VisitBinaryExpr(
-      const BinaryExprNode &node);
+  void VisitBinaryExpr(
+      const BinaryExprNode &node, BinaryExprCmdGenerator *cmd_generator);
   void WriteCurrentCmdOffset(const vector<uint32_t> &offset_placeholders);
   void GenerateJumpCmdStart(uint32_t local_vars_count);
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
@@ -785,11 +788,15 @@ class SimpleCodeGenerator::Impl::ReturnValueCmdGenerator
 class SimpleCodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
     : private DataTypeVisitor {
  public:
+  /**
+   * @return Address of placeholder for var index
+   */
   uint32_t Generate(const DataType &data_type, Code *code) {
     code_ = code;
     data_type.Accept(*this);
     const uint32_t var_index_placeholder = code_->GetPosition();
-    code_->WriteUint32(numeric_limits<uint32_t>::max());
+    const uint32_t var_index = numeric_limits<uint32_t>::max();
+    code_->WriteUint32(var_index);
     return var_index_placeholder;
   }
 
@@ -959,7 +966,8 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
 
 template<typename TCreateLocalVarCmdGenerator,
          typename TCreateGlobalVarCmdGenerator>
-class SimpleCodeGenerator::Impl::VarDefNodeProcessor: private DefAnalysisVisitor {
+class SimpleCodeGenerator::Impl::VarDefNodeProcessor
+    : private DefAnalysisVisitor {
  public:
   void Process(const VarDefNode *var_def_node,
                const DefAnalysis *var_def_analysis,
@@ -1194,61 +1202,53 @@ class SimpleCodeGenerator::Impl::LoadElementAddressCmdGenerator
   Code *code_;
 };
 
-class SimpleCodeGenerator::Impl::AndCmdGenerator: private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::BinaryExprCmdGenerator
+    : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
     data_type.Accept(*this);
   }
 
+ protected:
+  Code *code_;
+
+ private:
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+};
+
+class SimpleCodeGenerator::Impl::AndCmdGenerator
+    : public BinaryExprCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kAnd);
   }
 
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
   virtual void VisitInt(const IntDataType&) override {assert(false);}
   virtual void VisitLong(const LongDataType&) override {assert(false);}
   virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
   virtual void VisitChar(const CharDataType&) override {assert(false);}
   virtual void VisitString(const StringDataType&) override {assert(false);}
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-
-  Code *code_;
 };
 
-class SimpleCodeGenerator::Impl::OrCmdGenerator: private DataTypeVisitor {
- public:
-  void Generate(const DataType &data_type, Code *code) {
-    code_ = code;
-    data_type.Accept(*this);
-  }
-
+class SimpleCodeGenerator::Impl::OrCmdGenerator: public BinaryExprCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kOr);
   }
 
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
   virtual void VisitInt(const IntDataType&) override {assert(false);}
   virtual void VisitLong(const LongDataType&) override {assert(false);}
   virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
   virtual void VisitChar(const CharDataType&) override {assert(false);}
   virtual void VisitString(const StringDataType&) override {assert(false);}
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-
-  Code *code_;
 };
 
-class SimpleCodeGenerator::Impl::MulCmdGenerator: private DataTypeVisitor {
- public:
-  void Generate(const DataType &data_type, Code *code) {
-    code_ = code;
-    data_type.Accept(*this);
-  }
-
+class SimpleCodeGenerator::Impl::MulCmdGenerator
+    : public BinaryExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kMulInt);
@@ -1268,20 +1268,11 @@ class SimpleCodeGenerator::Impl::MulCmdGenerator: private DataTypeVisitor {
 
   virtual void VisitBool(const BoolDataType&) override {assert(false);}
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
   virtual void VisitString(const StringDataType&) override {assert(false);}
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-
-  Code *code_;
 };
 
-class SimpleCodeGenerator::Impl::DivCmdGenerator: private DataTypeVisitor {
- public:
-  void Generate(const DataType &data_type, Code *code) {
-    code_ = code;
-    data_type.Accept(*this);
-  }
-
+class SimpleCodeGenerator::Impl::DivCmdGenerator
+    : public BinaryExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kDivInt);
@@ -1301,20 +1292,11 @@ class SimpleCodeGenerator::Impl::DivCmdGenerator: private DataTypeVisitor {
 
   virtual void VisitBool(const BoolDataType&) override {assert(false);}
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
   virtual void VisitString(const StringDataType&) override {assert(false);}
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-
-  Code *code_;
 };
 
-class SimpleCodeGenerator::Impl::SumCmdGenerator: private DataTypeVisitor {
- public:
-  void Generate(const DataType &data_type, Code *code) {
-    code_ = code;
-    data_type.Accept(*this);
-  }
-
+class SimpleCodeGenerator::Impl::SumCmdGenerator
+    : public BinaryExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kSumInt);
@@ -1338,19 +1320,10 @@ class SimpleCodeGenerator::Impl::SumCmdGenerator: private DataTypeVisitor {
 
   virtual void VisitBool(const BoolDataType&) override {assert(false);}
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-
-  Code *code_;
 };
 
-class SimpleCodeGenerator::Impl::SubCmdGenerator: private DataTypeVisitor {
- public:
-  void Generate(const DataType &data_type, Code *code) {
-    code_ = code;
-    data_type.Accept(*this);
-  }
-
+class SimpleCodeGenerator::Impl::SubCmdGenerator
+    : public BinaryExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kSubInt);
@@ -1371,13 +1344,42 @@ class SimpleCodeGenerator::Impl::SubCmdGenerator: private DataTypeVisitor {
   virtual void VisitString(const StringDataType&) override {assert(false);}
   virtual void VisitBool(const BoolDataType&) override {assert(false);}
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-
-  Code *code_;
 };
 
-SimpleCodeGenerator::SimpleCodeGenerator(const CastCmdGenerator &cast_cmd_generator)
+class SimpleCodeGenerator::Impl::EqualCmdGenerator
+    : public BinaryExprCmdGenerator {
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualArray);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualBool);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualString);
+  }
+};
+
+SimpleCodeGenerator::SimpleCodeGenerator(
+    const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
 
 SimpleCodeGenerator::~SimpleCodeGenerator() {}
@@ -1862,7 +1864,10 @@ void SimpleCodeGenerator::Impl::VisitOr(const OrNode &node) {
   WriteCurrentCmdOffset(vector<uint32_t>({end_address_placeholder}));
 }
 
-void SimpleCodeGenerator::Impl::VisitEqual(const EqualNode&) {}
+void SimpleCodeGenerator::Impl::VisitEqual(const EqualNode &node) {
+  EqualCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
+}
 
 void SimpleCodeGenerator::Impl::VisitNotEqual(const NotEqualNode&) {}
 
@@ -1876,29 +1881,38 @@ void SimpleCodeGenerator::Impl::VisitLess(const LessNode&) {}
 void SimpleCodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode&) {}
 
 void SimpleCodeGenerator::Impl::VisitDiv(const DivNode &node) {
-  VisitBinaryExpr<DivCmdGenerator>(node);
+  DivCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
 }
 
 void SimpleCodeGenerator::Impl::VisitMul(const MulNode &node) {
-  VisitBinaryExpr<MulCmdGenerator>(node);
+  MulCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
 }
 
 void SimpleCodeGenerator::Impl::VisitSub(const SubNode &node) {
-  VisitBinaryExpr<SubCmdGenerator>(node);
+  SubCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
 }
 
 void SimpleCodeGenerator::Impl::VisitSum(const SumNode &node) {
-  VisitBinaryExpr<SumCmdGenerator>(node);
+  SumCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
 }
 
-template<typename TCmdGenerator>
-void SimpleCodeGenerator::Impl::VisitBinaryExpr(const BinaryExprNode &node) {
+void SimpleCodeGenerator::Impl::VisitBinaryExpr(
+    const BinaryExprNode &node, BinaryExprCmdGenerator *cmd_generator) {
   node.GetLeftOperand()->Accept(*this);
   node.GetRightOperand()->Accept(*this);
-  const ExprAnalysis &analysis =
+  const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
+      GetNodeAnalysis(*(node.GetLeftOperand())));
+  const DataType &data_type = left_operand_analysis.GetCastedDataType()
+                              ? *(left_operand_analysis.GetCastedDataType())
+                              : left_operand_analysis.GetDataType();
+  cmd_generator->Generate(data_type, code_);
+  const ExprAnalysis &expr_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
-  TCmdGenerator().Generate(analysis.GetDataType(), code_);
-  GenerateCastCmdIfNeeded(analysis);
+  GenerateCastCmdIfNeeded(expr_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitNot(const NotNode&) {}

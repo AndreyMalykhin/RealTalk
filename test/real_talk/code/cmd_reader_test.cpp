@@ -31,6 +31,7 @@
 #include "real_talk/code/div_cmd.h"
 #include "real_talk/code/sum_cmd.h"
 #include "real_talk/code/sub_cmd.h"
+#include "real_talk/code/equal_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -42,11 +43,8 @@ namespace code {
 
 class CmdReaderTest: public Test {
  protected:
-  virtual void SetUp() override {
-  }
-
-  virtual void TearDown() override {
-  }
+  virtual void SetUp() override {}
+  virtual void TearDown() override {}
 
   void TestGetNextCmd(Code &code, const Cmd &expected_cmd) {
     code.SetPosition(UINT32_C(0));
@@ -83,7 +81,7 @@ class CmdReaderTest: public Test {
     Code code;
     code.WriteCmdId(cmd_id);
     code.WriteUint8(expected_cmd.GetDimensionsCount());
-    code.WriteUint32(expected_cmd.GetValuesCount());
+    code.WriteInt32(expected_cmd.GetValuesCount());
     TestGetNextCmd(code, expected_cmd);
   }
 
@@ -378,42 +376,42 @@ TEST_F(CmdReaderTest, CreateStringArrayCmd) {
 
 TEST_F(CmdReaderTest, CreateAndInitIntArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
-  uint32_t values_count = UINT32_C(3);
+  int32_t values_count = INT32_C(3);
   CreateAndInitIntArrayCmd expected_cmd(dimensions_count, values_count);
   TestCreateAndInitArrayCmd(CmdId::kCreateAndInitIntArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLongArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
-  uint32_t values_count = UINT32_C(3);
+  int32_t values_count = INT32_C(3);
   CreateAndInitLongArrayCmd expected_cmd(dimensions_count, values_count);
   TestCreateAndInitArrayCmd(CmdId::kCreateAndInitLongArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitDoubleArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
-  uint32_t values_count = UINT32_C(3);
+  int32_t values_count = INT32_C(3);
   CreateAndInitDoubleArrayCmd expected_cmd(dimensions_count, values_count);
   TestCreateAndInitArrayCmd(CmdId::kCreateAndInitDoubleArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitBoolArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
-  uint32_t values_count = UINT32_C(3);
+  int32_t values_count = INT32_C(3);
   CreateAndInitBoolArrayCmd expected_cmd(dimensions_count, values_count);
   TestCreateAndInitArrayCmd(CmdId::kCreateAndInitBoolArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitCharArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
-  uint32_t values_count = UINT32_C(3);
+  int32_t values_count = INT32_C(3);
   CreateAndInitCharArrayCmd expected_cmd(dimensions_count, values_count);
   TestCreateAndInitArrayCmd(CmdId::kCreateAndInitCharArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitStringArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
-  uint32_t values_count = UINT32_C(3);
+  int32_t values_count = INT32_C(3);
   CreateAndInitStringArrayCmd expected_cmd(dimensions_count, values_count);
   TestCreateAndInitArrayCmd(CmdId::kCreateAndInitStringArray, expected_cmd);
 }
@@ -978,6 +976,55 @@ TEST_F(CmdReaderTest, SubDoubleCmd) {
   SubDoubleCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kSubDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualCharCmd) {
+  EqualCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kEqualChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualIntCmd) {
+  EqualIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kEqualInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualLongCmd) {
+  EqualLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kEqualLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualDoubleCmd) {
+  EqualDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kEqualDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualBoolCmd) {
+  EqualBoolCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kEqualBool);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualStringCmd) {
+  EqualStringCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kEqualString);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualArrayCmd) {
+  EqualArrayCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kEqualArray);
   TestGetNextCmd(code, expected_cmd);
 }
 }

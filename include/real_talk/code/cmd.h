@@ -137,7 +137,14 @@ enum class CmdId: uint8_t {
   kSubChar,
   kSubInt,
   kSubLong,
-  kSubDouble
+  kSubDouble,
+  kEqualInt,
+  kEqualLong,
+  kEqualDouble,
+  kEqualBool,
+  kEqualChar,
+  kEqualString,
+  kEqualArray
 };
 
 class Cmd {

@@ -11,7 +11,7 @@ namespace code {
 class CreateAndInitArrayCmd: public Cmd {
  public:
   inline explicit CreateAndInitArrayCmd(
-      uint8_t dimensions_count, uint32_t values_count) noexcept
+      uint8_t dimensions_count, int32_t values_count) noexcept
       : dimensions_count_(dimensions_count), values_count_(values_count) {
     assert(dimensions_count_ > UINT8_C(0));
   }
@@ -24,11 +24,11 @@ class CreateAndInitArrayCmd: public Cmd {
     dimensions_count_ = dimensions_count;
   }
 
-  inline uint32_t GetValuesCount() const noexcept {
+  inline int32_t GetValuesCount() const noexcept {
     return values_count_;
   }
 
-  inline void SetValuesCount(uint32_t values_count) noexcept {
+  inline void SetValuesCount(int32_t values_count) noexcept {
     values_count_ = values_count;
   }
 
@@ -46,48 +46,48 @@ class CreateAndInitArrayCmd: public Cmd {
   }
 
   uint8_t dimensions_count_;
-  uint32_t values_count_;
+  int32_t values_count_;
 };
 
 class CreateAndInitIntArrayCmd: public CreateAndInitArrayCmd {
  public:
   inline explicit CreateAndInitIntArrayCmd(
-      uint8_t dimensions_count, uint32_t values_count) noexcept
+      uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
 };
 
 class CreateAndInitLongArrayCmd: public CreateAndInitArrayCmd {
  public:
   inline explicit CreateAndInitLongArrayCmd(
-      uint8_t dimensions_count, uint32_t values_count) noexcept
+      uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
 };
 
 class CreateAndInitDoubleArrayCmd: public CreateAndInitArrayCmd {
  public:
   inline explicit CreateAndInitDoubleArrayCmd(
-      uint8_t dimensions_count, uint32_t values_count) noexcept
+      uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
 };
 
 class CreateAndInitBoolArrayCmd: public CreateAndInitArrayCmd {
  public:
   inline explicit CreateAndInitBoolArrayCmd(
-      uint8_t dimensions_count, uint32_t values_count) noexcept
+      uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
 };
 
 class CreateAndInitCharArrayCmd: public CreateAndInitArrayCmd {
  public:
   inline explicit CreateAndInitCharArrayCmd(
-      uint8_t dimensions_count, uint32_t values_count) noexcept
+      uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
 };
 
 class CreateAndInitStringArrayCmd: public CreateAndInitArrayCmd {
  public:
   inline explicit CreateAndInitStringArrayCmd(
-      uint8_t dimensions_count, uint32_t values_count) noexcept
+      uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
 };
 }

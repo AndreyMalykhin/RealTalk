@@ -29,6 +29,7 @@
 #include "real_talk/code/div_cmd.h"
 #include "real_talk/code/sum_cmd.h"
 #include "real_talk/code/sub_cmd.h"
+#include "real_talk/code/equal_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -257,6 +258,14 @@ const SubCharCmd &kSubCharCmd = *new SubCharCmd();
 const SubIntCmd &kSubIntCmd = *new SubIntCmd();
 const SubLongCmd &kSubLongCmd = *new SubLongCmd();
 const SubDoubleCmd &kSubDoubleCmd = *new SubDoubleCmd();
+
+const EqualIntCmd &kEqualIntCmd = *new EqualIntCmd();
+const EqualLongCmd &kEqualLongCmd = *new EqualLongCmd();
+const EqualDoubleCmd &kEqualDoubleCmd = *new EqualDoubleCmd();
+const EqualBoolCmd &kEqualBoolCmd = *new EqualBoolCmd();
+const EqualCharCmd &kEqualCharCmd = *new EqualCharCmd();
+const EqualStringCmd &kEqualStringCmd = *new EqualStringCmd();
+const EqualArrayCmd &kEqualArrayCmd = *new EqualArrayCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -699,6 +708,27 @@ const Cmd &CmdReader::GetNextCmd() {
     case CmdId::kSubDouble:
       cmd = &kSubDoubleCmd;
       break;
+    case CmdId::kEqualInt:
+      cmd = &kEqualIntCmd;
+      break;
+    case CmdId::kEqualLong:
+      cmd = &kEqualLongCmd;
+      break;
+    case CmdId::kEqualDouble:
+      cmd = &kEqualDoubleCmd;
+      break;
+    case CmdId::kEqualBool:
+      cmd = &kEqualBoolCmd;
+      break;
+    case CmdId::kEqualChar:
+      cmd = &kEqualCharCmd;
+      break;
+    case CmdId::kEqualString:
+      cmd = &kEqualStringCmd;
+      break;
+    case CmdId::kEqualArray:
+      cmd = &kEqualArrayCmd;
+      break;
   }
 
   assert(cmd != nullptr);
@@ -712,7 +742,7 @@ inline void CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) {
 inline void CmdReader::ReadCreateAndInitArrayCmd(
     CreateAndInitArrayCmd &cmd) {
   cmd.SetDimensionsCount(code_->ReadUint8());
-  cmd.SetValuesCount(code_->ReadUint32());
+  cmd.SetValuesCount(code_->ReadInt32());
 }
 
 inline void CmdReader::ReadJumpCmd(JumpCmd &cmd) {
