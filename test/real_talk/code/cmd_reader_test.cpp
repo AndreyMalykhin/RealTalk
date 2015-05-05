@@ -32,6 +32,7 @@
 #include "real_talk/code/sum_cmd.h"
 #include "real_talk/code/sub_cmd.h"
 #include "real_talk/code/equal_cmd.h"
+#include "real_talk/code/not_equal_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -1025,6 +1026,54 @@ TEST_F(CmdReaderTest, EqualArrayCmd) {
   EqualArrayCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kEqualArray);
+  TestGetNextCmd(code, expected_cmd);
+}
+TEST_F(CmdReaderTest, NotEqualCharCmd) {
+  NotEqualCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kNotEqualChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualIntCmd) {
+  NotEqualIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kNotEqualInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualLongCmd) {
+  NotEqualLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kNotEqualLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualDoubleCmd) {
+  NotEqualDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kNotEqualDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualBoolCmd) {
+  NotEqualBoolCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kNotEqualBool);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualStringCmd) {
+  NotEqualStringCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kNotEqualString);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualArrayCmd) {
+  NotEqualArrayCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kNotEqualArray);
   TestGetNextCmd(code, expected_cmd);
 }
 }

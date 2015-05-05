@@ -41,6 +41,7 @@
 #include "real_talk/parser/sum_node.h"
 #include "real_talk/parser/sub_node.h"
 #include "real_talk/parser/equal_node.h"
+#include "real_talk/parser/not_equal_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -220,6 +221,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class SumCmdGenerator;
   class SubCmdGenerator;
   class EqualCmdGenerator;
+  class NotEqualCmdGenerator;
 
   typedef unordered_map<string, vector<uint32_t>> IdAddresses;
 
@@ -1378,6 +1380,38 @@ class SimpleCodeGenerator::Impl::EqualCmdGenerator
   }
 };
 
+class SimpleCodeGenerator::Impl::NotEqualCmdGenerator
+    : public BinaryExprCmdGenerator {
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualArray);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualBool);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualString);
+  }
+};
+
 SimpleCodeGenerator::SimpleCodeGenerator(
     const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
@@ -1869,7 +1903,10 @@ void SimpleCodeGenerator::Impl::VisitEqual(const EqualNode &node) {
   VisitBinaryExpr(node, &cmd_generator);
 }
 
-void SimpleCodeGenerator::Impl::VisitNotEqual(const NotEqualNode&) {}
+void SimpleCodeGenerator::Impl::VisitNotEqual(const NotEqualNode &node) {
+  NotEqualCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
+}
 
 void SimpleCodeGenerator::Impl::VisitGreater(const GreaterNode&) {}
 

@@ -30,6 +30,7 @@
 #include "real_talk/code/sum_cmd.h"
 #include "real_talk/code/sub_cmd.h"
 #include "real_talk/code/equal_cmd.h"
+#include "real_talk/code/not_equal_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -266,6 +267,14 @@ const EqualBoolCmd &kEqualBoolCmd = *new EqualBoolCmd();
 const EqualCharCmd &kEqualCharCmd = *new EqualCharCmd();
 const EqualStringCmd &kEqualStringCmd = *new EqualStringCmd();
 const EqualArrayCmd &kEqualArrayCmd = *new EqualArrayCmd();
+
+const NotEqualIntCmd &kNotEqualIntCmd = *new NotEqualIntCmd();
+const NotEqualLongCmd &kNotEqualLongCmd = *new NotEqualLongCmd();
+const NotEqualDoubleCmd &kNotEqualDoubleCmd = *new NotEqualDoubleCmd();
+const NotEqualBoolCmd &kNotEqualBoolCmd = *new NotEqualBoolCmd();
+const NotEqualCharCmd &kNotEqualCharCmd = *new NotEqualCharCmd();
+const NotEqualStringCmd &kNotEqualStringCmd = *new NotEqualStringCmd();
+const NotEqualArrayCmd &kNotEqualArrayCmd = *new NotEqualArrayCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -728,6 +737,27 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kEqualArray:
       cmd = &kEqualArrayCmd;
+      break;
+    case CmdId::kNotEqualInt:
+      cmd = &kNotEqualIntCmd;
+      break;
+    case CmdId::kNotEqualLong:
+      cmd = &kNotEqualLongCmd;
+      break;
+    case CmdId::kNotEqualDouble:
+      cmd = &kNotEqualDoubleCmd;
+      break;
+    case CmdId::kNotEqualBool:
+      cmd = &kNotEqualBoolCmd;
+      break;
+    case CmdId::kNotEqualChar:
+      cmd = &kNotEqualCharCmd;
+      break;
+    case CmdId::kNotEqualString:
+      cmd = &kNotEqualStringCmd;
+      break;
+    case CmdId::kNotEqualArray:
+      cmd = &kNotEqualArrayCmd;
       break;
   }
 

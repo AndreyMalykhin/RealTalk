@@ -144,7 +144,14 @@ enum class CmdId: uint8_t {
   kEqualBool,
   kEqualChar,
   kEqualString,
-  kEqualArray
+  kEqualArray,
+  kNotEqualInt,
+  kNotEqualLong,
+  kNotEqualDouble,
+  kNotEqualBool,
+  kNotEqualChar,
+  kNotEqualString,
+  kNotEqualArray
 };
 
 class Cmd {
