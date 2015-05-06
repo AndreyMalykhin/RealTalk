@@ -2,9 +2,6 @@
 #ifndef _REAL_TALK_CODE_CMD_READER_H_
 #define _REAL_TALK_CODE_CMD_READER_H_
 
-#include <array>
-#include <limits>
-
 namespace real_talk {
 namespace code {
 

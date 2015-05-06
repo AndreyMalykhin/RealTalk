@@ -42,6 +42,7 @@
 #include "real_talk/parser/sub_node.h"
 #include "real_talk/parser/equal_node.h"
 #include "real_talk/parser/not_equal_node.h"
+#include "real_talk/parser/greater_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -222,6 +223,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class SubCmdGenerator;
   class EqualCmdGenerator;
   class NotEqualCmdGenerator;
+  class GreaterCmdGenerator;
 
   typedef unordered_map<string, vector<uint32_t>> IdAddresses;
 
@@ -1412,6 +1414,30 @@ class SimpleCodeGenerator::Impl::NotEqualCmdGenerator
   }
 };
 
+class SimpleCodeGenerator::Impl::GreaterCmdGenerator
+    : public BinaryExprCmdGenerator {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kGreaterInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kGreaterLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kGreaterDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kGreaterChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+};
+
 SimpleCodeGenerator::SimpleCodeGenerator(
     const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
@@ -1908,7 +1934,10 @@ void SimpleCodeGenerator::Impl::VisitNotEqual(const NotEqualNode &node) {
   VisitBinaryExpr(node, &cmd_generator);
 }
 
-void SimpleCodeGenerator::Impl::VisitGreater(const GreaterNode&) {}
+void SimpleCodeGenerator::Impl::VisitGreater(const GreaterNode &node) {
+  GreaterCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
+}
 
 void SimpleCodeGenerator::Impl::VisitGreaterOrEqual(
     const GreaterOrEqualNode&) {}

@@ -33,6 +33,7 @@
 #include "real_talk/code/sub_cmd.h"
 #include "real_talk/code/equal_cmd.h"
 #include "real_talk/code/not_equal_cmd.h"
+#include "real_talk/code/greater_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -1074,6 +1075,34 @@ TEST_F(CmdReaderTest, NotEqualArrayCmd) {
   NotEqualArrayCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kNotEqualArray);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, GreaterCharCmd) {
+  GreaterCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kGreaterChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, GreaterIntCmd) {
+  GreaterIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kGreaterInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, GreaterLongCmd) {
+  GreaterLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kGreaterLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, GreaterDoubleCmd) {
+  GreaterDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kGreaterDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 }

@@ -51,6 +51,7 @@
 #include "real_talk/parser/sub_node.h"
 #include "real_talk/parser/equal_node.h"
 #include "real_talk/parser/not_equal_node.h"
+#include "real_talk/parser/greater_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/global_var_def_analysis.h"
@@ -165,6 +166,7 @@ using real_talk::parser::SumNode;
 using real_talk::parser::SubNode;
 using real_talk::parser::EqualNode;
 using real_talk::parser::NotEqualNode;
+using real_talk::parser::GreaterNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -8057,6 +8059,214 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualArray) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
+                 operands_code,
+                 expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, GreaterChar) {
+  CharNode *left_operand_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
+  CharNode *right_operand_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'b'", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> right_operand_node(right_operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new GreaterNode(
+      TokenInfo(Token::kGreaterOp, ">", UINT32_C(1), UINT32_C(1)),
+      move(left_operand_node),
+      move(right_operand_node)));
+
+  unique_ptr<DataType> left_operand_data_type(new CharDataType());
+  unique_ptr<DataType> left_operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> left_operand_analysis(new LitAnalysis(
+      move(left_operand_data_type),
+      move(left_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
+  unique_ptr<DataType> right_operand_data_type(new CharDataType());
+  unique_ptr<DataType> right_operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> right_operand_analysis(new LitAnalysis(
+      move(right_operand_data_type),
+      move(right_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('b'))));
+  unique_ptr<DataType> expr_data_type(new CharDataType());
+
+  Code operands_code;
+  operands_code.WriteCmdId(CmdId::kLoadCharValue);
+  operands_code.WriteChar('a');
+  operands_code.WriteCmdId(CmdId::kLoadCharValue);
+  operands_code.WriteChar('b');
+  CmdId expected_cmd_id = CmdId::kGreaterChar;
+
+  TestBinaryExpr(left_operand_node_ptr,
+                 right_operand_node_ptr,
+                 move(expr_node),
+                 move(left_operand_analysis),
+                 move(right_operand_analysis),
+                 move(expr_data_type),
+                 vector<TestCast>(),
+                 operands_code,
+                 expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, GreaterInt) {
+  CharNode *left_operand_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
+  IntNode *right_operand_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "2", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> right_operand_node(right_operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new GreaterNode(
+      TokenInfo(Token::kGreaterOp, ">", UINT32_C(1), UINT32_C(1)),
+      move(left_operand_node),
+      move(right_operand_node)));
+
+  unique_ptr<DataType> left_operand_data_type(new CharDataType());
+  unique_ptr<DataType> left_operand_casted_data_type(new IntDataType());
+  unique_ptr<NodeSemanticAnalysis> left_operand_analysis(new LitAnalysis(
+      move(left_operand_data_type),
+      move(left_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
+  unique_ptr<DataType> right_operand_data_type(new IntDataType());
+  unique_ptr<DataType> right_operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> right_operand_analysis(new LitAnalysis(
+      move(right_operand_data_type),
+      move(right_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(2)))));
+  unique_ptr<DataType> expr_data_type(new IntDataType());
+
+  vector<TestCast> test_casts;
+  unique_ptr<DataType> dest_data_type(new IntDataType());
+  unique_ptr<DataType> src_data_type(new CharDataType());
+  TestCast test_cast =
+      {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
+  test_casts.push_back(move(test_cast));
+
+  Code operands_code;
+  operands_code.WriteCmdId(CmdId::kLoadCharValue);
+  operands_code.WriteChar('a');
+  operands_code.WriteCmdId(CmdId::kCastCharToInt);
+  operands_code.WriteCmdId(CmdId::kLoadIntValue);
+  operands_code.WriteInt32(INT32_C(2));
+  CmdId expected_cmd_id = CmdId::kGreaterInt;
+
+  TestBinaryExpr(left_operand_node_ptr,
+                 right_operand_node_ptr,
+                 move(expr_node),
+                 move(left_operand_analysis),
+                 move(right_operand_analysis),
+                 move(expr_data_type),
+                 move(test_casts),
+                 operands_code,
+                 expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, GreaterLong) {
+  IntNode *left_operand_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
+  LongNode *right_operand_node_ptr = new LongNode(
+      TokenInfo(Token::kLongLit, "2L", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> right_operand_node(right_operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new GreaterNode(
+      TokenInfo(Token::kGreaterOp, ">", UINT32_C(1), UINT32_C(1)),
+      move(left_operand_node),
+      move(right_operand_node)));
+
+  unique_ptr<DataType> left_operand_data_type(new IntDataType());
+  unique_ptr<DataType> left_operand_casted_data_type(new LongDataType());
+  unique_ptr<NodeSemanticAnalysis> left_operand_analysis(new LitAnalysis(
+      move(left_operand_data_type),
+      move(left_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
+  unique_ptr<DataType> right_operand_data_type(new LongDataType());
+  unique_ptr<DataType> right_operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> right_operand_analysis(new LitAnalysis(
+      move(right_operand_data_type),
+      move(right_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(2)))));
+  unique_ptr<DataType> expr_data_type(new LongDataType());
+
+  vector<TestCast> test_casts;
+  unique_ptr<DataType> dest_data_type(new LongDataType());
+  unique_ptr<DataType> src_data_type(new IntDataType());
+  TestCast test_cast =
+      {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
+  test_casts.push_back(move(test_cast));
+
+  Code operands_code;
+  operands_code.WriteCmdId(CmdId::kLoadIntValue);
+  operands_code.WriteInt32(INT32_C(1));
+  operands_code.WriteCmdId(CmdId::kCastIntToLong);
+  operands_code.WriteCmdId(CmdId::kLoadLongValue);
+  operands_code.WriteInt64(INT64_C(2));
+  CmdId expected_cmd_id = CmdId::kGreaterLong;
+
+  TestBinaryExpr(left_operand_node_ptr,
+                 right_operand_node_ptr,
+                 move(expr_node),
+                 move(left_operand_analysis),
+                 move(right_operand_analysis),
+                 move(expr_data_type),
+                 move(test_casts),
+                 operands_code,
+                 expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, GreaterDouble) {
+  IntNode *left_operand_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
+  DoubleNode *right_operand_node_ptr = new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "2.2", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<ExprNode> right_operand_node(right_operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new GreaterNode(
+      TokenInfo(Token::kGreaterOp, ">", UINT32_C(1), UINT32_C(1)),
+      move(left_operand_node),
+      move(right_operand_node)));
+
+  unique_ptr<DataType> left_operand_data_type(new IntDataType());
+  unique_ptr<DataType> left_operand_casted_data_type(new DoubleDataType());
+  unique_ptr<NodeSemanticAnalysis> left_operand_analysis(new LitAnalysis(
+      move(left_operand_data_type),
+      move(left_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
+  unique_ptr<DataType> right_operand_data_type(new DoubleDataType());
+  unique_ptr<DataType> right_operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> right_operand_analysis(new LitAnalysis(
+      move(right_operand_data_type),
+      move(right_operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(2.2))));
+  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+
+  vector<TestCast> test_casts;
+  unique_ptr<DataType> dest_data_type(new DoubleDataType());
+  unique_ptr<DataType> src_data_type(new IntDataType());
+  TestCast test_cast =
+      {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
+  test_casts.push_back(move(test_cast));
+
+  Code operands_code;
+  operands_code.WriteCmdId(CmdId::kLoadIntValue);
+  operands_code.WriteInt32(INT32_C(1));
+  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
+  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
+  operands_code.WriteDouble(2.2);
+  CmdId expected_cmd_id = CmdId::kGreaterDouble;
+
+  TestBinaryExpr(left_operand_node_ptr,
+                 right_operand_node_ptr,
+                 move(expr_node),
+                 move(left_operand_analysis),
+                 move(right_operand_analysis),
+                 move(expr_data_type),
+                 move(test_casts),
                  operands_code,
                  expected_cmd_id);
 }
