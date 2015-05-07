@@ -52,33 +52,33 @@ Code::Code(std::istream &stream) {
   }
 }
 
-unsigned char *Code::GetData() {
+unsigned char *Code::GetData() noexcept {
   return bytes_.get();
 }
 
-const unsigned char *Code::GetData() const {
+const unsigned char *Code::GetData() const noexcept {
   return bytes_.get();
 }
 
-uint32_t Code::GetSize() const {
+uint32_t Code::GetSize() const noexcept {
   return size_;
 }
 
-uint32_t Code::GetPosition() const {
+uint32_t Code::GetPosition() const noexcept {
   assert(current_byte_ - bytes_.get() >= 0);
   return static_cast<uint32_t>(current_byte_ - bytes_.get());
 }
 
-void Code::SetPosition(uint32_t position) {
+void Code::SetPosition(uint32_t position) noexcept {
   assert(position <= size_);
   current_byte_ = bytes_.get() + position;
 }
 
-unsigned char *Code::GetDataAtPosition() {
+unsigned char *Code::GetDataAtPosition() noexcept {
   return current_byte_;
 }
 
-const unsigned char *Code::GetDataAtPosition() const {
+const unsigned char *Code::GetDataAtPosition() const noexcept {
   return current_byte_;
 }
 
@@ -87,7 +87,7 @@ void Code::Skip(uint32_t bytes_count) {
   AfterWrite(bytes_count);
 }
 
-uint8_t Code::ReadUint8() {
+uint8_t Code::ReadUint8() noexcept {
   assert(HasEnoughSize(sizeof(uint8_t)));
   const uint8_t value = *reinterpret_cast<uint8_t*>(current_byte_);
   current_byte_ += sizeof(value);
@@ -100,7 +100,7 @@ void Code::WriteUint8(uint8_t value) {
   AfterWrite(sizeof(value));
 }
 
-uint32_t Code::ReadUint32() {
+uint32_t Code::ReadUint32() noexcept {
   assert(HasEnoughSize(sizeof(uint32_t)));
   const uint32_t value = real_talk::util::FromLittleEndian32(
       *reinterpret_cast<uint32_t*>(current_byte_));
@@ -115,7 +115,7 @@ void Code::WriteUint32(uint32_t value) {
   AfterWrite(sizeof(value));
 }
 
-uint64_t Code::ReadUint64() {
+uint64_t Code::ReadUint64() noexcept {
   assert(HasEnoughSize(sizeof(uint64_t)));
   const uint64_t value = real_talk::util::FromLittleEndian64(
       *reinterpret_cast<uint64_t*>(current_byte_));
@@ -130,7 +130,7 @@ void Code::WriteUint64(uint64_t value) {
   AfterWrite(sizeof(value));
 }
 
-int32_t Code::ReadInt32() {
+int32_t Code::ReadInt32() noexcept {
   const uint32_t unsigned_value = ReadUint32();
   return *reinterpret_cast<const int32_t*>(&unsigned_value);
 }
@@ -140,7 +140,7 @@ void Code::WriteInt32(int32_t value) {
   WriteUint32(unsigned_value);
 }
 
-int64_t Code::ReadInt64() {
+int64_t Code::ReadInt64() noexcept {
   const uint64_t unsigned_value = ReadUint64();
   return *reinterpret_cast<const int64_t*>(&unsigned_value);
 }
@@ -150,7 +150,7 @@ void Code::WriteInt64(int64_t value) {
   WriteUint64(unsigned_value);
 }
 
-double Code::ReadDouble() {
+double Code::ReadDouble() noexcept {
   const uint64_t unsigned_value = ReadUint64();
   const unsigned char *bytes =
       reinterpret_cast<const unsigned char*>(&unsigned_value);
@@ -163,7 +163,7 @@ void Code::WriteDouble(double value) {
   WriteUint64(unsigned_value);
 }
 
-bool Code::ReadBool() {
+bool Code::ReadBool() noexcept {
   assert(HasEnoughSize(sizeof(uint8_t)));
   const uint8_t value = *reinterpret_cast<uint8_t*>(current_byte_);
   current_byte_ += sizeof(value);
@@ -176,7 +176,7 @@ void Code::WriteBool(bool value) {
   AfterWrite(sizeof(uint8_t));
 }
 
-char Code::ReadChar() {
+char Code::ReadChar() noexcept {
   assert(HasEnoughSize(sizeof(char)));
   const char value = *reinterpret_cast<char*>(current_byte_);
   current_byte_ += sizeof(value);
@@ -211,7 +211,7 @@ void Code::WriteString(const std::string &str) {
   WriteBytes(reinterpret_cast<const unsigned char*>(str.data()), size);
 }
 
-CmdId Code::ReadCmdId() {
+CmdId Code::ReadCmdId() noexcept {
   return static_cast<CmdId>(ReadUint8());
 }
 

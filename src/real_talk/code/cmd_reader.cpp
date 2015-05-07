@@ -32,6 +32,7 @@
 #include "real_talk/code/equal_cmd.h"
 #include "real_talk/code/not_equal_cmd.h"
 #include "real_talk/code/greater_cmd.h"
+#include "real_talk/code/greater_or_equal_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -281,6 +282,14 @@ const GreaterCharCmd &kGreaterCharCmd = *new GreaterCharCmd();
 const GreaterIntCmd &kGreaterIntCmd = *new GreaterIntCmd();
 const GreaterLongCmd &kGreaterLongCmd = *new GreaterLongCmd();
 const GreaterDoubleCmd &kGreaterDoubleCmd = *new GreaterDoubleCmd();
+
+const GreaterOrEqualCharCmd &kGreaterOrEqualCharCmd =
+    *new GreaterOrEqualCharCmd();
+const GreaterOrEqualIntCmd &kGreaterOrEqualIntCmd = *new GreaterOrEqualIntCmd();
+const GreaterOrEqualLongCmd &kGreaterOrEqualLongCmd =
+    *new GreaterOrEqualLongCmd();
+const GreaterOrEqualDoubleCmd &kGreaterOrEqualDoubleCmd =
+    *new GreaterOrEqualDoubleCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -776,6 +785,18 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kGreaterDouble:
       cmd = &kGreaterDoubleCmd;
+      break;
+    case CmdId::kGreaterOrEqualChar:
+      cmd = &kGreaterOrEqualCharCmd;
+      break;
+    case CmdId::kGreaterOrEqualInt:
+      cmd = &kGreaterOrEqualIntCmd;
+      break;
+    case CmdId::kGreaterOrEqualLong:
+      cmd = &kGreaterOrEqualLongCmd;
+      break;
+    case CmdId::kGreaterOrEqualDouble:
+      cmd = &kGreaterOrEqualDoubleCmd;
       break;
   }
 

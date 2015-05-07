@@ -43,6 +43,7 @@
 #include "real_talk/parser/equal_node.h"
 #include "real_talk/parser/not_equal_node.h"
 #include "real_talk/parser/greater_node.h"
+#include "real_talk/parser/greater_or_equal_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -220,6 +221,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class EqualCmdGenerator;
   class NotEqualCmdGenerator;
   class GreaterCmdGenerator;
+  class GreaterOrEqualCmdGenerator;
 
   typedef unordered_map<string, vector<uint32_t>> IdAddresses;
 
@@ -1434,6 +1436,30 @@ class SimpleCodeGenerator::Impl::GreaterCmdGenerator
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
 };
 
+class SimpleCodeGenerator::Impl::GreaterOrEqualCmdGenerator
+    : public BinaryExprCmdGenerator {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kGreaterOrEqualInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kGreaterOrEqualLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kGreaterOrEqualDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kGreaterOrEqualChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+};
+
 SimpleCodeGenerator::SimpleCodeGenerator(
     const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
@@ -1933,7 +1959,10 @@ void SimpleCodeGenerator::Impl::VisitGreater(const GreaterNode &node) {
 }
 
 void SimpleCodeGenerator::Impl::VisitGreaterOrEqual(
-    const GreaterOrEqualNode&) {}
+    const GreaterOrEqualNode &node) {
+  GreaterOrEqualCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
+}
 
 void SimpleCodeGenerator::Impl::VisitLess(const LessNode&) {}
 
