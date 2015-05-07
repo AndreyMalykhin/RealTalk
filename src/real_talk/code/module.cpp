@@ -159,8 +159,9 @@ ostream &operator<<(ostream &stream, Module &module) {
 
   Code &cmds_code = module.GetCmdsCode();
   stream << "main_cmds_code_size=" << module.GetMainCmdsCodeSize()
-         << "func_cmds_code_size=" << module.GetFuncCmdsCodeSize()
-         << "cmds_code_position=" << cmds_code.GetPosition()
+         << "\nfunc_cmds_code_size=" << module.GetFuncCmdsCodeSize()
+         << "\ntotal_cmds_code_size=" << cmds_code.GetSize()
+         << "\ncmds_code_position=" << cmds_code.GetPosition()
          << "\ncmds_code=";
 
   for (const unsigned char *it = cmds_code.GetData();

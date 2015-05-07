@@ -18,7 +18,7 @@ class SimpleCodeGenerator: public CodeGenerator {
       const real_talk::parser::ProgramNode &program,
       const real_talk::semantic::SemanticAnalysis &semantic_analysis,
       uint32_t version,
-      std::ostream &stream) override;
+      Code *output) override;
 
  private:
   class Impl;

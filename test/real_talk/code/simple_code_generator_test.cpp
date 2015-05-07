@@ -105,6 +105,8 @@ using std::streampos;
 using std::streamoff;
 using std::equal;
 using testing::Test;
+using testing::Throw;
+using testing::_;
 using testing::Return;
 using testing::Ref;
 using testing::ByRef;
@@ -222,10 +224,11 @@ class SimpleCodeGeneratorTest: public Test {
   virtual void TearDown() override {
   }
 
-  string PrintCode(istream &code) {
-    unique_ptr<Module> module = ModuleReader().Read(code);
+  string PrintCode(Code *code) {
+    code->SetPosition(UINT32_C(0));
+    Module module = ModuleReader().ReadFromCode(code);
     ostringstream result;
-    result << *module;
+    result << module;
     return result.str();
   }
 
@@ -233,7 +236,7 @@ class SimpleCodeGeneratorTest: public Test {
                     const ProgramNode &program_node,
                     const SemanticAnalysis &semantic_analysis,
                     uint32_t version,
-                    const Code &expected_code) {
+                    Code &expected_code) {
     CastCmdGeneratorMock cast_cmd_generator;
 
     for (const TestCast &test_cast: test_casts) {
@@ -246,27 +249,11 @@ class SimpleCodeGeneratorTest: public Test {
     }
 
     SimpleCodeGenerator generator(cast_cmd_generator);
-    stringstream actual_stream;
-    generator.Generate(program_node, semantic_analysis, version, actual_stream);
-
-    actual_stream.seekg(0, ios::end);
-    streampos actual_code_size = actual_stream.tellg();
-    actual_stream.seekg(0);
-    stringstream expected_stream;
-    expected_stream.exceptions(ios::failbit | ios::badbit);
-    expected_stream.write(
-        reinterpret_cast<const char*>(expected_code.GetData()),
-        expected_code.GetSize());
-    ASSERT_EQ(expected_code.GetSize(), actual_code_size)
-        << "expected=\n" << PrintCode(expected_stream)
-        << "\nactual=\n" << PrintCode(actual_stream);
-    unique_ptr<char[]> actual_stream_content(new char[actual_code_size]);
-    actual_stream.read(actual_stream_content.get(), actual_code_size);
-    ASSERT_TRUE(memcmp(expected_code.GetData(),
-                       actual_stream_content.get(),
-                       expected_code.GetSize()) == 0)
-        << "expected=\n" << PrintCode(expected_stream)
-        << "\nactual=\n" << PrintCode(actual_stream);
+    Code actual_code;
+    generator.Generate(program_node, semantic_analysis, version, &actual_code);
+    ASSERT_EQ(expected_code, actual_code)
+        << "expected=\n" << PrintCode(&expected_code)
+        << "\nactual=\n" << PrintCode(&actual_code);
   }
 
   void TestGlobalVarDefWithoutInit(unique_ptr<DataTypeNode> data_type_node,
@@ -8270,5 +8257,26 @@ TEST_F(SimpleCodeGeneratorTest, GreaterDouble) {
                  operands_code,
                  expected_cmd_id);
 }
+
+// TEST_F(SimpleCodeGeneratorTest, GenerateFailsOnCodeSizeOverflowError) {
+//   CodeMock actual_code;
+//   EXPECT_CALL(actual_code, WriteUint32(_))
+//       .Times(1)
+//       .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
+
+//   vector< unique_ptr<StmtNode> > stmt_nodes;
+//   ProgramNode program_node(move(stmt_nodes));
+//   SemanticAnalysis::Problems problems;
+//   SemanticAnalysis::NodeAnalyzes node_analyzes;
+//   SemanticAnalysis semantic_analysis(move(problems), move(node_analyzes));
+//   CastCmdGeneratorMock cast_cmd_generator;
+//   SimpleCodeGenerator generator(cast_cmd_generator);
+//   uint32_t version = UINT32_C(1);
+
+//   try {
+//     generator.Generate(program_node, semantic_analysis, version, &actual_code);
+//     FAIL();
+//   } catch (const Code::CodeSizeOverflowError&) {}
+// }
 }
 }

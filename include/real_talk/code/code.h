@@ -29,29 +29,25 @@ class Code {
    */
   explicit Code(std::istream &stream);
 
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
   Code(const unsigned char *bytes, uint32_t size);
-
   Code();
-  unsigned char *GetData();
-  const unsigned char *GetData() const;
-  unsigned char *GetDataAtPosition();
-  const unsigned char *GetDataAtPosition() const;
-  uint32_t GetSize() const;
-  uint32_t GetPosition() const;
-  void SetPosition(uint32_t position);
-  uint8_t ReadUint8();
-  uint32_t ReadUint32();
-  uint64_t ReadUint64();
-  int32_t ReadInt32();
-  int64_t ReadInt64();
-  double ReadDouble();
-  bool ReadBool();
-  char ReadChar();
+  unsigned char *GetData() noexcept;
+  const unsigned char *GetData() const noexcept;
+  unsigned char *GetDataAtPosition() noexcept;
+  const unsigned char *GetDataAtPosition() const noexcept;
+  uint32_t GetSize() const noexcept;
+  uint32_t GetPosition() const noexcept;
+  void SetPosition(uint32_t position) noexcept;
+  uint8_t ReadUint8() noexcept;
+  uint32_t ReadUint32() noexcept;
+  uint64_t ReadUint64() noexcept;
+  int32_t ReadInt32() noexcept;
+  int64_t ReadInt64() noexcept;
+  double ReadDouble() noexcept;
+  bool ReadBool() noexcept;
+  char ReadChar() noexcept;
   std::string ReadString();
-  CmdId ReadCmdId();
+  CmdId ReadCmdId() noexcept;
   IdAddresses ReadIdAddresses();
   IdAddress ReadIdAddress();
   boost::filesystem::path ReadFilePath();

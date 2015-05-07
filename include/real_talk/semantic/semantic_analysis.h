@@ -24,9 +24,7 @@ class SemanticAnalysis {
                               std::unique_ptr<NodeSemanticAnalysis> > NodeAnalyzes;
   typedef std::vector< std::unique_ptr<SemanticProblem> > Problems;
 
-  SemanticAnalysis(
-      std::vector< std::unique_ptr<SemanticProblem> > problems,
-      NodeAnalyzes node_analyzes);
+  SemanticAnalysis(Problems problems, NodeAnalyzes node_analyzes);
   const NodeAnalyzes &GetNodeAnalyzes() const;
   const Problems &GetProblems() const;
   friend bool operator==(const SemanticAnalysis &lhs,

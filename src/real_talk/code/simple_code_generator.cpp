@@ -70,10 +70,6 @@
 #include "real_talk/code/code.h"
 
 using std::unique_ptr;
-using std::ios;
-using std::ostream;
-using std::streampos;
-using std::streamoff;
 using std::string;
 using std::vector;
 using std::numeric_limits;
@@ -191,7 +187,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   void Generate(const ProgramNode &program,
                 const SemanticAnalysis &semantic_analysis,
                 uint32_t version,
-                ostream &stream);
+                Code *output);
 
  private:
   class StmtGrouper;
@@ -1445,10 +1441,10 @@ SimpleCodeGenerator::SimpleCodeGenerator(
 SimpleCodeGenerator::~SimpleCodeGenerator() {}
 
 void SimpleCodeGenerator::Generate(const ProgramNode &program,
-                             const SemanticAnalysis &semantic_analysis,
-                             uint32_t version,
-                             ostream &stream) {
-  impl_->Generate(program, semantic_analysis, version, stream);
+                                   const SemanticAnalysis &semantic_analysis,
+                                   uint32_t version,
+                                   Code *output) {
+  impl_->Generate(program, semantic_analysis, version, output);
 }
 
 SimpleCodeGenerator::Impl::Impl(const CastCmdGenerator &cast_cmd_generator)
@@ -1458,24 +1454,21 @@ void SimpleCodeGenerator::Impl::Generate(
     const ProgramNode &program,
     const SemanticAnalysis &semantic_analysis,
     uint32_t version,
-    ostream &stream) {
+    Code *output) {
+  assert(output);
   program_ = &program;
   semantic_analysis_ = &semantic_analysis;
-  Code code;
-  code_ = &code;
+  code_ = output;
 
-  code.WriteUint32(version);
-  const uint32_t segments_metadata_address = code.GetPosition();
-  code.Skip(17 * sizeof(uint32_t));
-  cmds_address_ = code.GetPosition();
+  code_->WriteUint32(version);
+  const uint32_t segments_metadata_address = code_->GetPosition();
+  code_->Skip(17 * sizeof(uint32_t));
+  cmds_address_ = code_->GetPosition();
   const uint32_t main_cmds_end_address = GenerateCmdsSegment();
   const uint32_t main_cmds_size = main_cmds_end_address - cmds_address_;
-  const uint32_t func_cmds_size = code.GetPosition() - main_cmds_end_address;
+  const uint32_t func_cmds_size = code_->GetPosition() - main_cmds_end_address;
   GenerateMetadataSegments(
       segments_metadata_address, cmds_address_, main_cmds_size, func_cmds_size);
-
-  stream.exceptions(ios::failbit | ios::badbit);
-  stream.write(reinterpret_cast<char*>(code.GetData()), code.GetSize());
 
   assert(scopes_stack_.empty());
   import_file_paths_.clear();
