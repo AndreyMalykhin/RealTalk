@@ -35,6 +35,7 @@
 #include "real_talk/code/not_equal_cmd.h"
 #include "real_talk/code/greater_cmd.h"
 #include "real_talk/code/greater_or_equal_cmd.h"
+#include "real_talk/code/less_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -1132,6 +1133,34 @@ TEST_F(CmdReaderTest, GreaterOrEqualDoubleCmd) {
   GreaterOrEqualDoubleCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kGreaterOrEqualDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LessCharCmd) {
+  LessCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLessChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LessIntCmd) {
+  LessIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLessInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LessLongCmd) {
+  LessLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLessLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LessDoubleCmd) {
+  LessDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kLessDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 }

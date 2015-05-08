@@ -159,7 +159,11 @@ enum class CmdId: uint8_t {
   kGreaterOrEqualChar,
   kGreaterOrEqualInt,
   kGreaterOrEqualLong,
-  kGreaterOrEqualDouble
+  kGreaterOrEqualDouble,
+  kLessChar,
+  kLessInt,
+  kLessLong,
+  kLessDouble
 };
 
 class Cmd {
