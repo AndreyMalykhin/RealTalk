@@ -7,8 +7,7 @@
 namespace real_talk {
 namespace semantic {
 
-class SemanticError: public SemanticProblem {
-};
+class SemanticError: public SemanticProblem {};
 }
 }
 #endif

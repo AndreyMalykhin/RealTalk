@@ -85,8 +85,8 @@ namespace parser {
 
 class SimpleParser::Impl {
  public:
-  explicit Impl(std::unique_ptr<real_talk::lexer::Lexer> lexer);
-  std::shared_ptr<ProgramNode> Parse();
+  Impl();
+  std::unique_ptr<ProgramNode> Parse(real_talk::lexer::Lexer *lexer);
 
  private:
   struct ExprState;
@@ -180,7 +180,7 @@ class SimpleParser::Impl {
   void UnexpectedToken();
 
   static const OpPrios &kOpPrios;
-  std::unique_ptr<real_talk::lexer::Lexer> lexer_;
+  real_talk::lexer::Lexer *lexer_;
   real_talk::lexer::TokenInfo next_token_;
 };
 
@@ -207,26 +207,23 @@ const SimpleParser::Impl::OpPrios &SimpleParser::Impl::kOpPrios =
         {{Token::kAssignOp, OpAssoc::kRightToLeft}, UINT8_C(1)}
     });
 
-SimpleParser::SimpleParser(unique_ptr<Lexer> lexer)
-    : impl_(new Impl(move(lexer))) {
-}
+SimpleParser::SimpleParser(): impl_(new Impl()) {}
 
 SimpleParser::~SimpleParser() {}
 
-shared_ptr<ProgramNode> SimpleParser::Parse() {
-  return impl_->Parse();
+unique_ptr<ProgramNode> SimpleParser::Parse(Lexer *lexer) {
+  return impl_->Parse(lexer);
 }
 
-SimpleParser::Impl::Impl(unique_ptr<Lexer> lexer)
-    : lexer_(move(lexer)),
-      next_token_(TokenInfo(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0))) {
-  assert(lexer_);
-}
+SimpleParser::Impl::Impl()
+    : next_token_(TokenInfo(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0))) {}
 
-shared_ptr<ProgramNode> SimpleParser::Impl::Parse() {
+unique_ptr<ProgramNode> SimpleParser::Impl::Parse(Lexer *lexer) {
+  assert(lexer);
+  lexer_ = lexer;
   ConsumeNextToken();
   vector< unique_ptr<StmtNode> > stmts = ParseStmts(Token::kFileEnd);
-  return shared_ptr<ProgramNode>(new ProgramNode(move(stmts)));
+  return unique_ptr<ProgramNode>(new ProgramNode(move(stmts)));
 }
 
 unique_ptr<StmtNode> SimpleParser::Impl::ParseStmt() {

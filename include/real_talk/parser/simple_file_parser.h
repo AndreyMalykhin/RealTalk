@@ -18,7 +18,7 @@ class SimpleFileParser: public FileParser {
  public:
   SimpleFileParser(const real_talk::lexer::LexerFactory &lexer_factory,
                    const ParserFactory &parser_factory);
-  virtual std::shared_ptr<ProgramNode> Parse(
+  virtual std::unique_ptr<ProgramNode> Parse(
       const boost::filesystem::path &file_path) const override;
 
  private:

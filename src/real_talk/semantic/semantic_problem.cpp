@@ -8,14 +8,11 @@ namespace real_talk {
 namespace semantic {
 
 bool operator==(const SemanticProblem &lhs, const SemanticProblem &rhs) {
-  return typeid(lhs) == typeid(rhs)
-      && lhs.GetFilePath() == rhs.GetFilePath()
-      && lhs.IsEqual(rhs);
+  return typeid(lhs) == typeid(rhs) && lhs.IsEqual(rhs);
 }
 
 ostream &operator<<(ostream &stream, const SemanticProblem &problem) {
-  stream << "type=" << typeid(problem).name() << "; file_path="
-         << problem.GetFilePath() << "; ";
+  stream << "type=" << typeid(problem).name() << "; ";
   problem.Print(stream);
   return stream;
 }

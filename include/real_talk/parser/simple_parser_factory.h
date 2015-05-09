@@ -9,8 +9,7 @@ namespace parser {
 
 class SimpleParserFactory: public ParserFactory {
  public:
-  virtual std::unique_ptr<Parser> Create(
-      std::unique_ptr<real_talk::lexer::Lexer> lexer) const override;
+  virtual std::unique_ptr<Parser> Create() const override;
 };
 }
 }

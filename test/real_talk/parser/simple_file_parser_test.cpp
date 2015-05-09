@@ -12,7 +12,6 @@
 #include "real_talk/util/errors.h"
 
 using std::unique_ptr;
-using std::shared_ptr;
 using std::istream;
 using std::vector;
 using std::ios;
@@ -42,11 +41,11 @@ class LexerFactoryMock: public LexerFactory {
 
 class ParserFactoryMock: public ParserFactory {
  public:
-  virtual unique_ptr<Parser> Create(unique_ptr<Lexer> lexer) const override {
-    return unique_ptr<Parser>(Create_(lexer.release()));
+  virtual unique_ptr<Parser> Create() const override {
+    return unique_ptr<Parser>(Create_());
   }
 
-  MOCK_CONST_METHOD1(Create_, Parser*(Lexer*));
+  MOCK_CONST_METHOD0(Create_, Parser*());
 };
 
 class LexerMock: public Lexer {
@@ -55,63 +54,61 @@ class LexerMock: public Lexer {
 
 class ParserMock: public Parser {
  public:
-  MOCK_METHOD0(Parse, shared_ptr<ProgramNode>());
+  virtual unique_ptr<ProgramNode> Parse(Lexer *lexer) override {
+    return unique_ptr<ProgramNode>(Parse_(lexer));
+  }
+
+  MOCK_METHOD1(Parse_, ProgramNode*(Lexer*));
 };
 
 class SimpleFileParserTest: public Test {
  protected:
-  virtual void SetUp() override {
-  }
-
-  virtual void TearDown() override {
-  }
+  virtual void SetUp() override {}
+  virtual void TearDown() override {}
 };
 
 TEST_F(SimpleFileParserTest, Parse) {
   vector< unique_ptr<StmtNode> > stmts;
-  shared_ptr<ProgramNode> expected_program(new ProgramNode(move(stmts)));
-
+  ProgramNode *expected_program_ptr = new ProgramNode(move(stmts));
+  unique_ptr<ProgramNode> expected_program(expected_program_ptr);
   LexerFactoryMock *lexer_factory_mock = new LexerFactoryMock();
   unique_ptr<LexerFactory> lexer_factory(lexer_factory_mock);
   ParserFactoryMock *parser_factory_mock = new ParserFactoryMock();
   unique_ptr<ParserFactory> parser_factory(parser_factory_mock);
-  LexerMock *lexer_mock = new LexerMock();
-  unique_ptr<Lexer> lexer(lexer_mock);
-  ParserMock *parser_mock = new ParserMock();
-  unique_ptr<Parser> parser(parser_mock);
+  LexerMock *lexer_ptr = new LexerMock();
+  unique_ptr<Lexer> lexer(lexer_ptr);
+  ParserMock *parser_ptr = new ParserMock();
+  unique_ptr<Parser> parser(parser_ptr);
 
   {
     InSequence sequence;
 
     EXPECT_CALL(*lexer_factory_mock, Create_(_))
         .Times(1)
-        .WillOnce(Return(lexer_mock));
-    EXPECT_CALL(*parser_factory_mock, Create_(lexer_mock))
+        .WillOnce(Return(lexer.release()));
+    EXPECT_CALL(*parser_factory_mock, Create_())
         .Times(1)
-        .WillOnce(Return(parser_mock));
-    EXPECT_CALL(*parser_mock, Parse())
+        .WillOnce(Return(parser.release()));
+    EXPECT_CALL(*parser_ptr, Parse_(lexer_ptr))
         .Times(1)
-        .WillOnce(Return(expected_program));
+        .WillOnce(Return(expected_program.release()));
   }
 
   path file_path(TestConfig::GetResourceDir() / "program.rt");
   SimpleFileParser file_parser(*lexer_factory, *parser_factory);
-  lexer.release();
-  parser.release();
-
-  shared_ptr<ProgramNode> actual_program = file_parser.Parse(file_path);
-  ASSERT_EQ(expected_program, actual_program);
+  unique_ptr<ProgramNode> actual_program = file_parser.Parse(file_path);
+  ASSERT_EQ(expected_program_ptr, actual_program.get());
 }
 
 TEST_F(SimpleFileParserTest, ParseFailsIfCantOpenFile) {
-  LexerFactoryMock *lexer_factory_mock = new LexerFactoryMock();
-  unique_ptr<LexerFactory> lexer_factory(lexer_factory_mock);
-  ParserFactoryMock *parser_factory_mock = new ParserFactoryMock();
-  unique_ptr<ParserFactory> parser_factory(parser_factory_mock);
+  LexerFactoryMock *lexer_factory_ptr = new LexerFactoryMock();
+  unique_ptr<LexerFactory> lexer_factory(lexer_factory_ptr);
+  ParserFactoryMock *parser_factory_ptr = new ParserFactoryMock();
+  unique_ptr<ParserFactory> parser_factory(parser_factory_ptr);
 
-  EXPECT_CALL(*lexer_factory_mock, Create_(_))
+  EXPECT_CALL(*lexer_factory_ptr, Create_(_))
       .Times(0);
-  EXPECT_CALL(*parser_factory_mock, Create_(_))
+  EXPECT_CALL(*parser_factory_ptr, Create_())
       .Times(0);
 
   path file_path("i_am_not_here.rt");
@@ -120,8 +117,7 @@ TEST_F(SimpleFileParserTest, ParseFailsIfCantOpenFile) {
   try {
     file_parser.Parse(file_path);
     FAIL();
-  } catch (const IOError&) {
-  }
+  } catch (const IOError&) {}
 }
 }
 }

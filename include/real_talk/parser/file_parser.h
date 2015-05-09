@@ -19,7 +19,7 @@ class FileParser {
    * @throws real_talk::lexer::Lexer::UnexpectedCharError
    * @throws real_talk::util::IOError
    */
-  virtual std::shared_ptr<ProgramNode> Parse(
+  virtual std::unique_ptr<ProgramNode> Parse(
       const boost::filesystem::path &file_path) const = 0;
 };
 }

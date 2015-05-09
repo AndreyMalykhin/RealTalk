@@ -67,7 +67,6 @@
 
 using std::string;
 using std::istringstream;
-using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
 using std::move;
@@ -171,42 +170,40 @@ class SimpleParserTest: public Test {
   }
 
   void TestParse(const TestNode<ProgramNode> &test_program_node) {
-    unique_ptr<Lexer> lexer(new NiceMock<LexerMock>());
-    LexerMock &lexer_mock = static_cast<LexerMock&>(*lexer);
+    LexerMock *lexer_ptr = new NiceMock<LexerMock>();
+    unique_ptr<Lexer> lexer(lexer_ptr);
 
     {
       InSequence sequence;
 
       for (const TokenInfo &token: test_program_node.tokens) {
-        EXPECT_CALL(lexer_mock, GetNextToken())
+        EXPECT_CALL(*lexer_ptr, GetNextToken())
             .WillOnce(Return(token))
             .RetiresOnSaturation();
       }
     }
 
-    SimpleParser parser(move(lexer));
-
-    const shared_ptr<ProgramNode> actual_program_node = parser.Parse();
-
+    SimpleParser parser;
+    unique_ptr<ProgramNode> actual_program_node = parser.Parse(lexer_ptr);
     ASSERT_EQ(*(test_program_node.node), *(actual_program_node))
         << "expected:\n" << *(test_program_node.node)
         << "actual:\n" << *(actual_program_node);
   }
 
   void TestFailingParse(const MailformedTestTokens &mailformed_tokens) {
-    unique_ptr<Lexer> lexer(new NiceMock<LexerMock>());
-    LexerMock &lexer_mock = static_cast<LexerMock&>(*lexer);
+    LexerMock *lexer_ptr = new NiceMock<LexerMock>();
+    unique_ptr<Lexer> lexer(lexer_ptr);
     vector<TokenInfo>::const_iterator next_token_it =
         mailformed_tokens.tokens.begin();
     auto next_token_generator = [&next_token_it]() {
       return *(next_token_it++);
     };
-    ON_CALL(lexer_mock, GetNextToken())
+    ON_CALL(*lexer_ptr, GetNextToken())
         .WillByDefault(Invoke(next_token_generator));
-    SimpleParser parser(move(lexer));
+    SimpleParser parser;
 
     try {
-      const shared_ptr<ProgramNode> program_node = parser.Parse();
+      unique_ptr<ProgramNode> program_node = parser.Parse(lexer_ptr);
       FAIL() << "expected_bad_token=" << mailformed_tokens.unexpected_token
              << "\nprogram:\n" << *program_node;
     } catch (const Parser::UnexpectedTokenError &error) {

@@ -6,18 +6,14 @@
 #include "real_talk/parser/parser.h"
 
 namespace real_talk {
-namespace lexer {
-
-class Lexer;
-}
-
 namespace parser {
 
 class SimpleParser: public Parser {
  public:
-  explicit SimpleParser(std::unique_ptr<real_talk::lexer::Lexer> lexer);
+  SimpleParser();
   virtual ~SimpleParser() override;
-  virtual std::shared_ptr<ProgramNode> Parse() override;
+  virtual std::unique_ptr<ProgramNode> Parse(
+      real_talk::lexer::Lexer *lexer) override;
 
  private:
   class Impl;

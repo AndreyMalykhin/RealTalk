@@ -5,11 +5,6 @@
 #include <memory>
 
 namespace real_talk {
-namespace lexer {
-
-class Lexer;
-}
-
 namespace parser {
 
 class Parser;
@@ -17,8 +12,7 @@ class Parser;
 class ParserFactory {
  public:
   virtual ~ParserFactory() {}
-  virtual std::unique_ptr<Parser> Create(
-      std::unique_ptr<real_talk::lexer::Lexer> lexer) const = 0;
+  virtual std::unique_ptr<Parser> Create() const = 0;
 };
 }
 }

@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_SEMANTIC_SIMPLE_SEMANTIC_ANALYZER_H_
 #define _REAL_TALK_SEMANTIC_SIMPLE_SEMANTIC_ANALYZER_H_
 
+#include <vector>
 #include "real_talk/semantic/semantic_analyzer.h"
 
 namespace real_talk {
@@ -18,14 +19,11 @@ class LitParser;
 
 class SimpleSemanticAnalyzer: public SemanticAnalyzer {
  public:
-  SimpleSemanticAnalyzer(
-      std::shared_ptr<real_talk::parser::ProgramNode> program,
-      const boost::filesystem::path &absolute_file_path,
-      const real_talk::parser::FileParser &file_parser,
-      const ImportFileSearcher &import_file_searcher,
-      const LitParser &lit_parser);
+  explicit SimpleSemanticAnalyzer(const LitParser &lit_parser);
   virtual ~SimpleSemanticAnalyzer() override;
-  virtual SemanticAnalysis Analyze() override;
+  virtual SemanticAnalysis Analyze(
+      const real_talk::parser::ProgramNode &main_program,
+      const ImportPrograms &import_programs) override;
 
  private:
   class Impl;

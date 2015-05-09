@@ -27,7 +27,7 @@ SimpleFileParser::SimpleFileParser(
       parser_factory_(parser_factory) {
 }
 
-shared_ptr<ProgramNode> SimpleFileParser::Parse(const path &file_path) const {
+unique_ptr<ProgramNode> SimpleFileParser::Parse(const path &file_path) const {
   ifstream stream(file_path);
 
   if (!stream.is_open()) {
@@ -35,8 +35,8 @@ shared_ptr<ProgramNode> SimpleFileParser::Parse(const path &file_path) const {
   }
 
   unique_ptr<Lexer> lexer = lexer_factory_.Create(stream);
-  unique_ptr<Parser> parser = parser_factory_.Create(move(lexer));
-  return parser->Parse();
+  unique_ptr<Parser> parser = parser_factory_.Create();
+  return parser->Parse(lexer.get());
 }
 }
 }

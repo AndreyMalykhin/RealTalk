@@ -163,7 +163,11 @@ enum class CmdId: uint8_t {
   kLessChar,
   kLessInt,
   kLessLong,
-  kLessDouble
+  kLessDouble,
+  kLessOrEqualChar,
+  kLessOrEqualInt,
+  kLessOrEqualLong,
+  kLessOrEqualDouble,
 };
 
 class Cmd {

@@ -90,7 +90,6 @@
 #include "real_talk/semantic/lit_analysis.h"
 #include "real_talk/semantic/id_analysis.h"
 #include "real_talk/semantic/subscript_analysis.h"
-#include "real_talk/semantic/import_analysis.h"
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/return_analysis.h"
@@ -106,7 +105,6 @@ using std::string;
 using std::to_string;
 using std::unordered_map;
 using std::unique_ptr;
-using std::shared_ptr;
 using std::move;
 using std::make_pair;
 using std::make_move_iterator;
@@ -218,22 +216,10 @@ struct TestLitParses {
   vector< TestLitParse<char> > chars;
 };
 
-struct TestImportFileSearch {
-  path relative_file_path;
-  path absolute_file_path;
-};
-
-struct TestFileParse {
-  path absolute_file_path;
-  shared_ptr<ProgramNode> node;
-};
-
 struct TestProgram {
-  shared_ptr<ProgramNode> node;
-  path file_path;
+  unique_ptr<ProgramNode> main_program_node;
+  SemanticAnalyzer::ImportPrograms import_program_nodes;
   SemanticAnalysis analysis;
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses;
 };
 
@@ -245,16 +231,6 @@ class LitParserMock: public LitParser {
   MOCK_CONST_METHOD1(ParseBool, bool(const string&));
   MOCK_CONST_METHOD1(ParseString, string(const string&));
   MOCK_CONST_METHOD1(ParseChar, char(const string&));
-};
-
-class FileParserMock: public FileParser {
- public:
-  MOCK_CONST_METHOD1(Parse, shared_ptr<ProgramNode>(const path&));
-};
-
-class ImportFileSearcherMock: public ImportFileSearcher {
- public:
-  MOCK_CONST_METHOD1(Search, path(const path&));
 };
 
 class SimpleSemanticAnalyzerTest: public Test {
@@ -313,40 +289,11 @@ class SimpleSemanticAnalyzerTest: public Test {
   }
 
   void TestAnalyze(const TestProgram &test_program) {
-    ImportFileSearcherMock *import_file_searcher_mock =
-        new ImportFileSearcherMock();
-    unique_ptr<ImportFileSearcher> import_file_searcher(
-        import_file_searcher_mock);
-
-    for (const TestImportFileSearch &test_import_file_search:
-             test_program.test_import_file_searches) {
-      EXPECT_CALL(*import_file_searcher_mock,
-                  Search(test_import_file_search.relative_file_path))
-          .Times(1)
-          .WillOnce(Return(test_import_file_search.absolute_file_path))
-          .RetiresOnSaturation();
-    }
-
-    FileParserMock *file_parser_mock = new FileParserMock();
-    unique_ptr<FileParser> file_parser(file_parser_mock);
-
-    for (const TestFileParse &test_file_parse:
-             test_program.test_file_parses) {
-      EXPECT_CALL(*file_parser_mock,
-                  Parse(test_file_parse.absolute_file_path))
-          .Times(1)
-          .WillOnce(Return(test_file_parse.node))
-          .RetiresOnSaturation();
-    }
-
     unique_ptr<LitParser> lit_parser =
         CreateLitParserMock(test_program.test_lit_parses);
-    SimpleSemanticAnalyzer analyzer(test_program.node,
-                                    test_program.file_path,
-                                    *file_parser,
-                                    *import_file_searcher,
-                                    *lit_parser);
-    SemanticAnalysis actual_analysis = analyzer.Analyze();
+    SimpleSemanticAnalyzer analyzer(*lit_parser);
+    SemanticAnalysis actual_analysis = analyzer.Analyze(
+        *(test_program.main_program_node), test_program.import_program_nodes);
     ASSERT_EQ(test_program.analysis, actual_analysis);
   }
 };
@@ -429,25 +376,21 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
     unique_ptr<StmtNode> def_node(def_node_ptr);
     stmt_nodes.push_back(move(def_node));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<NodeSemanticAnalysis> def_analysis(new GlobalVarDefAnalysis(
         test_data.data_type->Clone()));
     node_analyzes.insert(make_pair(def_node_ptr, move(def_analysis)));
 
-    SemanticAnalysis::Problems problems;
+    SemanticAnalysis::ProgramProblems problems;
+    problems.insert(
+        make_pair(program_node.get(), SemanticAnalysis::Problems()));
     SemanticAnalysis analysis(move(problems), move(node_analyzes));
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
-    path program_file_path;
-    TestProgram test_program = {program_node,
-                                program_file_path,
+    TestProgram test_program = {move(program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_data.test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -455,9 +398,9 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithoutInit) {
 TEST_F(SimpleSemanticAnalyzerTest,
        VarDefWithoutInitUsingAlreadyExistingIdIsInvalid) {
   struct TestData {
-    shared_ptr<ProgramNode> program_node;
+    unique_ptr<ProgramNode> program_node;
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    SemanticAnalysis::Problems problems;
+    SemanticAnalysis::ProgramProblems problems;
   };
   vector<TestData> test_data_suits;
 
@@ -500,7 +443,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
         move(func_body_node));
     unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
     stmt_nodes.push_back(move(func_def_node));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -527,14 +470,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(var_def_node_ptr, move(var_def_analysis)));
 
-    SemanticAnalysis::Problems problems;
-    path file_path;
-    unique_ptr<SemanticProblem> problem(new DuplicateDefError(
-        file_path, *var_def_node_ptr));
-    problems.push_back(move(problem));
+    SemanticAnalysis::ProgramProblems problems;
+    unique_ptr<SemanticProblem> problem(
+        new DuplicateDefError(*var_def_node_ptr));
+    problems[program_node.get()].push_back(move(problem));
 
     TestData test_data =
-        {program_node, move(node_analyzes), move(problems)};
+        {move(program_node), move(node_analyzes), move(problems)};
     test_data_suits.push_back(move(test_data));
   }
 
@@ -567,7 +509,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8)));
     unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
     stmt_nodes.push_back(move(var_def_node));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     uint32_t body_local_vars_count = UINT32_C(0);
@@ -591,14 +533,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(var_def_node_ptr, move(var_def_analysis)));
 
-    SemanticAnalysis::Problems problems;
-    path file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new DuplicateDefError(
-        file_path, *var_def_node_ptr));
-    problems.push_back(move(problem));
+        *var_def_node_ptr));
+    problems[program_node.get()].push_back(move(problem));
 
     TestData test_data =
-        {program_node, move(node_analyzes), move(problems)};
+        {move(program_node), move(node_analyzes), move(problems)};
     test_data_suits.push_back(move(test_data));
   }
 
@@ -621,7 +562,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
     unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
     stmt_nodes.push_back(move(var_def_node2));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<DataType> var_data_type1(new IntDataType());
@@ -635,14 +576,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(var_def_node_ptr2, move(var_def_analysis2)));
 
-    SemanticAnalysis::Problems problems;
-    path file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new DuplicateDefError(
-        file_path, *var_def_node_ptr2));
-    problems.push_back(move(problem));
+        *var_def_node_ptr2));
+    problems[program_node.get()].push_back(move(problem));
 
     TestData test_data =
-        {program_node, move(node_analyzes), move(problems)};
+        {move(program_node), move(node_analyzes), move(problems)};
     test_data_suits.push_back(move(test_data));
   }
 
@@ -650,16 +590,10 @@ TEST_F(SimpleSemanticAnalyzerTest,
     SemanticAnalysis analysis(move(test_data.problems),
                               move(test_data.node_analyzes));
     TestLitParses test_lit_parses = {};
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
-    path program_file_path;
-    TestProgram test_program = {test_data.program_node,
-                                program_file_path,
+    TestProgram test_program = {move(test_data.program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -700,7 +634,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
     unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
     stmt_nodes.push_back(move(var_def_node));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
@@ -708,24 +642,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(var_def_node_ptr, move(var_def_analysis)));
 
-    SemanticAnalysis::Problems problems;
-    path file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new DefWithUnsupportedTypeError(
-        file_path, *var_def_node_ptr, test_data.var_data_type->Clone()));
-    problems.push_back(move(problem));
+        *var_def_node_ptr, test_data.var_data_type->Clone()));
+    problems[program_node.get()].push_back(move(problem));
 
     SemanticAnalysis analysis(move(problems), move(node_analyzes));
     TestLitParses test_lit_parses = {};
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
-    path program_file_path;
-    TestProgram test_program = {program_node,
-                                program_file_path,
+    TestProgram test_program = {move(program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -744,7 +671,7 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithInit) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)));
   unique_ptr<StmtNode> def_node(def_node_ptr);
   stmt_nodes.push_back(move(def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.chars = {{"'a'", 'a'}};
@@ -764,18 +691,14 @@ TEST_F(SimpleSemanticAnalyzerTest, VarDefWithInit) {
       unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(value_node, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -795,7 +718,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   stmt_nodes.push_back(move(var_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"7\"", "7"}};
@@ -815,25 +738,18 @@ TEST_F(SimpleSemanticAnalyzerTest,
       new GlobalVarDefAnalysis(var_data_type->Clone()));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new VarDefWithIncompatibleValueTypeError(
-      program_file_path,
       *var_def_node_ptr,
       var_data_type->Clone(),
       value_data_type->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -880,7 +796,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6)));
     unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
     stmt_nodes.push_back(move(var_def_node));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
@@ -888,23 +804,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(var_def_node_ptr, move(var_def_analysis)));
 
-    SemanticAnalysis::Problems problems;
-    path program_file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new DefWithUnsupportedTypeError(
-        program_file_path, *var_def_node_ptr, test_data.data_type->Clone()));
-    problems.push_back(move(problem));
+        *var_def_node_ptr, test_data.data_type->Clone()));
+    problems[program_node.get()].push_back(move(problem));
 
     SemanticAnalysis analysis(move(problems), move(node_analyzes));
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
     TestLitParses test_lit_parses = {};
-    TestProgram test_program = {program_node,
-                                program_file_path,
+    TestProgram test_program = {move(program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -912,9 +822,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
 TEST_F(SimpleSemanticAnalyzerTest,
        VarDefWithInitUsingAlreadyExistingIdIsInvalid) {
   struct TestData {
-    shared_ptr<ProgramNode> program_node;
+    unique_ptr<ProgramNode> program_node;
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    SemanticAnalysis::Problems problems;
+    SemanticAnalysis::ProgramProblems problems;
     TestLitParses test_lit_parses;
   };
   vector<TestData> test_data_suits;
@@ -948,7 +858,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9)));
     unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
     stmt_nodes.push_back(move(var_def_node2));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     IntDataType *var_data_type_ptr1 = new IntDataType();
@@ -975,16 +885,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
         move(var_value_lit1)));
     node_analyzes.insert(
         make_pair(var_value_node_ptr1, move(var_value_lit_analysis1)));
-    SemanticAnalysis::Problems problems;
-    path file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new DuplicateDefError(
-        file_path, *var_def_node_ptr2));
-    problems.push_back(move(problem));
+        *var_def_node_ptr2));
+    problems[program_node.get()].push_back(move(problem));
 
     TestLitParses test_lit_parses = {};
     test_lit_parses.ints = {{"1", INT32_C(1)}};
 
-    TestData test_data = {program_node,
+    TestData test_data = {move(program_node),
                           move(node_analyzes),
                           move(problems),
                           test_lit_parses};
@@ -994,16 +903,10 @@ TEST_F(SimpleSemanticAnalyzerTest,
   for (TestData &test_data: test_data_suits) {
     SemanticAnalysis analysis(
         move(test_data.problems), move(test_data.node_analyzes));
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
-    path program_file_path;
-    TestProgram test_program = {test_data.program_node,
-                                program_file_path,
+    TestProgram test_program = {move(test_data.program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_data.test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -1050,7 +953,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
       move(body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<NodeSemanticAnalysis> return_analysis(
@@ -1092,19 +995,15 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
       is_id_assignee));
   node_analyzes.insert(make_pair(return_expr_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -1130,7 +1029,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyWithoutArgsAndReturnValue) {
       move(body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -1148,19 +1047,15 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyWithoutArgsAndReturnValue) {
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -1188,7 +1083,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -1202,32 +1097,26 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new FuncDefWithBodyIsNativeError(
-      program_file_path, *func_def_node_ptr));
-  problems.push_back(move(problem));
+      *func_def_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest,
        FuncDefWithBodyUsingAlreadyExistingIdIsInvalid) {
   struct TestData {
-    shared_ptr<ProgramNode> program_node;
+    unique_ptr<ProgramNode> program_node;
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    SemanticAnalysis::Problems problems;
+    SemanticAnalysis::ProgramProblems problems;
   };
   vector<TestData> test_data_suits;
 
@@ -1269,7 +1158,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
         move(body_node2));
     unique_ptr<StmtNode> func_def_node2(func_def_node_ptr2);
     stmt_nodes.push_back(move(func_def_node2));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     uint32_t body_local_vars_count1 = UINT32_C(0);
@@ -1297,14 +1186,13 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(func_def_node_ptr2, move(func_def_analysis2)));
 
-    SemanticAnalysis::Problems problems;
-    path file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new DuplicateDefError(
-        file_path, *func_def_node_ptr2));
-    problems.push_back(move(problem));
+        *func_def_node_ptr2));
+    problems[program_node.get()].push_back(move(problem));
 
     TestData test_data =
-        {program_node, move(node_analyzes), move(problems)};
+        {move(program_node), move(node_analyzes), move(problems)};
     test_data_suits.push_back(move(test_data));
   }
 
@@ -1312,16 +1200,10 @@ TEST_F(SimpleSemanticAnalyzerTest,
     SemanticAnalysis analysis(
         move(test_data.problems), move(test_data.node_analyzes));
     TestLitParses test_lit_parses = {};
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
-    path program_file_path;
-    TestProgram test_program = {test_data.program_node,
-                                program_file_path,
+    TestProgram test_program = {move(test_data.program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -1352,7 +1234,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> array_element_data_type(new VoidDataType());
@@ -1360,23 +1242,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
       new ArrayDataType(move(array_element_data_type));
   unique_ptr<DataType> return_data_type(return_data_type_ptr);
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new DefWithUnsupportedTypeError(
-      program_file_path, *func_def_node_ptr, return_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+      *func_def_node_ptr, return_data_type_ptr->Clone()));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -1422,7 +1298,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(body_node1));
   unique_ptr<StmtNode> func_def_node1(func_def_node_ptr1);
   stmt_nodes.push_back(move(func_def_node1));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> return_data_type1(new VoidDataType());
@@ -1436,24 +1312,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(
       make_pair(func_def_node_ptr1, move(func_def_analysis1)));
 
-  SemanticAnalysis::Problems problems;
-  path file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new FuncDefWithinNonGlobalScope(
-      file_path, *func_def_node_ptr2));
-  problems.push_back(move(problem));
+      *func_def_node_ptr2));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -1510,7 +1379,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(func_body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<NodeSemanticAnalysis> return_analysis(
@@ -1558,21 +1427,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
   test_lit_parses.ints = {{"7", INT32_C(7)}};
   test_lit_parses.bools = {{"yeah", true}};
 
-  SemanticAnalysis::Problems problems;
-  path file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new FuncDefWithoutReturnValueError(
-      file_path, *func_def_node_ptr));
-  problems.push_back(move(problem));
+      *func_def_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
 
   TestAnalyze(test_program);
@@ -1605,7 +1468,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyWithArgsAndReturnValue) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   IntDataType *func_return_data_type_ptr = new IntDataType();
@@ -1626,19 +1489,15 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyWithArgsAndReturnValue) {
       new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -1661,7 +1520,7 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyAndArgsAndReturnValue) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   VoidDataType *func_return_data_type_ptr = new VoidDataType();
@@ -1676,19 +1535,15 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyAndArgsAndReturnValue) {
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -1708,7 +1563,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -1722,32 +1577,26 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new FuncDefWithoutBodyNotNativeError(
-      program_file_path, *func_def_node_ptr));
-  problems.push_back(move(problem));
+      *func_def_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest,
        FuncDefWithoutBodyUsingAlreadyExistingIdIsInvalid) {
   struct TestData {
-    shared_ptr<ProgramNode> program_node;
+    unique_ptr<ProgramNode> program_node;
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    SemanticAnalysis::Problems problems;
+    SemanticAnalysis::ProgramProblems problems;
   };
   vector<TestData> test_data_suits;
 
@@ -1784,7 +1633,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(11), UINT32_C(11)));
     unique_ptr<StmtNode> func_def_node2(func_def_node_ptr2);
     stmt_nodes.push_back(move(func_def_node2));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<DataType> return_data_type1(new VoidDataType());
@@ -1808,31 +1657,24 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(func_def_node_ptr2, move(func_def_analysis2)));
 
-    SemanticAnalysis::Problems problems;
-    path file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new DuplicateDefError(
-        file_path, *func_def_node_ptr2));
-    problems.push_back(move(problem));
+        *func_def_node_ptr2));
+    problems[program_node.get()].push_back(move(problem));
 
     TestData test_data =
-        {program_node, move(node_analyzes), move(problems)};
+        {move(program_node), move(node_analyzes), move(problems)};
     test_data_suits.push_back(move(test_data));
   }
 
   for (TestData &test_data: test_data_suits) {
-    SemanticAnalysis analysis(move(test_data.problems),
-                              move(test_data.node_analyzes));
+    SemanticAnalysis analysis(
+        move(test_data.problems), move(test_data.node_analyzes));
     TestLitParses test_lit_parses = {};
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
-    path program_file_path;
-    TestProgram test_program = {test_data.program_node,
-                                program_file_path,
+    TestProgram test_program = {move(test_data.program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -1859,7 +1701,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> array_element_data_type(new VoidDataType());
@@ -1867,23 +1709,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
       new ArrayDataType(move(array_element_data_type));
   unique_ptr<DataType> return_data_type(return_data_type_ptr);
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new DefWithUnsupportedTypeError(
-      program_file_path, *func_def_node_ptr, return_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+      *func_def_node_ptr, return_data_type_ptr->Clone()));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -1924,7 +1760,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(body_node1));
   unique_ptr<StmtNode> func_def_node1(func_def_node_ptr1);
   stmt_nodes.push_back(move(func_def_node1));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> return_data_type1(new VoidDataType());
@@ -1938,24 +1774,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(
       make_pair(func_def_node_ptr1, move(func_def_analysis1)));
 
-  SemanticAnalysis::Problems problems;
-  path file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new FuncDefWithinNonGlobalScope(
-      file_path, *func_def_node_ptr2));
-  problems.push_back(move(problem));
+      *func_def_node_ptr2));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2017,7 +1846,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ArgDefWithUnsupportedDataTypeIsInvalid) {
         move(body_node));
     unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
     stmt_nodes.push_back(move(func_def_node));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     VoidDataType *func_return_data_type_ptr = new VoidDataType();
@@ -2039,25 +1868,18 @@ TEST_F(SimpleSemanticAnalyzerTest, ArgDefWithUnsupportedDataTypeIsInvalid) {
         test_data.arg_data_type->Clone(), var_index_within_func));
     node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
-    SemanticAnalysis::Problems problems;
-    path program_file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new DefWithUnsupportedTypeError(
-        program_file_path,
         *arg_def_node_ptr,
         test_data.arg_data_type->Clone()));
-    problems.push_back(move(problem));
+    problems[program_node.get()].push_back(move(problem));
 
     SemanticAnalysis analysis(move(problems), move(node_analyzes));
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
     TestLitParses test_lit_parses = {};
-    TestProgram test_program = {program_node,
-                                program_file_path,
+    TestProgram test_program = {move(program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -2104,7 +1926,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   IntDataType *func_return_data_type_ptr = new IntDataType();
@@ -2138,26 +1960,19 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee));
   node_analyzes.insert(make_pair(return_expr_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new ReturnWithIncompatibleTypeError(
-      program_file_path,
       *return_stmt_node_ptr,
       func_return_data_type_ptr->Clone(),
       return_expr_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2172,27 +1987,20 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnValueNotWithinFuncIsInvalid) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
   unique_ptr<StmtNode> return_stmt_node(return_stmt_node_ptr);
   stmt_nodes.push_back(move(return_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new ReturnNotWithinFuncError(
-      file_path, *return_stmt_node_ptr));
-  problems.push_back(move(problem));
+      *return_stmt_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2224,7 +2032,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
       move(body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<NodeSemanticAnalysis> return_analysis(
@@ -2248,19 +2056,15 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2271,27 +2075,20 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValueNotWithinFuncIsInvalid) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1)));
   unique_ptr<StmtNode> return_stmt_node(return_stmt_node_ptr);
   stmt_nodes.push_back(move(return_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new ReturnNotWithinFuncError(
-      file_path, *return_stmt_node_ptr));
-  problems.push_back(move(problem));
+      *return_stmt_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2323,7 +2120,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(body_node));
   unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
   stmt_nodes.push_back(move(func_def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   IntDataType *func_return_data_type_ptr = new IntDataType();
@@ -2338,24 +2135,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new ReturnWithoutValueError(
-      file_path, *return_stmt_node_ptr));
-  problems.push_back(move(problem));
+      *return_stmt_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2411,7 +2201,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
       move(call_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12))));
   stmt_nodes.push_back(move(call_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.chars = {{"'a'", 'a'}};
@@ -2474,18 +2264,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   node_analyzes.insert(
       make_pair(call_arg_node_ptr, move(call_arg_lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2542,7 +2328,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
       move(call_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12))));
   stmt_nodes.push_back(move(call_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.longs = {{"7L", INT64_C(7)}};
@@ -2607,27 +2393,20 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
   node_analyzes.insert(
       make_pair(call_arg_node_ptr, move(call_arg_lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   size_t bad_arg_index = 0;
   unique_ptr<SemanticProblem> problem(new CallWithIncompatibleArgTypeError(
-      program_file_path,
       *call_expr_node_ptr,
       bad_arg_index,
       arg_def_data_type_ptr->Clone(),
       call_arg_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2689,7 +2468,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
       move(call_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(14), UINT32_C(14))));
   stmt_nodes.push_back(move(call_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(1);
@@ -2739,28 +2518,21 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
       ValueType::kRight));
   node_analyzes.insert(make_pair(call_expr_node_ptr, move(call_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   size_t expected_args_count = 1;
   size_t actual_args_count = 2;
   unique_ptr<SemanticProblem> problem(new CallWithInvalidArgsCount(
-      program_file_path,
       *call_expr_node_ptr,
       expected_args_count,
       actual_args_count));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2790,7 +2562,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(call_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
   stmt_nodes.push_back(move(call_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> var_data_type(new IntDataType());
@@ -2809,23 +2581,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(
-      new CallWithNonFuncError(program_file_path, *call_expr_node_ptr));
-  problems.push_back(move(problem));
+      new CallWithNonFuncError(*call_expr_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -2898,7 +2664,7 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   unique_ptr<StmtNode> if_else_if_node(
       new IfElseIfNode(move(if_node1), move(else_if_nodes)));
   stmt_nodes.push_back(move(if_else_if_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t if_body_local_vars_count1 = UINT32_C(1);
@@ -2950,19 +2716,15 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(if_cond_ptr2, move(if_cond_expr_analysis2)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -3007,7 +2769,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       new IfElseIfNode(move(if_node), vector< unique_ptr<ElseIfNode> >());
   unique_ptr<StmtNode> if_else_if_node(if_else_if_node_ptr);
   stmt_nodes.push_back(move(if_else_if_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t func_body_local_vars_count = UINT32_C(0);
@@ -3044,27 +2806,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
-      program_file_path,
       *if_else_if_node_ptr,
       *if_node_ptr,
       unique_ptr<DataType>(new BoolDataType()),
       func_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -3139,7 +2894,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       new IfElseIfNode(move(if_node1), move(else_if_nodes));
   unique_ptr<StmtNode> if_else_if_node(if_else_if_node_ptr);
   stmt_nodes.push_back(move(if_else_if_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t func_body_local_vars_count = UINT32_C(0);
@@ -3199,27 +2954,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_expr_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
-      program_file_path,
       *if_else_if_node_ptr,
       *if_node_ptr2,
       unique_ptr<DataType>(new BoolDataType()),
       func_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -3310,7 +3058,7 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
       TokenInfo(Token::kElse, "else", UINT32_C(22), UINT32_C(22)),
       move(else_body)));
   stmt_nodes.push_back(move(if_else_if_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t if_body_local_vars_count1 = UINT32_C(1);
@@ -3373,19 +3121,15 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(if_cond_ptr2, move(if_cond_expr_analysis2)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -3437,7 +3181,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(else_body_node));
   unique_ptr<StmtNode> if_else_if_else_node(if_else_if_else_node_ptr);
   stmt_nodes.push_back(move(if_else_if_else_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t func_body_local_vars_count = UINT32_C(0);
@@ -3474,27 +3218,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
-      program_file_path,
       *if_else_if_else_node_ptr,
       *if_node_ptr,
       unique_ptr<DataType>(new BoolDataType()),
       func_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -3576,7 +3313,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(else_body_node));
   unique_ptr<StmtNode> if_else_if_else_node(if_else_if_else_node_ptr);
   stmt_nodes.push_back(move(if_else_if_else_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t func_body_local_vars_count = UINT32_C(0);
@@ -3636,34 +3373,28 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_expr_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new IfWithIncompatibleTypeError(
-      program_file_path,
       *if_else_if_else_node_ptr,
       *if_node_ptr2,
       unique_ptr<DataType>(new BoolDataType()),
       func_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Import) {
+  SemanticAnalysis::ProgramProblems problems;
   vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
   StringNode *file_path_node_ptr1 = new StringNode(TokenInfo(
-      Token::kStringLit, "\"import.rt\"", UINT32_C(1), UINT32_C(1)));
+      Token::kStringLit, "\"a.rt\"", UINT32_C(1), UINT32_C(1)));
   unique_ptr<StringNode> file_path_node1(file_path_node_ptr1);
   ImportNode *import_node_ptr1 = new ImportNode(
       TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
@@ -3672,200 +3403,91 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
   unique_ptr<StmtNode> import_node1(import_node_ptr1);
   main_program_stmt_nodes.push_back(move(import_node1));
 
+  IdNode *id_expr_node_ptr = new IdNode(
+      TokenInfo(Token::kName, "a", UINT32_C(3), UINT32_C(3)));
+  unique_ptr<ExprNode> id_expr_node(id_expr_node_ptr);
+  unique_ptr<StmtNode> id_stmt_node(new ExprStmtNode(
+      move(id_expr_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4))));
+  main_program_stmt_nodes.push_back(move(id_stmt_node));
+  unique_ptr<ProgramNode> main_program_node(
+      new ProgramNode(move(main_program_stmt_nodes)));
+  problems.insert(
+      make_pair(main_program_node.get(), SemanticAnalysis::Problems()));
+
+  SemanticAnalyzer::ImportPrograms import_program_nodes;
+  vector< unique_ptr<StmtNode> > import_program_stmt_nodes1;
   StringNode *file_path_node_ptr2 = new StringNode(TokenInfo(
-      Token::kStringLit, "\"./import.rt\"", UINT32_C(4), UINT32_C(4)));
+      Token::kStringLit, "\"b.rt\"", UINT32_C(1), UINT32_C(1)));
   unique_ptr<StringNode> file_path_node2(file_path_node_ptr2);
   ImportNode *import_node_ptr2 = new ImportNode(
-      TokenInfo(Token::kImport, "import", UINT32_C(3), UINT32_C(3)),
-      move(file_path_node2),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
-  unique_ptr<StmtNode> import_node2(import_node_ptr2);
-  main_program_stmt_nodes.push_back(move(import_node2));
-  shared_ptr<ProgramNode> main_program_node(
-      new ProgramNode(move(main_program_stmt_nodes)));
-
-  vector< unique_ptr<StmtNode> > import_program_stmt_nodes1;
-  StringNode *file_path_node_ptr3 = new StringNode(TokenInfo(
-      Token::kStringLit, "\"main.rt\"", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<StringNode> file_path_node3(file_path_node_ptr3);
-  ImportNode *import_node_ptr3 = new ImportNode(
       TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
-      move(file_path_node3),
+      move(file_path_node2),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> import_node3(import_node_ptr3);
-  import_program_stmt_nodes1.push_back(move(import_node3));
-
-  StringNode *file_path_node_ptr4 = new StringNode(TokenInfo(
-      Token::kStringLit, "\"import2.rt\"", UINT32_C(4), UINT32_C(4)));
-  unique_ptr<StringNode> file_path_node4(file_path_node_ptr4);
-  ImportNode *import_node_ptr4 = new ImportNode(
-      TokenInfo(Token::kImport, "import", UINT32_C(3), UINT32_C(3)),
-      move(file_path_node4),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
-  unique_ptr<StmtNode> import_node4(import_node_ptr4);
-  import_program_stmt_nodes1.push_back(move(import_node4));
+  unique_ptr<StmtNode> import_node2(import_node_ptr2);
+  import_program_stmt_nodes1.push_back(move(import_node2));
 
   unique_ptr<DataTypeNode> var_data_type_node1(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(6), UINT32_C(6))));
+      TokenInfo(Token::kIntType, "int", UINT32_C(3), UINT32_C(3))));
   VarDefWithoutInitNode *var_def_node_ptr1 = new VarDefWithoutInitNode(
       move(var_data_type_node1),
-      TokenInfo(Token::kName, "var1", UINT32_C(7), UINT32_C(7)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8)));
+      TokenInfo(Token::kName, "a", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
   unique_ptr<StmtNode> var_def_node1(var_def_node_ptr1);
   import_program_stmt_nodes1.push_back(move(var_def_node1));
 
-  unique_ptr<ExprNode> var_value_node2(new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(12), UINT32_C(12))));
-  unique_ptr<DataTypeNode> var_data_type_node2(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(9), UINT32_C(9))));
-  VarDefWithInitNode *var_def_node_ptr2 = new VarDefWithInitNode(
-      move(var_data_type_node2),
-      TokenInfo(Token::kName, "var2", UINT32_C(10), UINT32_C(10)),
-      TokenInfo(Token::kAssignOp, "=", UINT32_C(11), UINT32_C(11)),
-      move(var_value_node2),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(13), UINT32_C(13)));
-  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
-  import_program_stmt_nodes1.push_back(move(var_def_node2));
-
-  vector< unique_ptr<ArgDefNode> > arg_def_nodes1;
-  unique_ptr<DataTypeNode> arg_data_type_node1(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(17), UINT32_C(17))));
-  ArgDefNode *arg_def_node_ptr1 = new ArgDefNode(
-      move(arg_data_type_node1),
-      TokenInfo(Token::kName, "arg1", UINT32_C(18), UINT32_C(18)));
-  unique_ptr<ArgDefNode> arg_def_node1(arg_def_node_ptr1);
-  arg_def_nodes1.push_back(move(arg_def_node1));
-
-  vector< unique_ptr<StmtNode> > body_stmt_nodes1;
-  unique_ptr<ExprNode> lit_expr_node1(new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(21), UINT32_C(21))));
-  unique_ptr<StmtNode> lit_stmt_node1(new ExprStmtNode(
-      move(lit_expr_node1),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(22), UINT32_C(22))));
-  body_stmt_nodes1.push_back(move(lit_stmt_node1));
-  unique_ptr<ScopeNode> body_node1(new ScopeNode(
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(20), UINT32_C(20)),
-      move(body_stmt_nodes1),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(23), UINT32_C(23))));
-
-  unique_ptr<DataTypeNode> return_data_type_node1(new VoidDataTypeNode(
-      TokenInfo(Token::kVoidType, "void", UINT32_C(14), UINT32_C(14))));
-  FuncDefWithBodyNode *func_def_node_ptr1 = new FuncDefWithBodyNode(
-      vector<TokenInfo>(),
-      move(return_data_type_node1),
-      TokenInfo(Token::kName, "func1", UINT32_C(15), UINT32_C(15)),
-      TokenInfo(Token::kGroupStart, "(", UINT32_C(16), UINT32_C(16)),
-      move(arg_def_nodes1),
-      vector<TokenInfo>(),
-      TokenInfo(Token::kGroupEnd, ")", UINT32_C(19), UINT32_C(19)),
-      move(body_node1));
-  unique_ptr<StmtNode> func_def_node1(func_def_node_ptr1);
-  import_program_stmt_nodes1.push_back(move(func_def_node1));
-
-  unique_ptr<ExprNode> lit_expr_node2(new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(24), UINT32_C(24))));
-  unique_ptr<StmtNode> lit_stmt_node2(new ExprStmtNode(
-      move(lit_expr_node2),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(25), UINT32_C(25))));
-  import_program_stmt_nodes1.push_back(move(lit_stmt_node2));
-  shared_ptr<ProgramNode> import_program_node1(
+  IdNode *id_expr_node_ptr2 = new IdNode(
+      TokenInfo(Token::kName, "b", UINT32_C(6), UINT32_C(6)));
+  unique_ptr<ExprNode> id_expr_node2(id_expr_node_ptr2);
+  unique_ptr<StmtNode> id_stmt_node2(new ExprStmtNode(
+      move(id_expr_node2),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7))));
+  import_program_stmt_nodes1.push_back(move(id_stmt_node2));
+  unique_ptr<ProgramNode> import_program_node1(
       new ProgramNode(move(import_program_stmt_nodes1)));
+  problems.insert(
+      make_pair(import_program_node1.get(), SemanticAnalysis::Problems()));
+  import_program_nodes.push_back(move(import_program_node1));
 
   vector< unique_ptr<StmtNode> > import_program_stmt_nodes2;
-  StringNode *file_path_node_ptr5 = new StringNode(TokenInfo(
-      Token::kStringLit, "\"import.rt\"", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<StringNode> file_path_node5(file_path_node_ptr5);
-  ImportNode *import_node_ptr5 = new ImportNode(
-      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
-      move(file_path_node5),
+  unique_ptr<DataTypeNode> var_data_type_node2(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(var_data_type_node2),
+      TokenInfo(Token::kName, "b", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> import_node5(import_node_ptr5);
-  import_program_stmt_nodes2.push_back(move(import_node5));
-
-  unique_ptr<DataTypeNode> var_data_type_node3(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(3), UINT32_C(3))));
-  VarDefWithoutInitNode *var_def_node_ptr3 = new VarDefWithoutInitNode(
-      move(var_data_type_node3),
-      TokenInfo(Token::kName, "var3", UINT32_C(4), UINT32_C(4)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
-  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
-  import_program_stmt_nodes2.push_back(move(var_def_node3));
-  shared_ptr<ProgramNode> import_program_node2(
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  import_program_stmt_nodes2.push_back(move(var_def_node2));
+  unique_ptr<ProgramNode> import_program_node2(
       new ProgramNode(move(import_program_stmt_nodes2)));
-
-  vector<TestFileParse> test_file_parses;
-  path import_program_absolute_file_path1("/myproject/import.rt");
-  TestFileParse test_file_parse1 =
-      {import_program_absolute_file_path1, import_program_node1};
-  test_file_parses.push_back(test_file_parse1);
-  path import_program_absolute_file_path2("/myproject/import2.rt");
-  TestFileParse test_file_parse2 =
-      {import_program_absolute_file_path2, import_program_node2};
-  test_file_parses.push_back(test_file_parse2);
-
-  vector<TestImportFileSearch> test_import_file_searches;
-  path import_relative_file_path1("import.rt");
-  path import_absolute_file_path1 = import_program_absolute_file_path1;
-  TestImportFileSearch test_import_file_search1 =
-      {import_relative_file_path1, import_absolute_file_path1};
-  test_import_file_searches.push_back(test_import_file_search1);
-  path import_relative_file_path2("./import.rt");
-  path import_absolute_file_path2 = import_program_absolute_file_path1;
-  TestImportFileSearch test_import_file_search2 =
-      {import_relative_file_path2, import_absolute_file_path2};
-  test_import_file_searches.push_back(test_import_file_search2);
-  path import_relative_file_path3("main.rt");
-  path main_program_absolute_file_path("/myproject/main.rt");
-  path import_absolute_file_path3 = main_program_absolute_file_path;
-  TestImportFileSearch test_import_file_search3 =
-      {import_relative_file_path3, import_absolute_file_path3};
-  test_import_file_searches.push_back(test_import_file_search3);
-  path import_relative_file_path4("import2.rt");
-  path import_absolute_file_path4 = import_program_absolute_file_path2;
-  TestImportFileSearch test_import_file_search4 =
-      {import_relative_file_path4, import_absolute_file_path4};
-  test_import_file_searches.push_back(test_import_file_search4);
-  path import_relative_file_path5("import.rt");
-  path import_absolute_file_path5 = import_program_absolute_file_path1;
-  TestImportFileSearch test_import_file_search5 =
-      {import_relative_file_path5, import_absolute_file_path5};
-  test_import_file_searches.push_back(test_import_file_search5);
+  problems.insert(
+      make_pair(import_program_node2.get(), SemanticAnalysis::Problems()));
+  import_program_nodes.push_back(move(import_program_node2));
 
   TestLitParses test_lit_parses = {};
-  test_lit_parses.strings = {{"\"import.rt\"", "import.rt"},
-                             {"\"./import.rt\"", "./import.rt"},
-                             {"\"main.rt\"", "main.rt"},
-                             {"\"import2.rt\"", "import2.rt"},
-                             {"\"import.rt\"", "import.rt"}};
+  test_lit_parses.strings = {{"\"a.rt\"", "a.rt"}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  unique_ptr<DataType> id_data_type(new IntDataType());
+  unique_ptr<DataType> id_casted_data_type;
+  bool is_id_assignee = false;
+  unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+      move(id_data_type),
+      move(id_casted_data_type),
+      ValueType::kLeft,
+      var_def_node_ptr1,
+      is_id_assignee));
+  node_analyzes.insert(make_pair(id_expr_node_ptr, move(id_analysis)));
+
   unique_ptr<DataType> var_data_type1(new IntDataType());
   unique_ptr<NodeSemanticAnalysis> var_def_analysis1(
       new GlobalVarDefAnalysis(move(var_data_type1)));
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
-  unique_ptr<DataType> var_data_type2(new IntDataType());
+  unique_ptr<DataType> var_data_type2(new LongDataType());
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(
       new GlobalVarDefAnalysis(move(var_data_type2)));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-
-  unique_ptr<DataType> func_return_data_type1(new VoidDataType());
-  vector< unique_ptr<DataType> > func_arg_data_types1;
-  func_arg_data_types1.push_back(unique_ptr<DataType>(new LongDataType()));
-  bool is_func_native = false;
-  unique_ptr<FuncDataType> func_data_type1(new FuncDataType(
-      move(func_return_data_type1),
-      move(func_arg_data_types1),
-      is_func_native));
-  bool is_func_has_return = false;
-  unique_ptr<NodeSemanticAnalysis> func_def_analysis1(
-      new FuncDefAnalysis(move(func_data_type1), is_func_has_return));
-  node_analyzes.insert(make_pair(func_def_node_ptr1, move(func_def_analysis1)));
-
-  unique_ptr<DataType> var_data_type3(new IntDataType());
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(
-      new GlobalVarDefAnalysis(move(var_data_type3)));
-  node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> file_path_expr_data_type1(new StringDataType());
   unique_ptr<DataType> file_path_expr_casted_data_type1;
@@ -3873,79 +3495,20 @@ TEST_F(SimpleSemanticAnalyzerTest, Import) {
       move(file_path_expr_data_type1),
       move(file_path_expr_casted_data_type1),
       ValueType::kRight,
-      unique_ptr<Lit>(new StringLit("import.rt"))));
+      unique_ptr<Lit>(new StringLit("a.rt"))));
   node_analyzes.insert(
       make_pair(file_path_node_ptr1, move(file_path_lit_analysis1)));
 
-  unique_ptr<DataType> file_path_expr_data_type2(new StringDataType());
-  unique_ptr<DataType> file_path_expr_casted_data_type2;
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis2(new LitAnalysis(
-      move(file_path_expr_data_type2),
-      move(file_path_expr_casted_data_type2),
-      ValueType::kRight,
-      unique_ptr<Lit>(new StringLit("./import.rt"))));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr2, move(file_path_lit_analysis2)));
-
-  unique_ptr<DataType> file_path_expr_data_type3(new StringDataType());
-  unique_ptr<DataType> file_path_expr_casted_data_type3;
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis3(new LitAnalysis(
-      move(file_path_expr_data_type3),
-      move(file_path_expr_casted_data_type3),
-      ValueType::kRight,
-      unique_ptr<Lit>(new StringLit("main.rt"))));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr3, move(file_path_lit_analysis3)));
-
-  unique_ptr<DataType> file_path_expr_data_type4(new StringDataType());
-  unique_ptr<DataType> file_path_expr_casted_data_type4;
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis4(new LitAnalysis(
-      move(file_path_expr_data_type4),
-      move(file_path_expr_casted_data_type4),
-      ValueType::kRight,
-      unique_ptr<Lit>(new StringLit("import2.rt"))));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr4, move(file_path_lit_analysis4)));
-
-  unique_ptr<DataType> file_path_expr_data_type5(new StringDataType());
-  unique_ptr<DataType> file_path_expr_casted_data_type5;
-  unique_ptr<NodeSemanticAnalysis> file_path_lit_analysis5(new LitAnalysis(
-      move(file_path_expr_data_type5),
-      move(file_path_expr_casted_data_type5),
-      ValueType::kRight,
-      unique_ptr<Lit>(new StringLit("import.rt"))));
-  node_analyzes.insert(
-      make_pair(file_path_node_ptr5, move(file_path_lit_analysis5)));
-
-  unique_ptr<NodeSemanticAnalysis> import_analysis1(
-      new ImportAnalysis(import_program_node1));
-  node_analyzes.insert(make_pair(import_node_ptr1, move(import_analysis1)));
-  unique_ptr<NodeSemanticAnalysis> import_analysis2(
-      new ImportAnalysis(import_program_node1));
-  node_analyzes.insert(make_pair(import_node_ptr2, move(import_analysis2)));
-  unique_ptr<NodeSemanticAnalysis> import_analysis3(
-      new ImportAnalysis(main_program_node));
-  node_analyzes.insert(make_pair(import_node_ptr3, move(import_analysis3)));
-  unique_ptr<NodeSemanticAnalysis> import_analysis4(
-      new ImportAnalysis(import_program_node2));
-  node_analyzes.insert(make_pair(import_node_ptr4, move(import_analysis4)));
-  unique_ptr<NodeSemanticAnalysis> import_analysis5(
-      new ImportAnalysis(import_program_node1));
-  node_analyzes.insert(make_pair(import_node_ptr5, move(import_analysis5)));
-
-  SemanticAnalysis::Problems problems;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestProgram test_program = {move(main_program_node),
-                              main_program_absolute_file_path,
+                              move(import_program_nodes),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, ImportAfterAnyOtherStmtIsInvalid) {
+  SemanticAnalysis::ProgramProblems problems;
   vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node1(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
@@ -3957,7 +3520,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportAfterAnyOtherStmtIsInvalid) {
   main_program_stmt_nodes.push_back(move(var_def_node1));
 
   StringNode *file_path_node_ptr = new StringNode(
-      TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(4), UINT32_C(4)));
+      TokenInfo(Token::kStringLit, "\"import.rt\"", UINT32_C(4), UINT32_C(4)));
   unique_ptr<StringNode> file_path_node(file_path_node_ptr);
   ImportNode *import_node_ptr = new ImportNode(
       TokenInfo(Token::kImport, "import", UINT32_C(3), UINT32_C(3)),
@@ -3965,20 +3528,25 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportAfterAnyOtherStmtIsInvalid) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
   unique_ptr<StmtNode> import_node(import_node_ptr);
   main_program_stmt_nodes.push_back(move(import_node));
-  shared_ptr<ProgramNode> main_program_node(
+  unique_ptr<ProgramNode> main_program_node(
       new ProgramNode(move(main_program_stmt_nodes)));
 
+  SemanticAnalyzer::ImportPrograms import_program_nodes;
   vector< unique_ptr<StmtNode> > import_program_stmt_nodes;
-  unique_ptr<DataTypeNode> var_data_type_node2(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
-      move(var_data_type_node2),
-      TokenInfo(Token::kName, "var2", UINT32_C(1), UINT32_C(1)),
+  StringNode *file_path_node_ptr2 = new StringNode(
+      TokenInfo(Token::kStringLit, "\"import2.rt\"", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<StringNode> file_path_node2(file_path_node_ptr2);
+  ImportNode *import_node_ptr2 = new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
+      move(file_path_node2),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
-  import_program_stmt_nodes.push_back(move(var_def_node2));
-  shared_ptr<ProgramNode> import_program_node(
+  unique_ptr<StmtNode> import_node2(import_node_ptr2);
+  import_program_stmt_nodes.push_back(move(import_node2));
+  unique_ptr<ProgramNode> import_program_node(
       new ProgramNode(move(import_program_stmt_nodes)));
+  problems.insert(
+      make_pair(import_program_node.get(), SemanticAnalysis::Problems()));
+  import_program_nodes.push_back(move(import_program_node));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> var_data_type1(new IntDataType());
@@ -3986,461 +3554,17 @@ TEST_F(SimpleSemanticAnalyzerTest, ImportAfterAnyOtherStmtIsInvalid) {
       new GlobalVarDefAnalysis(move(var_data_type1)));
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
-  SemanticAnalysis::Problems problems;
-  path file_path;
   unique_ptr<SemanticProblem> problem(
-      new ImportIsNotFirstStmtError(file_path, *import_node_ptr));
-  problems.push_back(move(problem));
+      new ImportIsNotFirstStmtError(*import_node_ptr));
+  problems[main_program_node.get()].push_back(move(problem));
 
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
   TestLitParses test_lit_parses = {};
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  path main_program_file_path;
-  TestProgram test_program = {main_program_node,
-                              main_program_file_path,
+  TestProgram test_program = {move(main_program_node),
+                              move(import_program_nodes),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
-}
-
-TEST_F(SimpleSemanticAnalyzerTest, UnexpectedCharDuringImportFileParse) {
-  struct FailingTestFileParse {
-    path absolute_file_path;
-    Lexer::UnexpectedCharError error;
-  };
-
-  vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
-  StringNode *file_path_node_ptr = new StringNode(
-      TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<StringNode> file_path_node(file_path_node_ptr);
-  ImportNode *import_node_ptr = new ImportNode(
-      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
-      move(file_path_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> import_node(import_node_ptr);
-  main_program_stmt_nodes.push_back(move(import_node));
-  shared_ptr<ProgramNode> main_program_node(
-      new ProgramNode(move(main_program_stmt_nodes)));
-
-  vector<TestImportFileSearch> test_import_file_searches;
-  path import_relative_file_path("file.rt");
-  path import_absolute_file_path("/myproject/file.rt");
-  TestImportFileSearch test_import_file_search1 =
-      {import_relative_file_path, import_absolute_file_path};
-  test_import_file_searches.push_back(test_import_file_search1);
-
-  vector<FailingTestFileParse> test_file_parses;
-  char unexpected_char = '$';
-  uint32_t unexpected_char_line = UINT32_C(7);
-  uint32_t unexpected_char_column = UINT32_C(7);
-  Lexer::UnexpectedCharError file_parse_error(
-      unexpected_char, unexpected_char_line, unexpected_char_column, "test");
-  FailingTestFileParse test_file_parse1 =
-      {import_absolute_file_path, file_parse_error};
-  test_file_parses.push_back(test_file_parse1);
-
-  string expected_msg =
-      (format("Unexpected char; char=%1%; line=%2%; column=%3%; file_path=%4%")
-       % unexpected_char
-       % unexpected_char_line
-       % unexpected_char_column
-       % import_absolute_file_path).str();
-  SimpleSemanticAnalyzer::UnexpectedCharError expected_error(
-      file_parse_error, import_absolute_file_path, expected_msg);
-
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
-
-  ImportFileSearcherMock *import_file_searcher_mock =
-      new ImportFileSearcherMock();
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      import_file_searcher_mock);
-
-  for (const TestImportFileSearch &test_import_file_search:
-           test_import_file_searches) {
-    EXPECT_CALL(*import_file_searcher_mock,
-                Search(test_import_file_search.relative_file_path))
-        .Times(1)
-        .WillOnce(Return(test_import_file_search.absolute_file_path))
-        .RetiresOnSaturation();
-  }
-
-  LitParserMock *lit_parser_mock = new LitParserMock();
-  unique_ptr<LitParser> lit_parser(lit_parser_mock);
-
-  for (const TestLitParse<string> &test_lit_parse:
-           test_lit_parses.strings) {
-    EXPECT_CALL(*lit_parser_mock, ParseString(test_lit_parse.str))
-        .Times(1)
-        .WillOnce(Return(test_lit_parse.value))
-        .RetiresOnSaturation();
-  }
-
-  FileParserMock *file_parser_mock = new FileParserMock();
-  unique_ptr<FileParser> file_parser(file_parser_mock);
-
-  for (const FailingTestFileParse &test_file_parse:
-           test_file_parses) {
-    EXPECT_CALL(*file_parser_mock,
-                Parse(test_file_parse.absolute_file_path))
-        .Times(1)
-        .WillOnce(Throw(test_file_parse.error))
-        .RetiresOnSaturation();
-  }
-
-  path main_program_file_path;
-  SimpleSemanticAnalyzer analyzer(main_program_node,
-                                  main_program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-
-  try {
-    analyzer.Analyze();
-    FAIL();
-  } catch (const SimpleSemanticAnalyzer::UnexpectedCharError &actual_error) {
-    ASSERT_EQ(expected_error, actual_error);
-  }
-}
-
-TEST_F(SimpleSemanticAnalyzerTest, UnexpectedTokenDuringImportFileParse) {
-  struct FailingTestFileParse {
-    path absolute_file_path;
-    Parser::UnexpectedTokenError error;
-  };
-
-  vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
-  StringNode *file_path_node_ptr = new StringNode(
-      TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<StringNode> file_path_node(file_path_node_ptr);
-  ImportNode *import_node_ptr = new ImportNode(
-      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
-      move(file_path_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> import_node(import_node_ptr);
-  main_program_stmt_nodes.push_back(move(import_node));
-  shared_ptr<ProgramNode> main_program_node(
-      new ProgramNode(move(main_program_stmt_nodes)));
-
-  vector<TestImportFileSearch> test_import_file_searches;
-  path import_relative_file_path("file.rt");
-  path import_absolute_file_path("/myproject/file.rt");
-  TestImportFileSearch test_import_file_search1 =
-      {import_relative_file_path, import_absolute_file_path};
-  test_import_file_searches.push_back(test_import_file_search1);
-
-  vector<FailingTestFileParse> test_file_parses;
-  TokenInfo unexpected_token(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0));
-  Parser::UnexpectedTokenError file_parse_error(unexpected_token, "test");
-  FailingTestFileParse test_file_parse1 =
-      {import_absolute_file_path, file_parse_error};
-  test_file_parses.push_back(test_file_parse1);
-
-  string expected_msg =
-      (format("Unexpected token; token=%1%; file_path=%2%")
-       % unexpected_token % import_absolute_file_path).str();
-  SimpleSemanticAnalyzer::UnexpectedTokenError expected_error(
-      file_parse_error, import_absolute_file_path, expected_msg);
-
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
-
-  ImportFileSearcherMock *import_file_searcher_mock =
-      new ImportFileSearcherMock();
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      import_file_searcher_mock);
-
-  for (const TestImportFileSearch &test_import_file_search:
-           test_import_file_searches) {
-    EXPECT_CALL(*import_file_searcher_mock,
-                Search(test_import_file_search.relative_file_path))
-        .Times(1)
-        .WillOnce(Return(test_import_file_search.absolute_file_path))
-        .RetiresOnSaturation();
-  }
-
-  LitParserMock *lit_parser_mock = new LitParserMock();
-  unique_ptr<LitParser> lit_parser(lit_parser_mock);
-
-  for (const TestLitParse<string> &test_lit_parse:
-           test_lit_parses.strings) {
-    EXPECT_CALL(*lit_parser_mock, ParseString(test_lit_parse.str))
-        .Times(1)
-        .WillOnce(Return(test_lit_parse.value))
-        .RetiresOnSaturation();
-  }
-
-  FileParserMock *file_parser_mock = new FileParserMock();
-  unique_ptr<FileParser> file_parser(file_parser_mock);
-
-  for (const FailingTestFileParse &test_file_parse:
-           test_file_parses) {
-    EXPECT_CALL(*file_parser_mock,
-                Parse(test_file_parse.absolute_file_path))
-        .Times(1)
-        .WillOnce(Throw(test_file_parse.error))
-        .RetiresOnSaturation();
-  }
-
-  path main_program_file_path;
-  SimpleSemanticAnalyzer analyzer(main_program_node,
-                                  main_program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-
-  try {
-    analyzer.Analyze();
-    FAIL();
-  } catch (const SimpleSemanticAnalyzer::UnexpectedTokenError &actual_error) {
-    ASSERT_EQ(expected_error, actual_error);
-  }
-}
-
-TEST_F(SimpleSemanticAnalyzerTest, IOErrorDuringImportFileParse) {
-  struct FailingTestFileParse {
-    path absolute_file_path;
-    util::IOError error;
-  };
-
-  vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
-  StringNode *file_path_node_ptr = new StringNode(
-      TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<StringNode> file_path_node(file_path_node_ptr);
-  ImportNode *import_node_ptr = new ImportNode(
-      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
-      move(file_path_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> import_node(import_node_ptr);
-  main_program_stmt_nodes.push_back(move(import_node));
-  shared_ptr<ProgramNode> main_program_node(
-      new ProgramNode(move(main_program_stmt_nodes)));
-
-  vector<TestImportFileSearch> test_import_file_searches;
-  path import_relative_file_path("file.rt");
-  path import_absolute_file_path("/myproject/file.rt");
-  TestImportFileSearch test_import_file_search1 =
-      {import_relative_file_path, import_absolute_file_path};
-  test_import_file_searches.push_back(test_import_file_search1);
-
-  vector<FailingTestFileParse> test_file_parses;
-  util::IOError file_parse_error("test");
-  FailingTestFileParse test_file_parse1 =
-      {import_absolute_file_path, file_parse_error};
-  test_file_parses.push_back(test_file_parse1);
-
-  string expected_msg = (format("IO error; file_path=%1%")
-                         % import_absolute_file_path).str();
-  SimpleSemanticAnalyzer::IOError expected_error(
-      import_absolute_file_path, expected_msg);
-
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
-
-  ImportFileSearcherMock *import_file_searcher_mock =
-      new ImportFileSearcherMock();
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      import_file_searcher_mock);
-
-  for (const TestImportFileSearch &test_import_file_search:
-           test_import_file_searches) {
-    EXPECT_CALL(*import_file_searcher_mock,
-                Search(test_import_file_search.relative_file_path))
-        .Times(1)
-        .WillOnce(Return(test_import_file_search.absolute_file_path))
-        .RetiresOnSaturation();
-  }
-
-  LitParserMock *lit_parser_mock = new LitParserMock();
-  unique_ptr<LitParser> lit_parser(lit_parser_mock);
-
-  for (const TestLitParse<string> &test_lit_parse:
-           test_lit_parses.strings) {
-    EXPECT_CALL(*lit_parser_mock, ParseString(test_lit_parse.str))
-        .Times(1)
-        .WillOnce(Return(test_lit_parse.value))
-        .RetiresOnSaturation();
-  }
-
-  FileParserMock *file_parser_mock = new FileParserMock();
-  unique_ptr<FileParser> file_parser(file_parser_mock);
-
-  for (const FailingTestFileParse &test_file_parse:
-           test_file_parses) {
-    EXPECT_CALL(*file_parser_mock,
-                Parse(test_file_parse.absolute_file_path))
-        .Times(1)
-        .WillOnce(Throw(test_file_parse.error))
-        .RetiresOnSaturation();
-  }
-
-  path main_program_file_path;
-  SimpleSemanticAnalyzer analyzer(main_program_node,
-                                  main_program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-
-  try {
-    analyzer.Analyze();
-    FAIL();
-  } catch (const SimpleSemanticAnalyzer::IOError &actual_error) {
-    ASSERT_EQ(expected_error, actual_error);
-  }
-}
-
-TEST_F(SimpleSemanticAnalyzerTest, IOErrorDuringImportFileSearch) {
-  struct FailingTestImportFileSearch {
-    path relative_file_path;
-    util::IOError error;
-  };
-
-  vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
-  StringNode *file_path_node_ptr = new StringNode(
-      TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<StringNode> file_path_node(file_path_node_ptr);
-  ImportNode *import_node_ptr = new ImportNode(
-      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
-      move(file_path_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> import_node(import_node_ptr);
-  main_program_stmt_nodes.push_back(move(import_node));
-  shared_ptr<ProgramNode> main_program_node(
-      new ProgramNode(move(main_program_stmt_nodes)));
-
-  vector<FailingTestImportFileSearch> test_import_file_searches;
-  path import_relative_file_path("file.rt");
-  util::IOError import_file_search_error("test");
-  FailingTestImportFileSearch test_import_file_search1 =
-      {import_relative_file_path, import_file_search_error};
-  test_import_file_searches.push_back(test_import_file_search1);
-
-  string expected_msg = (format("IO error; file_path=%1%")
-                         % import_relative_file_path).str();
-  SimpleSemanticAnalyzer::IOError expected_error(
-      import_relative_file_path, expected_msg);
-
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
-
-  ImportFileSearcherMock *import_file_searcher_mock =
-      new ImportFileSearcherMock();
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      import_file_searcher_mock);
-
-  for (const FailingTestImportFileSearch &test_import_file_search:
-           test_import_file_searches) {
-    EXPECT_CALL(*import_file_searcher_mock,
-                Search(test_import_file_search.relative_file_path))
-        .Times(1)
-        .WillOnce(Throw(test_import_file_search.error))
-        .RetiresOnSaturation();
-  }
-
-  LitParserMock *lit_parser_mock = new LitParserMock();
-  unique_ptr<LitParser> lit_parser(lit_parser_mock);
-
-  for (const TestLitParse<string> &test_lit_parse:
-           test_lit_parses.strings) {
-    EXPECT_CALL(*lit_parser_mock, ParseString(test_lit_parse.str))
-        .Times(1)
-        .WillOnce(Return(test_lit_parse.value))
-        .RetiresOnSaturation();
-  }
-
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  path main_program_file_path;
-  SimpleSemanticAnalyzer analyzer(main_program_node,
-                                  main_program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-
-  try {
-    analyzer.Analyze();
-    FAIL();
-  } catch (const SimpleSemanticAnalyzer::IOError &actual_error) {
-    ASSERT_EQ(expected_error, actual_error);
-  }
-}
-
-TEST_F(SimpleSemanticAnalyzerTest, FileNotFoundDuringImportFileSearch) {
-  struct FailingTestImportFileSearch {
-    path relative_file_path;
-    FileNotFoundError error;
-  };
-
-  vector< unique_ptr<StmtNode> > main_program_stmt_nodes;
-  StringNode *file_path_node_ptr = new StringNode(
-      TokenInfo(Token::kStringLit, "\"file.rt\"", UINT32_C(1), UINT32_C(1)));
-  unique_ptr<StringNode> file_path_node(file_path_node_ptr);
-  ImportNode *import_node_ptr = new ImportNode(
-      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
-      move(file_path_node),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
-  unique_ptr<StmtNode> import_node(import_node_ptr);
-  main_program_stmt_nodes.push_back(move(import_node));
-  shared_ptr<ProgramNode> main_program_node(
-      new ProgramNode(move(main_program_stmt_nodes)));
-
-  vector<FailingTestImportFileSearch> test_import_file_searches;
-  FileNotFoundError import_file_search_error("test");
-  path import_relative_file_path("file.rt");
-  FailingTestImportFileSearch test_import_file_search1 =
-      {import_relative_file_path, import_file_search_error};
-  test_import_file_searches.push_back(test_import_file_search1);
-
-  string expected_msg = (format("IO error; file_path=%1%")
-                         % import_relative_file_path).str();
-  SimpleSemanticAnalyzer::IOError expected_error(
-      import_relative_file_path, expected_msg);
-
-  TestLitParses test_lit_parses = {};
-  test_lit_parses.strings = {{"\"file.rt\"", "file.rt"}};
-
-  ImportFileSearcherMock *import_file_searcher_mock =
-      new ImportFileSearcherMock();
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      import_file_searcher_mock);
-
-  for (const FailingTestImportFileSearch &test_import_file_search:
-           test_import_file_searches) {
-    EXPECT_CALL(*import_file_searcher_mock,
-                Search(test_import_file_search.relative_file_path))
-        .Times(1)
-        .WillOnce(Throw(test_import_file_search.error))
-        .RetiresOnSaturation();
-  }
-
-  LitParserMock *lit_parser_mock = new LitParserMock();
-  unique_ptr<LitParser> lit_parser(lit_parser_mock);
-
-  for (const TestLitParse<string> &test_lit_parse:
-           test_lit_parses.strings) {
-    EXPECT_CALL(*lit_parser_mock, ParseString(test_lit_parse.str))
-        .Times(1)
-        .WillOnce(Return(test_lit_parse.value))
-        .RetiresOnSaturation();
-  }
-
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  path main_program_file_path;
-  SimpleSemanticAnalyzer analyzer(main_program_node,
-                                  main_program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-
-  try {
-    analyzer.Analyze();
-    FAIL();
-  } catch (const SimpleSemanticAnalyzer::IOError &actual_error) {
-    ASSERT_EQ(expected_error, actual_error);
-  }
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
@@ -4479,7 +3603,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(6)),
       move(body_node)));
   stmt_nodes.push_back(move(loop_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(1);
@@ -4509,19 +3633,15 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -4562,7 +3682,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(loop_body_node));
   unique_ptr<StmtNode> loop_node(loop_node_ptr);
   stmt_nodes.push_back(move(loop_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t func_body_local_vars_count = UINT32_C(0);
@@ -4599,26 +3719,19 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new PreTestLoopWithIncompatibleTypeError(
-      program_file_path,
       *loop_node_ptr,
       unique_ptr<DataType>(new BoolDataType()),
       id_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -4674,7 +3787,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(6)),
       move(body_node)));
   stmt_nodes.push_back(move(loop_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(2);
@@ -4715,19 +3828,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -4738,26 +3847,20 @@ TEST_F(SimpleSemanticAnalyzerTest, ContinueNotWithinLoopIsInvalid) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1)));
   unique_ptr<StmtNode> continue_node(continue_node_ptr);
   stmt_nodes.push_back(move(continue_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new ContinueNotWithinLoopError(
-      program_file_path, *continue_node_ptr));
-  problems.push_back(move(problem));
+      *continue_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -4813,7 +3916,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(6)),
       move(body_node)));
   stmt_nodes.push_back(move(loop_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(2);
@@ -4854,19 +3957,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -4877,26 +3976,20 @@ TEST_F(SimpleSemanticAnalyzerTest, BreakNotWithinLoopIsInvalid) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1)));
   unique_ptr<StmtNode> break_node(break_node_ptr);
   stmt_nodes.push_back(move(break_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BreakNotWithinLoopError(
-      program_file_path, *break_node_ptr));
-  problems.push_back(move(problem));
+      *break_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -4926,7 +4019,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithId) {
       move(assign_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
   stmt_nodes.push_back(move(assign_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.chars = {{"'a'", 'a'}};
@@ -4964,18 +4057,14 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithId) {
       unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5027,7 +4116,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithSubscript) {
       move(assign_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(14), UINT32_C(14))));
   stmt_nodes.push_back(move(assign_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> array_data_type(new ArrayDataType(
@@ -5082,18 +4171,14 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithSubscript) {
   TestLitParses test_lit_parses = {};
   test_lit_parses.chars = {{"'a'", 'a'}};
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5123,7 +4208,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithUnsupportedDataTypesIsInvalid) {
       move(assign_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
   stmt_nodes.push_back(move(assign_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"7\"", "7"}};
@@ -5156,25 +4241,18 @@ TEST_F(SimpleSemanticAnalyzerTest, AssignWithUnsupportedDataTypesIsInvalid) {
       unique_ptr<Lit>(new StringLit("7"))));
   node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *assign_node_ptr,
       id_data_type_ptr->Clone(),
       lit_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5196,7 +4274,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(assign_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(assign_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"1\"", "1"}};
@@ -5211,22 +4289,16 @@ TEST_F(SimpleSemanticAnalyzerTest,
       unique_ptr<Lit>(new StringLit("1"))));
   node_analyzes.insert(make_pair(lit_node_ptr1, move(lit_analysis1)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new AssignWithRightValueAssigneeError(
-      program_file_path, *assign_node_ptr));
-  problems.push_back(move(problem));
+      *assign_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5247,7 +4319,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Less) {
       move(less_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(less_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"1", INT32_C(1)}};
@@ -5278,18 +4350,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Less) {
       move(less_data_type), move(less_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(less_node_ptr, move(less_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5354,7 +4422,7 @@ TEST_F(SimpleSemanticAnalyzerTest, LessWithUnsupportedDataTypesIsInvalid) {
         move(less_node),
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8))));
     stmt_nodes.push_back(move(less_stmt_node));
-    shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+    unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
@@ -5381,26 +4449,19 @@ TEST_F(SimpleSemanticAnalyzerTest, LessWithUnsupportedDataTypesIsInvalid) {
         is_id_assignee2));
     node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-    SemanticAnalysis::Problems problems;
-    path program_file_path;
+    SemanticAnalysis::ProgramProblems problems;
     unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-        program_file_path,
         *less_node_ptr,
         test_data.var_data_type->Clone(),
         test_data.var_data_type->Clone()));
-    problems.push_back(move(problem));
+    problems[program_node.get()].push_back(move(problem));
 
     SemanticAnalysis analysis(move(problems), move(node_analyzes));
     TestLitParses test_lit_parses = {};
-    vector<TestFileParse> test_file_parses;
-    vector<TestImportFileSearch> test_import_file_searches;
-    TestProgram test_program = {program_node,
-                                program_file_path,
+    TestProgram test_program = {move(program_node),
+                                SemanticAnalyzer::ImportPrograms(),
                                 move(analysis),
-                                test_file_parses,
-                                test_import_file_searches,
                                 test_lit_parses};
-
     TestAnalyze(test_program);
   }
 }
@@ -5422,7 +4483,7 @@ TEST_F(SimpleSemanticAnalyzerTest, And) {
       move(and_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(and_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.bools = {{"true", true},
@@ -5453,18 +4514,14 @@ TEST_F(SimpleSemanticAnalyzerTest, And) {
       move(and_data_type), move(and_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(and_node_ptr, move(and_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5504,7 +4561,7 @@ TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
       move(and_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(and_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -5544,26 +4601,19 @@ TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *and_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5584,7 +4634,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Or) {
       move(or_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(or_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.bools = {{"true", true},
@@ -5615,18 +4665,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Or) {
       move(or_data_type), move(or_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(or_node_ptr, move(or_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5666,7 +4712,7 @@ TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
       move(or_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(or_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -5706,26 +4752,19 @@ TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *or_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5746,7 +4785,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Mul) {
       move(mul_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(mul_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"1", INT32_C(1)}};
@@ -5777,18 +4816,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Mul) {
       move(mul_data_type), move(mul_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(mul_node_ptr, move(mul_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5828,7 +4863,7 @@ TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
       move(mul_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(mul_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -5868,26 +4903,19 @@ TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *mul_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5908,7 +4936,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Div) {
       move(div_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(div_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"1", INT32_C(1)}};
@@ -5939,18 +4967,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Div) {
       move(div_data_type), move(div_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(div_node_ptr, move(div_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -5990,7 +5014,7 @@ TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
       move(div_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(div_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -6030,26 +5054,19 @@ TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *div_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6070,7 +5087,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Sum) {
       move(sum_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(sum_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"1", INT32_C(1)}};
@@ -6101,18 +5118,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Sum) {
       move(sum_data_type), move(sum_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(sum_node_ptr, move(sum_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6152,7 +5165,7 @@ TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
       move(sum_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(sum_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -6192,26 +5205,19 @@ TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *sum_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6232,7 +5238,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Sub) {
       move(sub_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(sub_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"1", INT32_C(1)}};
@@ -6263,18 +5269,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Sub) {
       move(sub_data_type), move(sub_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(sub_node_ptr, move(sub_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6314,7 +5316,7 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
       move(sub_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(sub_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -6354,26 +5356,19 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *sub_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6394,7 +5389,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Equal) {
       move(equal_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"2", INT32_C(2)}};
@@ -6425,18 +5420,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Equal) {
       move(equal_data_type), move(equal_casted_data_type), ValueType::kRight));
   node_analyzes.insert(make_pair(equal_node_ptr, move(equal_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6476,7 +5467,7 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
       move(equal_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -6516,26 +5507,19 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *equal_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6556,7 +5540,7 @@ TEST_F(SimpleSemanticAnalyzerTest, LessOrEqual) {
       move(less_or_equal_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(less_or_equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"2", INT32_C(2)}};
@@ -6590,18 +5574,14 @@ TEST_F(SimpleSemanticAnalyzerTest, LessOrEqual) {
   node_analyzes.insert(
       make_pair(less_or_equal_node_ptr, move(less_or_equal_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6642,7 +5622,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(less_or_equal_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(less_or_equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -6682,26 +5662,19 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *less_or_equal_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6722,7 +5695,7 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterOrEqual) {
       move(greater_or_equal_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(greater_or_equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"2", INT32_C(2)}};
@@ -6756,18 +5729,14 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterOrEqual) {
   node_analyzes.insert(make_pair(
       greater_or_equal_node_ptr, move(greater_or_equal_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6808,7 +5777,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(greater_or_equal_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(greater_or_equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -6848,26 +5817,19 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *greater_or_equal_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6888,7 +5850,7 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqual) {
       move(not_equal_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(not_equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"2", INT32_C(2)}};
@@ -6922,18 +5884,14 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqual) {
   node_analyzes.insert(
       make_pair(not_equal_node_ptr, move(not_equal_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -6973,7 +5931,7 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
       move(not_equal_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(not_equal_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -7013,26 +5971,19 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *not_equal_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7053,7 +6004,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Greater) {
       move(greater_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
   stmt_nodes.push_back(move(greater_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"2", INT32_C(2)}};
@@ -7087,18 +6038,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Greater) {
   node_analyzes.insert(
       make_pair(greater_node_ptr, move(greater_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7138,7 +6085,7 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
       move(greater_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(greater_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -7178,26 +6125,19 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
       is_id_assignee2));
   node_analyzes.insert(make_pair(id_node_ptr2, move(id_analysis2)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new BinaryExprWithUnsupportedTypesError(
-      program_file_path,
       *greater_node_ptr,
       func_data_type.Clone(),
       func_data_type.Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7223,7 +6163,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithoutInit) {
       move(alloc_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.chars = {{"'a'", 'a'}};
@@ -7246,18 +6186,14 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithoutInit) {
       unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7288,26 +6224,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(alloc_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1000), UINT32_C(1000))));
   stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new ArrayAllocWithTooManyDimensionsError(
-      program_file_path, *alloc_node_ptr, max_dimensions_count));
-  problems.push_back(move(problem));
+      *alloc_node_ptr, max_dimensions_count));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7335,7 +6265,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(alloc_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"1\"", "1"}};
@@ -7351,26 +6281,19 @@ TEST_F(SimpleSemanticAnalyzerTest,
       unique_ptr<Lit>(new StringLit("1"))));
   node_analyzes.insert(make_pair(size_value_node_ptr, move(size_lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(
       new ArrayAllocWithUnsupportedSizeTypeError(
-          program_file_path,
           *alloc_node_ptr,
           *size_node_ptr,
           size_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7397,28 +6320,22 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(alloc_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<DataType> element_data_type(new VoidDataType());
   unique_ptr<SemanticProblem> problem(
       new ArrayAllocWithUnsupportedElementTypeError(
-          program_file_path, *alloc_node_ptr, move(element_data_type)));
-  problems.push_back(move(problem));
+          *alloc_node_ptr, move(element_data_type)));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7449,7 +6366,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
       move(alloc_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8))));
   stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.chars = {{"'a'", 'a'}};
@@ -7473,18 +6390,14 @@ TEST_F(SimpleSemanticAnalyzerTest, ArrayAllocWithInit) {
       unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(value_node_ptr, move(value_lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7516,26 +6429,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(alloc_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1002), UINT32_C(1002))));
   stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new ArrayAllocWithTooManyDimensionsError(
-      program_file_path, *alloc_node_ptr, max_dimensions_count));
-  problems.push_back(move(problem));
+      *alloc_node_ptr, max_dimensions_count));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7567,28 +6474,22 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(alloc_expr_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<DataType> element_data_type(new VoidDataType());
   unique_ptr<SemanticProblem> problem(
       new ArrayAllocWithUnsupportedElementTypeError(
-          program_file_path, *alloc_node_ptr, move(element_data_type)));
-  problems.push_back(move(problem));
+          *alloc_node_ptr, move(element_data_type)));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7620,7 +6521,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(alloc_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8))));
   stmt_nodes.push_back(move(alloc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"2\"", "2"}};
@@ -7636,28 +6537,21 @@ TEST_F(SimpleSemanticAnalyzerTest,
       unique_ptr<Lit>(new StringLit("2"))));
   node_analyzes.insert(make_pair(value_node_ptr, move(value_lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   size_t bad_value_index = 0;
   unique_ptr<SemanticProblem> problem(
       new ArrayAllocWithIncompatibleValueTypeError(
-          program_file_path,
           *alloc_node_ptr,
           bad_value_index,
           unique_ptr<DataType>(new IntDataType()),
           value_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7692,7 +6586,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
       move(subscript_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(subscript_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.chars = {{"'a'", 'a'}};
@@ -7737,18 +6631,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Subscript) {
   node_analyzes.insert(
       make_pair(subscript_node_ptr, move(subscript_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7780,7 +6670,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(subscript_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7))));
   stmt_nodes.push_back(move(subscript_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> var_data_type(new LongDataType());
@@ -7799,23 +6689,17 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(
-      new SubscriptWithNonArrayError(program_file_path, *subscript_node_ptr));
-  problems.push_back(move(problem));
+      new SubscriptWithNonArrayError(*subscript_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7851,7 +6735,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(subscript_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   stmt_nodes.push_back(move(subscript_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"1\"", "1"}};
@@ -7885,25 +6769,18 @@ TEST_F(SimpleSemanticAnalyzerTest,
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(
       new SubscriptWithUnsupportedIndexTypeError(
-          program_file_path,
           *subscript_node_ptr,
           index_data_type_ptr->Clone()));
-  problems.push_back(move(problem));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7925,7 +6802,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Id) {
       move(id_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4))));
   stmt_nodes.push_back(move(id_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<DataType> var_data_type(new LongDataType());
@@ -7944,19 +6821,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Id) {
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -7969,26 +6842,19 @@ TEST_F(SimpleSemanticAnalyzerTest, IdWithoutDefIsInvalid) {
       move(id_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4))));
   stmt_nodes.push_back(move(id_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
-  unique_ptr<SemanticProblem> problem(
-      new IdWithoutDefError(program_file_path, *id_node_ptr));
-  problems.push_back(move(problem));
+  SemanticAnalysis::ProgramProblems problems;
+  unique_ptr<SemanticProblem> problem(new IdWithoutDefError(*id_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
   TestLitParses test_lit_parses = {};
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8005,7 +6871,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Not) {
       move(not_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
   stmt_nodes.push_back(move(not_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.bools = {{"false", false}};
@@ -8026,18 +6892,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Not) {
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(lit_node_ptr, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8073,7 +6935,7 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
       move(not_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
   stmt_nodes.push_back(move(not_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -8104,23 +6966,17 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new UnaryExprWithUnsupportedTypeError(
-      program_file_path, *not_node_ptr, func_data_type.Clone()));
-  problems.push_back(move(problem));
+      *not_node_ptr, func_data_type.Clone()));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8145,7 +7001,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Negative) {
       move(negative_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(negative_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
@@ -8168,19 +7024,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Negative) {
   node_analyzes.insert(
       make_pair(negative_node_ptr, move(negative_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8216,7 +7068,7 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
       move(negative_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
   stmt_nodes.push_back(move(negative_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -8247,23 +7099,17 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new UnaryExprWithUnsupportedTypeError(
-      program_file_path, *negative_node_ptr, func_data_type.Clone()));
-  problems.push_back(move(problem));
+      *negative_node_ptr, func_data_type.Clone()));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8288,7 +7134,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreInc) {
       move(pre_inc_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(pre_inc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
@@ -8311,19 +7157,15 @@ TEST_F(SimpleSemanticAnalyzerTest, PreInc) {
   node_analyzes.insert(
       make_pair(pre_inc_node_ptr, move(pre_inc_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8359,7 +7201,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
       move(pre_inc_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
   stmt_nodes.push_back(move(pre_inc_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -8390,23 +7232,17 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new UnaryExprWithUnsupportedTypeError(
-      program_file_path, *pre_inc_node_ptr, func_data_type.Clone()));
-  problems.push_back(move(problem));
+      *pre_inc_node_ptr, func_data_type.Clone()));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8431,7 +7267,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDec) {
       move(pre_dec_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
   stmt_nodes.push_back(move(pre_dec_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new GlobalVarDefAnalysis(
@@ -8454,19 +7290,15 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDec) {
   node_analyzes.insert(
       make_pair(pre_dec_node_ptr, move(pre_dec_expr_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8502,7 +7334,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
       move(pre_dec_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
   stmt_nodes.push_back(move(pre_dec_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t body_local_vars_count = UINT32_C(0);
@@ -8533,23 +7365,17 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
       is_id_assignee));
   node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new UnaryExprWithUnsupportedTypeError(
-      program_file_path, *pre_dec_node_ptr, func_data_type.Clone()));
-  problems.push_back(move(problem));
+      *pre_dec_node_ptr, func_data_type.Clone()));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8562,7 +7388,7 @@ TEST_F(SimpleSemanticAnalyzerTest, String) {
       move(string_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(string_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.strings = {{"\"swag\"", "swag"}};
@@ -8576,18 +7402,14 @@ TEST_F(SimpleSemanticAnalyzerTest, String) {
       unique_ptr<Lit>(new StringLit("swag"))));
   node_analyzes.insert(make_pair(string_node_ptr, move(string_lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8605,13 +7427,12 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithEmptyHexValueIsInvalid) {
       move(string_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(string_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(
-      new StringWithEmptyHexValueError(program_file_path, *string_node_ptr));
-  problems.push_back(move(problem));
+      new StringWithEmptyHexValueError(*string_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
@@ -8628,15 +7449,9 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithEmptyHexValueIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      new ImportFileSearcherMock());
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  SimpleSemanticAnalyzer analyzer(program_node,
-                                  program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  SimpleSemanticAnalyzer analyzer(*lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze(
+      *program_node, SemanticAnalyzer::ImportPrograms());
   ASSERT_EQ(expected_analysis, actual_analysis);
 }
 
@@ -8654,13 +7469,12 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithOutOfRangeHexValueIsInvalid) {
       move(string_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(string_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new StringWithOutOfRangeHexValueError(
-      program_file_path, *string_node_ptr));
-  problems.push_back(move(problem));
+      *string_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
@@ -8677,15 +7491,9 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithOutOfRangeHexValueIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      new ImportFileSearcherMock());
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  SimpleSemanticAnalyzer analyzer(program_node,
-                                  program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  SimpleSemanticAnalyzer analyzer(*lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze(
+      *program_node, SemanticAnalyzer::ImportPrograms());
   ASSERT_EQ(expected_analysis, actual_analysis);
 }
 
@@ -8698,7 +7506,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Char) {
       move(char_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(char_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.chars = {{"'a'", 'a'}};
@@ -8712,18 +7520,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Char) {
       unique_ptr<Lit>(new CharLit('a'))));
   node_analyzes.insert(make_pair(char_node_ptr, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8741,13 +7545,12 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithEmptyHexValueIsInvalid) {
       move(char_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(char_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(
-      new CharWithEmptyHexValueError(program_file_path, *char_node_ptr));
-  problems.push_back(move(problem));
+      new CharWithEmptyHexValueError(*char_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
@@ -8764,15 +7567,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithEmptyHexValueIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      new ImportFileSearcherMock());
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  SimpleSemanticAnalyzer analyzer(program_node,
-                                  program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  SimpleSemanticAnalyzer analyzer(*lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze(
+      *program_node, SemanticAnalyzer::ImportPrograms());
   ASSERT_EQ(expected_analysis, actual_analysis);
 }
 
@@ -8790,13 +7587,12 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithOutOfRangeHexValueIsInvalid) {
       move(char_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(char_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new CharWithOutOfRangeHexValueError(
-      program_file_path, *char_node_ptr));
-  problems.push_back(move(problem));
+      *char_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
@@ -8813,15 +7609,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithOutOfRangeHexValueIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      new ImportFileSearcherMock());
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  SimpleSemanticAnalyzer analyzer(program_node,
-                                  program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  SimpleSemanticAnalyzer analyzer(*lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze(
+      *program_node, SemanticAnalyzer::ImportPrograms());
   ASSERT_EQ(expected_analysis, actual_analysis);
 }
 
@@ -8839,13 +7629,12 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithMultipleCharsIsInvalid) {
       move(char_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(char_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new CharWithMultipleCharsError(
-      program_file_path, *char_node_ptr));
-  problems.push_back(move(problem));
+      *char_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
@@ -8862,15 +7651,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithMultipleCharsIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      new ImportFileSearcherMock());
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  SimpleSemanticAnalyzer analyzer(program_node,
-                                  program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  SimpleSemanticAnalyzer analyzer(*lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze(
+      *program_node, SemanticAnalyzer::ImportPrograms());
   ASSERT_EQ(expected_analysis, actual_analysis);
 }
 
@@ -8883,7 +7666,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Int) {
       move(int_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(int_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.ints = {{"7", INT32_C(7)}};
@@ -8897,18 +7680,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Int) {
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   node_analyzes.insert(make_pair(int_node_ptr, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -8926,13 +7705,12 @@ TEST_F(SimpleSemanticAnalyzerTest, IntWithOutOfRangeValueIsInvalid) {
       move(int_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(int_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new IntWithOutOfRangeValueError(
-      program_file_path, *int_node_ptr));
-  problems.push_back(move(problem));
+      *int_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
@@ -8949,15 +7727,9 @@ TEST_F(SimpleSemanticAnalyzerTest, IntWithOutOfRangeValueIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      new ImportFileSearcherMock());
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  SimpleSemanticAnalyzer analyzer(program_node,
-                                  program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  SimpleSemanticAnalyzer analyzer(*lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze(
+      *program_node, SemanticAnalyzer::ImportPrograms());
   ASSERT_EQ(expected_analysis, actual_analysis);
 }
 
@@ -8970,7 +7742,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Long) {
       move(long_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(long_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.longs = {{"7L", INT64_C(7)}};
@@ -8984,18 +7756,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Long) {
       unique_ptr<Lit>(new LongLit(INT64_C(7)))));
   node_analyzes.insert(make_pair(long_node_ptr, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -9013,13 +7781,12 @@ TEST_F(SimpleSemanticAnalyzerTest, LongWithOutOfRangeValueIsInvalid) {
       move(long_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(long_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new LongWithOutOfRangeValueError(
-      program_file_path, *long_node_ptr));
-  problems.push_back(move(problem));
+      *long_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
@@ -9036,15 +7803,9 @@ TEST_F(SimpleSemanticAnalyzerTest, LongWithOutOfRangeValueIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      new ImportFileSearcherMock());
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  SimpleSemanticAnalyzer analyzer(program_node,
-                                  program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  SimpleSemanticAnalyzer analyzer(*lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze(
+      *program_node, SemanticAnalyzer::ImportPrograms());
   ASSERT_EQ(expected_analysis, actual_analysis);
 }
 
@@ -9057,7 +7818,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Double) {
       move(double_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(double_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.doubles = {{"7.7", 7.7}};
@@ -9071,18 +7832,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Double) {
       unique_ptr<Lit>(new DoubleLit(7.7))));
   node_analyzes.insert(make_pair(double_node_ptr, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -9101,13 +7858,12 @@ TEST_F(SimpleSemanticAnalyzerTest, DoubleWithOutOfRangeValueIsInvalid) {
       move(double_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(double_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new DoubleWithOutOfRangeValueError(
-      program_file_path, *double_node_ptr));
-  problems.push_back(move(problem));
+      *double_node_ptr));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis expected_analysis(move(problems), move(node_analyzes));
@@ -9124,15 +7880,9 @@ TEST_F(SimpleSemanticAnalyzerTest, DoubleWithOutOfRangeValueIsInvalid) {
         .RetiresOnSaturation();
   }
 
-  unique_ptr<ImportFileSearcher> import_file_searcher(
-      new ImportFileSearcherMock());
-  unique_ptr<FileParser> file_parser(new FileParserMock());
-  SimpleSemanticAnalyzer analyzer(program_node,
-                                  program_file_path,
-                                  *file_parser,
-                                  *import_file_searcher,
-                                  *lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze();
+  SimpleSemanticAnalyzer analyzer(*lit_parser);
+  SemanticAnalysis actual_analysis = analyzer.Analyze(
+      *program_node, SemanticAnalyzer::ImportPrograms());
   ASSERT_EQ(expected_analysis, actual_analysis);
 }
 
@@ -9145,7 +7895,7 @@ TEST_F(SimpleSemanticAnalyzerTest, Bool) {
       move(bool_node),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1))));
   stmt_nodes.push_back(move(bool_stmt_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   TestLitParses test_lit_parses = {};
   test_lit_parses.bools = {{"false", false}};
@@ -9159,18 +7909,14 @@ TEST_F(SimpleSemanticAnalyzerTest, Bool) {
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(lit_analysis)));
 
-  SemanticAnalysis::Problems problems;
+  SemanticAnalysis::ProgramProblems problems;
+  problems.insert(
+      make_pair(program_node.get(), SemanticAnalysis::Problems()));
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
-  vector<TestImportFileSearch> test_import_file_searches;
-  path program_file_path;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 
@@ -9183,9 +7929,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
       move(element_data_type_node),
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
-  const size_t max_dimensions_count = numeric_limits<uint8_t>::max();
+  size_t max_dimensions_count = numeric_limits<uint8_t>::max();
 
-  for (uint32_t i = 0; i != max_dimensions_count; ++i) {
+  for (uint32_t i = UINT32_C(0); i != max_dimensions_count; ++i) {
     array_data_type_node.reset(new ArrayDataTypeNode(
         move(array_data_type_node),
         TokenInfo(Token::kSubscriptStart, "[", i + 3, i + 3),
@@ -9200,26 +7946,20 @@ TEST_F(SimpleSemanticAnalyzerTest,
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1001), UINT32_C(1001)));
   unique_ptr<StmtNode> def_node(def_node_ptr);
   stmt_nodes.push_back(move(def_node));
-  shared_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
+  unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
-  SemanticAnalysis::Problems problems;
-  path program_file_path;
+  SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(new ArrayTypeWithTooManyDimensionsError(
-      program_file_path, *array_data_type_node_ptr, max_dimensions_count));
-  problems.push_back(move(problem));
+      *array_data_type_node_ptr, max_dimensions_count));
+  problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   SemanticAnalysis analysis(move(problems), move(node_analyzes));
-  vector<TestFileParse> test_file_parses;
   TestLitParses test_lit_parses = {};
-  vector<TestImportFileSearch> test_import_file_searches;
-  TestProgram test_program = {program_node,
-                              program_file_path,
+  TestProgram test_program = {move(program_node),
+                              SemanticAnalyzer::ImportPrograms(),
                               move(analysis),
-                              test_file_parses,
-                              test_import_file_searches,
                               test_lit_parses};
-
   TestAnalyze(test_program);
 }
 }

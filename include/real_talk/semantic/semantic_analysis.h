@@ -12,6 +12,7 @@ namespace real_talk {
 namespace parser {
 
 class Node;
+class ProgramNode;
 }
 
 namespace semantic {
@@ -20,20 +21,22 @@ class NodeSemanticAnalysis;
 
 class SemanticAnalysis {
  public:
-  typedef std::unordered_map <const real_talk::parser::Node*,
-                              std::unique_ptr<NodeSemanticAnalysis> > NodeAnalyzes;
+  typedef std::unordered_map<const real_talk::parser::Node*,
+                             std::unique_ptr<NodeSemanticAnalysis> > NodeAnalyzes;
   typedef std::vector< std::unique_ptr<SemanticProblem> > Problems;
+  typedef std::unordered_map<
+    const real_talk::parser::ProgramNode*, Problems> ProgramProblems;
 
-  SemanticAnalysis(Problems problems, NodeAnalyzes node_analyzes);
+  SemanticAnalysis(ProgramProblems problems, NodeAnalyzes node_analyzes);
   const NodeAnalyzes &GetNodeAnalyzes() const;
-  const Problems &GetProblems() const;
+  const ProgramProblems &GetProblems() const;
   friend bool operator==(const SemanticAnalysis &lhs,
                          const SemanticAnalysis &rhs);
   friend std::ostream &operator<<(std::ostream &stream,
                                   const SemanticAnalysis &analysis);
 
  private:
-  Problems problems_;
+  ProgramProblems problems_;
   NodeAnalyzes node_analyzes_;
 };
 }

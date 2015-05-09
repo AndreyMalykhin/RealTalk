@@ -45,6 +45,7 @@
 #include "real_talk/parser/greater_node.h"
 #include "real_talk/parser/greater_or_equal_node.h"
 #include "real_talk/parser/less_node.h"
+#include "real_talk/parser/less_or_equal_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -224,6 +225,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class GreaterCmdGenerator;
   class GreaterOrEqualCmdGenerator;
   class LessCmdGenerator;
+  class LessOrEqualCmdGenerator;
 
   typedef unordered_map<string, vector<uint32_t>> IdAddresses;
 
@@ -1486,6 +1488,30 @@ class SimpleCodeGenerator::Impl::LessCmdGenerator
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
 };
 
+class SimpleCodeGenerator::Impl::LessOrEqualCmdGenerator
+    : public BinaryExprCmdGenerator {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kLessOrEqualInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kLessOrEqualLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kLessOrEqualDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kLessOrEqualChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+};
+
 SimpleCodeGenerator::SimpleCodeGenerator(
     const CastCmdGenerator &cast_cmd_generator)
     : impl_(new Impl(cast_cmd_generator)) {}
@@ -1995,7 +2021,10 @@ void SimpleCodeGenerator::Impl::VisitLess(const LessNode &node) {
   VisitBinaryExpr(node, &cmd_generator);
 }
 
-void SimpleCodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode&) {}
+void SimpleCodeGenerator::Impl::VisitLessOrEqual(const LessOrEqualNode &node) {
+  LessOrEqualCmdGenerator cmd_generator;
+  VisitBinaryExpr(node, &cmd_generator);
+}
 
 void SimpleCodeGenerator::Impl::VisitDiv(const DivNode &node) {
   DivCmdGenerator cmd_generator;

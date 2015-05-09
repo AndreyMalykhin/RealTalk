@@ -29,7 +29,6 @@
 
 using std::ostream;
 using std::unique_ptr;
-using boost::filesystem::path;
 using real_talk::lexer::TokenInfo;
 using real_talk::parser::VarDefWithInitNode;
 using real_talk::parser::Node;
@@ -65,17 +64,11 @@ namespace real_talk {
 namespace semantic {
 
 ArrayAllocWithTooManyDimensionsError::ArrayAllocWithTooManyDimensionsError(
-    const path &file_path,
     const ArrayAllocNode &alloc,
     size_t max_count)
-    : file_path_(file_path),
-      alloc_(alloc),
+    : alloc_(alloc),
       max_count_(max_count) {
   assert(max_count > 0);
-}
-
-const path &ArrayAllocWithTooManyDimensionsError::GetFilePath() const {
-  return file_path_;
 }
 
 const ArrayAllocNode &ArrayAllocWithTooManyDimensionsError::GetAlloc()
@@ -99,17 +92,11 @@ bool ArrayAllocWithTooManyDimensionsError::IsEqual(
 }
 
 ArrayTypeWithTooManyDimensionsError::ArrayTypeWithTooManyDimensionsError(
-    const path &file_path,
     const ArrayDataTypeNode &array_type,
     size_t max_count)
-    : file_path_(file_path),
-      array_type_(array_type),
+    : array_type_(array_type),
       max_count_(max_count) {
   assert(max_count > 0);
-}
-
-const path &ArrayTypeWithTooManyDimensionsError::GetFilePath() const {
-  return file_path_;
 }
 
 const ArrayDataTypeNode &ArrayTypeWithTooManyDimensionsError::GetArrayType()
@@ -133,13 +120,7 @@ bool ArrayTypeWithTooManyDimensionsError::IsEqual(
 }
 
 DoubleWithOutOfRangeValueError::DoubleWithOutOfRangeValueError(
-    const path &file_path, const DoubleNode &double_node)
-    : file_path_(file_path), double_(double_node) {
-}
-
-const path &DoubleWithOutOfRangeValueError::GetFilePath() const {
-  return file_path_;
-}
+    const DoubleNode &double_node): double_(double_node) {}
 
 const DoubleNode &DoubleWithOutOfRangeValueError::GetDouble() const {
   return double_;
@@ -157,13 +138,7 @@ bool DoubleWithOutOfRangeValueError::IsEqual(
 }
 
 LongWithOutOfRangeValueError::LongWithOutOfRangeValueError(
-    const path &file_path, const LongNode &long_node)
-    : file_path_(file_path), long_(long_node) {
-}
-
-const path &LongWithOutOfRangeValueError::GetFilePath() const {
-  return file_path_;
-}
+    const LongNode &long_node): long_(long_node) {}
 
 const LongNode &LongWithOutOfRangeValueError::GetLong() const {
   return long_;
@@ -181,13 +156,7 @@ bool LongWithOutOfRangeValueError::IsEqual(
 }
 
 IntWithOutOfRangeValueError::IntWithOutOfRangeValueError(
-    const path &file_path, const IntNode &int_node)
-    : file_path_(file_path), int_(int_node) {
-}
-
-const path &IntWithOutOfRangeValueError::GetFilePath() const {
-  return file_path_;
-}
+    const IntNode &int_node): int_(int_node) {}
 
 const IntNode &IntWithOutOfRangeValueError::GetInt() const {
   return int_;
@@ -205,13 +174,7 @@ bool IntWithOutOfRangeValueError::IsEqual(
 }
 
 CharWithMultipleCharsError::CharWithMultipleCharsError(
-    const path &file_path, const CharNode &c)
-    : file_path_(file_path), c_(c) {
-}
-
-const path &CharWithMultipleCharsError::GetFilePath() const {
-  return file_path_;
-}
+    const CharNode &c): c_(c) {}
 
 const CharNode &CharWithMultipleCharsError::GetChar() const {
   return c_;
@@ -229,13 +192,7 @@ bool CharWithMultipleCharsError::IsEqual(
 }
 
 CharWithEmptyHexValueError::CharWithEmptyHexValueError(
-    const path &file_path, const CharNode &c)
-    : file_path_(file_path), c_(c) {
-}
-
-const path &CharWithEmptyHexValueError::GetFilePath() const {
-  return file_path_;
-}
+    const CharNode &c): c_(c) {}
 
 const CharNode &CharWithEmptyHexValueError::GetChar() const {
   return c_;
@@ -253,13 +210,7 @@ bool CharWithEmptyHexValueError::IsEqual(
 }
 
 CharWithOutOfRangeHexValueError::CharWithOutOfRangeHexValueError(
-    const path &file_path, const CharNode &c)
-    : file_path_(file_path), c_(c) {
-}
-
-const path &CharWithOutOfRangeHexValueError::GetFilePath() const {
-  return file_path_;
-}
+    const CharNode &c): c_(c) {}
 
 const CharNode &CharWithOutOfRangeHexValueError::GetChar() const {
   return c_;
@@ -277,13 +228,7 @@ bool CharWithOutOfRangeHexValueError::IsEqual(
 }
 
 StringWithOutOfRangeHexValueError::StringWithOutOfRangeHexValueError(
-    const path &file_path, const StringNode &str)
-    : file_path_(file_path), str_(str) {
-}
-
-const path &StringWithOutOfRangeHexValueError::GetFilePath() const {
-  return file_path_;
-}
+    const StringNode &str): str_(str) {}
 
 const StringNode &StringWithOutOfRangeHexValueError::GetString() const {
   return str_;
@@ -301,13 +246,7 @@ bool StringWithOutOfRangeHexValueError::IsEqual(
 }
 
 StringWithEmptyHexValueError::StringWithEmptyHexValueError(
-    const path &file_path, const StringNode &str)
-    : file_path_(file_path), str_(str) {
-}
-
-const path &StringWithEmptyHexValueError::GetFilePath() const {
-  return file_path_;
-}
+    const StringNode &str): str_(str) {}
 
 const StringNode &StringWithEmptyHexValueError::GetString() const {
   return str_;
@@ -325,17 +264,9 @@ bool StringWithEmptyHexValueError::IsEqual(
 }
 
 UnaryExprWithUnsupportedTypeError::UnaryExprWithUnsupportedTypeError(
-    const path &file_path,
-    const UnaryExprNode &expr,
-    unique_ptr<DataType> data_type)
-    : file_path_(file_path),
-      expr_(expr),
-      data_type_(move(data_type)) {
+    const UnaryExprNode &expr, unique_ptr<DataType> data_type)
+    : expr_(expr), data_type_(move(data_type)) {
   assert(data_type_);
-}
-
-const path &UnaryExprWithUnsupportedTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const UnaryExprNode &UnaryExprWithUnsupportedTypeError::GetExpr() const {
@@ -358,13 +289,7 @@ bool UnaryExprWithUnsupportedTypeError::IsEqual(
 }
 
 AssignWithRightValueAssigneeError::AssignWithRightValueAssigneeError(
-    const path &file_path, const AssignNode &assign)
-    : file_path_(file_path), assign_(assign) {
-}
-
-const path &AssignWithRightValueAssigneeError::GetFilePath() const {
-  return file_path_;
-}
+    const AssignNode &assign): assign_(assign) {}
 
 const AssignNode &AssignWithRightValueAssigneeError::GetAssign() const {
   return assign_;
@@ -381,14 +306,7 @@ bool AssignWithRightValueAssigneeError::IsEqual(
   return assign_ == rhs.assign_;
 }
 
-IdWithoutDefError::IdWithoutDefError(
-    const path &file_path, const IdNode &id)
-    : file_path_(file_path), id_(id) {
-}
-
-const path &IdWithoutDefError::GetFilePath() const {
-  return file_path_;
-}
+IdWithoutDefError::IdWithoutDefError(const IdNode &id): id_(id) {}
 
 const IdNode &IdWithoutDefError::GetId() const {
   return id_;
@@ -405,17 +323,9 @@ bool IdWithoutDefError::IsEqual(const SemanticProblem &problem) const {
 
 SubscriptWithUnsupportedIndexTypeError
 ::SubscriptWithUnsupportedIndexTypeError(
-     const path &file_path,
-     const SubscriptNode &subscript,
-     unique_ptr<DataType> data_type)
-    : file_path_(file_path),
-      subscript_(subscript),
-      data_type_(move(data_type)) {
+     const SubscriptNode &subscript, unique_ptr<DataType> data_type)
+    : subscript_(subscript), data_type_(move(data_type)) {
   assert(data_type_);
-}
-
-const path &SubscriptWithUnsupportedIndexTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const SubscriptNode
@@ -441,13 +351,7 @@ bool SubscriptWithUnsupportedIndexTypeError::IsEqual(
 }
 
 SubscriptWithNonArrayError::SubscriptWithNonArrayError(
-    const path &file_path, const SubscriptNode &subscript)
-    : file_path_(file_path), subscript_(subscript) {
-}
-
-const path &SubscriptWithNonArrayError::GetFilePath() const {
-  return file_path_;
-}
+    const SubscriptNode &subscript): subscript_(subscript) {}
 
 const SubscriptNode &SubscriptWithNonArrayError::GetSubscript() const {
   return subscript_;
@@ -465,22 +369,16 @@ bool SubscriptWithNonArrayError::IsEqual(const SemanticProblem &problem) const {
 
 ArrayAllocWithIncompatibleValueTypeError::
 ArrayAllocWithIncompatibleValueTypeError(
-    const path &file_path,
     const ArrayAllocNode &alloc,
     size_t value_index,
     unique_ptr<DataType> dest_data_type,
     unique_ptr<DataType> src_data_type)
-    : file_path_(file_path),
-      alloc_(alloc),
+    : alloc_(alloc),
       value_index_(value_index),
       dest_data_type_(move(dest_data_type)),
       src_data_type_(move(src_data_type)) {
   assert(dest_data_type_);
   assert(src_data_type_);
-}
-
-const path &ArrayAllocWithIncompatibleValueTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const ArrayAllocNode
@@ -520,17 +418,9 @@ bool ArrayAllocWithIncompatibleValueTypeError::IsEqual(
 
 ArrayAllocWithUnsupportedElementTypeError::
 ArrayAllocWithUnsupportedElementTypeError(
-    const path &file_path,
-    const ArrayAllocNode &alloc,
-    unique_ptr<DataType> data_type)
-    : file_path_(file_path),
-      alloc_(alloc),
-      data_type_(move(data_type)) {
+    const ArrayAllocNode &alloc, unique_ptr<DataType> data_type)
+    : alloc_(alloc), data_type_(move(data_type)) {
   assert(data_type_);
-}
-
-const path &ArrayAllocWithUnsupportedElementTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const ArrayAllocNode
@@ -556,19 +446,13 @@ bool ArrayAllocWithUnsupportedElementTypeError::IsEqual(
 
 ArrayAllocWithUnsupportedSizeTypeError::
 ArrayAllocWithUnsupportedSizeTypeError(
-    const path &file_path,
     const ArrayAllocNode &alloc,
     const BoundedArraySizeNode &size,
     unique_ptr<DataType> data_type)
-    : file_path_(file_path),
-      alloc_(alloc),
+    : alloc_(alloc),
       size_(size),
       data_type_(move(data_type)) {
   assert(data_type_);
-}
-
-const path &ArrayAllocWithUnsupportedSizeTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const ArrayAllocNode
@@ -601,22 +485,16 @@ bool ArrayAllocWithUnsupportedSizeTypeError::IsEqual(
 }
 
 IfWithIncompatibleTypeError::IfWithIncompatibleTypeError(
-    const path &file_path,
     const BranchNode &branch_node,
     const IfNode &if_node,
     unique_ptr<DataType> dest_data_type,
     unique_ptr<DataType> src_data_type)
-    : file_path_(file_path),
-      branch_(branch_node),
+    : branch_(branch_node),
       if_(if_node),
       dest_data_type_(move(dest_data_type)),
       src_data_type_(move(src_data_type)) {
   assert(dest_data_type_);
   assert(src_data_type_);
-}
-
-const path &IfWithIncompatibleTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const BranchNode &IfWithIncompatibleTypeError::GetBranch() const {
@@ -651,13 +529,7 @@ bool IfWithIncompatibleTypeError::IsEqual(
 }
 
 BreakNotWithinLoopError::BreakNotWithinLoopError(
-    const path &file_path, const BreakNode &break_node)
-    : file_path_(file_path), break_(break_node) {
-}
-
-const path &BreakNotWithinLoopError::GetFilePath() const {
-  return file_path_;
-}
+    const BreakNode &break_node): break_(break_node) {}
 
 const BreakNode &BreakNotWithinLoopError::GetBreak() const {
   return break_;
@@ -674,13 +546,7 @@ bool BreakNotWithinLoopError::IsEqual(const SemanticProblem &problem) const {
 }
 
 ContinueNotWithinLoopError::ContinueNotWithinLoopError(
-    const path &file_path, const ContinueNode &continue_node)
-    : file_path_(file_path), continue_(continue_node) {
-}
-
-const path &ContinueNotWithinLoopError::GetFilePath() const {
-  return file_path_;
-}
+    const ContinueNode &continue_node): continue_(continue_node) {}
 
 const ContinueNode &ContinueNotWithinLoopError::GetContinue() const {
   return continue_;
@@ -697,20 +563,14 @@ bool ContinueNotWithinLoopError::IsEqual(const SemanticProblem &problem) const {
 }
 
 PreTestLoopWithIncompatibleTypeError::PreTestLoopWithIncompatibleTypeError(
-    const path &file_path,
     const PreTestLoopNode &loop,
     unique_ptr<DataType> dest_data_type,
     unique_ptr<DataType> src_data_type)
-    : file_path_(file_path),
-      loop_(loop),
+    : loop_(loop),
       dest_data_type_(move(dest_data_type)),
       src_data_type_(move(src_data_type)) {
   assert(dest_data_type_);
   assert(src_data_type_);
-}
-
-const path &PreTestLoopWithIncompatibleTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const PreTestLoopNode &PreTestLoopWithIncompatibleTypeError::GetLoop() const {
@@ -740,13 +600,7 @@ bool PreTestLoopWithIncompatibleTypeError::IsEqual(
 }
 
 ImportIsNotFirstStmtError::ImportIsNotFirstStmtError(
-    const path &file_path, const ImportNode &import)
-    : file_path_(file_path), import_(import) {
-}
-
-const path &ImportIsNotFirstStmtError::GetFilePath() const {
-  return file_path_;
-}
+    const ImportNode &import): import_(import) {}
 
 const ImportNode &ImportIsNotFirstStmtError::GetImport() const {
   return import_;
@@ -764,20 +618,14 @@ bool ImportIsNotFirstStmtError::IsEqual(const SemanticProblem &problem) const {
 
 VarDefWithIncompatibleValueTypeError
 ::VarDefWithIncompatibleValueTypeError(
-    const path &file_path,
     const VarDefWithInitNode &var_def,
     unique_ptr<DataType> dest_data_type,
     unique_ptr<DataType> src_data_type)
-    : file_path_(file_path),
-      var_def_(var_def),
+    : var_def_(var_def),
       dest_data_type_(move(dest_data_type)),
       src_data_type_(move(src_data_type)) {
   assert(dest_data_type_);
   assert(src_data_type_);
-}
-
-const path &VarDefWithIncompatibleValueTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const VarDefWithInitNode
@@ -811,13 +659,7 @@ bool VarDefWithIncompatibleValueTypeError::IsEqual(
 }
 
 ReturnWithoutValueError::ReturnWithoutValueError(
-    const path &file_path, const ReturnWithoutValueNode &return_node)
-    : file_path_(file_path), return_(return_node) {
-}
-
-const path &ReturnWithoutValueError::GetFilePath() const {
-  return file_path_;
-}
+    const ReturnWithoutValueNode &return_node): return_(return_node) {}
 
 const ReturnWithoutValueNode &ReturnWithoutValueError::GetReturn() const {
   return return_;
@@ -834,13 +676,7 @@ bool ReturnWithoutValueError::IsEqual(const SemanticProblem &problem) const {
 }
 
 ReturnNotWithinFuncError::ReturnNotWithinFuncError(
-    const path &file_path, const ReturnNode &return_node)
-    : file_path_(file_path), return_(return_node) {
-}
-
-const path &ReturnNotWithinFuncError::GetFilePath() const {
-  return file_path_;
-}
+    const ReturnNode &return_node): return_(return_node) {}
 
 const ReturnNode &ReturnNotWithinFuncError::GetReturn() const {
   return return_;
@@ -857,20 +693,14 @@ bool ReturnNotWithinFuncError::IsEqual(const SemanticProblem &problem) const {
 }
 
 ReturnWithIncompatibleTypeError::ReturnWithIncompatibleTypeError(
-    const path &file_path,
     const ReturnValueNode &return_node,
     unique_ptr<DataType> dest_data_type,
     unique_ptr<DataType> src_data_type)
-    : file_path_(file_path),
-      return_(return_node),
+    : return_(return_node),
       dest_data_type_(move(dest_data_type)),
       src_data_type_(move(src_data_type)) {
   assert(dest_data_type_);
   assert(src_data_type_);
-}
-
-const path &ReturnWithIncompatibleTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const ReturnValueNode &ReturnWithIncompatibleTypeError::GetReturn() const {
@@ -900,20 +730,14 @@ bool ReturnWithIncompatibleTypeError::IsEqual(
 }
 
 BinaryExprWithUnsupportedTypesError::BinaryExprWithUnsupportedTypesError(
-    const path &file_path,
     const BinaryExprNode &expr,
     unique_ptr<DataType> left_operand_data_type,
     unique_ptr<DataType> right_operand_data_type)
-    : file_path_(file_path),
-      expr_(expr),
+    : expr_(expr),
       left_operand_data_type_(move(left_operand_data_type)),
       right_operand_data_type_(move(right_operand_data_type)) {
   assert(left_operand_data_type_);
   assert(right_operand_data_type_);
-}
-
-const path &BinaryExprWithUnsupportedTypesError::GetFilePath() const {
-  return file_path_;
 }
 
 const BinaryExprNode &BinaryExprWithUnsupportedTypesError::GetExpr() const {
@@ -946,22 +770,16 @@ bool BinaryExprWithUnsupportedTypesError::IsEqual(
 }
 
 CallWithIncompatibleArgTypeError::CallWithIncompatibleArgTypeError(
-    const path &file_path,
     const CallNode &call,
     size_t arg_index,
     unique_ptr<DataType> dest_data_type,
     unique_ptr<DataType> src_data_type)
-    : file_path_(file_path),
-      call_(call),
+    : call_(call),
       arg_index_(arg_index),
       dest_data_type_(move(dest_data_type)),
       src_data_type_(move(src_data_type)) {
   assert(dest_data_type_);
   assert(src_data_type_);
-}
-
-const path &CallWithIncompatibleArgTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const CallNode &CallWithIncompatibleArgTypeError::GetCall() const {
@@ -997,13 +815,9 @@ bool CallWithIncompatibleArgTypeError::IsEqual(
 }
 
 DefWithUnsupportedTypeError::DefWithUnsupportedTypeError(
-    const path &file_path, const DefNode &def, unique_ptr<DataType> data_type)
-    : file_path_(file_path), def_(def), data_type_(move(data_type)) {
+    const DefNode &def, unique_ptr<DataType> data_type)
+    : def_(def), data_type_(move(data_type)) {
   assert(data_type_);
-}
-
-const path &DefWithUnsupportedTypeError::GetFilePath() const {
-  return file_path_;
 }
 
 const DefNode &DefWithUnsupportedTypeError::GetDef() const {
@@ -1026,13 +840,7 @@ bool DefWithUnsupportedTypeError::IsEqual(
 }
 
 DuplicateDefError::DuplicateDefError(
-    const path &file_path, const DefNode &def)
-    : file_path_(file_path), def_(def) {
-}
-
-const boost::filesystem::path &DuplicateDefError::GetFilePath() const {
-  return file_path_;
-}
+    const DefNode &def): def_(def) {}
 
 const real_talk::parser::DefNode &DuplicateDefError::GetDef() const {
   return def_;
@@ -1048,13 +856,7 @@ bool DuplicateDefError::IsEqual(const SemanticProblem &problem) const {
 }
 
 FuncDefWithoutBodyNotNativeError::FuncDefWithoutBodyNotNativeError(
-    const path &file_path, const FuncDefWithoutBodyNode &def)
-    : file_path_(file_path), def_(def) {
-}
-
-const path &FuncDefWithoutBodyNotNativeError::GetFilePath() const {
-  return file_path_;
-}
+    const FuncDefWithoutBodyNode &def): def_(def) {}
 
 const FuncDefWithoutBodyNode &FuncDefWithoutBodyNotNativeError::GetDef() const {
   return def_;
@@ -1072,13 +874,7 @@ bool FuncDefWithoutBodyNotNativeError::IsEqual(
 }
 
 FuncDefWithBodyIsNativeError::FuncDefWithBodyIsNativeError(
-    const path &file_path, const FuncDefWithBodyNode &def)
-    : file_path_(file_path), def_(def) {
-}
-
-const path &FuncDefWithBodyIsNativeError::GetFilePath() const {
-  return file_path_;
-}
+    const FuncDefWithBodyNode &def): def_(def) {}
 
 const FuncDefWithBodyNode &FuncDefWithBodyIsNativeError::GetDef() const {
   return def_;
@@ -1096,13 +892,7 @@ bool FuncDefWithBodyIsNativeError::IsEqual(
 }
 
 FuncDefWithinNonGlobalScope::FuncDefWithinNonGlobalScope(
-    const path &file_path, const FuncDefNode &def)
-    : file_path_(file_path), def_(def) {
-}
-
-const path &FuncDefWithinNonGlobalScope::GetFilePath() const {
-  return file_path_;
-}
+    const FuncDefNode &def): def_(def) {}
 
 const FuncDefNode &FuncDefWithinNonGlobalScope::GetDef() const {
   return def_;
@@ -1120,13 +910,7 @@ bool FuncDefWithinNonGlobalScope::IsEqual(
 }
 
 FuncDefWithoutReturnValueError::FuncDefWithoutReturnValueError(
-    const path &file_path, const FuncDefNode &def)
-    : file_path_(file_path), def_(def) {
-}
-
-const path &FuncDefWithoutReturnValueError::GetFilePath() const {
-  return file_path_;
-}
+    const FuncDefNode &def): def_(def) {}
 
 const FuncDefNode &FuncDefWithoutReturnValueError::GetDef() const {
   return def_;
@@ -1144,13 +928,7 @@ bool FuncDefWithoutReturnValueError::IsEqual(
 }
 
 CallWithNonFuncError::CallWithNonFuncError(
-    const path &file_path, const CallNode &call)
-    : file_path_(file_path), call_(call) {
-}
-
-const path &CallWithNonFuncError::GetFilePath() const {
-  return file_path_;
-}
+    const CallNode &call): call_(call) {}
 
 const CallNode &CallWithNonFuncError::GetCall() const {
   return call_;
@@ -1167,18 +945,12 @@ bool CallWithNonFuncError::IsEqual(const SemanticProblem &problem) const {
 }
 
 CallWithInvalidArgsCount::CallWithInvalidArgsCount(
-    const path &file_path,
     const CallNode &call,
     size_t expected_count,
     size_t actual_count)
-    : file_path_(file_path),
-      call_(call),
+    : call_(call),
       expected_count_(expected_count),
       actual_count_(actual_count) {
-}
-
-const path &CallWithInvalidArgsCount::GetFilePath() const {
-  return file_path_;
 }
 
 const CallNode &CallWithInvalidArgsCount::GetCall() const {

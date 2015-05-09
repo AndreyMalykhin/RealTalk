@@ -3,11 +3,15 @@
 #define _REAL_TALK_PARSER_PARSER_H_
 
 #include <string>
-#include <memory>
 #include "real_talk/lexer/token_info.h"
 #include "real_talk/parser/program_node.h"
 
 namespace real_talk {
+namespace lexer {
+
+class Lexer;
+}
+
 namespace parser {
 
 class Parser {
@@ -34,7 +38,8 @@ class Parser {
    * @throws real_talk::lexer::Lexer::UnexpectedCharError
    * @throws real_talk::util::IOError
    */
-  virtual std::shared_ptr<ProgramNode> Parse() = 0;
+  virtual std::unique_ptr<ProgramNode> Parse(
+      real_talk::lexer::Lexer *lexer) = 0;
 };
 }
 }
