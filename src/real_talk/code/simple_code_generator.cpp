@@ -46,6 +46,7 @@
 #include "real_talk/parser/greater_or_equal_node.h"
 #include "real_talk/parser/less_node.h"
 #include "real_talk/parser/less_or_equal_node.h"
+#include "real_talk/parser/not_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -147,6 +148,7 @@ using real_talk::parser::ExprNode;
 using real_talk::parser::CallNode;
 using real_talk::parser::MulNode;
 using real_talk::parser::BinaryExprNode;
+using real_talk::parser::UnaryExprNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -213,7 +215,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class LoadArrayElementAddressCmdGenerator;
   class StoreCmdGenerator;
   class CallCmdGenerator;
-  class BinaryExprCmdGenerator;
+  class ExprCmdGenerator;
   class AndCmdGenerator;
   class OrCmdGenerator;
   class MulCmdGenerator;
@@ -226,6 +228,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class GreaterOrEqualCmdGenerator;
   class LessCmdGenerator;
   class LessOrEqualCmdGenerator;
+  class NegateCmdGenerator;
 
   typedef unordered_map<string, vector<uint32_t>> IdAddresses;
 
@@ -296,11 +299,14 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   void VisitIf(const IfNode &node, uint32_t *branch_end_offset_placeholder);
 
   void VisitBinaryExpr(
-      const BinaryExprNode &node, BinaryExprCmdGenerator *cmd_generator);
+      const BinaryExprNode &node, ExprCmdGenerator *cmd_generator);
+  void VisitUnaryExpr(
+      const UnaryExprNode &node, ExprCmdGenerator *cmd_generator);
   void WriteCurrentCmdOffset(const vector<uint32_t> &offset_placeholders);
   void GenerateJumpCmdStart(uint32_t local_vars_count);
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
+  const DataType &GetExprDataType(const ExprAnalysis &expr_analysis) const;
   uint32_t GetCurrentCmdAddress() const;
   Scope *GetCurrentScope();
 
@@ -705,12 +711,12 @@ class SimpleCodeGenerator::Impl::CreateAndInitArrayCmdGenerator
  public:
   void Generate(const DataType &data_type,
                 uint8_t dimensions_count,
-                uint32_t values_count,
+                int32_t values_count,
                 Code *code) {
     code_ = code;
     data_type.Accept(*this);
     code_->WriteUint8(dimensions_count);
-    code_->WriteUint32(values_count);
+    code_->WriteInt32(values_count);
   }
 
  private:
@@ -1208,8 +1214,7 @@ class SimpleCodeGenerator::Impl::LoadElementAddressCmdGenerator
   Code *code_;
 };
 
-class SimpleCodeGenerator::Impl::BinaryExprCmdGenerator
-    : private DataTypeVisitor {
+class SimpleCodeGenerator::Impl::ExprCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
@@ -1225,7 +1230,7 @@ class SimpleCodeGenerator::Impl::BinaryExprCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::AndCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kAnd);
@@ -1239,7 +1244,7 @@ class SimpleCodeGenerator::Impl::AndCmdGenerator
   virtual void VisitString(const StringDataType&) override {assert(false);}
 };
 
-class SimpleCodeGenerator::Impl::OrCmdGenerator: public BinaryExprCmdGenerator {
+class SimpleCodeGenerator::Impl::OrCmdGenerator: public ExprCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kOr);
@@ -1254,7 +1259,7 @@ class SimpleCodeGenerator::Impl::OrCmdGenerator: public BinaryExprCmdGenerator {
 };
 
 class SimpleCodeGenerator::Impl::MulCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kMulInt);
@@ -1278,7 +1283,7 @@ class SimpleCodeGenerator::Impl::MulCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::DivCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kDivInt);
@@ -1302,7 +1307,7 @@ class SimpleCodeGenerator::Impl::DivCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::SumCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kSumInt);
@@ -1329,7 +1334,7 @@ class SimpleCodeGenerator::Impl::SumCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::SubCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kSubInt);
@@ -1353,7 +1358,7 @@ class SimpleCodeGenerator::Impl::SubCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::EqualCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitArray(const ArrayDataType&) override {
     code_->WriteCmdId(CmdId::kEqualArray);
@@ -1385,7 +1390,7 @@ class SimpleCodeGenerator::Impl::EqualCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::NotEqualCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitArray(const ArrayDataType&) override {
     code_->WriteCmdId(CmdId::kNotEqualArray);
@@ -1417,7 +1422,7 @@ class SimpleCodeGenerator::Impl::NotEqualCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::GreaterCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kGreaterInt);
@@ -1441,7 +1446,7 @@ class SimpleCodeGenerator::Impl::GreaterCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::GreaterOrEqualCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kGreaterOrEqualInt);
@@ -1465,7 +1470,7 @@ class SimpleCodeGenerator::Impl::GreaterOrEqualCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::LessCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kLessInt);
@@ -1489,7 +1494,7 @@ class SimpleCodeGenerator::Impl::LessCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::LessOrEqualCmdGenerator
-    : public BinaryExprCmdGenerator {
+    : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
     code_->WriteCmdId(CmdId::kLessOrEqualInt);
@@ -1510,6 +1515,21 @@ class SimpleCodeGenerator::Impl::LessOrEqualCmdGenerator
   virtual void VisitString(const StringDataType&) override {assert(false);}
   virtual void VisitBool(const BoolDataType&) override {assert(false);}
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+};
+
+class SimpleCodeGenerator::Impl::NegateCmdGenerator
+    : public ExprCmdGenerator {
+ private:
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kNegateBool);
+  }
+
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+  virtual void VisitInt(const IntDataType&) override {assert(false);}
+  virtual void VisitLong(const LongDataType&) override {assert(false);}
+  virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
+  virtual void VisitChar(const CharDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
 };
 
 SimpleCodeGenerator::SimpleCodeGenerator(
@@ -1856,14 +1876,9 @@ void SimpleCodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
 
 void SimpleCodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   node.GetValue()->Accept(*this);
-  const ReturnAnalysis &return_analysis =
-      static_cast<const ReturnAnalysis&>(GetNodeAnalysis(node));
-  const FuncDefAnalysis &func_def_analysis =
-      static_cast<const FuncDefAnalysis&>(
-          GetNodeAnalysis(*(return_analysis.GetFuncDef())));
-  const DataType &return_data_type =
-      func_def_analysis.GetDataType().GetReturnDataType();
-  ReturnValueCmdGenerator().Generate(return_data_type, code_);
+  const ExprAnalysis &value_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
+  ReturnValueCmdGenerator().Generate(GetExprDataType(value_analysis), code_);
 }
 
 void SimpleCodeGenerator::Impl::VisitReturnWithoutValue(
@@ -1891,6 +1906,7 @@ void SimpleCodeGenerator::Impl::VisitArrayAllocWithoutInit(
   CreateArrayCmdGenerator().Generate(array_alloc_analysis.GetDataType(),
                                      static_cast<uint8_t>(dimensions_count),
                                      code_);
+  GenerateCastCmdIfNeeded(array_alloc_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitArrayAllocWithInit(
@@ -1904,12 +1920,13 @@ void SimpleCodeGenerator::Impl::VisitArrayAllocWithInit(
   const size_t dimensions_count = node.GetSizes().size();
   assert(dimensions_count <= numeric_limits<uint8_t>::max());
   const size_t values_count = node.GetValues().size();
-  assert(values_count <= numeric_limits<uint32_t>::max());
+  assert(values_count <= numeric_limits<int32_t>::max());
   CreateAndInitArrayCmdGenerator().Generate(
       array_alloc_analysis.GetDataType(),
       static_cast<uint8_t>(dimensions_count),
-      static_cast<uint32_t>(values_count),
+      static_cast<int32_t>(values_count),
       code_);
+  GenerateCastCmdIfNeeded(array_alloc_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitId(const IdNode &id) {
@@ -1926,6 +1943,7 @@ void SimpleCodeGenerator::Impl::VisitId(const IdNode &id) {
                             &id_addresses_of_func_refs_,
                             &id_addresses_of_native_func_refs_,
                             code_);
+  GenerateCastCmdIfNeeded(id_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitCall(const CallNode &node) {
@@ -1936,7 +1954,10 @@ void SimpleCodeGenerator::Impl::VisitCall(const CallNode &node) {
   node.GetOperand()->Accept(*this);
   const ExprAnalysis &operand_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetOperand())));
-  CallCmdGenerator().Generate(operand_analysis.GetDataType(), code_);
+  CallCmdGenerator().Generate(GetExprDataType(operand_analysis), code_);
+  const ExprAnalysis &call_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
+  GenerateCastCmdIfNeeded(call_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitAssign(const AssignNode &node) {
@@ -1960,10 +1981,10 @@ void SimpleCodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
 
   if (subscript_analysis.IsAssignee()) {
     LoadElementAddressCmdGenerator().Generate(
-        operand_analysis.GetDataType(), code_);
+        GetExprDataType(operand_analysis), code_);
   } else {
     LoadElementValueCmdGenerator().Generate(
-        operand_analysis.GetDataType(), code_);
+        GetExprDataType(operand_analysis), code_);
   }
 
   GenerateCastCmdIfNeeded(subscript_analysis);
@@ -1975,9 +1996,11 @@ void SimpleCodeGenerator::Impl::VisitAnd(const AndNode &node) {
   const uint32_t end_address_placeholder = code_->GetPosition();
   code_->Skip(sizeof(int32_t));
   node.GetRightOperand()->Accept(*this);
+  const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
+      GetNodeAnalysis(*(node.GetLeftOperand())));
+  AndCmdGenerator().Generate(GetExprDataType(left_operand_analysis), code_);
   const ExprAnalysis &and_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
-  AndCmdGenerator().Generate(and_analysis.GetDataType(), code_);
   GenerateCastCmdIfNeeded(and_analysis);
   WriteCurrentCmdOffset(vector<uint32_t>({end_address_placeholder}));
 }
@@ -1988,10 +2011,12 @@ void SimpleCodeGenerator::Impl::VisitOr(const OrNode &node) {
   const uint32_t end_address_placeholder = code_->GetPosition();
   code_->Skip(sizeof(int32_t));
   node.GetRightOperand()->Accept(*this);
-  const ExprAnalysis &and_analysis =
+  const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
+      GetNodeAnalysis(*(node.GetLeftOperand())));
+  OrCmdGenerator().Generate(GetExprDataType(left_operand_analysis), code_);
+  const ExprAnalysis &or_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
-  OrCmdGenerator().Generate(and_analysis.GetDataType(), code_);
-  GenerateCastCmdIfNeeded(and_analysis);
+  GenerateCastCmdIfNeeded(or_analysis);
   WriteCurrentCmdOffset(vector<uint32_t>({end_address_placeholder}));
 }
 
@@ -2047,27 +2072,38 @@ void SimpleCodeGenerator::Impl::VisitSum(const SumNode &node) {
 }
 
 void SimpleCodeGenerator::Impl::VisitBinaryExpr(
-    const BinaryExprNode &node, BinaryExprCmdGenerator *cmd_generator) {
+    const BinaryExprNode &node, ExprCmdGenerator *cmd_generator) {
   node.GetLeftOperand()->Accept(*this);
   node.GetRightOperand()->Accept(*this);
   const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetLeftOperand())));
-  const DataType &data_type = left_operand_analysis.GetCastedDataType()
-                              ? *(left_operand_analysis.GetCastedDataType())
-                              : left_operand_analysis.GetDataType();
-  cmd_generator->Generate(data_type, code_);
+  cmd_generator->Generate(GetExprDataType(left_operand_analysis), code_);
   const ExprAnalysis &expr_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(expr_analysis);
 }
 
-void SimpleCodeGenerator::Impl::VisitNot(const NotNode&) {}
+void SimpleCodeGenerator::Impl::VisitNot(const NotNode &node) {
+  NegateCmdGenerator cmd_generator;
+  VisitUnaryExpr(node, &cmd_generator);
+}
 
 void SimpleCodeGenerator::Impl::VisitNegative(const NegativeNode&) {}
 
 void SimpleCodeGenerator::Impl::VisitPreDec(const PreDecNode&) {}
 
 void SimpleCodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
+
+void SimpleCodeGenerator::Impl::VisitUnaryExpr(
+    const UnaryExprNode &node, ExprCmdGenerator *cmd_generator) {
+  node.GetOperand()->Accept(*this);
+  const ExprAnalysis &operand_analysis = static_cast<const ExprAnalysis&>(
+      GetNodeAnalysis(*(node.GetOperand())));
+  cmd_generator->Generate(GetExprDataType(operand_analysis), code_);
+  const ExprAnalysis &expr_analysis =
+      static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
+  GenerateCastCmdIfNeeded(expr_analysis);
+}
 
 void SimpleCodeGenerator::Impl::VisitInt(const IntNode &node) {
   code_->WriteCmdId(CmdId::kLoadIntValue);
@@ -2215,6 +2251,13 @@ void SimpleCodeGenerator::Impl::GenerateCastCmdIfNeeded(
   CmdId cmd_id = cast_cmd_generator_.Generate(
       *(expr_analysis.GetCastedDataType()), expr_analysis.GetDataType());
   code_->WriteCmdId(cmd_id);
+}
+
+const DataType &SimpleCodeGenerator::Impl::GetExprDataType(
+    const ExprAnalysis &expr_analysis) const {
+  return expr_analysis.GetCastedDataType()
+      ? *(expr_analysis.GetCastedDataType())
+      : expr_analysis.GetDataType();
 }
 }
 }

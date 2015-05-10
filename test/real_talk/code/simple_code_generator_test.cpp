@@ -55,6 +55,7 @@
 #include "real_talk/parser/greater_or_equal_node.h"
 #include "real_talk/parser/less_node.h"
 #include "real_talk/parser/less_or_equal_node.h"
+#include "real_talk/parser/not_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/global_var_def_analysis.h"
@@ -175,6 +176,7 @@ using real_talk::parser::GreaterNode;
 using real_talk::parser::GreaterOrEqualNode;
 using real_talk::parser::LessNode;
 using real_talk::parser::LessOrEqualNode;
+using real_talk::parser::NotNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -224,11 +226,8 @@ class CastCmdGeneratorMock: public CastCmdGenerator {
 
 class SimpleCodeGeneratorTest: public Test {
  protected:
-  virtual void SetUp() override {
-  }
-
-  virtual void TearDown() override {
-  }
+  virtual void SetUp() override {}
+  virtual void TearDown() override {}
 
   string PrintCode(Code *code) {
     code->SetPosition(UINT32_C(0));
@@ -1458,6 +1457,65 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteBytes(operands_code.GetData(), operands_code.GetSize());
+    cmds_code->WriteCmdId(expected_cmd_id);
+    cmds_code->WriteCmdId(CmdId::kUnload);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+
+    vector<path> import_file_paths;
+    vector<string> ids_of_global_var_defs;
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module module(version,
+                  move(cmds_code),
+                  main_cmds_code_size,
+                  id_addresses_of_func_defs,
+                  ids_of_global_var_defs,
+                  ids_of_native_func_defs,
+                  id_addresses_of_func_refs,
+                  id_addresses_of_native_func_refs,
+                  id_addresses_of_global_var_refs,
+                  import_file_paths);
+    Code module_code;
+    WriteModule(module, module_code);
+    TestGenerate(move(test_casts),
+                 program_node,
+                 semantic_analysis,
+                 version,
+                 module_code);
+  }
+
+  void TestUnaryExpr(const ExprNode *operand_node,
+                     unique_ptr<ExprNode> expr_node,
+                     unique_ptr<NodeSemanticAnalysis> operand_analysis,
+                     unique_ptr<DataType> expr_data_type,
+                     vector<TestCast> test_casts,
+                     const Code &operand_code,
+                     CmdId expected_cmd_id) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    ExprNode *expr_node_ptr = expr_node.get();
+    unique_ptr<StmtNode> expr_stmt_node(new ExprStmtNode(
+        move(expr_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3))));
+    program_stmt_nodes.push_back(move(expr_stmt_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    node_analyzes.insert(make_pair(operand_node, move(operand_analysis)));
+    unique_ptr<DataType> expr_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> expr_analysis(new CommonExprAnalysis(
+        move(expr_data_type),
+        move(expr_casted_data_type),
+        ValueType::kRight));
+    node_analyzes.insert(make_pair(expr_node_ptr, move(expr_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::ProgramProblems(), move(node_analyzes));
+
+    unique_ptr<Code> cmds_code(new Code());
+    cmds_code->WriteBytes(operand_code.GetData(), operand_code.GetSize());
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
@@ -8886,6 +8944,37 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualDouble) {
                  move(test_casts),
                  operands_code,
                  expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, NegateBool) {
+  BoolNode *operand_node_ptr = new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new NotNode(
+      TokenInfo(Token::kNotOp, "!", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new BoolDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new BoolLit(false))));
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadBoolValue);
+  operand_code.WriteBool(false);
+  CmdId expected_cmd_id = CmdId::kNegateBool;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
 }
 
 // TEST_F(SimpleCodeGeneratorTest, GenerateFailsOnCodeSizeOverflowError) {

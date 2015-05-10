@@ -35,6 +35,7 @@
 #include "real_talk/code/greater_or_equal_cmd.h"
 #include "real_talk/code/less_cmd.h"
 #include "real_talk/code/less_or_equal_cmd.h"
+#include "real_talk/code/negate_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -305,6 +306,8 @@ const LessOrEqualLongCmd &kLessOrEqualLongCmd =
     *new LessOrEqualLongCmd();
 const LessOrEqualDoubleCmd &kLessOrEqualDoubleCmd =
     *new LessOrEqualDoubleCmd();
+
+const NegateBoolCmd &kNegateBoolCmd = *new NegateBoolCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -836,6 +839,9 @@ const Cmd &CmdReader::GetNextCmd() {
       break;
     case CmdId::kLessOrEqualDouble:
       cmd = &kLessOrEqualDoubleCmd;
+      break;
+    case CmdId::kNegateBool:
+      cmd = &kNegateBoolCmd;
       break;
   }
 
