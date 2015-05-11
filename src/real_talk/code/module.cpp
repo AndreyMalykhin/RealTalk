@@ -12,7 +12,6 @@ using std::vector;
 using std::string;
 using std::move;
 using std::ostream;
-using boost::filesystem::path;
 using boost::format;
 
 namespace real_talk {
@@ -27,8 +26,7 @@ Module::Module(
     const vector<string> &ids_of_native_func_defs,
     const vector<IdAddresses> &id_addresses_of_func_refs,
     const vector<IdAddresses> &id_addresses_of_native_func_refs,
-    const vector<IdAddresses> &id_addresses_of_global_var_refs,
-    const vector<path> &import_file_paths)
+    const vector<IdAddresses> &id_addresses_of_global_var_refs)
     : version_(version),
       cmds_code_(move(cmds_code)),
       main_cmds_code_size_(main_cmds_code_size),
@@ -37,8 +35,7 @@ Module::Module(
       ids_of_native_func_defs_(ids_of_native_func_defs),
       id_addresses_of_func_refs_(id_addresses_of_func_refs),
       id_addresses_of_native_func_refs_(id_addresses_of_native_func_refs),
-      id_addresses_of_global_var_refs_(id_addresses_of_global_var_refs),
-      import_file_paths_(import_file_paths) {
+      id_addresses_of_global_var_refs_(id_addresses_of_global_var_refs) {
   assert(cmds_code_);
   assert(cmds_code_->GetSize() >= main_cmds_code_size_);
 }
@@ -87,15 +84,10 @@ const vector<IdAddresses> &Module::GetIdAddressesOfGlobalVarRefs() const {
   return id_addresses_of_global_var_refs_;
 }
 
-const vector<path> &Module::GetImportFilePaths() const {
-  return import_file_paths_;
-}
-
 bool operator==(const Module &lhs, const Module &rhs) {
   return lhs.version_ == rhs.version_
       && lhs.main_cmds_code_size_ == rhs.main_cmds_code_size_
       && *(lhs.cmds_code_) == *(rhs.cmds_code_)
-      && lhs.import_file_paths_ == rhs.import_file_paths_
       && lhs.id_addresses_of_global_var_refs_
       == rhs.id_addresses_of_global_var_refs_
       && lhs.ids_of_native_func_defs_ == rhs.ids_of_native_func_defs_
@@ -108,14 +100,7 @@ bool operator==(const Module &lhs, const Module &rhs) {
 
 ostream &operator<<(ostream &stream, Module &module) {
   stream << "version=" << module.GetVersion() << "\n"
-         << "import_file_paths=\n";
-
-  for (const path &import_file_path:
-           module.GetImportFilePaths()) {
-    stream << import_file_path << "\n";
-  }
-
-  stream << "id_addresses_of_func_defs=\n";
+         << "id_addresses_of_func_defs=\n";
 
   for (const IdAddress &id_address_of_func_def:
            module.GetIdAddressesOfFuncDefs()) {

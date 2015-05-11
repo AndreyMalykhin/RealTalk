@@ -258,14 +258,6 @@ void Code::WriteIdAddress(const IdAddress &id_address) {
   WriteUint32(id_address.GetAddress());
 }
 
-boost::filesystem::path Code::ReadFilePath() {
-  return boost::filesystem::path(ReadString());
-}
-
-void Code::WriteFilePath(const boost::filesystem::path &file_path) {
-  WriteString(file_path.generic_string());
-}
-
 bool Code::HasEnoughCapacity(uint32_t bytes_count) const {
   return capacity_ - GetPosition() >= bytes_count;
 }

@@ -2,7 +2,6 @@
 #ifndef _REAL_TALK_CODE_MODULE_H_
 #define _REAL_TALK_CODE_MODULE_H_
 
-#include <boost/filesystem.hpp>
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -25,8 +24,7 @@ class Module {
          const std::vector<std::string> &ids_of_native_func_defs,
          const std::vector<IdAddresses> &id_addresses_of_func_refs,
          const std::vector<IdAddresses> &id_addresses_of_native_func_refs,
-         const std::vector<IdAddresses> &id_addresses_of_global_var_refs,
-         const std::vector<boost::filesystem::path> &import_file_paths);
+         const std::vector<IdAddresses> &id_addresses_of_global_var_refs);
   Code &GetCmdsCode();
   const Code &GetCmdsCode() const;
   uint32_t GetMainCmdsCodeSize() const;
@@ -38,7 +36,6 @@ class Module {
   const std::vector<std::string> &GetIdsOfGlobalVarDefs() const;
   const std::vector<std::string> &GetIdsOfNativeFuncDefs() const;
   const std::vector<IdAddresses> &GetIdAddressesOfGlobalVarRefs() const;
-  const std::vector<boost::filesystem::path> &GetImportFilePaths() const;
   friend bool operator==(const Module &lhs, const Module &rhs);
   friend std::ostream &operator<<(std::ostream &stream, Module &module);
 
@@ -52,7 +49,6 @@ class Module {
   std::vector<IdAddresses> id_addresses_of_func_refs_;
   std::vector<IdAddresses> id_addresses_of_native_func_refs_;
   std::vector<IdAddresses> id_addresses_of_global_var_refs_;
-  std::vector<boost::filesystem::path> import_file_paths_;
 };
 }
 }

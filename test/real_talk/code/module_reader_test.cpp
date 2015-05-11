@@ -92,8 +92,7 @@ class ModuleReaderTest: public Test {
                              ids_of_native_func_defs,
                              id_addresses_of_func_refs,
                              id_addresses_of_native_func_refs,
-                             id_addresses_of_global_var_refs,
-                             import_file_paths);
+                             id_addresses_of_global_var_refs);
       TestModule test_data = {move(expected_module)};
       test_data_suits.push_back(move(test_data));
     }
@@ -118,8 +117,7 @@ class ModuleReaderTest: public Test {
                              ids_of_native_func_defs,
                              id_addresses_of_func_refs,
                              id_addresses_of_native_func_refs,
-                             id_addresses_of_global_var_refs,
-                             import_file_paths);
+                             id_addresses_of_global_var_refs);
       TestModule test_data = {move(expected_module)};
       test_data_suits.push_back(move(test_data));
     }

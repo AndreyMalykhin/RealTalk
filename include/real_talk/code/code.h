@@ -2,7 +2,6 @@
 #ifndef _REAL_TALK_CODE_CODE_H_
 #define _REAL_TALK_CODE_CODE_H_
 
-#include <boost/filesystem.hpp>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -50,7 +49,6 @@ class Code {
   CmdId ReadCmdId() noexcept;
   IdAddresses ReadIdAddresses();
   IdAddress ReadIdAddress();
-  boost::filesystem::path ReadFilePath();
   friend bool operator==(const Code &lhs, const Code &rhs);
 
   /**
@@ -122,11 +120,6 @@ class Code {
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
   void WriteIdAddress(const IdAddress &id_address);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteFilePath(const boost::filesystem::path &file_path);
 
  private:
   bool HasEnoughCapacity(uint32_t bytes_count) const;

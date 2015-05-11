@@ -1,5 +1,4 @@
 
-#include <boost/filesystem.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <vector>
 #include <string>
@@ -42,21 +41,11 @@ void WriteIdAddressesSegment(
 void WriteModule(const Module &module, Code &module_code) {
   module_code.WriteUint32(module.GetVersion());
   uint32_t segments_metadata_address = module_code.GetPosition();
-  module_code.Skip(17 * sizeof(uint32_t));
+  module_code.Skip(15 * sizeof(uint32_t));
 
   uint32_t cmds_address = module_code.GetPosition();
   module_code.WriteBytes(
       module.GetCmdsCode().GetData(), module.GetCmdsCode().GetSize());
-
-  uint32_t imports_metadata_address = module_code.GetPosition();
-
-  for (const boost::filesystem::path &import_file_path
-           : module.GetImportFilePaths()) {
-    module_code.WriteFilePath(import_file_path);
-  }
-
-  uint32_t imports_metadata_size =
-      module_code.GetPosition() - imports_metadata_address;
 
   uint32_t global_var_defs_metadata_address = module_code.GetPosition();
   WriteIdsSegment(module_code, module.GetIdsOfGlobalVarDefs());
@@ -97,8 +86,6 @@ void WriteModule(const Module &module, Code &module_code) {
   module_code.WriteUint32(cmds_address);
   module_code.WriteUint32(module.GetMainCmdsCodeSize());
   module_code.WriteUint32(module.GetFuncCmdsCodeSize());
-  WriteSegmentMetadata(
-      module_code, imports_metadata_address, imports_metadata_size);
   WriteSegmentMetadata(module_code,
                        global_var_defs_metadata_address,
                        global_var_defs_metadata_size);

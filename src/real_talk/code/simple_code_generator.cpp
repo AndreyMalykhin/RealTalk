@@ -1,5 +1,4 @@
 
-#include <boost/filesystem.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <unordered_map>
@@ -79,7 +78,6 @@ using std::vector;
 using std::numeric_limits;
 using std::unordered_map;
 using boost::numeric_cast;
-using boost::filesystem::path;
 using boost::adaptors::reverse;
 using real_talk::parser::ProgramNode;
 using real_talk::parser::NodeVisitor;
@@ -315,7 +313,6 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
    */
   uint32_t GenerateCmdsSegment();
 
-  void GenerateImportsSegment();
   void GenerateIdsSegment(const vector<string> &ids);
   void GenerateIdAddressesSegment(const Impl::IdAddresses &id_addresses);
   void GenerateMetadataSegments(uint32_t segments_metadata_address,
@@ -327,7 +324,6 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   const ProgramNode *program_;
   const SemanticAnalysis *semantic_analysis_;
   Code *code_;
-  vector<path> import_file_paths_;
   vector<string> ids_of_global_var_defs_;
   vector<string> ids_of_native_func_defs_;
   vector<IdAddress> id_addresses_of_func_defs_;
@@ -1560,7 +1556,7 @@ void SimpleCodeGenerator::Impl::Generate(
 
   code_->WriteUint32(version);
   const uint32_t segments_metadata_address = code_->GetPosition();
-  code_->Skip(17 * sizeof(uint32_t));
+  code_->Skip(15 * sizeof(uint32_t));
   cmds_address_ = code_->GetPosition();
   const uint32_t main_cmds_end_address = GenerateCmdsSegment();
   const uint32_t main_cmds_size = main_cmds_end_address - cmds_address_;
@@ -1569,7 +1565,6 @@ void SimpleCodeGenerator::Impl::Generate(
       segments_metadata_address, cmds_address_, main_cmds_size, func_cmds_size);
 
   assert(scopes_stack_.empty());
-  import_file_paths_.clear();
   ids_of_global_var_defs_.clear();
   id_addresses_of_func_defs_.clear();
   ids_of_native_func_defs_.clear();
@@ -1599,11 +1594,6 @@ void SimpleCodeGenerator::Impl::GenerateMetadataSegments(
     uint32_t cmds_address,
     uint32_t main_cmds_size,
     uint32_t func_cmds_size) {
-  const uint32_t imports_metadata_address = code_->GetPosition();
-  GenerateImportsSegment();
-  const uint32_t imports_metadata_size =
-      code_->GetPosition() - imports_metadata_address;
-
   const uint32_t global_var_defs_metadata_address = code_->GetPosition();
   GenerateIdsSegment(ids_of_global_var_defs_);
   const uint32_t global_var_defs_metadata_size =
@@ -1642,8 +1632,6 @@ void SimpleCodeGenerator::Impl::GenerateMetadataSegments(
   code_->WriteUint32(cmds_address);
   code_->WriteUint32(main_cmds_size);
   code_->WriteUint32(func_cmds_size);
-  code_->WriteUint32(imports_metadata_address);
-  code_->WriteUint32(imports_metadata_size);
   code_->WriteUint32(global_var_defs_metadata_address);
   code_->WriteUint32(global_var_defs_metadata_size);
   code_->WriteUint32(func_defs_metadata_address);
@@ -1656,12 +1644,6 @@ void SimpleCodeGenerator::Impl::GenerateMetadataSegments(
   code_->WriteUint32(func_refs_metadata_size);
   code_->WriteUint32(native_func_refs_metadata_address);
   code_->WriteUint32(native_func_refs_metadata_size);
-}
-
-void SimpleCodeGenerator::Impl::GenerateImportsSegment() {
-  for (const path &import_file_path: import_file_paths_) {
-    code_->WriteFilePath(import_file_path);
-  }
 }
 
 void SimpleCodeGenerator::Impl::GenerateIdsSegment(const vector<string> &ids) {
@@ -1685,13 +1667,7 @@ void SimpleCodeGenerator::Impl::VisitProgram(const ProgramNode &node) {
   }
 }
 
-void SimpleCodeGenerator::Impl::VisitImport(const ImportNode &node) {
-  const LitAnalysis &lit_analysis =
-      static_cast<const LitAnalysis&>(GetNodeAnalysis(*node.GetFilePath()));
-  const path file_path(
-      static_cast<const StringLit&>(lit_analysis.GetLit()).GetValue());
-  import_file_paths_.push_back(file_path);
-}
+void SimpleCodeGenerator::Impl::VisitImport(const ImportNode&) {}
 
 void SimpleCodeGenerator::Impl::VisitVarDefWithoutInit(
     const VarDefWithoutInitNode &node) {

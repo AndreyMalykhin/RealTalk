@@ -1,7 +1,6 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <boost/filesystem.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <vector>
 #include <string>
@@ -115,7 +114,6 @@ using testing::Return;
 using testing::Ref;
 using testing::ByRef;
 using testing::Eq;
-using boost::filesystem::path;
 using boost::numeric_cast;
 using real_talk::lexer::Token;
 using real_talk::lexer::TokenInfo;
@@ -284,7 +282,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -300,8 +297,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(vector<TestCast>(),
@@ -351,7 +347,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -367,8 +362,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -419,7 +413,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -435,8 +428,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -470,7 +462,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -486,8 +477,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(vector<TestCast>(),
@@ -518,7 +508,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -534,8 +523,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(vector<TestCast>(),
@@ -638,7 +626,6 @@ class SimpleCodeGeneratorTest: public Test {
         {move(dest_data_type2), move(src_data_type2), CmdId::kCastCharToInt};
     test_casts.push_back(move(test_cast2));
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -654,8 +641,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -727,7 +713,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -743,8 +728,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -814,7 +798,6 @@ class SimpleCodeGeneratorTest: public Test {
     uint32_t func_def_address = cmds_code->GetPosition();
     cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
     vector<string> ids_of_native_func_defs;
@@ -830,8 +813,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -887,7 +869,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -904,8 +885,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(vector<TestCast>(),
@@ -960,7 +940,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -976,8 +955,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(vector<TestCast>(),
@@ -1052,7 +1030,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -1069,8 +1046,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -1144,7 +1120,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -1160,8 +1135,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -1260,7 +1234,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -1277,8 +1250,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -1396,7 +1368,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(store_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs = {"var"};
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -1413,8 +1384,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -1461,7 +1431,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -1477,8 +1446,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -1520,7 +1488,6 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<path> import_file_paths;
     vector<string> ids_of_global_var_defs;
     vector<IdAddress> id_addresses_of_func_defs;
     vector<string> ids_of_native_func_defs;
@@ -1536,8 +1503,7 @@ class SimpleCodeGeneratorTest: public Test {
                   ids_of_native_func_defs,
                   id_addresses_of_func_refs,
                   id_addresses_of_native_func_refs,
-                  id_addresses_of_global_var_refs,
-                  import_file_paths);
+                  id_addresses_of_global_var_refs);
     Code module_code;
     WriteModule(module, module_code);
     TestGenerate(move(test_casts),
@@ -1718,7 +1684,6 @@ TEST_F(SimpleCodeGeneratorTest, ExprStmt) {
   cmds_code->WriteCmdId(CmdId::kUnload);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -1734,8 +1699,7 @@ TEST_F(SimpleCodeGeneratorTest, ExprStmt) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -1862,7 +1826,6 @@ TEST_F(SimpleCodeGeneratorTest, Import) {
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths = {"file.rt"};
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -1878,8 +1841,7 @@ TEST_F(SimpleCodeGeneratorTest, Import) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -2991,7 +2953,6 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -3007,8 +2968,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -3195,7 +3155,6 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -3211,8 +3170,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -3365,7 +3323,6 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -3381,8 +3338,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -3530,7 +3486,6 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -3546,8 +3501,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -3629,7 +3583,6 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -3645,8 +3598,7 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -3726,7 +3678,6 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -3742,8 +3693,7 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -3828,7 +3778,6 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -3844,8 +3793,7 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -3927,7 +3875,6 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -3943,8 +3890,7 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -4029,7 +3975,6 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -4045,8 +3990,7 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -4159,7 +4103,6 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -4175,8 +4118,7 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -4258,7 +4200,6 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -4274,8 +4215,7 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -4385,7 +4325,6 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -4401,8 +4340,7 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -4489,7 +4427,6 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
   vector<string> ids_of_native_func_defs;
@@ -4505,8 +4442,7 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -4568,7 +4504,6 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kReturn);
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
   vector<string> ids_of_native_func_defs;
@@ -4584,8 +4519,7 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -4911,7 +4845,6 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithoutBody) {
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs = {{"func"}};
@@ -4927,8 +4860,7 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithoutBody) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -5767,7 +5699,6 @@ TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
   vector<string> ids_of_native_func_defs;
@@ -5784,8 +5715,7 @@ TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(move(test_casts),
@@ -5940,7 +5870,6 @@ TEST_F(SimpleCodeGeneratorTest, NativeCall) {
   cmds_code->WriteCmdId(CmdId::kCallNative);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs = {"func"};
@@ -5957,8 +5886,7 @@ TEST_F(SimpleCodeGeneratorTest, NativeCall) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(move(test_casts),
@@ -6327,7 +6255,6 @@ TEST_F(SimpleCodeGeneratorTest, And) {
   cmds_code->WriteCmdId(CmdId::kUnload);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -6343,8 +6270,7 @@ TEST_F(SimpleCodeGeneratorTest, And) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
@@ -6419,7 +6345,6 @@ TEST_F(SimpleCodeGeneratorTest, Or) {
   cmds_code->WriteCmdId(CmdId::kUnload);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<path> import_file_paths;
   vector<string> ids_of_global_var_defs;
   vector<IdAddress> id_addresses_of_func_defs;
   vector<string> ids_of_native_func_defs;
@@ -6435,8 +6360,7 @@ TEST_F(SimpleCodeGeneratorTest, Or) {
                 ids_of_native_func_defs,
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs,
-                import_file_paths);
+                id_addresses_of_global_var_refs);
   Code module_code;
   WriteModule(module, module_code);
   TestGenerate(vector<TestCast>(),
