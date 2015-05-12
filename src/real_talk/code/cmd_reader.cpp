@@ -35,7 +35,10 @@
 #include "real_talk/code/greater_or_equal_cmd.h"
 #include "real_talk/code/less_cmd.h"
 #include "real_talk/code/less_or_equal_cmd.h"
-#include "real_talk/code/negate_cmd.h"
+#include "real_talk/code/logical_negate_cmd.h"
+#include "real_talk/code/arithmetic_negate_cmd.h"
+#include "real_talk/code/pre_dec_cmd.h"
+#include "real_talk/code/pre_inc_cmd.h"
 #include "real_talk/code/code.h"
 
 namespace real_talk {
@@ -307,7 +310,24 @@ const LessOrEqualLongCmd &kLessOrEqualLongCmd =
 const LessOrEqualDoubleCmd &kLessOrEqualDoubleCmd =
     *new LessOrEqualDoubleCmd();
 
-const NegateBoolCmd &kNegateBoolCmd = *new NegateBoolCmd();
+const LogicalNegateBoolCmd &kLogicalNegateBoolCmd = *new LogicalNegateBoolCmd();
+
+const PreDecCharCmd &kPreDecCharCmd = *new PreDecCharCmd();
+const PreDecIntCmd &kPreDecIntCmd = *new PreDecIntCmd();
+const PreDecLongCmd &kPreDecLongCmd = *new PreDecLongCmd();
+const PreDecDoubleCmd &kPreDecDoubleCmd = *new PreDecDoubleCmd();
+
+const PreIncCharCmd &kPreIncCharCmd = *new PreIncCharCmd();
+const PreIncIntCmd &kPreIncIntCmd = *new PreIncIntCmd();
+const PreIncLongCmd &kPreIncLongCmd = *new PreIncLongCmd();
+const PreIncDoubleCmd &kPreIncDoubleCmd = *new PreIncDoubleCmd();
+
+const ArithmeticNegateIntCmd &kArithmeticNegateIntCmd =
+    *new ArithmeticNegateIntCmd();
+const ArithmeticNegateLongCmd &kArithmeticNegateLongCmd =
+    *new ArithmeticNegateLongCmd();
+const ArithmeticNegateDoubleCmd &kArithmeticNegateDoubleCmd =
+    *new ArithmeticNegateDoubleCmd();
 }
 
 void CmdReader::SetCode(Code *code) {
@@ -840,8 +860,41 @@ const Cmd &CmdReader::GetNextCmd() {
     case CmdId::kLessOrEqualDouble:
       cmd = &kLessOrEqualDoubleCmd;
       break;
-    case CmdId::kNegateBool:
-      cmd = &kNegateBoolCmd;
+    case CmdId::kLogicalNegateBool:
+      cmd = &kLogicalNegateBoolCmd;
+      break;
+    case CmdId::kPreDecChar:
+      cmd = &kPreDecCharCmd;
+      break;
+    case CmdId::kPreDecInt:
+      cmd = &kPreDecIntCmd;
+      break;
+    case CmdId::kPreDecLong:
+      cmd = &kPreDecLongCmd;
+      break;
+    case CmdId::kPreDecDouble:
+      cmd = &kPreDecDoubleCmd;
+      break;
+    case CmdId::kPreIncChar:
+      cmd = &kPreIncCharCmd;
+      break;
+    case CmdId::kPreIncInt:
+      cmd = &kPreIncIntCmd;
+      break;
+    case CmdId::kPreIncLong:
+      cmd = &kPreIncLongCmd;
+      break;
+    case CmdId::kPreIncDouble:
+      cmd = &kPreIncDoubleCmd;
+      break;
+    case CmdId::kArithmeticNegateInt:
+      cmd = &kArithmeticNegateIntCmd;
+      break;
+    case CmdId::kArithmeticNegateLong:
+      cmd = &kArithmeticNegateLongCmd;
+      break;
+    case CmdId::kArithmeticNegateDouble:
+      cmd = &kArithmeticNegateDoubleCmd;
       break;
   }
 

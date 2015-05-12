@@ -55,6 +55,9 @@
 #include "real_talk/parser/less_node.h"
 #include "real_talk/parser/less_or_equal_node.h"
 #include "real_talk/parser/not_node.h"
+#include "real_talk/parser/pre_dec_node.h"
+#include "real_talk/parser/pre_inc_node.h"
+#include "real_talk/parser/negative_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 #include "real_talk/semantic/global_var_def_analysis.h"
@@ -175,6 +178,9 @@ using real_talk::parser::GreaterOrEqualNode;
 using real_talk::parser::LessNode;
 using real_talk::parser::LessOrEqualNode;
 using real_talk::parser::NotNode;
+using real_talk::parser::PreDecNode;
+using real_talk::parser::PreIncNode;
+using real_talk::parser::NegativeNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::NodeSemanticAnalysis;
 using real_talk::semantic::LocalVarDefAnalysis;
@@ -8870,7 +8876,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualDouble) {
                  expected_cmd_id);
 }
 
-TEST_F(SimpleCodeGeneratorTest, NegateBool) {
+TEST_F(SimpleCodeGeneratorTest, LogicalNegateBool) {
   BoolNode *operand_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(0), UINT32_C(0)));
   unique_ptr<ExprNode> operand_node(operand_node_ptr);
@@ -8890,7 +8896,348 @@ TEST_F(SimpleCodeGeneratorTest, NegateBool) {
   Code operand_code;
   operand_code.WriteCmdId(CmdId::kLoadBoolValue);
   operand_code.WriteBool(false);
-  CmdId expected_cmd_id = CmdId::kNegateBool;
+  CmdId expected_cmd_id = CmdId::kLogicalNegateBool;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, PreDecChar) {
+  CharNode *operand_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new PreDecNode(
+      TokenInfo(Token::kPreDecOp, "--", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new CharDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
+  unique_ptr<DataType> expr_data_type(new CharDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadCharValue);
+  operand_code.WriteChar('a');
+  CmdId expected_cmd_id = CmdId::kPreDecChar;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, PreDecInt) {
+  IntNode *operand_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new PreDecNode(
+      TokenInfo(Token::kPreDecOp, "--", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new IntDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  unique_ptr<DataType> expr_data_type(new IntDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadIntValue);
+  operand_code.WriteInt32(INT32_C(7));
+  CmdId expected_cmd_id = CmdId::kPreDecInt;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, PreDecLong) {
+  LongNode *operand_node_ptr = new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new PreDecNode(
+      TokenInfo(Token::kPreDecOp, "--", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new LongDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
+  unique_ptr<DataType> expr_data_type(new LongDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadLongValue);
+  operand_code.WriteInt64(INT64_C(7));
+  CmdId expected_cmd_id = CmdId::kPreDecLong;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, PreDecDouble) {
+  DoubleNode *operand_node_ptr = new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new PreDecNode(
+      TokenInfo(Token::kPreDecOp, "--", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new DoubleDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(7.7))));
+  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadDoubleValue);
+  operand_code.WriteDouble(7.7);
+  CmdId expected_cmd_id = CmdId::kPreDecDouble;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, PreIncChar) {
+  CharNode *operand_node_ptr = new CharNode(
+      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new PreIncNode(
+      TokenInfo(Token::kPreIncOp, "--", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new CharDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new CharLit('a'))));
+  unique_ptr<DataType> expr_data_type(new CharDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadCharValue);
+  operand_code.WriteChar('a');
+  CmdId expected_cmd_id = CmdId::kPreIncChar;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, PreIncInt) {
+  IntNode *operand_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new PreIncNode(
+      TokenInfo(Token::kPreIncOp, "--", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new IntDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  unique_ptr<DataType> expr_data_type(new IntDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadIntValue);
+  operand_code.WriteInt32(INT32_C(7));
+  CmdId expected_cmd_id = CmdId::kPreIncInt;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, PreIncLong) {
+  LongNode *operand_node_ptr = new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new PreIncNode(
+      TokenInfo(Token::kPreIncOp, "--", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new LongDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
+  unique_ptr<DataType> expr_data_type(new LongDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadLongValue);
+  operand_code.WriteInt64(INT64_C(7));
+  CmdId expected_cmd_id = CmdId::kPreIncLong;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, PreIncDouble) {
+  DoubleNode *operand_node_ptr = new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new PreIncNode(
+      TokenInfo(Token::kPreIncOp, "--", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new DoubleDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(7.7))));
+  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadDoubleValue);
+  operand_code.WriteDouble(7.7);
+  CmdId expected_cmd_id = CmdId::kPreIncDouble;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateInt) {
+  IntNode *operand_node_ptr = new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new NegativeNode(
+      TokenInfo(Token::kSubOp, "-", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new IntDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
+  unique_ptr<DataType> expr_data_type(new IntDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadIntValue);
+  operand_code.WriteInt32(INT32_C(7));
+  CmdId expected_cmd_id = CmdId::kArithmeticNegateInt;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateLong) {
+  LongNode *operand_node_ptr = new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new NegativeNode(
+      TokenInfo(Token::kSubOp, "-", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new LongDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
+  unique_ptr<DataType> expr_data_type(new LongDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadLongValue);
+  operand_code.WriteInt64(INT64_C(7));
+  CmdId expected_cmd_id = CmdId::kArithmeticNegateLong;
+
+  TestUnaryExpr(operand_node_ptr,
+                move(expr_node),
+                move(operand_analysis),
+                move(expr_data_type),
+                vector<TestCast>(),
+                operand_code,
+                expected_cmd_id);
+}
+
+TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateDouble) {
+  DoubleNode *operand_node_ptr = new DoubleNode(
+      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(0), UINT32_C(0)));
+  unique_ptr<ExprNode> operand_node(operand_node_ptr);
+  unique_ptr<ExprNode> expr_node(new NegativeNode(
+      TokenInfo(Token::kSubOp, "-", UINT32_C(1), UINT32_C(1)),
+      move(operand_node)));
+
+  unique_ptr<DataType> operand_data_type(new DoubleDataType());
+  unique_ptr<DataType> operand_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
+      move(operand_data_type),
+      move(operand_casted_data_type),
+      ValueType::kRight,
+      unique_ptr<Lit>(new DoubleLit(7.7))));
+  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+
+  Code operand_code;
+  operand_code.WriteCmdId(CmdId::kLoadDoubleValue);
+  operand_code.WriteDouble(7.7);
+  CmdId expected_cmd_id = CmdId::kArithmeticNegateDouble;
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),

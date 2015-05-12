@@ -46,6 +46,9 @@
 #include "real_talk/parser/less_node.h"
 #include "real_talk/parser/less_or_equal_node.h"
 #include "real_talk/parser/not_node.h"
+#include "real_talk/parser/pre_dec_node.h"
+#include "real_talk/parser/pre_inc_node.h"
+#include "real_talk/parser/negative_node.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/array_data_type.h"
 #include "real_talk/semantic/void_data_type.h"
@@ -226,7 +229,10 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class GreaterOrEqualCmdGenerator;
   class LessCmdGenerator;
   class LessOrEqualCmdGenerator;
-  class NegateCmdGenerator;
+  class LogicalNegateCmdGenerator;
+  class ArithmeticNegateCmdGenerator;
+  class PreDecCmdGenerator;
+  class PreIncCmdGenerator;
 
   typedef unordered_map<string, vector<uint32_t>> IdAddresses;
 
@@ -1513,11 +1519,11 @@ class SimpleCodeGenerator::Impl::LessOrEqualCmdGenerator
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
 };
 
-class SimpleCodeGenerator::Impl::NegateCmdGenerator
+class SimpleCodeGenerator::Impl::LogicalNegateCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kNegateBool);
+    code_->WriteCmdId(CmdId::kLogicalNegateBool);
   }
 
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
@@ -1526,6 +1532,75 @@ class SimpleCodeGenerator::Impl::NegateCmdGenerator
   virtual void VisitDouble(const DoubleDataType&) override {assert(false);}
   virtual void VisitChar(const CharDataType&) override {assert(false);}
   virtual void VisitString(const StringDataType&) override {assert(false);}
+};
+
+class SimpleCodeGenerator::Impl::ArithmeticNegateCmdGenerator
+    : public ExprCmdGenerator {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kArithmeticNegateInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kArithmeticNegateLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kArithmeticNegateDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {assert(false);}
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+};
+
+class SimpleCodeGenerator::Impl::PreDecCmdGenerator
+    : public ExprCmdGenerator {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kPreDecInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kPreDecLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kPreDecDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kPreDecChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
+};
+
+class SimpleCodeGenerator::Impl::PreIncCmdGenerator
+    : public ExprCmdGenerator {
+ private:
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kPreIncInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kPreIncLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kPreIncDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kPreIncChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {assert(false);}
+  virtual void VisitBool(const BoolDataType&) override {assert(false);}
+  virtual void VisitArray(const ArrayDataType&) override {assert(false);}
 };
 
 SimpleCodeGenerator::SimpleCodeGenerator(
@@ -2060,15 +2135,24 @@ void SimpleCodeGenerator::Impl::VisitBinaryExpr(
 }
 
 void SimpleCodeGenerator::Impl::VisitNot(const NotNode &node) {
-  NegateCmdGenerator cmd_generator;
+  LogicalNegateCmdGenerator cmd_generator;
   VisitUnaryExpr(node, &cmd_generator);
 }
 
-void SimpleCodeGenerator::Impl::VisitNegative(const NegativeNode&) {}
+void SimpleCodeGenerator::Impl::VisitNegative(const NegativeNode &node) {
+  ArithmeticNegateCmdGenerator cmd_generator;
+  VisitUnaryExpr(node, &cmd_generator);
+}
 
-void SimpleCodeGenerator::Impl::VisitPreDec(const PreDecNode&) {}
+void SimpleCodeGenerator::Impl::VisitPreDec(const PreDecNode &node) {
+  PreDecCmdGenerator cmd_generator;
+  VisitUnaryExpr(node, &cmd_generator);
+}
 
-void SimpleCodeGenerator::Impl::VisitPreInc(const PreIncNode&) {}
+void SimpleCodeGenerator::Impl::VisitPreInc(const PreIncNode &node) {
+  PreIncCmdGenerator cmd_generator;
+  VisitUnaryExpr(node, &cmd_generator);
+}
 
 void SimpleCodeGenerator::Impl::VisitUnaryExpr(
     const UnaryExprNode &node, ExprCmdGenerator *cmd_generator) {

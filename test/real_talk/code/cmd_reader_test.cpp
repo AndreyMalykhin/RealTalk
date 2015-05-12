@@ -37,7 +37,10 @@
 #include "real_talk/code/greater_or_equal_cmd.h"
 #include "real_talk/code/less_cmd.h"
 #include "real_talk/code/less_or_equal_cmd.h"
-#include "real_talk/code/negate_cmd.h"
+#include "real_talk/code/logical_negate_cmd.h"
+#include "real_talk/code/arithmetic_negate_cmd.h"
+#include "real_talk/code/pre_dec_cmd.h"
+#include "real_talk/code/pre_inc_cmd.h"
 #include "real_talk/code/code.h"
 
 using std::stringstream;
@@ -1194,10 +1197,59 @@ TEST_F(CmdReaderTest, LessOrEqualDoubleCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, NegateBoolCmd) {
-  NegateBoolCmd expected_cmd;
+TEST_F(CmdReaderTest, LogicalNegateBoolCmd) {
+  LogicalNegateBoolCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kNegateBool);
+  code.WriteCmdId(CmdId::kLogicalNegateBool);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, PreDecCharCmd) {
+  PreDecCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kPreDecChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, PreDecIntCmd) {
+  PreDecIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kPreDecInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, PreDecLongCmd) {
+  PreDecLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kPreDecLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, PreDecDoubleCmd) {
+  PreDecDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kPreDecDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ArithmeticNegateIntCmd) {
+  ArithmeticNegateIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kArithmeticNegateInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ArithmeticNegateLongCmd) {
+  ArithmeticNegateLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kArithmeticNegateLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, ArithmeticNegateDoubleCmd) {
+  ArithmeticNegateDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kArithmeticNegateDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 }

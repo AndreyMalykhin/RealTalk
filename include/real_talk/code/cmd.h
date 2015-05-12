@@ -168,7 +168,18 @@ enum class CmdId: uint8_t {
   kLessOrEqualInt,
   kLessOrEqualLong,
   kLessOrEqualDouble,
-  kNegateBool
+  kPreDecChar,
+  kPreDecInt,
+  kPreDecLong,
+  kPreDecDouble,
+  kPreIncChar,
+  kPreIncInt,
+  kPreIncLong,
+  kPreIncDouble,
+  kLogicalNegateBool,
+  kArithmeticNegateInt,
+  kArithmeticNegateLong,
+  kArithmeticNegateDouble
 };
 
 class Cmd {
