@@ -78,6 +78,7 @@ add_executable(real_talk_tests
   test/real_talk/code/cmd_reader_test.cpp
   test/real_talk/code/test_utils.cpp
   test/real_talk/code/simple_cast_cmd_generator_test.cpp
+  test/real_talk/compiler/compiler_test.cpp
   test/real_talk/util/endianness_test.cpp
   )
 target_include_directories(real_talk_tests PRIVATE test)
