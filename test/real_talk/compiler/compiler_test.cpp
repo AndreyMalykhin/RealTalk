@@ -5,9 +5,11 @@
 #include <vector>
 #include "real_talk/semantic/semantic_analyzer.h"
 #include "real_talk/code/code_generator.h"
+#include "real_talk/code/code.h"
 #include "real_talk/util/file.h"
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/compiler/compiler_config_parser.h"
+#include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/file_parser.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/compiler.h"
@@ -80,23 +82,23 @@ class CompilerTest: public Test {
 
 TEST_F(CompilerTest, Compile) {
   int argc = 4;
-  char *argv[] = {"realtalkc",
-                  "--import=/mylib",
-                  "--import=/mylib2",
-                  "app/module/component.rts"};
+  const char *argv[] = {"realtalkc",
+                        "--import=/mylib",
+                        "--import=/mylib2",
+                        "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   CompilerConfig compiler_config(input_file_path);
   compiler_config.SetSrcDirPath("src2");
   compiler_config.SetBinDirPath("build2/bin2");
+  compiler_config.SetVendorDirPath("vendor2");
   compiler_config.SetImportDirPaths(
       vector<path>({"/mylib", "/mylib2"}));
-  compiler_config.SetVendorDirPath("vendor2");
   CompilerConfigParserMock compiler_config_parser;
   EXPECT_CALL(compiler_config_parser, Parse(argc, argv, &compiler_config))
       .Times(1);
 
   unique_ptr<ProgramNode> main_program;
-  SemanticAnalysis::ImportPrograms import_programs;
+  FileParser::ImportPrograms import_programs;
   FileParser::Programs programs(move(main_program), move(import_programs));
   FileParserMock file_parser;
   EXPECT_CALL(file_parser, Parse(compiler_config.GetInputFilePath(),
