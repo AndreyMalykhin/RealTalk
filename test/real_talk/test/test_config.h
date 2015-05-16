@@ -1,10 +1,11 @@
 
-#ifndef _REAL_TALK_TEST_CONFIG_H_
-#define _REAL_TALK_TEST_CONFIG_H_
+#ifndef _REAL_TALK_TEST_TEST_CONFIG_H_
+#define _REAL_TALK_TEST_TEST_CONFIG_H_
 
 #include <boost/filesystem.hpp>
 
 namespace real_talk {
+namespace test {
 
 class TestConfig {
  public:
@@ -14,5 +15,6 @@ class TestConfig {
     return kResourceDir;
   }
 };
+}
 }
 #endif

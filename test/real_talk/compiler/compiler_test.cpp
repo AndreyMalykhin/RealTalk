@@ -3,7 +3,10 @@
 #include <gmock/gmock.h>
 #include <cstdint>
 #include <vector>
+#include <iostream>
+#include "real_talk/parser/program_node.h"
 #include "real_talk/semantic/semantic_analyzer.h"
+#include "real_talk/semantic/node_semantic_analysis.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/code.h"
 #include "real_talk/util/file.h"
@@ -13,17 +16,21 @@
 #include "real_talk/compiler/file_parser.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/compiler.h"
+#include "real_talk/test/path_printer.h"
 
 using std::move;
 using std::vector;
 using std::unique_ptr;
+using std::ostream;
 using boost::filesystem::path;
 using testing::InvokeWithoutArgs;
 using testing::Test;
 using testing::Eq;
 using testing::Return;
 using testing::ByRef;
+using testing::Ref;
 using real_talk::parser::ProgramNode;
+using real_talk::parser::StmtNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::SemanticAnalyzer;
 using real_talk::code::Code;
@@ -41,14 +48,30 @@ class CompilerConfigParserMock: public CompilerConfigParser {
 
 class FileParserMock: public FileParser {
  public:
-  MOCK_CONST_METHOD4(Parse, FileParser::Programs(
+  virtual unique_ptr<Programs> Parse(
+      const path &file_path,
+      const path &src_dir_path,
+      const path &vendor_dir_path,
+      const vector<path> &import_dir_paths) const override {
+    return unique_ptr<Programs>(
+        Parse_(file_path, src_dir_path, vendor_dir_path, import_dir_paths));
+  }
+
+  MOCK_CONST_METHOD4(Parse_, Programs*(
       const path&, const path&, const path&, const vector<path>&));
 };
 
 class SemanticAnalyzerMock: public SemanticAnalyzer {
  public:
-  MOCK_METHOD2(Analyze, SemanticAnalysis(
-      const ProgramNode&, const SemanticAnalyzer::ImportPrograms&));
+  virtual unique_ptr<SemanticAnalysis> Analyze(
+      const ProgramNode &main_program,
+      const ImportPrograms &import_programs) override {
+    return unique_ptr<SemanticAnalysis>(
+        Analyze_(main_program, import_programs));
+  }
+
+  MOCK_METHOD2(Analyze_,
+               SemanticAnalysis*(const ProgramNode&, const ImportPrograms&));
 };
 
 class MsgPrinterMock: public MsgPrinter {
@@ -81,57 +104,58 @@ class CompilerTest: public Test {
 };
 
 TEST_F(CompilerTest, Compile) {
+  ASSERT_EQ(path("test"), path("test2"));
+
   int argc = 4;
   const char *argv[] = {"realtalkc",
                         "--import=/mylib",
                         "--import=/mylib2",
                         "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
-  CompilerConfig compiler_config(input_file_path);
-  compiler_config.SetSrcDirPath("src2");
-  compiler_config.SetBinDirPath("build2/bin2");
-  compiler_config.SetVendorDirPath("vendor2");
-  compiler_config.SetImportDirPaths(
-      vector<path>({"/mylib", "/mylib2"}));
-  CompilerConfigParserMock compiler_config_parser;
-  EXPECT_CALL(compiler_config_parser, Parse(argc, argv, &compiler_config))
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  config.SetBinDirPath("build2/bin2");
+  config.SetVendorDirPath("vendor2");
+  config.SetImportDirPaths(vector<path>({"/mylib", "/mylib2"}));
+  CompilerConfigParserMock config_parser;
+  EXPECT_CALL(config_parser, Parse(argc, argv, &config))
       .Times(1);
 
-  unique_ptr<ProgramNode> main_program;
+  unique_ptr<ProgramNode> main_program(
+      new ProgramNode(vector< unique_ptr<StmtNode> >()));
   FileParser::ImportPrograms import_programs;
-  FileParser::Programs programs(move(main_program), move(import_programs));
+  auto *programs_ptr = new FileParser::Programs(
+      move(main_program), move(import_programs));
+  unique_ptr<FileParser::Programs> programs(programs_ptr);
   FileParserMock file_parser;
-  EXPECT_CALL(file_parser, Parse(compiler_config.GetInputFilePath(),
-                                 compiler_config.GetSrcDirPath(),
-                                 compiler_config.GetVendorDirPath(),
-                                 compiler_config.GetImportDirPaths()))
+  EXPECT_CALL(file_parser, Parse_(config.GetInputFilePath(),
+                                  config.GetSrcDirPath(),
+                                  config.GetVendorDirPath(),
+                                  config.GetImportDirPaths()))
       .Times(1)
-      .WillOnce(Return(InvokeWithoutArgs([&programs]() {
-              return programs;
-            })));
+      .WillOnce(Return(programs.release()));
 
   SemanticAnalysis::ProgramProblems semantic_problems;
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  SemanticAnalysis semantic_analysis(
+  auto *semantic_analysis_ptr = new SemanticAnalysis(
       move(semantic_problems), move(node_analyzes));
+  unique_ptr<SemanticAnalysis> semantic_analysis(semantic_analysis_ptr);
   SemanticAnalyzerMock semantic_analyzer;
-  EXPECT_CALL(semantic_analyzer, Analyze(Eq(ByRef(programs.GetMain())),
-                                         Eq(ByRef(programs.GetImport()))))
+  EXPECT_CALL(semantic_analyzer, Analyze_(Ref(programs_ptr->GetMain()),
+                                          Ref(programs_ptr->GetImport())))
       .Times(1)
-      .WillOnce(Return(InvokeWithoutArgs([&semantic_analysis]() {
-              return semantic_analysis;
-            })));
+      .WillOnce(Return(semantic_analysis.release()));
 
   MsgPrinterMock msg_printer;
   EXPECT_CALL(msg_printer,
-              PrintProblems(Eq(ByRef(semantic_analysis.GetProblems()))))
+              PrintProblems(Ref(semantic_analysis_ptr->GetProblems())))
       .Times(1);
 
   Code code;
   uint32_t code_version = UINT32_C(1);
   CodeGeneratorMock code_generator;
-  EXPECT_CALL(code_generator, Generate(Eq(ByRef(programs.GetMain())),
-                                       Eq(ByRef(semantic_analysis)),
+  EXPECT_CALL(code_generator, Generate(Ref(programs_ptr->GetMain()),
+                                       Ref(*semantic_analysis_ptr),
                                        code_version,
                                        &code))
       .Times(1);
@@ -145,19 +169,19 @@ TEST_F(CompilerTest, Compile) {
   path output_file_path("build2/bin2/app/module/component.rtm");
   EXPECT_CALL(file, Open(output_file_path))
       .Times(1);
-  EXPECT_CALL(file, Write(Eq(ByRef(code))))
+  EXPECT_CALL(file, Write(Ref(code)))
       .Times(1);
 
-  Compiler compiler(compiler_config_parser,
+  Compiler compiler(config_parser,
                     file_parser,
-                    semantic_analyzer,
-                    code_generator,
+                    &semantic_analyzer,
+                    &code_generator,
                     msg_printer,
                     dir_creator,
-                    &compiler_config,
+                    &config,
                     &file,
                     &code);
-  compiler_config.Compile(argc, argv);
+  compiler.Compile(argc, argv);
 }
 }
 }

@@ -15,7 +15,6 @@
 #include "real_talk/lexer/lexer.h"
 #include "real_talk/util/errors.h"
 #include "real_talk/parser/parser.h"
-#include "real_talk/parser/file_parser.h"
 #include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/sum_node.h"
@@ -185,7 +184,6 @@ using real_talk::parser::VarDefNode;
 using real_talk::parser::ArgDefNode;
 using real_talk::parser::LitNode;
 using real_talk::parser::BranchNode;
-using real_talk::parser::FileParser;
 using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::UnboundedArraySizeNode;
 using real_talk::parser::ArrayAllocNode;
@@ -203,8 +201,8 @@ namespace semantic {
 class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
  public:
   explicit Impl(const LitParser &lit_parser);
-  SemanticAnalysis Analyze(const ProgramNode &main_program,
-                           const ImportPrograms &import_programs);
+  unique_ptr<SemanticAnalysis> Analyze(const ProgramNode &main_program,
+                                       const ImportPrograms &import_programs);
 
  private:
   enum class ScopeType: uint8_t;
@@ -666,7 +664,7 @@ SimpleSemanticAnalyzer::SimpleSemanticAnalyzer(const LitParser &lit_parser)
 
 SimpleSemanticAnalyzer::~SimpleSemanticAnalyzer() {}
 
-SemanticAnalysis SimpleSemanticAnalyzer::Analyze(
+unique_ptr<SemanticAnalysis> SimpleSemanticAnalyzer::Analyze(
     const ProgramNode &main_program,
     const ImportPrograms &import_programs) {
   return impl_->Analyze(main_program, import_programs);
@@ -675,9 +673,8 @@ SemanticAnalysis SimpleSemanticAnalyzer::Analyze(
 SimpleSemanticAnalyzer::Impl::Impl(const LitParser &lit_parser)
     : lit_parser_(lit_parser) {}
 
-SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze(
-    const ProgramNode &main_program,
-    const ImportPrograms &import_programs) {
+unique_ptr<SemanticAnalysis> SimpleSemanticAnalyzer::Impl::Analyze(
+    const ProgramNode &main_program, const ImportPrograms &import_programs) {
   assert(problems_.empty());
   assert(node_analyzes_.empty());
   assert(scopes_stack_.empty());
@@ -698,7 +695,8 @@ SemanticAnalysis SimpleSemanticAnalyzer::Impl::Analyze(
 
   assert(scopes_stack_.empty());
   assert(assignee_contexts_stack_.empty());
-  SemanticAnalysis analysis(move(problems_), move(node_analyzes_));
+  unique_ptr<SemanticAnalysis> analysis(
+      new SemanticAnalysis(move(problems_), move(node_analyzes_)));
   problems_.clear();
   node_analyzes_.clear();
   return analysis;

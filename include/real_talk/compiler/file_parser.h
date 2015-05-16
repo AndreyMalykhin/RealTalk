@@ -22,13 +22,17 @@ class FileParser {
   class Programs {
    public:
     Programs(std::unique_ptr<real_talk::parser::ProgramNode> main,
-             const ImportPrograms &import);
+             ImportPrograms import);
     const real_talk::parser::ProgramNode &GetMain() const;
     const ImportPrograms &GetImport() const;
+
+   private:
+    std::unique_ptr<real_talk::parser::ProgramNode> main_;
+    ImportPrograms import_;
   };
 
   virtual ~FileParser() {}
-  virtual Programs Parse(
+  virtual std::unique_ptr<Programs> Parse(
       const boost::filesystem::path &file_path,
       const boost::filesystem::path &src_dir_path,
       const boost::filesystem::path &vendor_dir_path,

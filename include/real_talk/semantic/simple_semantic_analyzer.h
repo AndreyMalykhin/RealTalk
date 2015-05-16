@@ -9,19 +9,17 @@ namespace real_talk {
 namespace parser {
 
 class ProgramNode;
-class FileParser;
 }
 
 namespace semantic {
 
-class ImportFileSearcher;
 class LitParser;
 
 class SimpleSemanticAnalyzer: public SemanticAnalyzer {
  public:
   explicit SimpleSemanticAnalyzer(const LitParser &lit_parser);
   virtual ~SimpleSemanticAnalyzer() override;
-  virtual SemanticAnalysis Analyze(
+  virtual std::unique_ptr<SemanticAnalysis> Analyze(
       const real_talk::parser::ProgramNode &main_program,
       const ImportPrograms &import_programs) override;
 

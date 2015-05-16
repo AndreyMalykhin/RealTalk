@@ -15,7 +15,6 @@
 #include "real_talk/lexer/token_info.h"
 #include "real_talk/lexer/lexer.h"
 #include "real_talk/parser/parser.h"
-#include "real_talk/parser/file_parser.h"
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/continue_node.h"
 #include "real_talk/parser/break_node.h"
@@ -98,6 +97,7 @@
 #include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/semantic_problems.h"
+#include "real_talk/test/path_printer.h"
 
 using std::numeric_limits;
 using std::vector;
@@ -161,7 +161,6 @@ using real_talk::parser::IfElseIfElseNode;
 using real_talk::parser::ImportNode;
 using real_talk::parser::ArrayAllocWithInitNode;
 using real_talk::parser::ArrayAllocWithoutInitNode;
-using real_talk::parser::FileParser;
 using real_talk::parser::Parser;
 using real_talk::parser::PrimitiveDataTypeNode;
 using real_talk::parser::BoundedArraySizeNode;
@@ -188,16 +187,6 @@ using real_talk::parser::NegativeNode;
 using real_talk::parser::PreIncNode;
 using real_talk::parser::PreDecNode;
 using real_talk::util::FileNotFoundError;
-
-namespace boost {
-namespace filesystem {
-
-void PrintTo(const path &p, ostream *stream);
-void PrintTo(const path &p, ostream *stream) {
-  *stream << p;
-}
-}
-}
 
 namespace real_talk {
 namespace semantic {
@@ -292,9 +281,9 @@ class SimpleSemanticAnalyzerTest: public Test {
     unique_ptr<LitParser> lit_parser =
         CreateLitParserMock(test_program.test_lit_parses);
     SimpleSemanticAnalyzer analyzer(*lit_parser);
-    SemanticAnalysis actual_analysis = analyzer.Analyze(
+    unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
         *(test_program.main_program_node), test_program.import_program_nodes);
-    ASSERT_EQ(test_program.analysis, actual_analysis);
+    ASSERT_EQ(test_program.analysis, *actual_analysis);
   }
 };
 
@@ -7450,9 +7439,9 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithEmptyHexValueIsInvalid) {
   }
 
   SimpleSemanticAnalyzer analyzer(*lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze(
+  unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
       *program_node, SemanticAnalyzer::ImportPrograms());
-  ASSERT_EQ(expected_analysis, actual_analysis);
+  ASSERT_EQ(expected_analysis, *actual_analysis);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, StringWithOutOfRangeHexValueIsInvalid) {
@@ -7492,9 +7481,9 @@ TEST_F(SimpleSemanticAnalyzerTest, StringWithOutOfRangeHexValueIsInvalid) {
   }
 
   SimpleSemanticAnalyzer analyzer(*lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze(
+  unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
       *program_node, SemanticAnalyzer::ImportPrograms());
-  ASSERT_EQ(expected_analysis, actual_analysis);
+  ASSERT_EQ(expected_analysis, *actual_analysis);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Char) {
@@ -7568,9 +7557,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithEmptyHexValueIsInvalid) {
   }
 
   SimpleSemanticAnalyzer analyzer(*lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze(
+  unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
       *program_node, SemanticAnalyzer::ImportPrograms());
-  ASSERT_EQ(expected_analysis, actual_analysis);
+  ASSERT_EQ(expected_analysis, *actual_analysis);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, CharWithOutOfRangeHexValueIsInvalid) {
@@ -7610,9 +7599,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithOutOfRangeHexValueIsInvalid) {
   }
 
   SimpleSemanticAnalyzer analyzer(*lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze(
+  unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
       *program_node, SemanticAnalyzer::ImportPrograms());
-  ASSERT_EQ(expected_analysis, actual_analysis);
+  ASSERT_EQ(expected_analysis, *actual_analysis);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, CharWithMultipleCharsIsInvalid) {
@@ -7652,9 +7641,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CharWithMultipleCharsIsInvalid) {
   }
 
   SimpleSemanticAnalyzer analyzer(*lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze(
+  unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
       *program_node, SemanticAnalyzer::ImportPrograms());
-  ASSERT_EQ(expected_analysis, actual_analysis);
+  ASSERT_EQ(expected_analysis, *actual_analysis);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Int) {
@@ -7728,9 +7717,9 @@ TEST_F(SimpleSemanticAnalyzerTest, IntWithOutOfRangeValueIsInvalid) {
   }
 
   SimpleSemanticAnalyzer analyzer(*lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze(
+  unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
       *program_node, SemanticAnalyzer::ImportPrograms());
-  ASSERT_EQ(expected_analysis, actual_analysis);
+  ASSERT_EQ(expected_analysis, *actual_analysis);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Long) {
@@ -7804,9 +7793,9 @@ TEST_F(SimpleSemanticAnalyzerTest, LongWithOutOfRangeValueIsInvalid) {
   }
 
   SimpleSemanticAnalyzer analyzer(*lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze(
+  unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
       *program_node, SemanticAnalyzer::ImportPrograms());
-  ASSERT_EQ(expected_analysis, actual_analysis);
+  ASSERT_EQ(expected_analysis, *actual_analysis);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Double) {
@@ -7881,9 +7870,9 @@ TEST_F(SimpleSemanticAnalyzerTest, DoubleWithOutOfRangeValueIsInvalid) {
   }
 
   SimpleSemanticAnalyzer analyzer(*lit_parser);
-  SemanticAnalysis actual_analysis = analyzer.Analyze(
+  unique_ptr<SemanticAnalysis> actual_analysis = analyzer.Analyze(
       *program_node, SemanticAnalyzer::ImportPrograms());
-  ASSERT_EQ(expected_analysis, actual_analysis);
+  ASSERT_EQ(expected_analysis, *actual_analysis);
 }
 
 TEST_F(SimpleSemanticAnalyzerTest, Bool) {

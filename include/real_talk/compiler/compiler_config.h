@@ -20,6 +20,13 @@ class CompilerConfig {
   const boost::filesystem::path &GetBinDirPath() const;
   const boost::filesystem::path &GetVendorDirPath() const;
   const std::vector<boost::filesystem::path> &GetImportDirPaths() const;
+
+ private:
+  boost::filesystem::path input_file_path_;
+  boost::filesystem::path src_dir_path_;
+  boost::filesystem::path bin_dir_path_;
+  boost::filesystem::path vendor_dir_path_;
+  std::vector<boost::filesystem::path> import_dir_paths_;
 };
 }
 }
