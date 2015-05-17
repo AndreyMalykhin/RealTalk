@@ -1,6 +1,8 @@
 
 #include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #include <memory>
+#include <string>
 #include "real_talk/parser/program_node.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/node_semantic_analysis.h"
@@ -8,6 +10,7 @@
 #include "real_talk/code/code_generator.h"
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/util/file.h"
+#include "real_talk/util/errors.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/compiler_config_parser.h"
 #include "real_talk/compiler/compiler_config.h"
@@ -15,13 +18,16 @@
 #include "real_talk/compiler/compiler.h"
 
 using std::unique_ptr;
+using std::string;
 using boost::filesystem::path;
+using boost::format;
 using real_talk::semantic::SemanticAnalyzer;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::code::CodeGenerator;
 using real_talk::code::Code;
 using real_talk::util::DirCreator;
 using real_talk::util::File;
+using real_talk::util::IOError;
 
 namespace real_talk {
 namespace compiler {
@@ -61,16 +67,50 @@ void Compiler::Compile(int argc, const char *argv[]) const {
                          config_->GetImportDirPaths());
   const unique_ptr<SemanticAnalysis> semantic_analysis =
       semantic_analyzer_->Analyze(programs->GetMain(), programs->GetImport());
-  msg_printer_.PrintProblems(semantic_analysis->GetProblems());
+  msg_printer_.PrintSemanticProblems(semantic_analysis->GetProblems());
+
+  if (HasSemanticErrors(*semantic_analysis)) {
+    return;
+  }
+
   const uint32_t code_version = UINT32_C(1);
   code_generator_->Generate(
       programs->GetMain(), *semantic_analysis, code_version, code_);
-  const path output_dir_path("build2/bin2/app/module");
-  dir_creator_.Create(output_dir_path);
-  const path output_file_path(
-      config_->GetBinDirPath() / config_->GetInputFilePath());
-  file_->Open(output_file_path);
-  file_->Write(*code_);
+  path output_file_path(config_->GetBinDirPath() / config_->GetInputFilePath());
+  output_file_path.replace_extension(config_->GetModuleFileExtension());
+  dir_creator_.Create(output_file_path.parent_path());
+
+  try {
+    file_->Open(output_file_path);
+  } catch (const IOError&) {
+    const string msg = (format("Failed to open file \"%1%\"")
+                        % output_file_path.string()).str();
+    msg_printer_.PrintError(msg);
+    return;
+  }
+
+  try {
+    file_->Write(*code_);
+  } catch (const IOError&) {
+    const string msg = (format("Failed to write to file \"%1%\"")
+                        % output_file_path.string()).str();
+    msg_printer_.PrintError(msg);
+    return;
+  }
+}
+
+bool Compiler::HasSemanticErrors(
+    const SemanticAnalysis &semantic_analysis) const {
+  for (const SemanticAnalysis::ProgramProblems::value_type &program_problems
+           : semantic_analysis.GetProblems()) {
+    const SemanticAnalysis::Problems &problems = program_problems.second;
+
+    if (!problems.empty()) {
+      return true;
+    }
+  }
+
+  return false;
 }
 }
 }

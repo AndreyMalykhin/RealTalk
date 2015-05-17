@@ -12,6 +12,7 @@ class CodeGenerator;
 namespace semantic {
 
 class SemanticAnalyzer;
+class SemanticAnalysis;
 }
 
 namespace util {
@@ -41,6 +42,9 @@ class Compiler {
   void Compile(int argc, const char *argv[]) const;
 
  private:
+  bool HasSemanticErrors(
+      const real_talk::semantic::SemanticAnalysis &semantic_analysis) const;
+
   const CompilerConfigParser &config_parser_;
   const FileParser &file_parser_;
   real_talk::semantic::SemanticAnalyzer *semantic_analyzer_;

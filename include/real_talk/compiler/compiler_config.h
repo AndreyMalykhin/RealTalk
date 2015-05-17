@@ -14,11 +14,13 @@ class CompilerConfig {
   void SetSrcDirPath(const boost::filesystem::path &path);
   void SetBinDirPath(const boost::filesystem::path &path);
   void SetVendorDirPath(const boost::filesystem::path &path);
+  void SetModuleFileExtension(const boost::filesystem::path &path);
   void SetImportDirPaths(const std::vector<boost::filesystem::path> &paths);
   const boost::filesystem::path &GetInputFilePath() const;
   const boost::filesystem::path &GetSrcDirPath() const;
   const boost::filesystem::path &GetBinDirPath() const;
   const boost::filesystem::path &GetVendorDirPath() const;
+  const boost::filesystem::path &GetModuleFileExtension() const;
   const std::vector<boost::filesystem::path> &GetImportDirPaths() const;
 
  private:
@@ -26,6 +28,7 @@ class CompilerConfig {
   boost::filesystem::path src_dir_path_;
   boost::filesystem::path bin_dir_path_;
   boost::filesystem::path vendor_dir_path_;
+  boost::filesystem::path module_file_extension_;
   std::vector<boost::filesystem::path> import_dir_paths_;
 };
 }

@@ -97,7 +97,6 @@
 #include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/semantic_problems.h"
-#include "real_talk/test/path_printer.h"
 
 using std::numeric_limits;
 using std::vector;
