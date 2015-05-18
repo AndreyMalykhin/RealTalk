@@ -10,6 +10,10 @@ namespace util {
 class DirCreator {
  public:
   virtual ~DirCreator() {}
+
+  /**
+   * @throws real_talk::util::IOError
+   */
   virtual void Create(const boost::filesystem::path &dir_path) const = 0;
 };
 }

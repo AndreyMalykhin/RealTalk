@@ -8,6 +8,7 @@
 #include "real_talk/semantic/node_semantic_analysis.h"
 #include "real_talk/semantic/semantic_analyzer.h"
 #include "real_talk/code/code_generator.h"
+#include "real_talk/code/code.h"
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/util/file.h"
 #include "real_talk/util/errors.h"
@@ -60,11 +61,9 @@ Compiler::Compiler(
 
 void Compiler::Compile(int argc, const char *argv[]) const {
   config_parser_.Parse(argc, argv, config_);
-  const unique_ptr<FileParser::Programs> programs =
-      file_parser_.Parse(config_->GetInputFilePath(),
-                         config_->GetSrcDirPath(),
-                         config_->GetVendorDirPath(),
-                         config_->GetImportDirPaths());
+
+
+
   const unique_ptr<SemanticAnalysis> semantic_analysis =
       semantic_analyzer_->Analyze(programs->GetMain(), programs->GetImport());
   msg_printer_.PrintSemanticProblems(semantic_analysis->GetProblems());
@@ -74,11 +73,26 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   }
 
   const uint32_t code_version = UINT32_C(1);
-  code_generator_->Generate(
-      programs->GetMain(), *semantic_analysis, code_version, code_);
+
+  try {
+    code_generator_->Generate(
+        programs->GetMain(), *semantic_analysis, code_version, code_);
+  } catch (const Code::CodeSizeOverflowError&) {
+    msg_printer_.PrintError("Code size exceeds 32 bits");
+    return;
+  }
+
   path output_file_path(config_->GetBinDirPath() / config_->GetInputFilePath());
   output_file_path.replace_extension(config_->GetModuleFileExtension());
-  dir_creator_.Create(output_file_path.parent_path());
+
+  try {
+    dir_creator_.Create(output_file_path.parent_path());
+  } catch (const IOError&) {
+    const string msg = (format("Failed to create folder \"%1%\"")
+                        % output_file_path.parent_path().string()).str();
+    msg_printer_.PrintError(msg);
+    return;
+  }
 
   try {
     file_->Open(output_file_path);

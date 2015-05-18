@@ -61,7 +61,6 @@ add_library(real_talk
   src/real_talk/code/id_address.cpp
   src/real_talk/code/code.cpp
   src/real_talk/code/simple_cast_cmd_generator.cpp
-  src/real_talk/compiler/file_parser.cpp
   src/real_talk/compiler/compiler_config.cpp
   src/real_talk/compiler/compiler.cpp
   src/real_talk/util/errors.cpp

@@ -17,7 +17,6 @@
 #include "real_talk/util/errors.h"
 #include "real_talk/compiler/compiler_config_parser.h"
 #include "real_talk/compiler/compiler_config.h"
-#include "real_talk/compiler/file_parser.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/compiler.h"
 
@@ -55,29 +54,6 @@ namespace compiler {
 class CompilerConfigParserMock: public CompilerConfigParser {
  public:
   MOCK_CONST_METHOD3(Parse, void(int, const char*[], CompilerConfig*));
-};
-
-class FileParserMock: public FileParser {
- public:
-  virtual unique_ptr<Programs> Parse(
-      const path &file_path,
-      const path &src_dir_path,
-      const path &vendor_dir_path,
-      const vector<path> &import_dir_paths) const override {
-    vector<string> import_dir_path_strings;
-
-    for (const path &path: import_dir_paths) {
-      import_dir_path_strings.push_back(path.string());
-    }
-
-    return unique_ptr<Programs>(Parse_(file_path.string(),
-                                       src_dir_path.string(),
-                                       vendor_dir_path.string(),
-                                       import_dir_path_strings));
-  }
-
-  MOCK_CONST_METHOD4(Parse_, Programs*(
-      const string&, const string&, const string&, const vector<string>&));
 };
 
 class SemanticAnalyzerMock: public SemanticAnalyzer {
@@ -139,6 +115,15 @@ class CompilerTest: public Test {
 };
 
 TEST_F(CompilerTest, Compile) {
+  struct TestImportFileParse {
+    string import_file_token_value;
+    unique_ptr<istream> import_file_stream;
+    path search_import_file_path;
+    path found_import_file_path;
+    ProgramNode *import_program;
+    unique_ptr<Lexer> lexer;
+  };
+
   int argc = 4;
   const char *argv[] = {"realtalkc",
                         "--import=/mylib",
@@ -155,36 +140,160 @@ TEST_F(CompilerTest, Compile) {
   EXPECT_CALL(config_parser, Parse(argc, argv, &config))
       .Times(1);
 
+  vector< unique_ptr<StmtNode> > main_program_stmts;
+  unique_ptr<StmtNode> import_stmt(new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kStringLit,
+                "\"app/module/component2.rts\"",
+                UINT32_C(1),
+                UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
+  main_program_stmts.push_back(move(import_stmt));
   unique_ptr<ProgramNode> main_program(
-      new ProgramNode(vector< unique_ptr<StmtNode> >()));
-  FileParser::ImportPrograms import_programs;
-  auto *programs_ptr = new FileParser::Programs(
-      move(main_program), move(import_programs));
-  unique_ptr<FileParser::Programs> programs(programs_ptr);
-  vector<string> import_dir_path_strings;
+      new ProgramNode(move(main_program_stmts)));
 
-  for (const path &path: config.GetImportDirPaths()) {
-    import_dir_path_strings.push_back(path.string());
+  SemanticAnalyzer::ImportPrograms import_programs;
+  vector< unique_ptr<StmtNode> > import_program_stmts;
+  unique_ptr<StmtNode> import_stmt2(new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kStringLit,
+                "\"app/module/component3.rts\"",
+                UINT32_C(1),
+                UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2))));
+  import_program_stmts.push_back(move(import_stmt2));
+  unique_ptr<ProgramNode> import_program(
+      new ProgramNode(move(import_program_stmts)));
+  import_programs.push_back(move(import_program));
+
+  vector<TestImportFileParse> test_import_file_parses;
+
+  {
+    string import_file_token_value = "\"app/module/component2.rts\"";
+    unique_ptr<istream> import_file_stream(new stringstream());
+    string search_import_file_path = "app/module/component2.rts";
+    path found_import_file_path("src2/app/module/component2.rts");
+    ProgramNode *import_program = import_programs.at(0).get();
+    unique_ptr<Lexer> lexer(new LexerMock());
+    TestImportFileParse test_import_file_parse = {import_file_token_value,
+                                                  move(import_file_stream),
+                                                  search_import_file_path,
+                                                  found_import_file_path,
+                                                  import_program,
+                                                  move(lexer)};
+    test_import_file_parses.push_back(move(test_import_file_parse));
   }
 
-  FileParserMock file_parser;
-  EXPECT_CALL(file_parser, Parse_(config.GetInputFilePath().string(),
-                                  config.GetSrcDirPath().string(),
-                                  config.GetVendorDirPath().string(),
-                                  import_dir_path_strings))
-      .Times(1)
-      .WillOnce(Return(programs.release()));
+  {
+    string import_file_token_value = "\"app/module/component3.rts\"";
+    unique_ptr<istream> import_file_stream(new stringstream());
+    string search_import_file_path = "app/module/component3.rts";
+    path found_import_file_path("src2/app/module/component3.rts");
+    ProgramNode *import_program = import_programs.at(1).get();
+    unique_ptr<Lexer> lexer(new LexerMock());
+    TestImportFileParse test_import_file_parse = {import_file_token_value,
+                                                  move(import_file_stream),
+                                                  search_import_file_path,
+                                                  found_import_file_path,
+                                                  import_program,
+                                                  move(lexer)};
+    test_import_file_parses.push_back(move(test_import_file_parse));
+  }
+
+  {
+    string import_file_token_value = "\"app/module/component4.rts\"";
+    unique_ptr<istream> import_file_stream(new stringstream());
+    string search_import_file_path = "app/module/component4.rts";
+    path found_import_file_path("src2/app/module/component4.rts");
+    ProgramNode *import_program = import_programs.at(2).get();
+    unique_ptr<Lexer> lexer(new LexerMock());
+    TestImportFileParse test_import_file_parse = {import_file_token_value,
+                                                  move(import_file_stream),
+                                                  search_import_file_path,
+                                                  found_import_file_path,
+                                                  import_program,
+                                                  move(lexer)};
+    test_import_file_parses.push_back(move(test_import_file_parse));
+  }
+
+  {
+    string import_file_token_value = "\"app/module/component5.rts\"";
+    unique_ptr<istream> import_file_stream(new stringstream());
+    string search_import_file_path = "app/module/component5.rts";
+    path found_import_file_path("src2/app/module/component5.rts");
+    ProgramNode *import_program = import_programs.at(3).get();
+    unique_ptr<Lexer> lexer(new LexerMock());
+    TestImportFileParse test_import_file_parse = {import_file_token_value,
+                                                  move(import_file_stream),
+                                                  search_import_file_path,
+                                                  found_import_file_path,
+                                                  import_program,
+                                                  move(lexer)};
+    test_import_file_parses.push_back(move(test_import_file_parse));
+  }
+
+  vector<string> import_dir_path_strs;
+
+  for (const path &path: config.GetImportDirPaths()) {
+    import_dir_path_strs.push_back(path.string());
+  }
+
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+
+  for (TestImportFileParse &test_parse: test_import_file_parses) {
+    EXPECT_CALL(lit_parser, ParseString(test_parse.import_file_token_value))
+        .Times(1)
+        .WillOnce(Return(test_parse.search_import_file_path))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file_searcher, Search(test_parse.search_import_file_path,
+                                      config.GetSrcDirPath(),
+                                      config.GetVendorDirPath(),
+                                      import_dir_path_strs))
+        .Times(1)
+        .WillOnce(Return(test_parse.found_import_file_path))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Open(test_parse.found_import_file_path))
+        .Times(1)
+        .RetiresOnSaturation();
+    istream *import_file_stream_ptr = test_parse.import_file_stream.release();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(import_file_stream_ptr))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Close())
+        .Times(1)
+        .RetiresOnSaturation();
+    Lexer *lexer_ptr = test_parse.lexer.release();
+    EXPECT_CALL(lexer_factory, Create_(*import_file_stream_ptr))
+        .Times(1)
+        .WillOnce(Return(lexer_ptr))
+        .RetiresOnSaturation();
+    EXPECT_CALL(src_parser, Parse_(lexer_ptr))
+        .Times(1)
+        .WillOnce(Return(test_parse.import_program))
+        .RetiresOnSaturation();
+  }
 
   SemanticAnalysis::ProgramProblems semantic_problems;
   semantic_problems.insert(
-      make_pair(&(programs_ptr->GetMain()), SemanticAnalysis::Problems()));
+      make_pair(main_program.get(), SemanticAnalysis::Problems()));
+
+  for (const unique_ptr<ProgramNode> &import_program: import_programs) {
+    semantic_problems.insert(
+        make_pair(import_program.get(), SemanticAnalysis::Problems()));
+  }
+
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   auto *semantic_analysis_ptr = new SemanticAnalysis(
       move(semantic_problems), move(node_analyzes));
   unique_ptr<SemanticAnalysis> semantic_analysis(semantic_analysis_ptr);
   SemanticAnalyzerMock semantic_analyzer;
-  EXPECT_CALL(semantic_analyzer, Analyze_(Ref(programs_ptr->GetMain()),
-                                          Ref(programs_ptr->GetImport())))
+  EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
+                                          Ref(import_programs)))
       .Times(1)
       .WillOnce(Return(semantic_analysis.release()));
 
@@ -196,7 +305,7 @@ TEST_F(CompilerTest, Compile) {
   Code code;
   uint32_t code_version = UINT32_C(1);
   CodeGeneratorMock code_generator;
-  EXPECT_CALL(code_generator, Generate(Ref(programs_ptr->GetMain()),
+  EXPECT_CALL(code_generator, Generate(Ref(*main_program),
                                        Ref(*semantic_analysis_ptr),
                                        code_version,
                                        &code))
@@ -207,7 +316,6 @@ TEST_F(CompilerTest, Compile) {
   EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
       .Times(1);
 
-  FileMock file;
   path output_file_path("build2/bin2/app/module/component.rtm2");
   EXPECT_CALL(file, Open_(output_file_path.string()))
       .Times(1);
@@ -225,20 +333,16 @@ TEST_F(CompilerTest, Compile) {
                     &code);
   compiler.Compile(argc, argv);
 }
-
+/*
 TEST_F(CompilerTest, CompileWithSemanticErrors) {
-  int argc = 4;
-  const char *argv[] = {"realtalkc",
-                        "--import=/mylib",
-                        "--import=/mylib2",
-                        "app/module/component.rts"};
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   CompilerConfig config(input_file_path);
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
   config.SetVendorDirPath("vendor2");
   config.SetModuleFileExtension("rtm2");
-  config.SetImportDirPaths(vector<path>({"/mylib", "/mylib2"}));
   CompilerConfigParserMock config_parser;
   EXPECT_CALL(config_parser, Parse(argc, argv, &config))
       .Times(1);
@@ -250,11 +354,6 @@ TEST_F(CompilerTest, CompileWithSemanticErrors) {
       move(main_program), move(import_programs));
   unique_ptr<FileParser::Programs> programs(programs_ptr);
   vector<string> import_dir_path_strings;
-
-  for (const path &path: config.GetImportDirPaths()) {
-    import_dir_path_strings.push_back(path.string());
-  }
-
   FileParserMock file_parser;
   EXPECT_CALL(file_parser, Parse_(config.GetInputFilePath().string(),
                                   config.GetSrcDirPath().string(),
@@ -310,18 +409,14 @@ TEST_F(CompilerTest, CompileWithSemanticErrors) {
 }
 
 TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
-  int argc = 4;
-  const char *argv[] = {"realtalkc",
-                        "--import=/mylib",
-                        "--import=/mylib2",
-                        "app/module/component.rts"};
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   CompilerConfig config(input_file_path);
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
   config.SetVendorDirPath("vendor2");
   config.SetModuleFileExtension("rtm2");
-  config.SetImportDirPaths(vector<path>({"/mylib", "/mylib2"}));
   CompilerConfigParserMock config_parser;
   EXPECT_CALL(config_parser, Parse(argc, argv, &config))
       .Times(1);
@@ -333,11 +428,6 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
       move(main_program), move(import_programs));
   unique_ptr<FileParser::Programs> programs(programs_ptr);
   vector<string> import_dir_path_strings;
-
-  for (const path &path: config.GetImportDirPaths()) {
-    import_dir_path_strings.push_back(path.string());
-  }
-
   FileParserMock file_parser;
   EXPECT_CALL(file_parser, Parse_(config.GetInputFilePath().string(),
                                   config.GetSrcDirPath().string(),
@@ -382,10 +472,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
   path output_file_path("build2/bin2/app/module/component.rtm2");
   EXPECT_CALL(file, Open_(output_file_path.string()))
       .Times(1);
-  IOError io_error("test");
   EXPECT_CALL(file, Write(Ref(code)))
       .Times(1)
-      .WillOnce(Throw(io_error));
+      .WillOnce(Throw(IOError("test")));
 
   string msg =
       "Failed to write to file \"build2/bin2/app/module/component.rtm2\"";
@@ -405,18 +494,14 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
 }
 
 TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
-  int argc = 4;
-  const char *argv[] = {"realtalkc",
-                        "--import=/mylib",
-                        "--import=/mylib2",
-                        "app/module/component.rts"};
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   CompilerConfig config(input_file_path);
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
   config.SetVendorDirPath("vendor2");
   config.SetModuleFileExtension("rtm2");
-  config.SetImportDirPaths(vector<path>({"/mylib", "/mylib2"}));
   CompilerConfigParserMock config_parser;
   EXPECT_CALL(config_parser, Parse(argc, argv, &config))
       .Times(1);
@@ -428,11 +513,6 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
       move(main_program), move(import_programs));
   unique_ptr<FileParser::Programs> programs(programs_ptr);
   vector<string> import_dir_path_strings;
-
-  for (const path &path: config.GetImportDirPaths()) {
-    import_dir_path_strings.push_back(path.string());
-  }
-
   FileParserMock file_parser;
   EXPECT_CALL(file_parser, Parse_(config.GetInputFilePath().string(),
                                   config.GetSrcDirPath().string(),
@@ -475,10 +555,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
 
   FileMock file;
   path output_file_path("build2/bin2/app/module/component.rtm2");
-  IOError io_error("test");
   EXPECT_CALL(file, Open_(output_file_path.string()))
       .Times(1)
-      .WillOnce(Throw(io_error));
+      .WillOnce(Throw(IOError("test")));
   EXPECT_CALL(file, Write(_))
       .Times(0);
 
@@ -498,5 +577,170 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
                     &code);
   compiler.Compile(argc, argv);
 }
+
+TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  config.SetBinDirPath("build2/bin2");
+  config.SetVendorDirPath("vendor2");
+  config.SetModuleFileExtension("rtm2");
+  CompilerConfigParserMock config_parser;
+  EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+      .Times(1);
+
+  unique_ptr<ProgramNode> main_program(
+      new ProgramNode(vector< unique_ptr<StmtNode> >()));
+  FileParser::ImportPrograms import_programs;
+  auto *programs_ptr = new FileParser::Programs(
+      move(main_program), move(import_programs));
+  unique_ptr<FileParser::Programs> programs(programs_ptr);
+  vector<string> import_dir_path_strings;
+  FileParserMock file_parser;
+  EXPECT_CALL(file_parser, Parse_(config.GetInputFilePath().string(),
+                                  config.GetSrcDirPath().string(),
+                                  config.GetVendorDirPath().string(),
+                                  import_dir_path_strings))
+      .Times(1)
+      .WillOnce(Return(programs.release()));
+
+  SemanticAnalysis::ProgramProblems semantic_problems;
+  semantic_problems.insert(
+      make_pair(&(programs_ptr->GetMain()), SemanticAnalysis::Problems()));
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  auto *semantic_analysis_ptr = new SemanticAnalysis(
+      move(semantic_problems), move(node_analyzes));
+  unique_ptr<SemanticAnalysis> semantic_analysis(semantic_analysis_ptr);
+  SemanticAnalyzerMock semantic_analyzer;
+  EXPECT_CALL(semantic_analyzer, Analyze_(Ref(programs_ptr->GetMain()),
+                                          Ref(programs_ptr->GetImport())))
+      .Times(1)
+      .WillOnce(Return(semantic_analysis.release()));
+
+  MsgPrinterMock msg_printer;
+  EXPECT_CALL(msg_printer,
+              PrintSemanticProblems(Ref(semantic_analysis_ptr->GetProblems())))
+      .Times(1);
+
+  Code code;
+  uint32_t code_version = UINT32_C(1);
+  CodeGeneratorMock code_generator;
+  EXPECT_CALL(code_generator, Generate(Ref(programs_ptr->GetMain()),
+                                       Ref(*semantic_analysis_ptr),
+                                       code_version,
+                                       &code))
+      .Times(1);
+
+  DirCreatorMock dir_creator;
+  path output_dir_path("build2/bin2/app/module");
+  EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
+      .Times(1)
+      .WillOnce(Throw(IOError("test")));
+
+  string msg = "Failed to create folder \"build2/bin2/app/module\"";
+  EXPECT_CALL(msg_printer, PrintError(msg))
+      .Times(1);
+
+  FileMock file;
+  EXPECT_CALL(file, Open_(_))
+      .Times(0);
+  EXPECT_CALL(file, Write(_))
+      .Times(0);
+
+  Compiler compiler(config_parser,
+                    file_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  config.SetBinDirPath("build2/bin2");
+  config.SetVendorDirPath("vendor2");
+  config.SetModuleFileExtension("rtm2");
+  CompilerConfigParserMock config_parser;
+  EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+      .Times(1);
+
+  unique_ptr<ProgramNode> main_program(
+      new ProgramNode(vector< unique_ptr<StmtNode> >()));
+  FileParser::ImportPrograms import_programs;
+  auto *programs_ptr = new FileParser::Programs(
+      move(main_program), move(import_programs));
+  unique_ptr<FileParser::Programs> programs(programs_ptr);
+  vector<string> import_dir_path_strings;
+  FileParserMock file_parser;
+  EXPECT_CALL(file_parser, Parse_(config.GetInputFilePath().string(),
+                                  config.GetSrcDirPath().string(),
+                                  config.GetVendorDirPath().string(),
+                                  import_dir_path_strings))
+      .Times(1)
+      .WillOnce(Return(programs.release()));
+
+  SemanticAnalysis::ProgramProblems semantic_problems;
+  semantic_problems.insert(
+      make_pair(&(programs_ptr->GetMain()), SemanticAnalysis::Problems()));
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  auto *semantic_analysis_ptr = new SemanticAnalysis(
+      move(semantic_problems), move(node_analyzes));
+  unique_ptr<SemanticAnalysis> semantic_analysis(semantic_analysis_ptr);
+  SemanticAnalyzerMock semantic_analyzer;
+  EXPECT_CALL(semantic_analyzer, Analyze_(Ref(programs_ptr->GetMain()),
+                                          Ref(programs_ptr->GetImport())))
+      .Times(1)
+      .WillOnce(Return(semantic_analysis.release()));
+
+  MsgPrinterMock msg_printer;
+  EXPECT_CALL(msg_printer,
+              PrintSemanticProblems(Ref(semantic_analysis_ptr->GetProblems())))
+      .Times(1);
+
+  Code code;
+  uint32_t code_version = UINT32_C(1);
+  CodeGeneratorMock code_generator;
+  EXPECT_CALL(code_generator, Generate(Ref(programs_ptr->GetMain()),
+                                       Ref(*semantic_analysis_ptr),
+                                       code_version,
+                                       &code))
+      .Times(1)
+      .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
+
+  EXPECT_CALL(msg_printer, PrintError("Code size exceeds 32 bits"))
+      .Times(1);
+
+  DirCreatorMock dir_creator;
+  EXPECT_CALL(dir_creator, Create_(_))
+      .Times(0);
+
+  FileMock file;
+  EXPECT_CALL(file, Open_(_))
+      .Times(0);
+  EXPECT_CALL(file, Write(_))
+      .Times(0);
+
+  Compiler compiler(config_parser,
+                    file_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+*/
 }
 }
