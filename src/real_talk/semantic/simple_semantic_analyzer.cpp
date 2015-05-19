@@ -95,7 +95,6 @@
 #include "real_talk/semantic/scope_analysis.h"
 #include "real_talk/semantic/control_flow_transfer_analysis.h"
 #include "real_talk/semantic/return_analysis.h"
-#include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/data_type_visitor.h"
 #include "real_talk/semantic/cast_resolver.h"
@@ -116,8 +115,6 @@ using std::exception;
 using std::ostream;
 using boost::format;
 using boost::adaptors::reverse;
-using boost::filesystem::path;
-using boost::filesystem::filesystem_error;
 using boost::hash;
 using real_talk::lexer::Lexer;
 using real_talk::lexer::Token;

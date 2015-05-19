@@ -1,14 +1,13 @@
 
-#ifndef _REAL_TALK_SEMANTIC_IMPORT_FILE_SEARCHER_H_
-#define _REAL_TALK_SEMANTIC_IMPORT_FILE_SEARCHER_H_
+#ifndef _REAL_TALK_COMPILER_IMPORT_FILE_SEARCHER_H_
+#define _REAL_TALK_COMPILER_IMPORT_FILE_SEARCHER_H_
 
 #include <boost/filesystem.hpp>
-#include <vector>
 #include <string>
-#include <stdexcept>
+#include <vector>
 
 namespace real_talk {
-namespace semantic {
+namespace compiler {
 
 class ImportFileSearcher {
  public:

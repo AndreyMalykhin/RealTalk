@@ -4,6 +4,8 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <memory>
+#include <iostream>
 
 namespace real_talk {
 namespace code {
@@ -26,6 +28,16 @@ class File {
    * @throws real_talk::util::IOError
    */
   virtual void Write(const real_talk::code::Code &code) = 0;
+
+  /**
+   * @throws real_talk::util::IOError
+   */
+  virtual std::unique_ptr<std::istream> Read() = 0;
+
+  /**
+   * @throws real_talk::util::IOError
+   */
+  virtual void Close() = 0;
 
  private:
   boost::filesystem::fstream stream_;

@@ -14,7 +14,6 @@ add_library(real_talk
   src/real_talk/lexer/simple_lexer_factory.cpp
   src/real_talk/parser/simple_parser.cpp
   src/real_talk/parser/parser.cpp
-  src/real_talk/parser/simple_parser_factory.cpp
   src/real_talk/semantic/data_type.cpp
   src/real_talk/semantic/array_data_type.cpp
   src/real_talk/semantic/func_data_type.cpp
@@ -48,7 +47,6 @@ add_library(real_talk
   src/real_talk/semantic/control_flow_transfer_analysis.cpp
   src/real_talk/semantic/return_analysis.cpp
   src/real_talk/semantic/simple_semantic_analyzer.cpp
-  src/real_talk/semantic/simple_import_file_searcher.cpp
   src/real_talk/semantic/simple_lit_parser.cpp
   src/real_talk/semantic/lit_parser.cpp
   src/real_talk/semantic/cast_resolver.cpp
@@ -61,6 +59,7 @@ add_library(real_talk
   src/real_talk/code/id_address.cpp
   src/real_talk/code/code.cpp
   src/real_talk/code/simple_cast_cmd_generator.cpp
+  src/real_talk/compiler/simple_import_file_searcher.cpp
   src/real_talk/compiler/compiler_config.cpp
   src/real_talk/compiler/compiler.cpp
   src/real_talk/util/errors.cpp
@@ -70,7 +69,6 @@ add_executable(real_talk_tests
   test/real_talk/parser/simple_parser_test.cpp
   test/real_talk/lexer/simple_lexer_test.cpp
   test/real_talk/semantic/simple_semantic_analyzer_test.cpp
-  test/real_talk/semantic/simple_import_file_searcher_test.cpp
   test/real_talk/semantic/simple_lit_parser_test.cpp
   test/real_talk/semantic/cast_resolver_test.cpp
   test/real_talk/code/simple_code_generator_test.cpp
@@ -78,6 +76,7 @@ add_executable(real_talk_tests
   test/real_talk/code/cmd_reader_test.cpp
   test/real_talk/code/test_utils.cpp
   test/real_talk/code/simple_cast_cmd_generator_test.cpp
+  test/real_talk/compiler/simple_import_file_searcher_test.cpp
   test/real_talk/compiler/compiler_test.cpp
   test/real_talk/util/endianness_test.cpp
   )

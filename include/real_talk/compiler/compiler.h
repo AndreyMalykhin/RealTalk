@@ -2,7 +2,19 @@
 #ifndef _REAL_TALK_COMPILER_COMPILER_H_
 #define _REAL_TALK_COMPILER_COMPILER_H_
 
+#include "real_talk/semantic/semantic_analyzer.h"
+
 namespace real_talk {
+namespace lexer {
+
+class LexerFactory;
+}
+
+namespace parser {
+
+class Parser;
+}
+
 namespace code {
 
 class Code;
@@ -13,6 +25,7 @@ namespace semantic {
 
 class SemanticAnalyzer;
 class SemanticAnalysis;
+class LitParser;
 }
 
 namespace util {
@@ -27,11 +40,15 @@ class FileParser;
 class MsgPrinter;
 class CompilerConfig;
 class CompilerConfigParser;
+class ImportFileSearcher;
 
 class Compiler {
  public:
-  Compiler(const CompilerConfigParser &config_parser,
-           const FileParser &file_parser,
+  Compiler(const ImportFileSearcher &file_searcher,
+           const real_talk::lexer::LexerFactory &lexer_factory,
+           real_talk::parser::Parser *src_parser,
+           const real_talk::semantic::LitParser &lit_parser,
+           const CompilerConfigParser &config_parser,
            real_talk::semantic::SemanticAnalyzer *semantic_analyzer,
            real_talk::code::CodeGenerator *code_generator,
            const MsgPrinter &msg_printer,
@@ -44,9 +61,16 @@ class Compiler {
  private:
   bool HasSemanticErrors(
       const real_talk::semantic::SemanticAnalysis &semantic_analysis) const;
+  void ParseFiles(
+      std::unique_ptr<real_talk::parser::ProgramNode> *main_program,
+      real_talk::semantic::SemanticAnalyzer::ImportPrograms *import_programs)
+      const;
 
+  const ImportFileSearcher &file_searcher_;
+  const real_talk::lexer::LexerFactory &lexer_factory_;
+  real_talk::parser::Parser *src_parser_;
+  const real_talk::semantic::LitParser &lit_parser_;
   const CompilerConfigParser &config_parser_;
-  const FileParser &file_parser_;
   real_talk::semantic::SemanticAnalyzer *semantic_analyzer_;
   real_talk::code::CodeGenerator *code_generator_;
   const MsgPrinter &msg_printer_;
