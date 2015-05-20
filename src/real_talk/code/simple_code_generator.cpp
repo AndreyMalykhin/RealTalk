@@ -374,12 +374,11 @@ class SimpleCodeGenerator::Impl::StmtGrouper: private NodeVisitor {
 
   GroupedStmts Group(const ProgramNode *program) {
     program->Accept(*this);
-    vector<const StmtNode*> non_func_defs;
-    non_func_defs.swap(non_func_defs_);
-    vector<const FuncDefNode*> func_defs;
-    func_defs.swap(func_defs_);
-    const GroupedStmts grouped_stmts = {move(non_func_defs), move(func_defs)};
-    return grouped_stmts;
+    vector<const StmtNode*> non_func_defs = move(non_func_defs_);
+    non_func_defs_.clear();
+    vector<const FuncDefNode*> func_defs = move(func_defs_);
+    func_defs_.clear();
+    return GroupedStmts{move(non_func_defs), move(func_defs)};
   }
 
  private:

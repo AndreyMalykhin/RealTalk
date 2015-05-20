@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <boost/format.hpp>
 #include <cstdint>
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -33,10 +34,12 @@ using std::unique_ptr;
 using std::ostream;
 using std::string;
 using std::stringstream;
+using std::equal;
 using boost::filesystem::path;
 using boost::format;
 using testing::InvokeWithoutArgs;
 using testing::Test;
+using testing::Truly;
 using testing::Eq;
 using testing::Return;
 using testing::ByRef;
@@ -197,11 +200,11 @@ class CompilerTest: public Test {
 TEST_F(CompilerTest, Compile) {
   struct TestImportFileParse {
     ImportNode *import_stmt;
-    unique_ptr<istream> import_file_stream;
+    istream *import_file_stream;
     path search_import_file_path;
     path found_import_file_path;
     ProgramNode *import_program;
-    unique_ptr<Lexer> lexer;
+    Lexer *lexer;
   };
 
   int argc = 4;
@@ -261,9 +264,20 @@ TEST_F(CompilerTest, Compile) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
   unique_ptr<StmtNode> import_stmt4(import_stmt_ptr4);
   main_program_stmts.push_back(move(import_stmt4));
+  unique_ptr<StringNode> file_path_expr7(new StringNode(TokenInfo(
+      Token::kStringLit,
+      "\"./app/module/import4.rts\"",
+      UINT32_C(7),
+      UINT32_C(7))));
+  auto *import_stmt_ptr7 = new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(6), UINT32_C(6)),
+      move(file_path_expr7),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8)));
+  unique_ptr<StmtNode> import_stmt7(import_stmt_ptr7);
+  main_program_stmts.push_back(move(import_stmt7));
   auto *main_program = new ProgramNode(move(main_program_stmts));
 
-  SemanticAnalyzer::ImportPrograms import_programs;
+  vector<ProgramNode*> import_programs;
   vector< unique_ptr<StmtNode> > import_program_stmts1;
   unique_ptr<StringNode> file_path_expr2(new StringNode(TokenInfo(
       Token::kStringLit,
@@ -287,16 +301,16 @@ TEST_F(CompilerTest, Compile) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
   unique_ptr<StmtNode> import_stmt3(import_stmt_ptr3);
   import_program_stmts1.push_back(move(import_stmt3));
-  unique_ptr<ProgramNode> import_program1(
-      new ProgramNode(move(import_program_stmts1)));
-  import_programs.push_back(move(import_program1));
+  auto *import_program1 =
+      new ProgramNode(move(import_program_stmts1));
+  import_programs.push_back(import_program1);
 
-  unique_ptr<ProgramNode> import_program2(
-      new ProgramNode(vector< unique_ptr<StmtNode> >()));
-  import_programs.push_back(move(import_program2));
-  unique_ptr<ProgramNode> import_program3(
-      new ProgramNode(vector< unique_ptr<StmtNode> >()));
-  import_programs.push_back(move(import_program3));
+  auto *import_program2 =
+      new ProgramNode(vector< unique_ptr<StmtNode> >());
+  import_programs.push_back(import_program2);
+  auto *import_program3 =
+      new ProgramNode(vector< unique_ptr<StmtNode> >());
+  import_programs.push_back(import_program3);
 
   vector< unique_ptr<StmtNode> > import_program_stmts4;
   unique_ptr<StringNode> file_path_expr5(new StringNode(TokenInfo(
@@ -321,120 +335,106 @@ TEST_F(CompilerTest, Compile) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5)));
   unique_ptr<StmtNode> import_stmt6(import_stmt_ptr6);
   import_program_stmts4.push_back(move(import_stmt6));
-  unique_ptr<ProgramNode> import_program4(
-      new ProgramNode(move(import_program_stmts4)));
-  import_programs.push_back(move(import_program4));
+  auto *import_program4 =
+      new ProgramNode(move(import_program_stmts4));
+  import_programs.push_back(import_program4);
 
-  unique_ptr<ProgramNode> import_program5(
-      new ProgramNode(vector< unique_ptr<StmtNode> >()));
-  import_programs.push_back(move(import_program5));
-  unique_ptr<ProgramNode> import_program6(
-      new ProgramNode(vector< unique_ptr<StmtNode> >()));
-  import_programs.push_back(move(import_program6));
+  auto *import_program5 =
+      new ProgramNode(vector< unique_ptr<StmtNode> >());
+  import_programs.push_back(import_program5);
+  auto *import_program6 =
+      new ProgramNode(vector< unique_ptr<StmtNode> >());
+  import_programs.push_back(import_program6);
 
   SemanticAnalysis::ProgramProblems semantic_problems;
   semantic_problems.insert(
       make_pair(main_program, SemanticAnalysis::Problems()));
 
-  for (const unique_ptr<ProgramNode> &import_program: import_programs) {
+  for (const ProgramNode *import_program: import_programs) {
     semantic_problems.insert(
-        make_pair(import_program.get(), SemanticAnalysis::Problems()));
+        make_pair(import_program, SemanticAnalysis::Problems()));
   }
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  auto *semantic_analysis_ptr = new SemanticAnalysis(
+  auto *semantic_analysis = new SemanticAnalysis(
       move(semantic_problems), move(node_analyzes));
-  unique_ptr<SemanticAnalysis> semantic_analysis(semantic_analysis_ptr);
-
   vector<TestImportFileParse> test_import_file_parses;
 
   {
-    unique_ptr<istream> import_file_stream(new stringstream());
+    auto *import_file_stream = new stringstream();
     path search_import_file_path("app/module/import1.rts");
     path found_import_file_path("src2/app/module/import1.rts");
-    ProgramNode *import_program = import_programs.at(0).get();
-    unique_ptr<Lexer> lexer(new LexerMock());
     TestImportFileParse test_import_file_parse = {import_stmt_ptr1,
-                                                  move(import_file_stream),
+                                                  import_file_stream,
                                                   search_import_file_path,
                                                   found_import_file_path,
-                                                  import_program,
-                                                  move(lexer)};
+                                                  import_programs.at(0),
+                                                  new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
   }
 
   {
-    unique_ptr<istream> import_file_stream(new stringstream());
+    auto *import_file_stream = new stringstream();
     path search_import_file_path("app/module/import2.rts");
     path found_import_file_path("src2/app/module/import2.rts");
-    ProgramNode *import_program = import_programs.at(1).get();
-    unique_ptr<Lexer> lexer(new LexerMock());
     TestImportFileParse test_import_file_parse = {import_stmt_ptr2,
-                                                  move(import_file_stream),
+                                                  import_file_stream,
                                                   search_import_file_path,
                                                   found_import_file_path,
-                                                  import_program,
-                                                  move(lexer)};
+                                                  import_programs.at(1),
+                                                  new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
   }
 
   {
-    unique_ptr<istream> import_file_stream(new stringstream());
+    auto *import_file_stream = new stringstream();
     path search_import_file_path("app/module/import3.rts");
     path found_import_file_path("src2/app/module/import3.rts");
-    ProgramNode *import_program = import_programs.at(2).get();
-    unique_ptr<Lexer> lexer(new LexerMock());
     TestImportFileParse test_import_file_parse = {import_stmt_ptr3,
-                                                  move(import_file_stream),
+                                                  import_file_stream,
                                                   search_import_file_path,
                                                   found_import_file_path,
-                                                  import_program,
-                                                  move(lexer)};
+                                                  import_programs.at(2),
+                                                  new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
   }
 
   {
-    unique_ptr<istream> import_file_stream(new stringstream());
+    auto *import_file_stream = new stringstream();
     path search_import_file_path("app/module/import4.rts");
     path found_import_file_path("src2/app/module/import4.rts");
-    ProgramNode *import_program = import_programs.at(3).get();
-    unique_ptr<Lexer> lexer(new LexerMock());
     TestImportFileParse test_import_file_parse = {import_stmt_ptr4,
-                                                  move(import_file_stream),
+                                                  import_file_stream,
                                                   search_import_file_path,
                                                   found_import_file_path,
-                                                  import_program,
-                                                  move(lexer)};
+                                                  import_programs.at(3),
+                                                  new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
   }
 
   {
-    unique_ptr<istream> import_file_stream(new stringstream());
+    auto *import_file_stream = new stringstream();
     path search_import_file_path("app/module/import5.rts");
     path found_import_file_path("src2/app/module/import5.rts");
-    ProgramNode *import_program = import_programs.at(4).get();
-    unique_ptr<Lexer> lexer(new LexerMock());
     TestImportFileParse test_import_file_parse = {import_stmt_ptr5,
-                                                  move(import_file_stream),
+                                                  import_file_stream,
                                                   search_import_file_path,
                                                   found_import_file_path,
-                                                  import_program,
-                                                  move(lexer)};
+                                                  import_programs.at(4),
+                                                  new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
   }
 
   {
-    unique_ptr<istream> import_file_stream(new stringstream());
+    auto *import_file_stream = new stringstream();
     path search_import_file_path("app/module/import6.rts");
     path found_import_file_path("src2/app/module/import6.rts");
-    ProgramNode *import_program = import_programs.at(5).get();
-    unique_ptr<Lexer> lexer(new LexerMock());
     TestImportFileParse test_import_file_parse = {import_stmt_ptr6,
-                                                  move(import_file_stream),
+                                                  import_file_stream,
                                                   search_import_file_path,
                                                   found_import_file_path,
-                                                  import_program,
-                                                  move(lexer)};
+                                                  import_programs.at(5),
+                                                  new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
   }
 
@@ -481,34 +481,58 @@ TEST_F(CompilerTest, Compile) {
       EXPECT_CALL(file, Open_(test_parse.found_import_file_path.string()))
           .Times(1)
           .RetiresOnSaturation();
-      istream *import_file_stream = test_parse.import_file_stream.release();
       EXPECT_CALL(file, Read_())
           .Times(1)
-          .WillOnce(Return(import_file_stream))
+          .WillOnce(Return(test_parse.import_file_stream))
           .RetiresOnSaturation();
       EXPECT_CALL(file, Close())
           .Times(1)
           .RetiresOnSaturation();
-      Lexer *import_file_lexer = test_parse.lexer.release();
-      EXPECT_CALL(lexer_factory, Create_(Ref(*import_file_stream)))
+      EXPECT_CALL(lexer_factory, Create_(Ref(*(test_parse.import_file_stream))))
           .Times(1)
-          .WillOnce(Return(import_file_lexer))
+          .WillOnce(Return(test_parse.lexer))
           .RetiresOnSaturation();
-      EXPECT_CALL(src_parser, Parse_(import_file_lexer))
+      EXPECT_CALL(src_parser, Parse_(test_parse.lexer))
           .Times(1)
           .WillOnce(Return(test_parse.import_program))
           .RetiresOnSaturation();
     }
 
-    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
-                                            Ref(import_programs)))
+    path search_import_file_path("src2/./app/module/import4.rts");
+    path found_import_file_path("src2/app/module/import4.rts");
+    EXPECT_CALL(lit_parser, ParseString(
+        import_stmt_ptr7->GetFilePath()->GetToken().GetValue()))
         .Times(1)
-        .WillOnce(Return(semantic_analysis.release()));
+        .WillOnce(Return(search_import_file_path.string()))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file_searcher, Search_(
+        search_import_file_path.string(),
+        config.GetSrcDirPath().string(),
+        config.GetVendorDirPath().string(),
+        import_dir_path_strs))
+        .Times(1)
+        .WillOnce(Return(found_import_file_path.string()))
+        .RetiresOnSaturation();
+
+    auto import_programs_matcher = [&import_programs](
+        const SemanticAnalyzer::ImportPrograms &arg) {
+      return import_programs.size() == arg.size()
+      && equal(import_programs.cbegin(),
+               import_programs.cend(),
+               arg.cbegin(),
+               [](const ProgramNode *lhs, const unique_ptr<ProgramNode> &rhs) {
+                 return lhs == rhs.get();
+               });
+    };
+    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
+                                            Truly(import_programs_matcher)))
+        .Times(1)
+        .WillOnce(Return(semantic_analysis));
     EXPECT_CALL(msg_printer, PrintSemanticProblems(
-        Ref(semantic_analysis_ptr->GetProblems())))
+        Ref(semantic_analysis->GetProblems())))
         .Times(1);
     EXPECT_CALL(code_generator, Generate(Ref(*main_program),
-                                         Ref(*semantic_analysis_ptr),
+                                         Ref(*semantic_analysis),
                                          code_version,
                                          &code))
         .Times(1);

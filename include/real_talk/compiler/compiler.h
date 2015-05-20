@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_COMPILER_COMPILER_H_
 #define _REAL_TALK_COMPILER_COMPILER_H_
 
+#include <vector>
 #include "real_talk/semantic/semantic_analyzer.h"
 
 namespace real_talk {
@@ -65,6 +66,10 @@ class Compiler {
       std::unique_ptr<real_talk::parser::ProgramNode> *main_program,
       real_talk::semantic::SemanticAnalyzer::ImportPrograms *import_programs)
       const;
+  void ParseFile(
+      const boost::filesystem::path &file_path,
+      std::unique_ptr<real_talk::parser::ProgramNode> *program,
+      std::vector<const real_talk::parser::ImportNode*> *import_stmts) const;
 
   const ImportFileSearcher &file_searcher_;
   const real_talk::lexer::LexerFactory &lexer_factory_;

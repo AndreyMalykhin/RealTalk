@@ -1,10 +1,12 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <memory>
 #include <string>
 #include <vector>
 #include "real_talk/parser/program_node.h"
+#include "real_talk/parser/import_node.h"
 #include "real_talk/parser/parser.h"
 #include "real_talk/lexer/lexer.h"
 #include "real_talk/lexer/lexer_factory.h"
@@ -28,11 +30,64 @@ using std::vector;
 using std::istream;
 using boost::filesystem::path;
 using boost::format;
+using boost::adaptors::reverse;
 using real_talk::lexer::LexerFactory;
 using real_talk::lexer::Lexer;
-using real_talk::parser::ProgramNode;
+using real_talk::parser::ImportNode;
+using real_talk::parser::BreakNode;
+using real_talk::parser::ContinueNode;
+using real_talk::parser::ExprStmtNode;
+using real_talk::parser::FuncDefWithBodyNode;
+using real_talk::parser::FuncDefWithoutBodyNode;
+using real_talk::parser::IfElseIfElseNode;
+using real_talk::parser::IfElseIfNode;
+using real_talk::parser::PreTestLoopNode;
+using real_talk::parser::VarDefWithoutInitNode;
+using real_talk::parser::VarDefWithInitNode;
+using real_talk::parser::ReturnValueNode;
+using real_talk::parser::ReturnWithoutValueNode;
+using real_talk::parser::AndNode;
+using real_talk::parser::ArrayAllocWithoutInitNode;
+using real_talk::parser::ArrayAllocWithInitNode;
+using real_talk::parser::AssignNode;
+using real_talk::parser::BoolNode;
+using real_talk::parser::CallNode;
+using real_talk::parser::ScopeNode;
+using real_talk::parser::CharNode;
+using real_talk::parser::DivNode;
+using real_talk::parser::DoubleNode;
+using real_talk::parser::EqualNode;
+using real_talk::parser::GreaterNode;
+using real_talk::parser::GreaterOrEqualNode;
+using real_talk::parser::IntNode;
+using real_talk::parser::LessNode;
+using real_talk::parser::LessOrEqualNode;
+using real_talk::parser::LongNode;
+using real_talk::parser::MulNode;
+using real_talk::parser::NegativeNode;
+using real_talk::parser::NotEqualNode;
+using real_talk::parser::NotNode;
+using real_talk::parser::OrNode;
+using real_talk::parser::PreDecNode;
+using real_talk::parser::PreIncNode;
 using real_talk::parser::StmtNode;
+using real_talk::parser::ProgramNode;
+using real_talk::parser::StringNode;
+using real_talk::parser::SubscriptNode;
+using real_talk::parser::SubNode;
+using real_talk::parser::SumNode;
+using real_talk::parser::IdNode;
+using real_talk::parser::IntDataTypeNode;
+using real_talk::parser::LongDataTypeNode;
+using real_talk::parser::CharDataTypeNode;
+using real_talk::parser::StringDataTypeNode;
+using real_talk::parser::DoubleDataTypeNode;
+using real_talk::parser::BoolDataTypeNode;
+using real_talk::parser::VoidDataTypeNode;
+using real_talk::parser::ArrayDataTypeNode;
+using real_talk::parser::ArgDefNode;
 using real_talk::parser::Parser;
+using real_talk::parser::NodeVisitor;
 using real_talk::semantic::SemanticAnalyzer;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::LitParser;
@@ -44,6 +99,99 @@ using real_talk::util::IOError;
 
 namespace real_talk {
 namespace compiler {
+namespace {
+
+class ImportsExtractor: private NodeVisitor {
+ public:
+  vector<const ImportNode*> Extract(const ProgramNode &program) {
+    program.Accept(*this);
+    vector<const ImportNode*> result = move(import_stmts_);
+    import_stmts_.clear();
+    return move(result);
+  }
+
+ private:
+  virtual void VisitProgram(const ProgramNode &program) override {
+    for (const unique_ptr<StmtNode> &stmt: program.GetStmts()) {
+      stmt->Accept(*this);
+    }
+  }
+
+  virtual void VisitImport(const ImportNode &node) override {
+    import_stmts_.push_back(&node);
+  }
+
+  virtual void VisitBreak(const BreakNode&) override {}
+  virtual void VisitContinue(const ContinueNode&) override {}
+  virtual void VisitExprStmt(const ExprStmtNode&) override {}
+  virtual void VisitFuncDefWithBody(const FuncDefWithBodyNode&) override {}
+  virtual void VisitFuncDefWithoutBody(const FuncDefWithoutBodyNode&)
+      override {}
+  virtual void VisitIfElseIfElse(const IfElseIfElseNode&) override {}
+  virtual void VisitIfElseIf(const IfElseIfNode&) override {}
+  virtual void VisitPreTestLoop(const PreTestLoopNode&) override {}
+  virtual void VisitVarDefWithoutInit(const VarDefWithoutInitNode&) override {}
+  virtual void VisitVarDefWithInit(const VarDefWithInitNode&) override {}
+  virtual void VisitReturnValue(const ReturnValueNode&) override {}
+  virtual void VisitReturnWithoutValue(const ReturnWithoutValueNode&)
+      override {}
+
+  virtual void VisitAnd(const AndNode&) override {assert(false);}
+  virtual void VisitArrayAllocWithoutInit(
+      const ArrayAllocWithoutInitNode&) override {assert(false);}
+  virtual void VisitArrayAllocWithInit(const ArrayAllocWithInitNode&)
+      override {assert(false);}
+  virtual void VisitAssign(const AssignNode&) override {assert(false);}
+  virtual void VisitBool(const BoolNode&) override {assert(false);}
+  virtual void VisitCall(const CallNode&) override {assert(false);}
+  virtual void VisitChar(const CharNode&) override {assert(false);}
+  virtual void VisitDiv(const DivNode&) override {assert(false);}
+  virtual void VisitDouble(const DoubleNode&) override {assert(false);}
+  virtual void VisitEqual(const EqualNode&) override {assert(false);}
+  virtual void VisitGreater(const GreaterNode&) override {assert(false);}
+  virtual void VisitGreaterOrEqual(const GreaterOrEqualNode&)
+      override {assert(false);}
+  virtual void VisitInt(const IntNode&) override {assert(false);}
+  virtual void VisitLess(const LessNode&) override {assert(false);}
+  virtual void VisitLessOrEqual(const LessOrEqualNode&)
+      override {assert(false);}
+  virtual void VisitLong(const LongNode&) override {assert(false);}
+  virtual void VisitMul(const MulNode&) override {assert(false);}
+  virtual void VisitNegative(const NegativeNode&) override {assert(false);}
+  virtual void VisitNotEqual(const NotEqualNode&) override {assert(false);}
+  virtual void VisitNot(const NotNode&) override {assert(false);}
+  virtual void VisitOr(const OrNode&) override {assert(false);}
+  virtual void VisitPreDec(const PreDecNode&) override {assert(false);}
+  virtual void VisitPreInc(const PreIncNode&) override {assert(false);}
+  virtual void VisitString(const StringNode&) override {assert(false);}
+  virtual void VisitSubscript(const SubscriptNode&) override {assert(false);}
+  virtual void VisitSub(const SubNode&) override {assert(false);}
+  virtual void VisitSum(const SumNode&) override {assert(false);}
+  virtual void VisitId(const IdNode&) override {assert(false);}
+  virtual void VisitIntDataType(const IntDataTypeNode&)
+      override {assert(false);}
+  virtual void VisitLongDataType(const LongDataTypeNode&)
+      override {assert(false);}
+  virtual void VisitCharDataType(const CharDataTypeNode&)
+      override {assert(false);}
+  virtual void VisitStringDataType(const StringDataTypeNode&)
+      override {assert(false);}
+  virtual void VisitDoubleDataType(const DoubleDataTypeNode&)
+      override {assert(false);}
+  virtual void VisitBoolDataType(const BoolDataTypeNode&)
+      override {assert(false);}
+  virtual void VisitVoidDataType(const VoidDataTypeNode&)
+      override {assert(false);}
+  virtual void VisitArrayDataType(const ArrayDataTypeNode&)
+      override {assert(false);}
+  virtual void VisitArgDef(const ArgDefNode&) override {assert(false);}
+  virtual void VisitScope(const ScopeNode&) override {assert(false);}
+
+  vector<const ImportNode*> import_stmts_;
+};
+
+static ImportsExtractor &kImportsExtractor = *new ImportsExtractor();
+}
 
 Compiler::Compiler(
     const ImportFileSearcher &file_searcher,
@@ -135,116 +283,47 @@ void Compiler::Compile(int argc, const char *argv[]) const {
 void Compiler::ParseFiles(
     unique_ptr<ProgramNode> *main_program,
     SemanticAnalyzer::ImportPrograms *import_programs) const {
-  {
-    path input_file_path("src2/app/module/component.rts");
-    file_->Open(input_file_path);
-    unique_ptr<istream> file_stream = file_->Read();
-    file_->Close();
-    unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
-    *main_program = src_parser_->Parse(lexer.get());
-  }
+  vector<const ImportNode*> import_stmts;
+  const path input_file_path(
+      config_->GetSrcDirPath() / config_->GetInputFilePath());
+  ParseFile(input_file_path, main_program, &import_stmts);
 
-  {
-    string import_file_path_token = "\"app/module/import1.rts\"";
-    string search_import_file_path =
-        lit_parser_.ParseString(import_file_path_token);
-    path found_import_file_path = file_searcher_.Search(
+  while (!import_stmts.empty()) {
+    const ImportNode *import_stmt = import_stmts.back();
+    import_stmts.pop_back();
+    const string &search_import_file_path = lit_parser_.ParseString(
+        import_stmt->GetFilePath()->GetToken().GetValue());
+    const path found_import_file_path = file_searcher_.Search(
         search_import_file_path,
         config_->GetSrcDirPath(),
         config_->GetVendorDirPath(),
         config_->GetImportDirPaths());
-    file_->Open(found_import_file_path);
-    unique_ptr<istream> file_stream = file_->Read();
-    file_->Close();
-    unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
-    unique_ptr<ProgramNode> import_program = src_parser_->Parse(lexer.get());
-    import_programs->push_back(move(import_program));
-  }
 
-  {
-    string import_file_path_token = "\"app/module/import2.rts\"";
-    string search_import_file_path =
-        lit_parser_.ParseString(import_file_path_token);
-    path found_import_file_path = file_searcher_.Search(
-        search_import_file_path,
-        config_->GetSrcDirPath(),
-        config_->GetVendorDirPath(),
-        config_->GetImportDirPaths());
-    file_->Open(found_import_file_path);
-    unique_ptr<istream> file_stream = file_->Read();
-    file_->Close();
-    unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
-    unique_ptr<ProgramNode> import_program = src_parser_->Parse(lexer.get());
-    import_programs->push_back(move(import_program));
-  }
+    if (processed_files.count(found_import_file_path)) {
+      continue;
+    }
 
-  {
-    string import_file_path_token = "\"app/module/import3.rts\"";
-    string search_import_file_path =
-        lit_parser_.ParseString(import_file_path_token);
-    path found_import_file_path = file_searcher_.Search(
-        search_import_file_path,
-        config_->GetSrcDirPath(),
-        config_->GetVendorDirPath(),
-        config_->GetImportDirPaths());
-    file_->Open(found_import_file_path);
-    unique_ptr<istream> file_stream = file_->Read();
-    file_->Close();
-    unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
-    unique_ptr<ProgramNode> import_program = src_parser_->Parse(lexer.get());
+    unique_ptr<ProgramNode> import_program;
+    ParseFile(found_import_file_path, &import_program, &import_stmts);
     import_programs->push_back(move(import_program));
+    processed_files.insert(found_import_file_path);
   }
+}
 
-  {
-    string import_file_path_token = "\"app/module/import4.rts\"";
-    string search_import_file_path =
-        lit_parser_.ParseString(import_file_path_token);
-    path found_import_file_path = file_searcher_.Search(
-        search_import_file_path,
-        config_->GetSrcDirPath(),
-        config_->GetVendorDirPath(),
-        config_->GetImportDirPaths());
-    file_->Open(found_import_file_path);
-    unique_ptr<istream> file_stream = file_->Read();
-    file_->Close();
-    unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
-    unique_ptr<ProgramNode> import_program = src_parser_->Parse(lexer.get());
-    import_programs->push_back(move(import_program));
-  }
+void Compiler::ParseFile(const path &file_path,
+                         unique_ptr<ProgramNode> *program,
+                         vector<const ImportNode*> *import_stmts) const {
+  file_->Open(file_path);
+  unique_ptr<istream> file_stream = file_->Read();
+  file_->Close();
+  unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
+  *program = src_parser_->Parse(lexer.get());
 
-  {
-    string import_file_path_token = "\"app/module/import5.rts\"";
-    string search_import_file_path =
-        lit_parser_.ParseString(import_file_path_token);
-    path found_import_file_path = file_searcher_.Search(
-        search_import_file_path,
-        config_->GetSrcDirPath(),
-        config_->GetVendorDirPath(),
-        config_->GetImportDirPaths());
-    file_->Open(found_import_file_path);
-    unique_ptr<istream> file_stream = file_->Read();
-    file_->Close();
-    unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
-    unique_ptr<ProgramNode> import_program = src_parser_->Parse(lexer.get());
-    import_programs->push_back(move(import_program));
-  }
-
-  {
-    string import_file_path_token = "\"app/module/import6.rts\"";
-    string search_import_file_path =
-        lit_parser_.ParseString(import_file_path_token);
-    path found_import_file_path = file_searcher_.Search(
-        search_import_file_path,
-        config_->GetSrcDirPath(),
-        config_->GetVendorDirPath(),
-        config_->GetImportDirPaths());
-    file_->Open(found_import_file_path);
-    unique_ptr<istream> file_stream = file_->Read();
-    file_->Close();
-    unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
-    unique_ptr<ProgramNode> import_program = src_parser_->Parse(lexer.get());
-    import_programs->push_back(move(import_program));
-  }
+  const vector<const ImportNode*> program_import_stmts =
+      kImportsExtractor.Extract(**program);
+  import_stmts->insert(import_stmts->cend(),
+                       program_import_stmts.crbegin(),
+                       program_import_stmts.crend());
 }
 
 bool Compiler::HasSemanticErrors(
