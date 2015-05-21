@@ -97,6 +97,10 @@ class MsgPrinterMock: public MsgPrinter {
   MOCK_CONST_METHOD2(PrintSemanticProblems, void(
       const SemanticAnalysis::ProgramProblems&, const ProgramFilePaths&));
   MOCK_CONST_METHOD1(PrintError, void(const string&));
+  MOCK_CONST_METHOD2(
+      PrintUnexpectedTokenError, void(const TokenInfo &token, const path&));
+  MOCK_CONST_METHOD4(
+      PrintUnexpectedCharError, void(char, uint32_t, uint32_t, const path&));
 };
 
 class CodeGeneratorMock: public CodeGenerator {
@@ -558,7 +562,8 @@ TEST_F(CompilerTest, Compile) {
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
     EXPECT_CALL(file, Open_(output_file_path.string()))
-        .Times(1);
+        .Times(1)
+        .RetiresOnSaturation();
     EXPECT_CALL(file, Write(Ref(code)))
         .Times(1);
   }
@@ -617,20 +622,16 @@ TEST_F(CompilerTest, CompileWithSemanticErrors) {
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_())
         .Times(1)
-        .WillOnce(Return(input_file_stream))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_stream));
     EXPECT_CALL(file, Close())
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
-        .WillOnce(Return(input_file_lexer))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_lexer));
     EXPECT_CALL(src_parser, Parse_(input_file_lexer))
         .Times(1)
-        .WillOnce(Return(main_program))
-        .RetiresOnSaturation();
+        .WillOnce(Return(main_program));
     EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
                                             IsEmpty()))
         .Times(1)
@@ -708,20 +709,16 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_())
         .Times(1)
-        .WillOnce(Return(input_file_stream))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_stream));
     EXPECT_CALL(file, Close())
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
-        .WillOnce(Return(input_file_lexer))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_lexer));
     EXPECT_CALL(src_parser, Parse_(input_file_lexer))
         .Times(1)
-        .WillOnce(Return(main_program))
-        .RetiresOnSaturation();
+        .WillOnce(Return(main_program));
     EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
                                             IsEmpty()))
         .Times(1)
@@ -729,8 +726,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
     EXPECT_CALL(msg_printer, PrintSemanticProblems(
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     EXPECT_CALL(code_generator, Generate(Ref(*main_program),
                                          Ref(*semantic_analysis),
                                          code_version,
@@ -743,10 +739,10 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
     EXPECT_CALL(file, Write(Ref(code)))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
-    EXPECT_CALL(msg_printer, PrintError(
-        "Failed to write to output file \"build2/bin2/app/module/component.rtm2\""))
-        .Times(1)
-        .RetiresOnSaturation();
+    string msg = (format("Failed to write output file \"%1%\"")
+                  % output_file_path.string()).str();
+    EXPECT_CALL(msg_printer, PrintError(msg))
+        .Times(1);
   }
 
   Compiler compiler(file_searcher,
@@ -808,20 +804,16 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_())
         .Times(1)
-        .WillOnce(Return(input_file_stream))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_stream));
     EXPECT_CALL(file, Close())
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
-        .WillOnce(Return(input_file_lexer))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_lexer));
     EXPECT_CALL(src_parser, Parse_(input_file_lexer))
         .Times(1)
-        .WillOnce(Return(main_program))
-        .RetiresOnSaturation();
+        .WillOnce(Return(main_program));
     EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
                                             IsEmpty()))
         .Times(1)
@@ -829,8 +821,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
     EXPECT_CALL(msg_printer, PrintSemanticProblems(
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     EXPECT_CALL(code_generator, Generate(Ref(*main_program),
                                          Ref(*semantic_analysis),
                                          code_version,
@@ -841,10 +832,10 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
     EXPECT_CALL(file, Open_(output_file_path.string()))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
-    EXPECT_CALL(msg_printer, PrintError(
-        "Failed to open output file \"build2/bin2/app/module/component.rtm2\""))
-        .Times(1)
-        .RetiresOnSaturation();
+    string msg = (format("Failed to open output file \"%1%\"")
+                  % output_file_path.string()).str();
+    EXPECT_CALL(msg_printer, PrintError(msg))
+        .Times(1);
     EXPECT_CALL(file, Write(_))
         .Times(0);
   }
@@ -906,20 +897,16 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_())
         .Times(1)
-        .WillOnce(Return(input_file_stream))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_stream));
     EXPECT_CALL(file, Close())
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
-        .WillOnce(Return(input_file_lexer))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_lexer));
     EXPECT_CALL(src_parser, Parse_(input_file_lexer))
         .Times(1)
-        .WillOnce(Return(main_program))
-        .RetiresOnSaturation();
+        .WillOnce(Return(main_program));
     EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
                                             IsEmpty()))
         .Times(1)
@@ -927,8 +914,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
     EXPECT_CALL(msg_printer, PrintSemanticProblems(
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     EXPECT_CALL(code_generator, Generate(Ref(*main_program),
                                          Ref(*semantic_analysis),
                                          code_version,
@@ -937,10 +923,10 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
-    EXPECT_CALL(msg_printer, PrintError(
-        "Failed to create output folder \"build2/bin2/app/module\""))
-        .Times(1)
-        .RetiresOnSaturation();
+    string msg = (format("Failed to create output folder \"%1%\"")
+                  % output_dir_path.string()).str();
+    EXPECT_CALL(msg_printer, PrintError(msg))
+        .Times(1);
     EXPECT_CALL(file, Open_(_))
         .Times(0);
     EXPECT_CALL(file, Write(_))
@@ -1002,20 +988,16 @@ TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_())
         .Times(1)
-        .WillOnce(Return(input_file_stream))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_stream));
     EXPECT_CALL(file, Close())
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
-        .WillOnce(Return(input_file_lexer))
-        .RetiresOnSaturation();
+        .WillOnce(Return(input_file_lexer));
     EXPECT_CALL(src_parser, Parse_(input_file_lexer))
         .Times(1)
-        .WillOnce(Return(main_program))
-        .RetiresOnSaturation();
+        .WillOnce(Return(main_program));
     EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
                                             IsEmpty()))
         .Times(1)
@@ -1023,8 +1005,7 @@ TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
     EXPECT_CALL(msg_printer, PrintSemanticProblems(
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     EXPECT_CALL(code_generator, Generate(Ref(*main_program),
                                          Ref(*semantic_analysis),
                                          code_version,
@@ -1032,12 +1013,300 @@ TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
         .Times(1)
         .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
     EXPECT_CALL(msg_printer, PrintError("Code size exceeds 32 bits"))
-        .Times(1)
-        .RetiresOnSaturation();
+        .Times(1);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
     EXPECT_CALL(file, Open_(_))
         .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithUnexpectedTokenErrorWhileParsingFile) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  Parser::UnexpectedTokenError error(
+        TokenInfo(Token::kFileEnd, "", UINT32_C(1), UINT32_C(2)), "test");
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream));
+    EXPECT_CALL(file, Close())
+        .Times(1);
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer));
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Throw(error));
+    EXPECT_CALL(msg_printer, PrintUnexpectedTokenError(error.GetToken(),
+                                                       final_input_file_path))
+        .Times(1);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Open_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithUnexpectedCharErrorWhileParsingFile) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  Lexer::UnexpectedCharError error('a', UINT32_C(1), UINT32_C(2), "test");
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream));
+    EXPECT_CALL(file, Close())
+        .Times(1);
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer));
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Throw(error));
+    EXPECT_CALL(msg_printer, PrintUnexpectedCharError(error.GetChar(),
+                                                      error.GetLineNumber(),
+                                                      error.GetColumnNumber(),
+                                                      final_input_file_path))
+        .Times(1);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Open_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithIOErrorWhileParsingFile) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream));
+    EXPECT_CALL(file, Close())
+        .Times(1);
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer));
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Throw(IOError("test")));
+    string msg = (format("Failed to read file \"%1%\"")
+                  % final_input_file_path).str();
+    EXPECT_CALL(msg_printer, PrintError(msg))
+        .Times(1);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Open_(_))
+        .Times(0)
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithIOErrorWhileReadingFile) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Throw(IOError("test")));
+    string msg = (format("Failed to read file \"%1%\"")
+                  % final_input_file_path).str();
+    EXPECT_CALL(msg_printer, PrintError(msg))
+        .Times(1);
+    EXPECT_CALL(file, Close())
+        .Times(0);
+    EXPECT_CALL(lexer_factory, Create_(_))
+        .Times(0);
+    EXPECT_CALL(src_parser, Parse_(_))
+        .Times(0);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Open_(_))
+        .Times(0)
+        .RetiresOnSaturation();
     EXPECT_CALL(file, Write(_))
         .Times(0);
   }

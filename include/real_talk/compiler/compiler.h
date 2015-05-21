@@ -65,12 +65,14 @@ class Compiler {
   void ParseFiles(
       std::unique_ptr<real_talk::parser::ProgramNode> *main_program,
       real_talk::semantic::SemanticAnalyzer::ImportPrograms *import_programs,
-      MsgPrinter::ProgramFilePaths *program_file_paths)
+      MsgPrinter::ProgramFilePaths *program_file_paths,
+      bool *is_success)
       const;
   void ParseFile(
       const boost::filesystem::path &file_path,
       std::unique_ptr<real_talk::parser::ProgramNode> *program,
-      std::vector<const real_talk::parser::ImportNode*> *import_stmts) const;
+      std::vector<const real_talk::parser::ImportNode*> *import_stmts,
+      bool *is_success) const;
 
   const ImportFileSearcher &file_searcher_;
   const real_talk::lexer::LexerFactory &lexer_factory_;

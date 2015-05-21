@@ -237,7 +237,13 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   unique_ptr<ProgramNode> main_program;
   SemanticAnalyzer::ImportPrograms import_programs;
   MsgPrinter::ProgramFilePaths program_file_paths;
-  ParseFiles(&main_program, &import_programs, &program_file_paths);
+  bool is_success;
+  ParseFiles(&main_program, &import_programs, &program_file_paths, &is_success);
+
+  if (!is_success) {
+    return;
+  }
+
   const unique_ptr<SemanticAnalysis> semantic_analysis =
       semantic_analyzer_->Analyze(*main_program, import_programs);
   msg_printer_.PrintSemanticProblems(
@@ -281,7 +287,7 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   try {
     file_->Write(*code_);
   } catch (const IOError&) {
-    const string msg = (format("Failed to write to output file \"%1%\"")
+    const string msg = (format("Failed to write output file \"%1%\"")
                         % output_file_path.string()).str();
     msg_printer_.PrintError(msg);
     return;
@@ -291,11 +297,18 @@ void Compiler::Compile(int argc, const char *argv[]) const {
 void Compiler::ParseFiles(
     unique_ptr<ProgramNode> *main_program,
     SemanticAnalyzer::ImportPrograms *import_programs,
-    MsgPrinter::ProgramFilePaths *program_file_paths) const {
+    MsgPrinter::ProgramFilePaths *program_file_paths,
+    bool *is_success) const {
+  *is_success = false;
   vector<const ImportNode*> import_stmts;
   const path input_file_path(
       config_->GetSrcDirPath() / config_->GetInputFilePath());
-  ParseFile(input_file_path, main_program, &import_stmts);
+  ParseFile(input_file_path, main_program, &import_stmts, is_success);
+
+  if (!(*is_success)) {
+    return;
+  }
+
   program_file_paths->insert(make_pair(main_program->get(), input_file_path));
   unordered_set< path, hash<path> > processed_files = {input_file_path};
 
@@ -315,28 +328,66 @@ void Compiler::ParseFiles(
     }
 
     unique_ptr<ProgramNode> import_program;
-    ParseFile(found_import_file_path, &import_program, &import_stmts);
+    ParseFile(
+        found_import_file_path, &import_program, &import_stmts, is_success);
+
+    if (!(*is_success)) {
+      return;
+    }
+
     program_file_paths->insert(
         make_pair(import_program.get(), found_import_file_path));
     import_programs->push_back(move(import_program));
     processed_files.insert(found_import_file_path);
   }
+
+  *is_success = true;
 }
 
 void Compiler::ParseFile(const path &file_path,
                          unique_ptr<ProgramNode> *program,
-                         vector<const ImportNode*> *import_stmts) const {
+                         vector<const ImportNode*> *import_stmts,
+                         bool *is_success) const {
+  *is_success = false;
   file_->Open(file_path);
-  unique_ptr<istream> file_stream = file_->Read();
+  unique_ptr<istream> file_stream;
+
+  try {
+    file_stream = file_->Read();
+  } catch (const IOError&) {
+    const string msg =
+        (format("Failed to read file \"%1%\"") % file_path).str();
+    msg_printer_.PrintError(msg);
+    return;
+  }
+
   file_->Close();
   unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
-  *program = src_parser_->Parse(lexer.get());
+
+  try {
+    *program = src_parser_->Parse(lexer.get());
+  } catch (const Parser::UnexpectedTokenError &error) {
+    msg_printer_.PrintUnexpectedTokenError(error.GetToken(), file_path);
+    return;
+  } catch (const Lexer::UnexpectedCharError &error) {
+    msg_printer_.PrintUnexpectedCharError(error.GetChar(),
+                                          error.GetLineNumber(),
+                                          error.GetColumnNumber(),
+                                          file_path);
+    return;
+  } catch (const IOError&) {
+    const string msg =
+        (format("Failed to read file \"%1%\"") % file_path).str();
+    msg_printer_.PrintError(msg);
+    return;
+  }
 
   const vector<const ImportNode*> program_import_stmts =
       kImportsExtractor.Extract(**program);
   import_stmts->insert(import_stmts->cend(),
                        program_import_stmts.crbegin(),
                        program_import_stmts.crend());
+  *is_success = true;
 }
 
 bool Compiler::HasSemanticErrors(

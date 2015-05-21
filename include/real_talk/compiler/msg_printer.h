@@ -17,6 +17,14 @@ class MsgPrinter {
   virtual void PrintSemanticProblems(
       const real_talk::semantic::SemanticAnalysis::ProgramProblems &problems,
       const ProgramFilePaths &program_file_paths) const = 0;
+  virtual void PrintUnexpectedTokenError(
+      const real_talk::lexer::TokenInfo &token,
+      const boost::filesystem::path &file_path) const = 0;
+  virtual void PrintUnexpectedCharError(
+      char c,
+      uint32_t line,
+      uint32_t column,
+      const boost::filesystem::path &file_path) const = 0;
   virtual void PrintError(const std::string &error) const = 0;
 };
 }
