@@ -1,10 +1,13 @@
 
 #include <boost/filesystem.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/format.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <unordered_set>
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
 #include "real_talk/parser/program_node.h"
 #include "real_talk/parser/import_node.h"
 #include "real_talk/parser/parser.h"
@@ -25,10 +28,13 @@
 #include "real_talk/compiler/compiler.h"
 
 using std::unique_ptr;
+using std::unordered_set;
 using std::string;
 using std::vector;
 using std::istream;
+using std::make_pair;
 using boost::filesystem::path;
+using boost::hash;
 using boost::format;
 using boost::adaptors::reverse;
 using real_talk::lexer::LexerFactory;
@@ -230,10 +236,12 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   config_parser_.Parse(argc, argv, config_);
   unique_ptr<ProgramNode> main_program;
   SemanticAnalyzer::ImportPrograms import_programs;
-  ParseFiles(&main_program, &import_programs);
+  MsgPrinter::ProgramFilePaths program_file_paths;
+  ParseFiles(&main_program, &import_programs, &program_file_paths);
   const unique_ptr<SemanticAnalysis> semantic_analysis =
       semantic_analyzer_->Analyze(*main_program, import_programs);
-  msg_printer_.PrintSemanticProblems(semantic_analysis->GetProblems());
+  msg_printer_.PrintSemanticProblems(
+      semantic_analysis->GetProblems(), program_file_paths);
 
   if (HasSemanticErrors(*semantic_analysis)) {
     return;
@@ -255,7 +263,7 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   try {
     dir_creator_.Create(output_file_path.parent_path());
   } catch (const IOError&) {
-    const string msg = (format("Failed to create folder \"%1%\"")
+    const string msg = (format("Failed to create output folder \"%1%\"")
                         % output_file_path.parent_path().string()).str();
     msg_printer_.PrintError(msg);
     return;
@@ -264,7 +272,7 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   try {
     file_->Open(output_file_path);
   } catch (const IOError&) {
-    const string msg = (format("Failed to open file \"%1%\"")
+    const string msg = (format("Failed to open output file \"%1%\"")
                         % output_file_path.string()).str();
     msg_printer_.PrintError(msg);
     return;
@@ -273,7 +281,7 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   try {
     file_->Write(*code_);
   } catch (const IOError&) {
-    const string msg = (format("Failed to write to file \"%1%\"")
+    const string msg = (format("Failed to write to output file \"%1%\"")
                         % output_file_path.string()).str();
     msg_printer_.PrintError(msg);
     return;
@@ -282,11 +290,14 @@ void Compiler::Compile(int argc, const char *argv[]) const {
 
 void Compiler::ParseFiles(
     unique_ptr<ProgramNode> *main_program,
-    SemanticAnalyzer::ImportPrograms *import_programs) const {
+    SemanticAnalyzer::ImportPrograms *import_programs,
+    MsgPrinter::ProgramFilePaths *program_file_paths) const {
   vector<const ImportNode*> import_stmts;
   const path input_file_path(
       config_->GetSrcDirPath() / config_->GetInputFilePath());
   ParseFile(input_file_path, main_program, &import_stmts);
+  program_file_paths->insert(make_pair(main_program->get(), input_file_path));
+  unordered_set< path, hash<path> > processed_files = {input_file_path};
 
   while (!import_stmts.empty()) {
     const ImportNode *import_stmt = import_stmts.back();
@@ -305,6 +316,8 @@ void Compiler::ParseFiles(
 
     unique_ptr<ProgramNode> import_program;
     ParseFile(found_import_file_path, &import_program, &import_stmts);
+    program_file_paths->insert(
+        make_pair(import_program.get(), found_import_file_path));
     import_programs->push_back(move(import_program));
     processed_files.insert(found_import_file_path);
   }

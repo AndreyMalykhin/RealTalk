@@ -64,7 +64,8 @@ class Compiler {
       const real_talk::semantic::SemanticAnalysis &semantic_analysis) const;
   void ParseFiles(
       std::unique_ptr<real_talk::parser::ProgramNode> *main_program,
-      real_talk::semantic::SemanticAnalyzer::ImportPrograms *import_programs)
+      real_talk::semantic::SemanticAnalyzer::ImportPrograms *import_programs,
+      MsgPrinter::ProgramFilePaths *program_file_paths)
       const;
   void ParseFile(
       const boost::filesystem::path &file_path,

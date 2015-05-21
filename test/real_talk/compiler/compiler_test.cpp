@@ -28,6 +28,7 @@
 #include "real_talk/compiler/compiler.h"
 
 using std::move;
+using std::unordered_map;
 using std::istream;
 using std::vector;
 using std::unique_ptr;
@@ -35,6 +36,7 @@ using std::ostream;
 using std::string;
 using std::stringstream;
 using std::equal;
+using std::make_pair;
 using boost::filesystem::path;
 using boost::format;
 using testing::InvokeWithoutArgs;
@@ -42,6 +44,7 @@ using testing::Test;
 using testing::Truly;
 using testing::Eq;
 using testing::Return;
+using testing::IsEmpty;
 using testing::ByRef;
 using testing::Ref;
 using testing::_;
@@ -91,8 +94,8 @@ class SemanticAnalyzerMock: public SemanticAnalyzer {
 
 class MsgPrinterMock: public MsgPrinter {
  public:
-  MOCK_CONST_METHOD1(
-      PrintSemanticProblems, void(const SemanticAnalysis::ProgramProblems&));
+  MOCK_CONST_METHOD2(PrintSemanticProblems, void(
+      const SemanticAnalysis::ProgramProblems&, const ProgramFilePaths&));
   MOCK_CONST_METHOD1(PrintError, void(const string&));
 };
 
@@ -214,6 +217,8 @@ TEST_F(CompilerTest, Compile) {
                         "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
+  path output_dir_path("build2/bin2/app/module");
+  path output_file_path("build2/bin2/app/module/component.rtm2");
   CompilerConfig config(input_file_path);
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
@@ -226,8 +231,6 @@ TEST_F(CompilerTest, Compile) {
     import_dir_path_strs.push_back(path.string());
   }
 
-  path output_dir_path("build2/bin2/app/module");
-  path output_file_path("build2/bin2/app/module/component.rtm2");
   uint32_t code_version = UINT32_C(1);
   Code code;
   LitParserMock lit_parser;
@@ -346,6 +349,9 @@ TEST_F(CompilerTest, Compile) {
       new ProgramNode(vector< unique_ptr<StmtNode> >());
   import_programs.push_back(import_program6);
 
+  MsgPrinter::ProgramFilePaths program_file_paths =
+      {{main_program, final_input_file_path}};
+
   SemanticAnalysis::ProgramProblems semantic_problems;
   semantic_problems.insert(
       make_pair(main_program, SemanticAnalysis::Problems()));
@@ -371,6 +377,8 @@ TEST_F(CompilerTest, Compile) {
                                                   import_programs.at(0),
                                                   new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
+    program_file_paths.insert(
+        make_pair(import_programs.at(0), found_import_file_path));
   }
 
   {
@@ -384,6 +392,8 @@ TEST_F(CompilerTest, Compile) {
                                                   import_programs.at(1),
                                                   new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
+    program_file_paths.insert(
+        make_pair(import_programs.at(1), found_import_file_path));
   }
 
   {
@@ -397,6 +407,8 @@ TEST_F(CompilerTest, Compile) {
                                                   import_programs.at(2),
                                                   new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
+    program_file_paths.insert(
+        make_pair(import_programs.at(2), found_import_file_path));
   }
 
   {
@@ -410,6 +422,8 @@ TEST_F(CompilerTest, Compile) {
                                                   import_programs.at(3),
                                                   new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
+    program_file_paths.insert(
+        make_pair(import_programs.at(3), found_import_file_path));
   }
 
   {
@@ -423,6 +437,8 @@ TEST_F(CompilerTest, Compile) {
                                                   import_programs.at(4),
                                                   new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
+    program_file_paths.insert(
+        make_pair(import_programs.at(4), found_import_file_path));
   }
 
   {
@@ -436,6 +452,8 @@ TEST_F(CompilerTest, Compile) {
                                                   import_programs.at(5),
                                                   new LexerMock()};
     test_import_file_parses.push_back(move(test_import_file_parse));
+    program_file_paths.insert(
+        make_pair(import_programs.at(5), found_import_file_path));
   }
 
   {
@@ -529,7 +547,8 @@ TEST_F(CompilerTest, Compile) {
         .Times(1)
         .WillOnce(Return(semantic_analysis));
     EXPECT_CALL(msg_printer, PrintSemanticProblems(
-        Ref(semantic_analysis->GetProblems())))
+        Ref(semantic_analysis->GetProblems()),
+        program_file_paths))
         .Times(1);
     EXPECT_CALL(code_generator, Generate(Ref(*main_program),
                                          Ref(*semantic_analysis),
@@ -542,6 +561,485 @@ TEST_F(CompilerTest, Compile) {
         .Times(1);
     EXPECT_CALL(file, Write(Ref(code)))
         .Times(1);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithSemanticErrors) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
+  vector<ProgramNode*> import_programs;
+  SemanticAnalysis::ProgramProblems semantic_problems;
+  unique_ptr<SemanticProblem> error(new SemanticErrorMock());
+  semantic_problems[main_program].push_back(move(error));
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  auto *semantic_analysis = new SemanticAnalysis(
+      move(semantic_problems), move(node_analyzes));
+  MsgPrinter::ProgramFilePaths program_file_paths =
+      {{main_program, final_input_file_path}};
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Close())
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer))
+        .RetiresOnSaturation();
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Return(main_program))
+        .RetiresOnSaturation();
+    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
+                                            IsEmpty()))
+        .Times(1)
+        .WillOnce(Return(semantic_analysis));
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(
+        Ref(semantic_analysis->GetProblems()),
+        program_file_paths))
+        .Times(1);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Open_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  path output_dir_path("build2/bin2/app/module");
+  path output_file_path("build2/bin2/app/module/component.rtm2");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  config.SetBinDirPath("build2/bin2");
+  config.SetModuleFileExtension("rtm2");
+  uint32_t code_version = UINT32_C(1);
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
+  vector<ProgramNode*> import_programs;
+  SemanticAnalysis::ProgramProblems semantic_problems;
+  semantic_problems.insert(
+      make_pair(main_program, SemanticAnalysis::Problems()));
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  auto *semantic_analysis = new SemanticAnalysis(
+      move(semantic_problems), move(node_analyzes));
+  MsgPrinter::ProgramFilePaths program_file_paths =
+      {{main_program, final_input_file_path}};
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Close())
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer))
+        .RetiresOnSaturation();
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Return(main_program))
+        .RetiresOnSaturation();
+    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
+                                            IsEmpty()))
+        .Times(1)
+        .WillOnce(Return(semantic_analysis));
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(
+        Ref(semantic_analysis->GetProblems()),
+        program_file_paths))
+        .Times(1)
+        .RetiresOnSaturation();
+    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
+                                         Ref(*semantic_analysis),
+                                         code_version,
+                                         &code))
+        .Times(1);
+    EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
+        .Times(1);
+    EXPECT_CALL(file, Open_(output_file_path.string()))
+        .Times(1);
+    EXPECT_CALL(file, Write(Ref(code)))
+        .Times(1)
+        .WillOnce(Throw(IOError("test")));
+    EXPECT_CALL(msg_printer, PrintError(
+        "Failed to write to output file \"build2/bin2/app/module/component.rtm2\""))
+        .Times(1)
+        .RetiresOnSaturation();
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  path output_dir_path("build2/bin2/app/module");
+  path output_file_path("build2/bin2/app/module/component.rtm2");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  config.SetBinDirPath("build2/bin2");
+  config.SetModuleFileExtension("rtm2");
+  uint32_t code_version = UINT32_C(1);
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
+  vector<ProgramNode*> import_programs;
+  SemanticAnalysis::ProgramProblems semantic_problems;
+  semantic_problems.insert(
+      make_pair(main_program, SemanticAnalysis::Problems()));
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  auto *semantic_analysis = new SemanticAnalysis(
+      move(semantic_problems), move(node_analyzes));
+  MsgPrinter::ProgramFilePaths program_file_paths =
+      {{main_program, final_input_file_path}};
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Close())
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer))
+        .RetiresOnSaturation();
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Return(main_program))
+        .RetiresOnSaturation();
+    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
+                                            IsEmpty()))
+        .Times(1)
+        .WillOnce(Return(semantic_analysis));
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(
+        Ref(semantic_analysis->GetProblems()),
+        program_file_paths))
+        .Times(1)
+        .RetiresOnSaturation();
+    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
+                                         Ref(*semantic_analysis),
+                                         code_version,
+                                         &code))
+        .Times(1);
+    EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
+        .Times(1);
+    EXPECT_CALL(file, Open_(output_file_path.string()))
+        .Times(1)
+        .WillOnce(Throw(IOError("test")));
+    EXPECT_CALL(msg_printer, PrintError(
+        "Failed to open output file \"build2/bin2/app/module/component.rtm2\""))
+        .Times(1)
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  path output_dir_path("build2/bin2/app/module");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  config.SetBinDirPath("build2/bin2");
+  uint32_t code_version = UINT32_C(1);
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
+  vector<ProgramNode*> import_programs;
+  SemanticAnalysis::ProgramProblems semantic_problems;
+  semantic_problems.insert(
+      make_pair(main_program, SemanticAnalysis::Problems()));
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  auto *semantic_analysis = new SemanticAnalysis(
+      move(semantic_problems), move(node_analyzes));
+  MsgPrinter::ProgramFilePaths program_file_paths =
+      {{main_program, final_input_file_path}};
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Close())
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer))
+        .RetiresOnSaturation();
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Return(main_program))
+        .RetiresOnSaturation();
+    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
+                                            IsEmpty()))
+        .Times(1)
+        .WillOnce(Return(semantic_analysis));
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(
+        Ref(semantic_analysis->GetProblems()),
+        program_file_paths))
+        .Times(1)
+        .RetiresOnSaturation();
+    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
+                                         Ref(*semantic_analysis),
+                                         code_version,
+                                         &code))
+        .Times(1);
+    EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
+        .Times(1)
+        .WillOnce(Throw(IOError("test")));
+    EXPECT_CALL(msg_printer, PrintError(
+        "Failed to create output folder \"build2/bin2/app/module\""))
+        .Times(1)
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Open_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  uint32_t code_version = UINT32_C(1);
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
+  vector<ProgramNode*> import_programs;
+  SemanticAnalysis::ProgramProblems semantic_problems;
+  semantic_problems.insert(
+      make_pair(main_program, SemanticAnalysis::Problems()));
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  auto *semantic_analysis = new SemanticAnalysis(
+      move(semantic_problems), move(node_analyzes));
+  MsgPrinter::ProgramFilePaths program_file_paths =
+      {{main_program, final_input_file_path}};
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream))
+        .RetiresOnSaturation();
+    EXPECT_CALL(file, Close())
+        .Times(1)
+        .RetiresOnSaturation();
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer))
+        .RetiresOnSaturation();
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Return(main_program))
+        .RetiresOnSaturation();
+    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
+                                            IsEmpty()))
+        .Times(1)
+        .WillOnce(Return(semantic_analysis));
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(
+        Ref(semantic_analysis->GetProblems()),
+        program_file_paths))
+        .Times(1)
+        .RetiresOnSaturation();
+    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
+                                         Ref(*semantic_analysis),
+                                         code_version,
+                                         &code))
+        .Times(1)
+        .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
+    EXPECT_CALL(msg_printer, PrintError("Code size exceeds 32 bits"))
+        .Times(1)
+        .RetiresOnSaturation();
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Open_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
   }
 
   Compiler compiler(file_searcher,
