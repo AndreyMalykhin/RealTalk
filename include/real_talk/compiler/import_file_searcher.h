@@ -14,8 +14,8 @@ class ImportFileSearcher {
   virtual ~ImportFileSearcher() {}
 
   /**
-   * @throws real_talk::util::FileNotFoundError
    * @throws real_talk::util::IOError
+   * @return Empty path if not found
    */
   virtual boost::filesystem::path Search(
       const boost::filesystem::path &file_path,

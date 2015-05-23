@@ -303,9 +303,10 @@ void Compiler::ParseFiles(
   vector<const ImportNode*> import_stmts;
   const path input_file_path(
       config_->GetSrcDirPath() / config_->GetInputFilePath());
-  ParseFile(input_file_path, main_program, &import_stmts, is_success);
+  bool is_success2;
+  ParseFile(input_file_path, main_program, &import_stmts, &is_success2);
 
-  if (!(*is_success)) {
+  if (!is_success2) {
     return;
   }
 
@@ -317,21 +318,38 @@ void Compiler::ParseFiles(
     import_stmts.pop_back();
     const string &search_import_file_path = lit_parser_.ParseString(
         import_stmt->GetFilePath()->GetToken().GetValue());
-    const path found_import_file_path = file_searcher_.Search(
-        search_import_file_path,
-        config_->GetSrcDirPath(),
-        config_->GetVendorDirPath(),
-        config_->GetImportDirPaths());
+    path found_import_file_path;
+
+    try {
+      found_import_file_path = file_searcher_.Search(
+          search_import_file_path,
+          config_->GetSrcDirPath(),
+          config_->GetVendorDirPath(),
+          config_->GetImportDirPaths());
+    } catch (const IOError&) {
+      const string msg = (format("IO error while searching file \"%1%\"")
+                          % search_import_file_path).str();
+      msg_printer_.PrintError(msg);
+      return;
+    }
+
+    if (found_import_file_path.empty()) {
+      const string msg = (format("Can't find file \"%1%\"")
+                          % search_import_file_path).str();
+      msg_printer_.PrintError(msg);
+      return;
+    }
 
     if (processed_files.count(found_import_file_path)) {
       continue;
     }
 
     unique_ptr<ProgramNode> import_program;
+    bool is_success3;
     ParseFile(
-        found_import_file_path, &import_program, &import_stmts, is_success);
+        found_import_file_path, &import_program, &import_stmts, &is_success3);
 
-    if (!(*is_success)) {
+    if (!is_success3) {
       return;
     }
 
@@ -349,14 +367,23 @@ void Compiler::ParseFile(const path &file_path,
                          vector<const ImportNode*> *import_stmts,
                          bool *is_success) const {
   *is_success = false;
-  file_->Open(file_path);
+
+  try {
+    file_->Open(file_path);
+  } catch (const IOError&) {
+    const string msg =
+        (format("Failed to open file \"%1%\"") % file_path.string()).str();
+    msg_printer_.PrintError(msg);
+    return;
+  }
+
   unique_ptr<istream> file_stream;
 
   try {
     file_stream = file_->Read();
   } catch (const IOError&) {
     const string msg =
-        (format("Failed to read file \"%1%\"") % file_path).str();
+        (format("Failed to read file \"%1%\"") % file_path.string()).str();
     msg_printer_.PrintError(msg);
     return;
   }
@@ -377,7 +404,7 @@ void Compiler::ParseFile(const path &file_path,
     return;
   } catch (const IOError&) {
     const string msg =
-        (format("Failed to read file \"%1%\"") % file_path).str();
+        (format("Failed to read file \"%1%\"") % file_path.string()).str();
     msg_printer_.PrintError(msg);
     return;
   }
