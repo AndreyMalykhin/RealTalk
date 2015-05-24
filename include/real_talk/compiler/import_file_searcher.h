@@ -3,7 +3,6 @@
 #define _REAL_TALK_COMPILER_IMPORT_FILE_SEARCHER_H_
 
 #include <boost/filesystem.hpp>
-#include <string>
 #include <vector>
 
 namespace real_talk {

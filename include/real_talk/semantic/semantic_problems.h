@@ -17,6 +17,9 @@ class ArrayAllocNode;
 class BoundedArraySizeNode;
 class StringNode;
 class ArrayDataTypeNode;
+class ReturnNode;
+class DefNode;
+class FuncDefNode;
 }
 
 namespace semantic {

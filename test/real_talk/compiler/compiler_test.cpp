@@ -13,7 +13,7 @@
 #include "real_talk/parser/import_node.h"
 #include "real_talk/parser/parser.h"
 #include "real_talk/semantic/semantic_analyzer.h"
-#include "real_talk/semantic/semantic_error.h"
+#include "real_talk/semantic/semantic_problems.h"
 #include "real_talk/semantic/node_semantic_analysis.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/code/code_generator.h"
@@ -62,6 +62,8 @@ using real_talk::parser::Parser;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::SemanticError;
 using real_talk::semantic::SemanticProblem;
+using real_talk::semantic::StringWithEmptyHexValueError;
+using real_talk::semantic::StringWithOutOfRangeHexValueError;
 using real_talk::semantic::SemanticProblemVisitor;
 using real_talk::semantic::SemanticAnalyzer;
 using real_talk::semantic::LitParser;
@@ -96,9 +98,13 @@ class MsgPrinterMock: public MsgPrinter {
  public:
   MOCK_CONST_METHOD2(PrintSemanticProblems, void(
       const SemanticAnalysis::ProgramProblems&, const ProgramFilePaths&));
-  MOCK_CONST_METHOD1(PrintError, void(const string&));
   MOCK_CONST_METHOD2(
-      PrintUnexpectedTokenError, void(const TokenInfo &token, const path&));
+      PrintSemanticProblem, void(const SemanticProblem&, const path&));
+  MOCK_CONST_METHOD1(PrintError, void(const string&));
+  MOCK_CONST_METHOD3(
+      PrintTokenError, void(const TokenInfo&, const path&, const string&));
+  MOCK_CONST_METHOD2(
+      PrintUnexpectedTokenError, void(const TokenInfo&, const path&));
   MOCK_CONST_METHOD4(
       PrintUnexpectedCharError, void(char, uint32_t, uint32_t, const path&));
 };
@@ -120,15 +126,15 @@ class DirCreatorMock: public DirCreator {
 
 class FileMock: public File {
  public:
-  virtual void Open(const path &file_path) override {
-    Open_(file_path.string());
+  virtual void Open(const path &file_path, bool truncate) override {
+    Open_(file_path.string(), truncate);
   }
 
   virtual unique_ptr<istream> Read() override {
     return unique_ptr<istream>(Read_());
   }
 
-  MOCK_METHOD1(Open_, void(const string&));
+  MOCK_METHOD2(Open_, void(const string&, bool));
   MOCK_METHOD0(Read_, istream*());
   MOCK_METHOD1(Write, void(const Code&));
   MOCK_METHOD0(Close, void());
@@ -464,7 +470,9 @@ TEST_F(CompilerTest, Compile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -500,7 +508,9 @@ TEST_F(CompilerTest, Compile) {
           .Times(1)
           .WillOnce(Return(test_parse.found_import_file_path.string()))
           .RetiresOnSaturation();
-      EXPECT_CALL(file, Open_(test_parse.found_import_file_path.string()))
+      bool truncate_import_file = false;
+      EXPECT_CALL(file, Open_(test_parse.found_import_file_path.string(),
+                              truncate_import_file))
           .Times(1)
           .RetiresOnSaturation();
       EXPECT_CALL(file, Read_())
@@ -561,7 +571,8 @@ TEST_F(CompilerTest, Compile) {
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
-    EXPECT_CALL(file, Open_(output_file_path.string()))
+    bool truncate_output_file = true;
+    EXPECT_CALL(file, Open_(output_file_path.string(), truncate_output_file))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(file, Write(Ref(code)))
@@ -583,7 +594,7 @@ TEST_F(CompilerTest, Compile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithSemanticErrors) {
+TEST_F(CompilerTest, ThereAreSemanticErrors) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -616,7 +627,9 @@ TEST_F(CompilerTest, CompileWithSemanticErrors) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -644,7 +657,7 @@ TEST_F(CompilerTest, CompileWithSemanticErrors) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_))
+    EXPECT_CALL(file, Open_(_, _))
         .Times(0);
     EXPECT_CALL(file, Write(_))
         .Times(0);
@@ -665,7 +678,7 @@ TEST_F(CompilerTest, CompileWithSemanticErrors) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
+TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -703,7 +716,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -734,7 +749,8 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
-    EXPECT_CALL(file, Open_(output_file_path.string()))
+    bool truncate_output_file = true;
+    EXPECT_CALL(file, Open_(output_file_path.string(), truncate_output_file))
         .Times(1);
     EXPECT_CALL(file, Write(Ref(code)))
         .Times(1)
@@ -760,7 +776,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileWritingOutputFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
+TEST_F(CompilerTest, IOErrorWhileCreatingOutputFile) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -798,7 +814,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -829,10 +847,11 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
-    EXPECT_CALL(file, Open_(output_file_path.string()))
+    bool truncate_output_file = true;
+    EXPECT_CALL(file, Open_(output_file_path.string(), truncate_output_file))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
-    string msg = (format("Failed to open output file \"%1%\"")
+    string msg = (format("Failed to create output file \"%1%\"")
                   % output_file_path.string()).str();
     EXPECT_CALL(msg_printer, PrintError(msg))
         .Times(1);
@@ -855,7 +874,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningOutputFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
+TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -891,7 +910,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -927,7 +948,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
                   % output_dir_path.string()).str();
     EXPECT_CALL(msg_printer, PrintError(msg))
         .Times(1);
-    EXPECT_CALL(file, Open_(_))
+    EXPECT_CALL(file, Open_(_, _))
         .Times(0);
     EXPECT_CALL(file, Write(_))
         .Times(0);
@@ -948,7 +969,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileCreatingOutputDir) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
+TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -982,7 +1003,9 @@ TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -1016,7 +1039,7 @@ TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_))
+    EXPECT_CALL(file, Open_(_, _))
         .Times(0);
     EXPECT_CALL(file, Write(_))
         .Times(0);
@@ -1037,7 +1060,7 @@ TEST_F(CompilerTest, CompileWithCodeSizeOverflowErrorWhileGeneratingCode) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithUnexpectedTokenErrorWhileParsingFile) {
+TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -1062,7 +1085,9 @@ TEST_F(CompilerTest, CompileWithUnexpectedTokenErrorWhileParsingFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -1089,7 +1114,7 @@ TEST_F(CompilerTest, CompileWithUnexpectedTokenErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_))
+    EXPECT_CALL(file, Open_(_, _))
         .Times(0);
     EXPECT_CALL(file, Write(_))
         .Times(0);
@@ -1110,7 +1135,7 @@ TEST_F(CompilerTest, CompileWithUnexpectedTokenErrorWhileParsingFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithUnexpectedCharErrorWhileParsingFile) {
+TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -1134,7 +1159,9 @@ TEST_F(CompilerTest, CompileWithUnexpectedCharErrorWhileParsingFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -1163,7 +1190,7 @@ TEST_F(CompilerTest, CompileWithUnexpectedCharErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_))
+    EXPECT_CALL(file, Open_(_, _))
         .Times(0);
     EXPECT_CALL(file, Write(_))
         .Times(0);
@@ -1184,7 +1211,7 @@ TEST_F(CompilerTest, CompileWithUnexpectedCharErrorWhileParsingFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithIOErrorWhileParsingFile) {
+TEST_F(CompilerTest, IOErrorWhileParsingFile) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -1207,7 +1234,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileParsingFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
@@ -1235,7 +1264,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_))
+    EXPECT_CALL(file, Open_(_, _))
         .Times(0)
         .RetiresOnSaturation();
     EXPECT_CALL(file, Write(_))
@@ -1257,7 +1286,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileParsingFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithIOErrorWhileReadingSrcFile) {
+TEST_F(CompilerTest, IOErrorWhileReadingFile) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -1280,7 +1309,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileReadingSrcFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(file, Read_())
@@ -1304,7 +1335,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileReadingSrcFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_))
+    EXPECT_CALL(file, Open_(_, _))
         .Times(0)
         .RetiresOnSaturation();
     EXPECT_CALL(file, Write(_))
@@ -1326,7 +1357,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileReadingSrcFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningSrcFile) {
+TEST_F(CompilerTest, IOErrorWhileOpeningFile) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -1349,7 +1380,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningSrcFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1)
         .WillOnce(Throw(IOError("test")))
         .RetiresOnSaturation();
@@ -1373,7 +1406,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningSrcFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_))
+    EXPECT_CALL(file, Open_(_, _))
         .Times(0)
         .RetiresOnSaturation();
     EXPECT_CALL(file, Write(_))
@@ -1395,7 +1428,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileOpeningSrcFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithIOErrorWhileSearchingImportFile) {
+TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -1434,7 +1467,9 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileSearchingImportFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1);
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_())
@@ -1460,9 +1495,10 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileSearchingImportFile) {
         IsEmpty()))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
-    string msg = (format("IO error while searching file \"%1%\"")
-                  % search_import_file_path).str();
-    EXPECT_CALL(msg_printer, PrintError(msg))
+    EXPECT_CALL(msg_printer, PrintTokenError(
+        import_stmt_ptr->GetFilePath()->GetToken(),
+        final_input_file_path,
+        "IO error while searching file"))
         .Times(1);
     EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
         .Times(0);
@@ -1491,7 +1527,7 @@ TEST_F(CompilerTest, CompileWithIOErrorWhileSearchingImportFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, CompileWithNotExistingImportFile) {
+TEST_F(CompilerTest, ImportFileNotExists) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
@@ -1531,7 +1567,9 @@ TEST_F(CompilerTest, CompileWithNotExistingImportFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config))
         .Times(1);
-    EXPECT_CALL(file, Open_(final_input_file_path.string()))
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
         .Times(1);
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_())
@@ -1557,10 +1595,197 @@ TEST_F(CompilerTest, CompileWithNotExistingImportFile) {
         IsEmpty()))
         .Times(1)
         .WillOnce(Return(found_import_file_path.string()));
-    string msg = (format("Can't find file \"%1%\"")
-                  % search_import_file_path).str();
-    EXPECT_CALL(msg_printer, PrintError(msg))
+    EXPECT_CALL(msg_printer, PrintTokenError(
+        import_stmt_ptr->GetFilePath()->GetToken(),
+        final_input_file_path,
+        "File not found"))
         .Times(1);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+
+  vector< unique_ptr<StmtNode> > main_program_stmts;
+  string import_file_path_token = "\"app/module/import.rts\"";
+  auto *file_path_expr_ptr = new StringNode(TokenInfo(
+      Token::kStringLit,
+      import_file_path_token,
+      UINT32_C(1),
+      UINT32_C(1)));
+  unique_ptr<StringNode> file_path_expr(file_path_expr_ptr);
+  auto *import_stmt_ptr = new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
+      move(file_path_expr),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> import_stmt(import_stmt_ptr);
+  main_program_stmts.push_back(move(import_stmt));
+  auto *main_program = new ProgramNode(move(main_program_stmts));
+  vector<ProgramNode*> import_programs;
+  StringWithEmptyHexValueError semantic_problem(*file_path_expr_ptr);
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
+        .Times(1);
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream));
+    EXPECT_CALL(file, Close())
+        .Times(1);
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer));
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Return(main_program));
+    EXPECT_CALL(lit_parser, ParseString(import_file_path_token))
+        .Times(1)
+        .WillOnce(Throw(LitParser::EmptyHexValueError("test")));
+    EXPECT_CALL(msg_printer, PrintSemanticProblem(Eq(ByRef(semantic_problem)),
+                                                  final_input_file_path))
+        .Times(1);
+    EXPECT_CALL(file_searcher, Search_(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config(input_file_path);
+  config.SetSrcDirPath("src2");
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+
+  vector< unique_ptr<StmtNode> > main_program_stmts;
+  string import_file_path_token = "\"app/module/import.rts\"";
+  auto *file_path_expr_ptr = new StringNode(TokenInfo(
+      Token::kStringLit,
+      import_file_path_token,
+      UINT32_C(1),
+      UINT32_C(1)));
+  unique_ptr<StringNode> file_path_expr(file_path_expr_ptr);
+  auto *import_stmt_ptr = new ImportNode(
+      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(0)),
+      move(file_path_expr),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+  unique_ptr<StmtNode> import_stmt(import_stmt_ptr);
+  main_program_stmts.push_back(move(import_stmt));
+  auto *main_program = new ProgramNode(move(main_program_stmts));
+  vector<ProgramNode*> import_programs;
+  StringWithOutOfRangeHexValueError semantic_problem(*file_path_expr_ptr);
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
+        .Times(1);
+    bool truncate_input_file = false;
+    EXPECT_CALL(file,
+                Open_(final_input_file_path.string(), truncate_input_file))
+        .Times(1);
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_())
+        .Times(1)
+        .WillOnce(Return(input_file_stream));
+    EXPECT_CALL(file, Close())
+        .Times(1);
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer));
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Return(main_program));
+    EXPECT_CALL(lit_parser, ParseString(import_file_path_token))
+        .Times(1)
+        .WillOnce(Throw(LitParser::OutOfRangeError("test")));
+    EXPECT_CALL(msg_printer, PrintSemanticProblem(Eq(ByRef(semantic_problem)),
+                                                  final_input_file_path))
+        .Times(1);
+    EXPECT_CALL(file_searcher, Search_(_, _, _, _))
+        .Times(0);
     EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))

@@ -16,6 +16,7 @@
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/node_semantic_analysis.h"
 #include "real_talk/semantic/lit_parser.h"
+#include "real_talk/semantic/semantic_problems.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/code.h"
 #include "real_talk/util/dir_creator.h"
@@ -39,6 +40,7 @@ using boost::format;
 using boost::adaptors::reverse;
 using real_talk::lexer::LexerFactory;
 using real_talk::lexer::Lexer;
+using real_talk::lexer::TokenInfo;
 using real_talk::parser::ImportNode;
 using real_talk::parser::BreakNode;
 using real_talk::parser::ContinueNode;
@@ -97,6 +99,8 @@ using real_talk::parser::NodeVisitor;
 using real_talk::semantic::SemanticAnalyzer;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::LitParser;
+using real_talk::semantic::StringWithEmptyHexValueError;
+using real_talk::semantic::StringWithOutOfRangeHexValueError;
 using real_talk::code::CodeGenerator;
 using real_talk::code::Code;
 using real_talk::util::DirCreator;
@@ -275,10 +279,12 @@ void Compiler::Compile(int argc, const char *argv[]) const {
     return;
   }
 
+  const bool truncate_output_file = true;
+
   try {
-    file_->Open(output_file_path);
+    file_->Open(output_file_path, truncate_output_file);
   } catch (const IOError&) {
-    const string msg = (format("Failed to open output file \"%1%\"")
+    const string msg = (format("Failed to create output file \"%1%\"")
                         % output_file_path.string()).str();
     msg_printer_.PrintError(msg);
     return;
@@ -300,11 +306,11 @@ void Compiler::ParseFiles(
     MsgPrinter::ProgramFilePaths *program_file_paths,
     bool *is_success) const {
   *is_success = false;
-  vector<const ImportNode*> import_stmts;
+  vector<ProgramImportStmt> program_import_stmts;
   const path input_file_path(
       config_->GetSrcDirPath() / config_->GetInputFilePath());
   bool is_success2;
-  ParseFile(input_file_path, main_program, &import_stmts, &is_success2);
+  ParseFile(input_file_path, main_program, &program_import_stmts, &is_success2);
 
   if (!is_success2) {
     return;
@@ -313,30 +319,51 @@ void Compiler::ParseFiles(
   program_file_paths->insert(make_pair(main_program->get(), input_file_path));
   unordered_set< path, hash<path> > processed_files = {input_file_path};
 
-  while (!import_stmts.empty()) {
-    const ImportNode *import_stmt = import_stmts.back();
-    import_stmts.pop_back();
-    const string &search_import_file_path = lit_parser_.ParseString(
-        import_stmt->GetFilePath()->GetToken().GetValue());
+  while (!program_import_stmts.empty()) {
+    const ProgramImportStmt program_import_stmt = program_import_stmts.back();
+    program_import_stmts.pop_back();
+    MsgPrinter::ProgramFilePaths::const_iterator program_file_paths_it =
+        program_file_paths->find(program_import_stmt.program);
+    assert(program_file_paths_it != program_file_paths->cend());
+    const path &current_file_path = program_file_paths_it->second;
+    const TokenInfo &search_import_file_path_token =
+        program_import_stmt.stmt->GetFilePath()->GetToken();
+    string search_import_file_path;
+
+    try {
+      search_import_file_path = lit_parser_.ParseString(
+          search_import_file_path_token.GetValue());
+    } catch (const LitParser::EmptyHexValueError&) {
+      StringWithEmptyHexValueError semantic_problem(
+          *(program_import_stmt.stmt->GetFilePath()));
+      msg_printer_.PrintSemanticProblem(semantic_problem, current_file_path);
+      return;
+    } catch (const LitParser::OutOfRangeError&) {
+      StringWithOutOfRangeHexValueError semantic_problem(
+          *(program_import_stmt.stmt->GetFilePath()));
+      msg_printer_.PrintSemanticProblem(semantic_problem, current_file_path);
+      return;
+    }
+
     path found_import_file_path;
 
     try {
       found_import_file_path = file_searcher_.Search(
-          search_import_file_path,
+          path(search_import_file_path),
           config_->GetSrcDirPath(),
           config_->GetVendorDirPath(),
           config_->GetImportDirPaths());
     } catch (const IOError&) {
-      const string msg = (format("IO error while searching file \"%1%\"")
-                          % search_import_file_path).str();
-      msg_printer_.PrintError(msg);
+      msg_printer_.PrintTokenError(search_import_file_path_token,
+                                   current_file_path,
+                                   "IO error while searching file");
       return;
     }
 
     if (found_import_file_path.empty()) {
-      const string msg = (format("Can't find file \"%1%\"")
-                          % search_import_file_path).str();
-      msg_printer_.PrintError(msg);
+      msg_printer_.PrintTokenError(search_import_file_path_token,
+                                   current_file_path,
+                                   "File not found");
       return;
     }
 
@@ -346,8 +373,10 @@ void Compiler::ParseFiles(
 
     unique_ptr<ProgramNode> import_program;
     bool is_success3;
-    ParseFile(
-        found_import_file_path, &import_program, &import_stmts, &is_success3);
+    ParseFile(found_import_file_path,
+              &import_program,
+              &program_import_stmts,
+              &is_success3);
 
     if (!is_success3) {
       return;
@@ -364,12 +393,13 @@ void Compiler::ParseFiles(
 
 void Compiler::ParseFile(const path &file_path,
                          unique_ptr<ProgramNode> *program,
-                         vector<const ImportNode*> *import_stmts,
+                         vector<ProgramImportStmt> *program_import_stmts,
                          bool *is_success) const {
   *is_success = false;
+  const bool truncate_file = false;
 
   try {
-    file_->Open(file_path);
+    file_->Open(file_path, truncate_file);
   } catch (const IOError&) {
     const string msg =
         (format("Failed to open file \"%1%\"") % file_path.string()).str();
@@ -409,11 +439,15 @@ void Compiler::ParseFile(const path &file_path,
     return;
   }
 
-  const vector<const ImportNode*> program_import_stmts =
+  // must store result in var, coz reverse() doesn't play well with rvalues
+  const vector<const ImportNode*> import_stmts =
       kImportsExtractor.Extract(**program);
-  import_stmts->insert(import_stmts->cend(),
-                       program_import_stmts.crbegin(),
-                       program_import_stmts.crend());
+
+  for (const ImportNode *import_stmt: reverse(import_stmts)) {
+    program_import_stmts->push_back(
+        ProgramImportStmt{program->get(), import_stmt});
+  }
+
   *is_success = true;
 }
 

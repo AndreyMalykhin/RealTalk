@@ -60,6 +60,11 @@ class Compiler {
   void Compile(int argc, const char *argv[]) const;
 
  private:
+  struct ProgramImportStmt {
+    const real_talk::parser::ProgramNode *program;
+    const real_talk::parser::ImportNode *stmt;
+  };
+
   bool HasSemanticErrors(
       const real_talk::semantic::SemanticAnalysis &semantic_analysis) const;
   void ParseFiles(
@@ -71,7 +76,7 @@ class Compiler {
   void ParseFile(
       const boost::filesystem::path &file_path,
       std::unique_ptr<real_talk::parser::ProgramNode> *program,
-      std::vector<const real_talk::parser::ImportNode*> *import_stmts,
+      std::vector<ProgramImportStmt> *program_import_stmts,
       bool *is_success) const;
 
   const ImportFileSearcher &file_searcher_;

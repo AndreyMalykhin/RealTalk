@@ -22,7 +22,8 @@ class File {
   /**
    * @throws real_talk::util::IOError
    */
-  virtual void Open(const boost::filesystem::path &file_path) = 0;
+  virtual void Open(
+      const boost::filesystem::path &file_path, bool truncate) = 0;
 
   /**
    * @throws real_talk::util::IOError
@@ -34,9 +35,6 @@ class File {
    */
   virtual std::unique_ptr<std::istream> Read() = 0;
 
-  /**
-   * @throws real_talk::util::IOError
-   */
   virtual void Close() = 0;
 
  private:
