@@ -25,6 +25,7 @@
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/import_file_searcher.h"
+#include "real_talk/compiler/cmd.h"
 #include "real_talk/compiler/compiler.h"
 
 using std::move;
@@ -41,7 +42,10 @@ using boost::filesystem::path;
 using boost::format;
 using testing::InvokeWithoutArgs;
 using testing::Test;
+using testing::NotNull;
+using testing::Invoke;
 using testing::Truly;
+using testing::SetArgPointee;
 using testing::Eq;
 using testing::Return;
 using testing::IsEmpty;
@@ -78,7 +82,8 @@ namespace compiler {
 
 class CompilerConfigParserMock: public CompilerConfigParser {
  public:
-  MOCK_CONST_METHOD3(Parse, void(int, const char*[], CompilerConfig*));
+  MOCK_CONST_METHOD4(Parse, void(int, const char*[], CompilerConfig*, Cmd*));
+  MOCK_CONST_METHOD0(GetHelp, string());
 };
 
 class SemanticAnalyzerMock: public SemanticAnalyzer {
@@ -107,6 +112,7 @@ class MsgPrinterMock: public MsgPrinter {
       PrintUnexpectedTokenError, void(const TokenInfo&, const path&));
   MOCK_CONST_METHOD4(
       PrintUnexpectedCharError, void(char, uint32_t, uint32_t, const path&));
+  MOCK_CONST_METHOD1(PrintHelp, void(const string&));
 };
 
 class CodeGeneratorMock: public CodeGenerator {
@@ -468,8 +474,9 @@ TEST_F(CompilerTest, Compile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -625,8 +632,9 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -714,8 +722,9 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -812,8 +821,9 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputFile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -908,8 +918,9 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1001,8 +1012,9 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1083,8 +1095,9 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1157,8 +1170,9 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1232,8 +1246,9 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1307,8 +1322,9 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1378,8 +1394,9 @@ TEST_F(CompilerTest, IOErrorWhileOpeningFile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1465,8 +1482,9 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1565,8 +1583,9 @@ TEST_F(CompilerTest, ImportFileNotExists) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1666,8 +1685,9 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1759,8 +1779,9 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
 
   {
     InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config))
-        .Times(1);
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
     bool truncate_input_file = false;
     EXPECT_CALL(file,
                 Open_(final_input_file_path.string(), truncate_input_file))
@@ -1784,6 +1805,75 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
     EXPECT_CALL(msg_printer, PrintSemanticProblem(Eq(ByRef(semantic_problem)),
                                                   final_input_file_path))
         .Times(1);
+    EXPECT_CALL(file_searcher, Search_(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, Help) {
+  int argc = 2;
+  const char *argv[] = {"realtalkc", "-h"};
+  path input_file_path;
+  CompilerConfig config(input_file_path);
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  string help = "test";
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(Cmd::kHelp));
+    EXPECT_CALL(config_parser, GetHelp())
+        .Times(1)
+        .WillOnce(Return(help));
+    EXPECT_CALL(msg_printer, PrintHelp(help))
+        .Times(1);
+    EXPECT_CALL(file, Open_(_, _))
+        .Times(0);
+    EXPECT_CALL(file, Read_())
+        .Times(0);
+    EXPECT_CALL(file, Close())
+        .Times(0);
+    EXPECT_CALL(lexer_factory, Create_(_))
+        .Times(0);
+    EXPECT_CALL(src_parser, Parse_(_))
+        .Times(0);
+    EXPECT_CALL(lit_parser, ParseString(_))
+        .Times(0);
     EXPECT_CALL(file_searcher, Search_(_, _, _, _))
         .Times(0);
     EXPECT_CALL(semantic_analyzer, Analyze_(_, _))

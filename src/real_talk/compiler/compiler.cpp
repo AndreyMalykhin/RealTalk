@@ -26,6 +26,7 @@
 #include "real_talk/compiler/compiler_config_parser.h"
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/import_file_searcher.h"
+#include "real_talk/compiler/cmd.h"
 #include "real_talk/compiler/compiler.h"
 
 using std::unique_ptr;
@@ -237,7 +238,14 @@ Compiler::Compiler(
 }
 
 void Compiler::Compile(int argc, const char *argv[]) const {
-  config_parser_.Parse(argc, argv, config_);
+  Cmd cmd;
+  config_parser_.Parse(argc, argv, config_, &cmd);
+
+  if (cmd == Cmd::kHelp) {
+    msg_printer_.PrintHelp(config_parser_.GetHelp());
+    return;
+  }
+
   unique_ptr<ProgramNode> main_program;
   SemanticAnalyzer::ImportPrograms import_programs;
   MsgPrinter::ProgramFilePaths program_file_paths;

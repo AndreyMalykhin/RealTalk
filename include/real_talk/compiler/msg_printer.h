@@ -51,6 +51,7 @@ class MsgPrinter {
       uint32_t column,
       const boost::filesystem::path &file_path) const = 0;
   virtual void PrintError(const std::string &error) const = 0;
+  virtual void PrintHelp(const std::string &help) const = 0;
 };
 }
 }
