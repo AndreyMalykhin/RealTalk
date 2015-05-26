@@ -11,23 +11,64 @@ using boost::filesystem::path;
 using boost::filesystem::current_path;
 using testing::Test;
 using real_talk::test::TestConfig;
-using real_talk::util::FileNotFoundError;
 
 namespace real_talk {
 namespace compiler {
 
 class SimpleImportFileSearcherTest: public Test {
  protected:
-  virtual void SetUp() override {}
-  virtual void TearDown() override {}
+  virtual void SetUp() override {
+    old_current_path_ = current_path();
+    current_path(TestConfig::GetResourceDir() / path("myapp"));
+  }
+
+  virtual void TearDown() override {
+    current_path(old_current_path_);
+  }
+
+ private:
+  path old_current_path_;
 };
 
-TEST_F(SimpleImportFileSearcherTest, Search) {
-
+TEST_F(SimpleImportFileSearcherTest, SearchInSrcDir) {
+  path search_file_path("myapp/mycomponent.rts");
+  path src_dir_path("src");
+  path vendor_dir_path("vendor");
+  vector<path> import_dir_paths = {"../mylib2"};
+  path expected_found_file_path(
+      current_path() / path("src/myapp/mycomponent.rts"));
+  SimpleImportFileSearcher searcher;
+  path actual_found_file_path = searcher.Search(
+      search_file_path, src_dir_path, vendor_dir_path, import_dir_paths);
+  ASSERT_EQ(expected_found_file_path.string(),
+            actual_found_file_path.string());
 }
 
-TEST_F(SimpleImportFileSearcherTest, SearchFailsIfFileNotExists) {
+TEST_F(SimpleImportFileSearcherTest, SearcInVendorDir) {
+  path search_file_path("mylib/mylib.rts");
+  path src_dir_path("src");
+  path vendor_dir_path("vendor");
+  vector<path> import_dir_paths = {"../mylib2"};
+  path expected_found_file_path(
+      current_path() / path("vendor/myvendor/mylib/src/mylib/mylib.rts"));
+  SimpleImportFileSearcher searcher;
+  path actual_found_file_path = searcher.Search(
+      search_file_path, src_dir_path, vendor_dir_path, import_dir_paths);
+  ASSERT_EQ(expected_found_file_path.string(),
+            actual_found_file_path.string());
+}
 
+TEST_F(SimpleImportFileSearcherTest, SearchCantFind) {
+  path search_file_path("i_am_not_here.rts");
+  path src_dir_path("src");
+  path vendor_dir_path("vendor");
+  vector<path> import_dir_paths = {"../mylib2"};
+  path expected_found_file_path;
+  SimpleImportFileSearcher searcher;
+  path actual_found_file_path = searcher.Search(
+      search_file_path, src_dir_path, vendor_dir_path, import_dir_paths);
+  ASSERT_EQ(expected_found_file_path.string(),
+            actual_found_file_path.string());
 }
 }
 }

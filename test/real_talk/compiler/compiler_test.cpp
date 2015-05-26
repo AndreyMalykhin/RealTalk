@@ -1835,8 +1835,8 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
 }
 
 TEST_F(CompilerTest, Help) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "-h"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path;
   CompilerConfig config(input_file_path);
   Code code;
@@ -1861,6 +1861,71 @@ TEST_F(CompilerTest, Help) {
         .Times(1)
         .WillOnce(Return(help));
     EXPECT_CALL(msg_printer, PrintHelp(help))
+        .Times(1);
+    EXPECT_CALL(file, Open_(_, _))
+        .Times(0);
+    EXPECT_CALL(file, Read_())
+        .Times(0);
+    EXPECT_CALL(file, Close())
+        .Times(0);
+    EXPECT_CALL(lexer_factory, Create_(_))
+        .Times(0);
+    EXPECT_CALL(src_parser, Parse_(_))
+        .Times(0);
+    EXPECT_CALL(lit_parser, ParseString(_))
+        .Times(0);
+    EXPECT_CALL(file_searcher, Search_(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write(_))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    &config,
+                    &file,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
+TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
+  path input_file_path;
+  CompilerConfig config(input_file_path);
+  Code code;
+  LitParserMock lit_parser;
+  ImportFileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(Throw(CompilerConfigParser::BadArgsError("test")));
+    EXPECT_CALL(msg_printer, PrintError("Invalid arguments"))
         .Times(1);
     EXPECT_CALL(file, Open_(_, _))
         .Times(0);

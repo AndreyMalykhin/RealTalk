@@ -201,7 +201,7 @@ class ImportsExtractor: private NodeVisitor {
   vector<const ImportNode*> import_stmts_;
 };
 
-static ImportsExtractor &kImportsExtractor = *new ImportsExtractor();
+ImportsExtractor &kImportsExtractor = *new ImportsExtractor();
 }
 
 Compiler::Compiler(
@@ -239,7 +239,13 @@ Compiler::Compiler(
 
 void Compiler::Compile(int argc, const char *argv[]) const {
   Cmd cmd;
-  config_parser_.Parse(argc, argv, config_, &cmd);
+
+  try {
+    config_parser_.Parse(argc, argv, config_, &cmd);
+  } catch (const CompilerConfigParser::BadArgsError&) {
+    msg_printer_.PrintError("Invalid arguments");
+    return;
+  }
 
   if (cmd == Cmd::kHelp) {
     msg_printer_.PrintHelp(config_parser_.GetHelp());

@@ -20,23 +20,13 @@ path SimpleImportFileSearcher::Search(
     const path &src_dir_path,
     const path &vendor_dir_path,
     const vector<path> &import_dir_paths) const {
-  return path();
-  // try {
-  //   for (const path &dir: dirs_) {
-  //     const path search_file_path(dir / relative_file_path);
+  path search_file_path(src_dir_path / file_path);
 
-  //     if (!exists(search_file_path)) {
-  //       continue;
-  //     }
+  if (!exists(search_file_path)) {
+    return path();
+  }
 
-  //     return canonical(search_file_path);
-  //   }
-  // } catch (const filesystem_error &e) {
-  //   throw IOError(e.what());
-  // }
-
-  // throw FileNotFoundError(
-  //     (format("File not found: %1%") % relative_file_path.string()).str());
+  return canonical(search_file_path);
 }
 }
 }
