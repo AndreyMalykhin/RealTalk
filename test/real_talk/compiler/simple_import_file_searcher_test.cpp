@@ -8,6 +8,7 @@
 
 using std::vector;
 using boost::filesystem::path;
+using boost::filesystem::canonical;
 using boost::filesystem::current_path;
 using testing::Test;
 using real_talk::test::TestConfig;
@@ -36,7 +37,7 @@ TEST_F(SimpleImportFileSearcherTest, SearchInSrcDir) {
   path vendor_dir_path("vendor");
   vector<path> import_dir_paths = {"../mylib2"};
   path expected_found_file_path(
-      current_path() / path("src/myapp/mycomponent.rts"));
+      canonical(path("src/myapp/mycomponent.rts")));
   SimpleImportFileSearcher searcher;
   path actual_found_file_path = searcher.Search(
       search_file_path, src_dir_path, vendor_dir_path, import_dir_paths);
@@ -50,7 +51,21 @@ TEST_F(SimpleImportFileSearcherTest, SearcInVendorDir) {
   path vendor_dir_path("vendor");
   vector<path> import_dir_paths = {"../mylib2"};
   path expected_found_file_path(
-      current_path() / path("vendor/myvendor/mylib/src/mylib/mylib.rts"));
+      canonical(path("vendor/myvendor/mylib/src/mylib/mylib.rts")));
+  SimpleImportFileSearcher searcher;
+  path actual_found_file_path = searcher.Search(
+      search_file_path, src_dir_path, vendor_dir_path, import_dir_paths);
+  ASSERT_EQ(expected_found_file_path.string(),
+            actual_found_file_path.string());
+}
+
+TEST_F(SimpleImportFileSearcherTest, SearcInImportDir) {
+  path search_file_path("mylib2/mylib2.rts");
+  path src_dir_path("src");
+  path vendor_dir_path("vendor");
+  vector<path> import_dir_paths = {"../mylib2"};
+  path expected_found_file_path(
+      canonical(path("../mylib2/src/mylib2/mylib2.rts")));
   SimpleImportFileSearcher searcher;
   path actual_found_file_path = searcher.Search(
       search_file_path, src_dir_path, vendor_dir_path, import_dir_paths);
