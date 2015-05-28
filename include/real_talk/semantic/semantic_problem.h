@@ -12,7 +12,7 @@ class SemanticProblemVisitor;
 class SemanticProblem {
  public:
   virtual ~SemanticProblem() {}
-  virtual void Accept(SemanticProblemVisitor *visitor) = 0;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const = 0;
   friend bool operator==(
       const SemanticProblem &lhs, const SemanticProblem &rhs);
   friend std::ostream &operator<<(

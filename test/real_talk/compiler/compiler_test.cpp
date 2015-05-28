@@ -205,7 +205,10 @@ class LexerMock: public Lexer {
 
 class SemanticErrorMock: public SemanticError {
  public:
-  virtual void Accept(SemanticProblemVisitor*) override {assert(false);}
+  virtual void Accept(const SemanticProblemVisitor*) const override {
+    assert(false);
+  }
+
   virtual void Print(ostream&) const override {}
   virtual bool IsEqual(const SemanticProblem&) const override {return true;}
 };

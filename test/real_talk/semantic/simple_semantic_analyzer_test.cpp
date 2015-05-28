@@ -1301,7 +1301,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       make_pair(func_def_node_ptr1, move(func_def_analysis1)));
 
   SemanticAnalysis::ProgramProblems problems;
-  unique_ptr<SemanticProblem> problem(new FuncDefWithinNonGlobalScope(
+  unique_ptr<SemanticProblem> problem(new FuncDefWithinNonGlobalScopeError(
       *func_def_node_ptr2));
   problems[program_node.get()].push_back(move(problem));
 
@@ -1763,7 +1763,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       make_pair(func_def_node_ptr1, move(func_def_analysis1)));
 
   SemanticAnalysis::ProgramProblems problems;
-  unique_ptr<SemanticProblem> problem(new FuncDefWithinNonGlobalScope(
+  unique_ptr<SemanticProblem> problem(new FuncDefWithinNonGlobalScopeError(
       *func_def_node_ptr2));
   problems[program_node.get()].push_back(move(problem));
 
@@ -2509,7 +2509,7 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
   SemanticAnalysis::ProgramProblems problems;
   size_t expected_args_count = 1;
   size_t actual_args_count = 2;
-  unique_ptr<SemanticProblem> problem(new CallWithInvalidArgsCount(
+  unique_ptr<SemanticProblem> problem(new CallWithInvalidArgsCountError(
       *call_expr_node_ptr,
       expected_args_count,
       actual_args_count));

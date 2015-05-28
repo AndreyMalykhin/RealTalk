@@ -6,6 +6,7 @@
 #include <vector>
 #include <limits>
 #include "real_talk/parser/array_alloc_node.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/base_array_alloc_node.h"
 #include "real_talk/parser/unbounded_array_size_node.h"
 

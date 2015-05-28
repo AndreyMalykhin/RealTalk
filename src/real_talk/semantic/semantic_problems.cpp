@@ -73,7 +73,7 @@ ArrayAllocWithTooManyDimensionsError::ArrayAllocWithTooManyDimensionsError(
 }
 
 void ArrayAllocWithTooManyDimensionsError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitArrayAllocWithTooManyDimensionsError(*this);
 }
 
@@ -106,7 +106,7 @@ ArrayTypeWithTooManyDimensionsError::ArrayTypeWithTooManyDimensionsError(
 }
 
 void ArrayTypeWithTooManyDimensionsError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitArrayTypeWithTooManyDimensionsError(*this);
 }
 
@@ -134,7 +134,7 @@ DoubleWithOutOfRangeValueError::DoubleWithOutOfRangeValueError(
     const DoubleNode &double_node): double_(double_node) {}
 
 void DoubleWithOutOfRangeValueError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitDoubleWithOutOfRangeValueError(*this);
 }
 
@@ -157,7 +157,7 @@ LongWithOutOfRangeValueError::LongWithOutOfRangeValueError(
     const LongNode &long_node): long_(long_node) {}
 
 void LongWithOutOfRangeValueError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitLongWithOutOfRangeValueError(*this);
 }
 
@@ -180,7 +180,7 @@ IntWithOutOfRangeValueError::IntWithOutOfRangeValueError(
     const IntNode &int_node): int_(int_node) {}
 
 void IntWithOutOfRangeValueError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitIntWithOutOfRangeValueError(*this);
 }
 
@@ -203,7 +203,7 @@ CharWithMultipleCharsError::CharWithMultipleCharsError(
     const CharNode &c): c_(c) {}
 
 void CharWithMultipleCharsError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitCharWithMultipleCharsError(*this);
 }
 
@@ -226,7 +226,7 @@ CharWithEmptyHexValueError::CharWithEmptyHexValueError(
     const CharNode &c): c_(c) {}
 
 void CharWithEmptyHexValueError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitCharWithEmptyHexValueError(*this);
 }
 
@@ -249,7 +249,7 @@ CharWithOutOfRangeHexValueError::CharWithOutOfRangeHexValueError(
     const CharNode &c): c_(c) {}
 
 void CharWithOutOfRangeHexValueError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitCharWithOutOfRangeHexValueError(*this);
 }
 
@@ -272,7 +272,7 @@ StringWithOutOfRangeHexValueError::StringWithOutOfRangeHexValueError(
     const StringNode &str): str_(str) {}
 
 void StringWithOutOfRangeHexValueError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitStringWithOutOfRangeHexValueError(*this);
 }
 
@@ -295,7 +295,7 @@ StringWithEmptyHexValueError::StringWithEmptyHexValueError(
     const StringNode &str): str_(str) {}
 
 void StringWithEmptyHexValueError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitStringWithEmptyHexValueError(*this);
 }
 
@@ -321,7 +321,7 @@ UnaryExprWithUnsupportedTypeError::UnaryExprWithUnsupportedTypeError(
 }
 
 void UnaryExprWithUnsupportedTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitUnaryExprWithUnsupportedTypeError(*this);
 }
 
@@ -348,7 +348,7 @@ AssignWithRightValueAssigneeError::AssignWithRightValueAssigneeError(
     const AssignNode &assign): assign_(assign) {}
 
 void AssignWithRightValueAssigneeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitAssignWithRightValueAssigneeError(*this);
 }
 
@@ -369,7 +369,7 @@ bool AssignWithRightValueAssigneeError::IsEqual(
 
 IdWithoutDefError::IdWithoutDefError(const IdNode &id): id_(id) {}
 
-void IdWithoutDefError::Accept(SemanticProblemVisitor *visitor) {
+void IdWithoutDefError::Accept(const SemanticProblemVisitor *visitor) const {
   visitor->VisitIdWithoutDefError(*this);
 }
 
@@ -394,7 +394,7 @@ SubscriptWithUnsupportedIndexTypeError
 }
 
 void SubscriptWithUnsupportedIndexTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitSubscriptWithUnsupportedIndexTypeError(*this);
 }
 
@@ -424,7 +424,7 @@ SubscriptWithNonArrayError::SubscriptWithNonArrayError(
     const SubscriptNode &subscript): subscript_(subscript) {}
 
 void SubscriptWithNonArrayError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitSubscriptWithNonArrayError(*this);
 }
 
@@ -457,7 +457,7 @@ ArrayAllocWithIncompatibleValueTypeError(
 }
 
 void ArrayAllocWithIncompatibleValueTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitArrayAllocWithIncompatibleValueTypeError(*this);
 }
 
@@ -504,7 +504,7 @@ ArrayAllocWithUnsupportedElementTypeError(
 }
 
 void ArrayAllocWithUnsupportedElementTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitArrayAllocWithUnsupportedElementTypeError(*this);
 }
 
@@ -541,7 +541,7 @@ ArrayAllocWithUnsupportedSizeTypeError(
 }
 
 void ArrayAllocWithUnsupportedSizeTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitArrayAllocWithUnsupportedSizeTypeError(*this);
 }
 
@@ -588,7 +588,7 @@ IfWithIncompatibleTypeError::IfWithIncompatibleTypeError(
 }
 
 void IfWithIncompatibleTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitIfWithIncompatibleTypeError(*this);
 }
 
@@ -627,7 +627,7 @@ BreakNotWithinLoopError::BreakNotWithinLoopError(
     const BreakNode &break_node): break_(break_node) {}
 
 void BreakNotWithinLoopError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitBreakNotWithinLoopError(*this);
 }
 
@@ -649,7 +649,7 @@ ContinueNotWithinLoopError::ContinueNotWithinLoopError(
     const ContinueNode &continue_node): continue_(continue_node) {}
 
 void ContinueNotWithinLoopError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitContinueNotWithinLoopError(*this);
 }
 
@@ -679,7 +679,7 @@ PreTestLoopWithIncompatibleTypeError::PreTestLoopWithIncompatibleTypeError(
 }
 
 void PreTestLoopWithIncompatibleTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitPreTestLoopWithIncompatibleTypeError(*this);
 }
 
@@ -713,7 +713,7 @@ ImportIsNotFirstStmtError::ImportIsNotFirstStmtError(
     const ImportNode &import): import_(import) {}
 
 void ImportIsNotFirstStmtError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitImportIsNotFirstStmtError(*this);
 }
 
@@ -744,7 +744,7 @@ VarDefWithIncompatibleValueTypeError
 }
 
 void VarDefWithIncompatibleValueTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitVarDefWithIncompatibleValueTypeError(*this);
 }
 
@@ -781,7 +781,8 @@ bool VarDefWithIncompatibleValueTypeError::IsEqual(
 ReturnWithoutValueError::ReturnWithoutValueError(
     const ReturnWithoutValueNode &return_node): return_(return_node) {}
 
-void ReturnWithoutValueError::Accept(SemanticProblemVisitor *visitor) {
+void ReturnWithoutValueError::Accept(
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitReturnWithoutValueError(*this);
 }
 
@@ -802,7 +803,8 @@ bool ReturnWithoutValueError::IsEqual(const SemanticProblem &problem) const {
 ReturnNotWithinFuncError::ReturnNotWithinFuncError(
     const ReturnNode &return_node): return_(return_node) {}
 
-void ReturnNotWithinFuncError::Accept(SemanticProblemVisitor *visitor) {
+void ReturnNotWithinFuncError::Accept(
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitReturnNotWithinFuncError(*this);
 }
 
@@ -831,7 +833,8 @@ ReturnWithIncompatibleTypeError::ReturnWithIncompatibleTypeError(
   assert(src_data_type_);
 }
 
-void ReturnWithIncompatibleTypeError::Accept(SemanticProblemVisitor *visitor) {
+void ReturnWithIncompatibleTypeError::Accept(
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitReturnWithIncompatibleTypeError(*this);
 }
 
@@ -873,7 +876,7 @@ BinaryExprWithUnsupportedTypesError::BinaryExprWithUnsupportedTypesError(
 }
 
 void BinaryExprWithUnsupportedTypesError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitBinaryExprWithUnsupportedTypesError(*this);
 }
 
@@ -920,7 +923,7 @@ CallWithIncompatibleArgTypeError::CallWithIncompatibleArgTypeError(
 }
 
 void CallWithIncompatibleArgTypeError::Accept(
-    SemanticProblemVisitor *visitor) {
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitCallWithIncompatibleArgTypeError(*this);
 }
 
@@ -962,7 +965,8 @@ DefWithUnsupportedTypeError::DefWithUnsupportedTypeError(
   assert(data_type_);
 }
 
-void DefWithUnsupportedTypeError::Accept(SemanticProblemVisitor *visitor) {
+void DefWithUnsupportedTypeError::Accept(
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitDefWithUnsupportedTypeError(*this);
 }
 
@@ -987,7 +991,7 @@ bool DefWithUnsupportedTypeError::IsEqual(
 
 DuplicateDefError::DuplicateDefError(const DefNode &def): def_(def) {}
 
-void DuplicateDefError::Accept(SemanticProblemVisitor *visitor) {
+void DuplicateDefError::Accept(const SemanticProblemVisitor *visitor) const {
   visitor->VisitDuplicateDefError(*this);
 }
 
@@ -1007,7 +1011,8 @@ bool DuplicateDefError::IsEqual(const SemanticProblem &problem) const {
 FuncDefWithoutBodyNotNativeError::FuncDefWithoutBodyNotNativeError(
     const FuncDefWithoutBodyNode &def): def_(def) {}
 
-void FuncDefWithoutBodyNotNativeError::Accept(SemanticProblemVisitor *visitor) {
+void FuncDefWithoutBodyNotNativeError::Accept(
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitFuncDefWithoutBodyNotNativeError(*this);
 }
 
@@ -1029,7 +1034,8 @@ bool FuncDefWithoutBodyNotNativeError::IsEqual(
 FuncDefWithBodyIsNativeError::FuncDefWithBodyIsNativeError(
     const FuncDefWithBodyNode &def): def_(def) {}
 
-void FuncDefWithBodyIsNativeError::Accept(SemanticProblemVisitor *visitor) {
+void FuncDefWithBodyIsNativeError::Accept(
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitFuncDefWithBodyIsNativeError(*this);
 }
 
@@ -1048,32 +1054,34 @@ bool FuncDefWithBodyIsNativeError::IsEqual(
   return def_ == static_cast<const Node&>(rhs.def_);
 }
 
-FuncDefWithinNonGlobalScope::FuncDefWithinNonGlobalScope(
+FuncDefWithinNonGlobalScopeError::FuncDefWithinNonGlobalScopeError(
     const FuncDefNode &def): def_(def) {}
 
-void FuncDefWithinNonGlobalScope::Accept(SemanticProblemVisitor *visitor) {
-  visitor->VisitFuncDefWithinNonGlobalScope(*this);
+void FuncDefWithinNonGlobalScopeError::Accept(
+    const SemanticProblemVisitor *visitor) const {
+  visitor->VisitFuncDefWithinNonGlobalScopeError(*this);
 }
 
-const FuncDefNode &FuncDefWithinNonGlobalScope::GetDef() const {
+const FuncDefNode &FuncDefWithinNonGlobalScopeError::GetDef() const {
   return def_;
 }
 
-void FuncDefWithinNonGlobalScope::Print(ostream &stream) const {
+void FuncDefWithinNonGlobalScopeError::Print(ostream &stream) const {
   stream << "def=" << static_cast<const Node&>(def_);
 }
 
-bool FuncDefWithinNonGlobalScope::IsEqual(
+bool FuncDefWithinNonGlobalScopeError::IsEqual(
     const SemanticProblem &problem) const {
-  const FuncDefWithinNonGlobalScope &rhs =
-      static_cast<const FuncDefWithinNonGlobalScope&>(problem);
+  const FuncDefWithinNonGlobalScopeError &rhs =
+      static_cast<const FuncDefWithinNonGlobalScopeError&>(problem);
   return def_ == static_cast<const Node&>(rhs.def_);
 }
 
 FuncDefWithoutReturnValueError::FuncDefWithoutReturnValueError(
     const FuncDefNode &def): def_(def) {}
 
-void FuncDefWithoutReturnValueError::Accept(SemanticProblemVisitor *visitor) {
+void FuncDefWithoutReturnValueError::Accept(
+    const SemanticProblemVisitor *visitor) const {
   visitor->VisitFuncDefWithoutReturnValueError(*this);
 }
 
@@ -1095,7 +1103,7 @@ bool FuncDefWithoutReturnValueError::IsEqual(
 CallWithNonFuncError::CallWithNonFuncError(
     const CallNode &call): call_(call) {}
 
-void CallWithNonFuncError::Accept(SemanticProblemVisitor *visitor) {
+void CallWithNonFuncError::Accept(const SemanticProblemVisitor *visitor) const {
   visitor->VisitCallWithNonFuncError(*this);
 }
 
@@ -1113,7 +1121,7 @@ bool CallWithNonFuncError::IsEqual(const SemanticProblem &problem) const {
   return call_ == rhs.call_;
 }
 
-CallWithInvalidArgsCount::CallWithInvalidArgsCount(
+CallWithInvalidArgsCountError::CallWithInvalidArgsCountError(
     const CallNode &call,
     size_t expected_count,
     size_t actual_count)
@@ -1122,30 +1130,31 @@ CallWithInvalidArgsCount::CallWithInvalidArgsCount(
       actual_count_(actual_count) {
 }
 
-void CallWithInvalidArgsCount::Accept(SemanticProblemVisitor *visitor) {
-  visitor->VisitCallWithInvalidArgsCount(*this);
+void CallWithInvalidArgsCountError::Accept(
+    const SemanticProblemVisitor *visitor) const {
+  visitor->VisitCallWithInvalidArgsCountError(*this);
 }
 
-const CallNode &CallWithInvalidArgsCount::GetCall() const {
+const CallNode &CallWithInvalidArgsCountError::GetCall() const {
   return call_;
 }
 
-size_t CallWithInvalidArgsCount::GetExpectedCount() const {
+size_t CallWithInvalidArgsCountError::GetExpectedCount() const {
   return expected_count_;
 }
 
-size_t CallWithInvalidArgsCount::GetActualCount() const {
+size_t CallWithInvalidArgsCountError::GetActualCount() const {
   return actual_count_;
 }
 
-void CallWithInvalidArgsCount::Print(ostream &stream) const {
+void CallWithInvalidArgsCountError::Print(ostream &stream) const {
   stream << "call=" << call_ << "; expected=" << expected_count_
          << "; actual=" << actual_count_;
 }
 
-bool CallWithInvalidArgsCount::IsEqual(const SemanticProblem &problem) const {
-  const CallWithInvalidArgsCount &rhs =
-      static_cast<const CallWithInvalidArgsCount&>(problem);
+bool CallWithInvalidArgsCountError::IsEqual(const SemanticProblem &problem) const {
+  const CallWithInvalidArgsCountError &rhs =
+      static_cast<const CallWithInvalidArgsCountError&>(problem);
   return call_ == rhs.call_
       && expected_count_ == rhs.expected_count_
       && actual_count_ == rhs.actual_count_;

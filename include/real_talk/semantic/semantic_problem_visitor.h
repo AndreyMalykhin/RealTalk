@@ -38,88 +38,88 @@ class DefWithUnsupportedTypeError;
 class DuplicateDefError;
 class FuncDefWithoutBodyNotNativeError;
 class FuncDefWithBodyIsNativeError;
-class FuncDefWithinNonGlobalScope;
+class FuncDefWithinNonGlobalScopeError;
 class FuncDefWithoutReturnValueError;
 class CallWithNonFuncError;
-class CallWithInvalidArgsCount;
+class CallWithInvalidArgsCountError;
 
 class SemanticProblemVisitor {
  public:
   virtual ~SemanticProblemVisitor() {}
   virtual void VisitArrayAllocWithTooManyDimensionsError(
-      const ArrayAllocWithTooManyDimensionsError &error) = 0;
+      const ArrayAllocWithTooManyDimensionsError &error) const = 0;
   virtual void VisitArrayTypeWithTooManyDimensionsError(
-      const ArrayTypeWithTooManyDimensionsError &error) = 0;
+      const ArrayTypeWithTooManyDimensionsError &error) const = 0;
   virtual void VisitDoubleWithOutOfRangeValueError(
-      const DoubleWithOutOfRangeValueError &error) = 0;
+      const DoubleWithOutOfRangeValueError &error) const = 0;
   virtual void VisitLongWithOutOfRangeValueError(
-      const LongWithOutOfRangeValueError &error) = 0;
+      const LongWithOutOfRangeValueError &error) const = 0;
   virtual void VisitIntWithOutOfRangeValueError(
-      const IntWithOutOfRangeValueError &error) = 0;
+      const IntWithOutOfRangeValueError &error) const = 0;
   virtual void VisitCharWithMultipleCharsError(
-      const CharWithMultipleCharsError &error) = 0;
+      const CharWithMultipleCharsError &error) const = 0;
   virtual void VisitCharWithEmptyHexValueError(
-      const CharWithEmptyHexValueError &error) = 0;
+      const CharWithEmptyHexValueError &error) const = 0;
   virtual void VisitCharWithOutOfRangeHexValueError(
-      const CharWithOutOfRangeHexValueError &error) = 0;
+      const CharWithOutOfRangeHexValueError &error) const = 0;
   virtual void VisitStringWithOutOfRangeHexValueError(
-      const StringWithOutOfRangeHexValueError &error) = 0;
+      const StringWithOutOfRangeHexValueError &error) const = 0;
   virtual void VisitStringWithEmptyHexValueError(
-      const StringWithEmptyHexValueError &error) = 0;
+      const StringWithEmptyHexValueError &error) const = 0;
   virtual void VisitUnaryExprWithUnsupportedTypeError(
-      const UnaryExprWithUnsupportedTypeError &error) = 0;
+      const UnaryExprWithUnsupportedTypeError &error) const = 0;
   virtual void VisitAssignWithRightValueAssigneeError(
-      const AssignWithRightValueAssigneeError &error) = 0;
+      const AssignWithRightValueAssigneeError &error) const = 0;
   virtual void VisitIdWithoutDefError(
-      const IdWithoutDefError &error) = 0;
+      const IdWithoutDefError &error) const = 0;
   virtual void VisitSubscriptWithUnsupportedIndexTypeError(
-      const SubscriptWithUnsupportedIndexTypeError &error) = 0;
+      const SubscriptWithUnsupportedIndexTypeError &error) const = 0;
   virtual void VisitSubscriptWithNonArrayError(
-      const SubscriptWithNonArrayError &error) = 0;
+      const SubscriptWithNonArrayError &error) const = 0;
   virtual void VisitArrayAllocWithIncompatibleValueTypeError(
-      const ArrayAllocWithIncompatibleValueTypeError &error) = 0;
+      const ArrayAllocWithIncompatibleValueTypeError &error) const = 0;
   virtual void VisitArrayAllocWithUnsupportedElementTypeError(
-      const ArrayAllocWithUnsupportedElementTypeError &error) = 0;
+      const ArrayAllocWithUnsupportedElementTypeError &error) const = 0;
   virtual void VisitArrayAllocWithUnsupportedSizeTypeError(
-      const ArrayAllocWithUnsupportedSizeTypeError &error) = 0;
+      const ArrayAllocWithUnsupportedSizeTypeError &error) const = 0;
   virtual void VisitIfWithIncompatibleTypeError(
-      const IfWithIncompatibleTypeError &error) = 0;
+      const IfWithIncompatibleTypeError &error) const = 0;
   virtual void VisitBreakNotWithinLoopError(
-      const BreakNotWithinLoopError &error) = 0;
+      const BreakNotWithinLoopError &error) const = 0;
   virtual void VisitContinueNotWithinLoopError(
-      const ContinueNotWithinLoopError &error) = 0;
+      const ContinueNotWithinLoopError &error) const = 0;
   virtual void VisitPreTestLoopWithIncompatibleTypeError(
-      const PreTestLoopWithIncompatibleTypeError &error) = 0;
+      const PreTestLoopWithIncompatibleTypeError &error) const = 0;
   virtual void VisitImportIsNotFirstStmtError(
-      const ImportIsNotFirstStmtError &error) = 0;
+      const ImportIsNotFirstStmtError &error) const = 0;
   virtual void VisitVarDefWithIncompatibleValueTypeError(
-      const VarDefWithIncompatibleValueTypeError &error) = 0;
+      const VarDefWithIncompatibleValueTypeError &error) const = 0;
   virtual void VisitReturnWithoutValueError(
-      const ReturnWithoutValueError &error) = 0;
+      const ReturnWithoutValueError &error) const = 0;
   virtual void VisitReturnNotWithinFuncError(
-      const ReturnNotWithinFuncError &error) = 0;
+      const ReturnNotWithinFuncError &error) const = 0;
   virtual void VisitReturnWithIncompatibleTypeError(
-      const ReturnWithIncompatibleTypeError &error) = 0;
+      const ReturnWithIncompatibleTypeError &error) const = 0;
   virtual void VisitBinaryExprWithUnsupportedTypesError(
-      const BinaryExprWithUnsupportedTypesError &error) = 0;
+      const BinaryExprWithUnsupportedTypesError &error) const = 0;
   virtual void VisitCallWithIncompatibleArgTypeError(
-      const CallWithIncompatibleArgTypeError &error) = 0;
+      const CallWithIncompatibleArgTypeError &error) const = 0;
   virtual void VisitDefWithUnsupportedTypeError(
-      const DefWithUnsupportedTypeError &error) = 0;
+      const DefWithUnsupportedTypeError &error) const = 0;
   virtual void VisitDuplicateDefError(
-      const DuplicateDefError &error) = 0;
+      const DuplicateDefError &error) const = 0;
   virtual void VisitFuncDefWithoutBodyNotNativeError(
-      const FuncDefWithoutBodyNotNativeError &error) = 0;
+      const FuncDefWithoutBodyNotNativeError &error) const = 0;
   virtual void VisitFuncDefWithBodyIsNativeError(
-      const FuncDefWithBodyIsNativeError &error) = 0;
-  virtual void VisitFuncDefWithinNonGlobalScope(
-      const FuncDefWithinNonGlobalScope &error) = 0;
+      const FuncDefWithBodyIsNativeError &error) const = 0;
+  virtual void VisitFuncDefWithinNonGlobalScopeError(
+      const FuncDefWithinNonGlobalScopeError &error) const = 0;
   virtual void VisitFuncDefWithoutReturnValueError(
-      const FuncDefWithoutReturnValueError &error) = 0;
+      const FuncDefWithoutReturnValueError &error) const = 0;
   virtual void VisitCallWithNonFuncError(
-      const CallWithNonFuncError &error) = 0;
-  virtual void VisitCallWithInvalidArgsCount(
-      const CallWithInvalidArgsCount &error) = 0;
+      const CallWithNonFuncError &error) const = 0;
+  virtual void VisitCallWithInvalidArgsCountError(
+      const CallWithInvalidArgsCountError &error) const = 0;
 };
 }
 }

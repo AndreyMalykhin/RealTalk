@@ -41,7 +41,7 @@ class MsgPrinter {
   virtual void PrintTokenError(
       const real_talk::lexer::TokenInfo &token,
       const boost::filesystem::path &file_path,
-      const std::string &msg) const = 0;
+      const std::string &error) const = 0;
   virtual void PrintUnexpectedTokenError(
       const real_talk::lexer::TokenInfo &token,
       const boost::filesystem::path &file_path) const = 0;

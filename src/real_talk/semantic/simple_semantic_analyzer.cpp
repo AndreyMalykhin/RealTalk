@@ -1003,7 +1003,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
 
   if (!IsCurrentScopeGlobal()) {
     unique_ptr<SemanticError> error(
-        new FuncDefWithinNonGlobalScope(func_def_node));
+        new FuncDefWithinNonGlobalScopeError(func_def_node));
     AddError(move(error));
   }
 
@@ -1398,7 +1398,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
   size_t actual_args_count = call_node.GetArgs().size();
 
   if (expected_args_count != actual_args_count) {
-    unique_ptr<SemanticError> error(new CallWithInvalidArgsCount(
+    unique_ptr<SemanticError> error(new CallWithInvalidArgsCountError(
         call_node,
         expected_args_count,
         actual_args_count));

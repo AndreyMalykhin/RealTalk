@@ -20,6 +20,22 @@ class ArrayDataTypeNode;
 class ReturnNode;
 class DefNode;
 class FuncDefNode;
+class DoubleNode;
+class LongNode;
+class IntNode;
+class CharNode;
+class AssignNode;
+class IdNode;
+class SubscriptNode;
+class BreakNode;
+class ContinueNode;
+class PreTestLoopNode;
+class ImportNode;
+class ReturnWithoutValueNode;
+class ReturnValueNode;
+class CallNode;
+class FuncDefWithoutBodyNode;
+class FuncDefWithBodyNode;
 }
 
 namespace semantic {
@@ -33,7 +49,7 @@ class ArrayAllocWithTooManyDimensionsError: public SemanticError {
       size_t max_count);
   const real_talk::parser::ArrayAllocNode &GetAlloc() const;
   size_t GetMaxCount() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -50,7 +66,7 @@ class ArrayTypeWithTooManyDimensionsError: public SemanticError {
       size_t max_count);
   const real_talk::parser::ArrayDataTypeNode &GetArrayType() const;
   size_t GetMaxCount() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -65,7 +81,7 @@ class DoubleWithOutOfRangeValueError: public SemanticError {
   DoubleWithOutOfRangeValueError(
       const real_talk::parser::DoubleNode &double_node);
   const real_talk::parser::DoubleNode &GetDouble() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -79,7 +95,7 @@ class LongWithOutOfRangeValueError: public SemanticError {
   LongWithOutOfRangeValueError(
       const real_talk::parser::LongNode &long_node);
   const real_talk::parser::LongNode &GetLong() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -93,7 +109,7 @@ class IntWithOutOfRangeValueError: public SemanticError {
   IntWithOutOfRangeValueError(
       const real_talk::parser::IntNode &int_node);
   const real_talk::parser::IntNode &GetInt() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -107,7 +123,7 @@ class CharWithMultipleCharsError: public SemanticError {
   CharWithMultipleCharsError(
       const real_talk::parser::CharNode &c);
   const real_talk::parser::CharNode &GetChar() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -121,7 +137,7 @@ class CharWithEmptyHexValueError: public SemanticError {
   CharWithEmptyHexValueError(
       const real_talk::parser::CharNode &c);
   const real_talk::parser::CharNode &GetChar() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -135,7 +151,7 @@ class CharWithOutOfRangeHexValueError: public SemanticError {
   CharWithOutOfRangeHexValueError(
       const real_talk::parser::CharNode &c);
   const real_talk::parser::CharNode &GetChar() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -149,7 +165,7 @@ class StringWithOutOfRangeHexValueError: public SemanticError {
   StringWithOutOfRangeHexValueError(
       const real_talk::parser::StringNode &str);
   const real_talk::parser::StringNode &GetString() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -163,7 +179,7 @@ class StringWithEmptyHexValueError: public SemanticError {
   StringWithEmptyHexValueError(
       const real_talk::parser::StringNode &str);
   const real_talk::parser::StringNode &GetString() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -177,7 +193,7 @@ class AssignWithRightValueAssigneeError: public SemanticError {
   AssignWithRightValueAssigneeError(
       const real_talk::parser::AssignNode &assign);
   const real_talk::parser::AssignNode &GetAssign() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -191,7 +207,7 @@ class IdWithoutDefError: public SemanticError {
   IdWithoutDefError(
       const real_talk::parser::IdNode &id);
   const real_talk::parser::IdNode &GetId() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -207,7 +223,7 @@ class SubscriptWithUnsupportedIndexTypeError: public SemanticError {
       std::unique_ptr<DataType> data_type);
   const real_talk::parser::SubscriptNode &GetSubscript() const;
   const DataType &GetDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -222,7 +238,7 @@ class SubscriptWithNonArrayError: public SemanticError {
   SubscriptWithNonArrayError(
       const real_talk::parser::SubscriptNode &subscript);
   const real_talk::parser::SubscriptNode &GetSubscript() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -242,7 +258,7 @@ class ArrayAllocWithIncompatibleValueTypeError: public SemanticError {
   size_t GetValueIndex() const;
   const DataType &GetDestDataType() const;
   const DataType &GetSrcDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -261,7 +277,7 @@ class ArrayAllocWithUnsupportedElementTypeError: public SemanticError {
       std::unique_ptr<DataType> data_type);
   const real_talk::parser::ArrayAllocNode &GetAlloc() const;
   const DataType &GetDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -280,7 +296,7 @@ class ArrayAllocWithUnsupportedSizeTypeError: public SemanticError {
   const real_talk::parser::ArrayAllocNode &GetAlloc() const;
   const real_talk::parser::BoundedArraySizeNode &GetSize() const;
   const DataType &GetDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -302,7 +318,7 @@ class IfWithIncompatibleTypeError: public SemanticError {
   const real_talk::parser::IfNode &GetIf() const;
   const DataType &GetDestDataType() const;
   const DataType &GetSrcDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -319,7 +335,7 @@ class BreakNotWithinLoopError: public SemanticError {
   BreakNotWithinLoopError(
       const real_talk::parser::BreakNode &break_node);
   const real_talk::parser::BreakNode &GetBreak() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -333,7 +349,7 @@ class ContinueNotWithinLoopError: public SemanticError {
   ContinueNotWithinLoopError(
       const real_talk::parser::ContinueNode &continue_node);
   const real_talk::parser::ContinueNode &GetContinue() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -351,7 +367,7 @@ class PreTestLoopWithIncompatibleTypeError: public SemanticError {
   const real_talk::parser::PreTestLoopNode &GetLoop() const;
   const DataType &GetDestDataType() const;
   const DataType &GetSrcDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -367,7 +383,7 @@ class ImportIsNotFirstStmtError: public SemanticError {
   ImportIsNotFirstStmtError(
       const real_talk::parser::ImportNode &import);
   const real_talk::parser::ImportNode &GetImport() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -385,7 +401,7 @@ class VarDefWithIncompatibleValueTypeError: public SemanticError {
   const real_talk::parser::VarDefWithInitNode &GetVarDef() const;
   const DataType &GetDestDataType() const;
   const DataType &GetSrcDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -401,7 +417,7 @@ class ReturnWithoutValueError: public SemanticError {
   ReturnWithoutValueError(
       const real_talk::parser::ReturnWithoutValueNode &return_node);
   const real_talk::parser::ReturnWithoutValueNode &GetReturn() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -415,7 +431,7 @@ class ReturnNotWithinFuncError: public SemanticError {
   ReturnNotWithinFuncError(
       const real_talk::parser::ReturnNode &return_node);
   const real_talk::parser::ReturnNode &GetReturn() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -433,7 +449,7 @@ class ReturnWithIncompatibleTypeError: public SemanticError {
   const real_talk::parser::ReturnValueNode &GetReturn() const;
   const DataType &GetDestDataType() const;
   const DataType &GetSrcDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -455,7 +471,7 @@ class CallWithIncompatibleArgTypeError: public SemanticError {
   size_t GetArgIndex() const;
   const DataType &GetDestDataType() const;
   const DataType &GetSrcDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -476,7 +492,7 @@ class BinaryExprWithUnsupportedTypesError: public SemanticError {
   const real_talk::parser::BinaryExprNode &GetExpr() const;
   const DataType &GetLeftOperandDataType() const;
   const DataType &GetRightOperandDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -494,7 +510,7 @@ class UnaryExprWithUnsupportedTypeError: public SemanticError {
       std::unique_ptr<DataType> data_type);
   const real_talk::parser::UnaryExprNode &GetExpr() const;
   const DataType &GetDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -511,7 +527,7 @@ class DefWithUnsupportedTypeError: public SemanticError {
       std::unique_ptr<DataType> data_type);
   const real_talk::parser::DefNode &GetDef() const;
   const DataType &GetDataType() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -526,7 +542,7 @@ class DuplicateDefError: public SemanticError {
   DuplicateDefError(
       const real_talk::parser::DefNode &def);
   const real_talk::parser::DefNode &GetDef() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -540,7 +556,7 @@ class FuncDefWithoutBodyNotNativeError: public SemanticError {
   FuncDefWithoutBodyNotNativeError(
       const real_talk::parser::FuncDefWithoutBodyNode &def);
   const real_talk::parser::FuncDefWithoutBodyNode &GetDef() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -554,7 +570,7 @@ class FuncDefWithBodyIsNativeError: public SemanticError {
   FuncDefWithBodyIsNativeError(
       const real_talk::parser::FuncDefWithBodyNode &def);
   const real_talk::parser::FuncDefWithBodyNode &GetDef() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -563,12 +579,12 @@ class FuncDefWithBodyIsNativeError: public SemanticError {
   const real_talk::parser::FuncDefWithBodyNode &def_;
 };
 
-class FuncDefWithinNonGlobalScope: public SemanticError {
+class FuncDefWithinNonGlobalScopeError: public SemanticError {
  public:
-  FuncDefWithinNonGlobalScope(
+  FuncDefWithinNonGlobalScopeError(
       const real_talk::parser::FuncDefNode &def);
   const real_talk::parser::FuncDefNode &GetDef() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -582,7 +598,7 @@ class FuncDefWithoutReturnValueError: public SemanticError {
   FuncDefWithoutReturnValueError(
       const real_talk::parser::FuncDefNode &def);
   const real_talk::parser::FuncDefNode &GetDef() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -596,7 +612,7 @@ class CallWithNonFuncError: public SemanticError {
   CallWithNonFuncError(
       const real_talk::parser::CallNode &call);
   const real_talk::parser::CallNode &GetCall() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
@@ -605,16 +621,16 @@ class CallWithNonFuncError: public SemanticError {
   const real_talk::parser::CallNode &call_;
 };
 
-class CallWithInvalidArgsCount: public SemanticError {
+class CallWithInvalidArgsCountError: public SemanticError {
  public:
-  CallWithInvalidArgsCount(
+  CallWithInvalidArgsCountError(
       const real_talk::parser::CallNode &call,
       size_t expected_count,
       size_t actual_count);
   const real_talk::parser::CallNode &GetCall() const;
   size_t GetExpectedCount() const;
   size_t GetActualCount() const;
-  virtual void Accept(SemanticProblemVisitor *visitor) override;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
