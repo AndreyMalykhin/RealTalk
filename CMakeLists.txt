@@ -60,6 +60,7 @@ add_library(real_talk
   src/real_talk/code/code.cpp
   src/real_talk/code/simple_cast_cmd_generator.cpp
   src/real_talk/compiler/simple_import_file_searcher.cpp
+  src/real_talk/compiler/simple_msg_printer.cpp
   src/real_talk/compiler/compiler_config.cpp
   src/real_talk/compiler/compiler_config_parser.cpp
   src/real_talk/compiler/compiler.cpp
@@ -78,6 +79,7 @@ add_executable(real_talk_tests
   test/real_talk/code/test_utils.cpp
   test/real_talk/code/simple_cast_cmd_generator_test.cpp
   test/real_talk/compiler/simple_import_file_searcher_test.cpp
+  test/real_talk/compiler/simple_msg_printer_test.cpp
   test/real_talk/compiler/compiler_test.cpp
   test/real_talk/util/endianness_test.cpp
   )
