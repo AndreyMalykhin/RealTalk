@@ -2,9 +2,9 @@
 #ifndef _REAL_TALK_PARSER_ARRAY_DATA_TYPE_NODE_H_
 #define _REAL_TALK_PARSER_ARRAY_DATA_TYPE_NODE_H_
 
-#include <string>
-#include <sstream>
+#include <cassert>
 #include "real_talk/parser/data_type_node.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
@@ -20,6 +20,10 @@ class ArrayDataTypeNode: public DataTypeNode {
         subscript_start_token_(subscript_start_token),
         subscript_end_token_(subscript_end_token) {
     assert(element_data_type_);
+  }
+
+  virtual const real_talk::lexer::TokenInfo &GetNameToken() const override {
+    return element_data_type_->GetNameToken();
   }
 
   const std::unique_ptr<DataTypeNode> &GetElementDataType() const {

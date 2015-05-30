@@ -2,7 +2,6 @@
 #ifndef _REAL_TALK_PARSER_VOID_DATA_TYPE_NODE_H_
 #define _REAL_TALK_PARSER_VOID_DATA_TYPE_NODE_H_
 
-#include <string>
 #include "real_talk/parser/primitive_data_type_node.h"
 #include "real_talk/lexer/token_info.h"
 
@@ -15,7 +14,7 @@ class VoidDataTypeNode: public PrimitiveDataTypeNode {
       : name_token_(name_token) {
   }
 
-  const real_talk::lexer::TokenInfo &GetNameToken() const {
+  const real_talk::lexer::TokenInfo &GetNameToken() const override {
     return name_token_;
   }
 

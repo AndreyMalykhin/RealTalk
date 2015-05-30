@@ -18,6 +18,10 @@ class BaseArrayAllocNode final {
     assert(data_type_);
   }
 
+  const real_talk::lexer::TokenInfo &GetOpToken() const {
+    return op_token_;
+  }
+
   const std::unique_ptr<PrimitiveDataTypeNode> &GetDataType() const {
     return data_type_;
   }

@@ -45,8 +45,7 @@ class DataType;
 class ArrayAllocWithTooManyDimensionsError: public SemanticError {
  public:
   ArrayAllocWithTooManyDimensionsError(
-      const real_talk::parser::ArrayAllocNode &alloc,
-      size_t max_count);
+      const real_talk::parser::ArrayAllocNode &alloc, size_t max_count);
   const real_talk::parser::ArrayAllocNode &GetAlloc() const;
   size_t GetMaxCount() const;
   virtual void Accept(const SemanticProblemVisitor *visitor) const override;
@@ -62,8 +61,7 @@ class ArrayAllocWithTooManyDimensionsError: public SemanticError {
 class ArrayTypeWithTooManyDimensionsError: public SemanticError {
  public:
   ArrayTypeWithTooManyDimensionsError(
-      const real_talk::parser::ArrayDataTypeNode &array_type,
-      size_t max_count);
+      const real_talk::parser::ArrayDataTypeNode &array_type, size_t max_count);
   const real_talk::parser::ArrayDataTypeNode &GetArrayType() const;
   size_t GetMaxCount() const;
   virtual void Accept(const SemanticProblemVisitor *visitor) const override;

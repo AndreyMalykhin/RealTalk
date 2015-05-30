@@ -142,6 +142,8 @@ class SimpleMsgPrinter: public MsgPrinter,
   virtual void VisitCallWithInvalidArgsCountError(
       const real_talk::semantic::CallWithInvalidArgsCountError &error)
       const override;
+  void PrintOutOfRangeValueError(
+      const real_talk::lexer::TokenInfo &token) const;
   std::ostream &PrintFileError(const boost::filesystem::path &file_path,
                                uint32_t line,
                                uint32_t column) const;

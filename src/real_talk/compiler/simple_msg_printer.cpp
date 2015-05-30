@@ -3,6 +3,11 @@
 #include "real_talk/lexer/token_info.h"
 #include "real_talk/parser/array_alloc_node.h"
 #include "real_talk/parser/primitive_data_type_node.h"
+#include "real_talk/parser/array_data_type_node.h"
+#include "real_talk/parser/double_node.h"
+#include "real_talk/parser/long_node.h"
+#include "real_talk/parser/int_node.h"
+#include "real_talk/parser/char_node.h"
 #include "real_talk/semantic/semantic_problems.h"
 #include "real_talk/compiler/simple_msg_printer.h"
 
@@ -97,150 +102,168 @@ void SimpleMsgPrinter::PrintHelp(const string &help) const {
 
 void SimpleMsgPrinter::VisitArrayAllocWithTooManyDimensionsError(
     const ArrayAllocWithTooManyDimensionsError &error) const {
-  const TokenInfo &token = error.GetAlloc().GetDataType()->GetNameToken();
+  const TokenInfo &token = error.GetAlloc().GetOpToken();
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
       << "array can't have more than " << error.GetMaxCount()
       << " dimensions\n";
 }
 
 void SimpleMsgPrinter::VisitArrayTypeWithTooManyDimensionsError(
-    const ArrayTypeWithTooManyDimensionsError &error)
-    const {assert(false);}
+    const ArrayTypeWithTooManyDimensionsError &error) const {
+  const TokenInfo &token = error.GetArrayType().GetNameToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "array can't have more than " << error.GetMaxCount()
+      << " dimensions\n";
+}
 
 void SimpleMsgPrinter::VisitDoubleWithOutOfRangeValueError(
-    const DoubleWithOutOfRangeValueError &error)
-    const {assert(false);}
+    const DoubleWithOutOfRangeValueError &error) const {
+  PrintOutOfRangeValueError(error.GetDouble().GetToken());
+}
 
 void SimpleMsgPrinter::VisitLongWithOutOfRangeValueError(
-    const LongWithOutOfRangeValueError &error)
-    const {assert(false);}
+    const LongWithOutOfRangeValueError &error) const {
+  PrintOutOfRangeValueError(error.GetLong().GetToken());
+}
 
 void SimpleMsgPrinter::VisitIntWithOutOfRangeValueError(
-    const IntWithOutOfRangeValueError &error)
-    const {assert(false);}
+    const IntWithOutOfRangeValueError &error) const {
+  PrintOutOfRangeValueError(error.GetInt().GetToken());
+}
 
 void SimpleMsgPrinter::VisitCharWithMultipleCharsError(
-    const CharWithMultipleCharsError &error)
-    const {assert(false);}
+    const CharWithMultipleCharsError &error) const {
+  const TokenInfo &token = error.GetChar().GetToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "multiple characters\n";
+}
 
 void SimpleMsgPrinter::VisitCharWithEmptyHexValueError(
-    const CharWithEmptyHexValueError &error)
-    const {assert(false);}
+    const CharWithEmptyHexValueError &error) const {
+  const TokenInfo &token = error.GetChar().GetToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "empty hex value\n";
+}
 
 void SimpleMsgPrinter::VisitCharWithOutOfRangeHexValueError(
-    const CharWithOutOfRangeHexValueError &error)
+    const CharWithOutOfRangeHexValueError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitStringWithOutOfRangeHexValueError(
-    const StringWithOutOfRangeHexValueError &error)
+    const StringWithOutOfRangeHexValueError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitStringWithEmptyHexValueError(
-    const StringWithEmptyHexValueError &error)
+    const StringWithEmptyHexValueError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitUnaryExprWithUnsupportedTypeError(
-    const UnaryExprWithUnsupportedTypeError &error)
+    const UnaryExprWithUnsupportedTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitAssignWithRightValueAssigneeError(
-    const AssignWithRightValueAssigneeError &error)
+    const AssignWithRightValueAssigneeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitIdWithoutDefError(
-    const IdWithoutDefError &error) const {assert(false);}
+    const IdWithoutDefError&) const {assert(false);}
 
 void SimpleMsgPrinter::VisitSubscriptWithUnsupportedIndexTypeError(
-    const SubscriptWithUnsupportedIndexTypeError &error)
+    const SubscriptWithUnsupportedIndexTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitSubscriptWithNonArrayError(
-    const SubscriptWithNonArrayError &error)
+    const SubscriptWithNonArrayError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitArrayAllocWithIncompatibleValueTypeError(
-    const ArrayAllocWithIncompatibleValueTypeError &error)
+    const ArrayAllocWithIncompatibleValueTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedElementTypeError(
-    const ArrayAllocWithUnsupportedElementTypeError &error)
+    const ArrayAllocWithUnsupportedElementTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedSizeTypeError(
-    const ArrayAllocWithUnsupportedSizeTypeError &error)
+    const ArrayAllocWithUnsupportedSizeTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitIfWithIncompatibleTypeError(
-    const IfWithIncompatibleTypeError &error)
+    const IfWithIncompatibleTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitBreakNotWithinLoopError(
-    const BreakNotWithinLoopError &error) const {assert(false);}
+    const BreakNotWithinLoopError&) const {assert(false);}
 
 void SimpleMsgPrinter::VisitContinueNotWithinLoopError(
-    const ContinueNotWithinLoopError &error)
+    const ContinueNotWithinLoopError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitPreTestLoopWithIncompatibleTypeError(
-    const PreTestLoopWithIncompatibleTypeError &error)
+    const PreTestLoopWithIncompatibleTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitImportIsNotFirstStmtError(
-    const ImportIsNotFirstStmtError &error)
+    const ImportIsNotFirstStmtError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitVarDefWithIncompatibleValueTypeError(
-    const VarDefWithIncompatibleValueTypeError &error)
+    const VarDefWithIncompatibleValueTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitReturnWithoutValueError(
-    const ReturnWithoutValueError &error) const {assert(false);}
+    const ReturnWithoutValueError&) const {assert(false);}
 
 void SimpleMsgPrinter::VisitReturnNotWithinFuncError(
-    const ReturnNotWithinFuncError &error)
+    const ReturnNotWithinFuncError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitReturnWithIncompatibleTypeError(
-    const ReturnWithIncompatibleTypeError &error)
+    const ReturnWithIncompatibleTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitBinaryExprWithUnsupportedTypesError(
-    const BinaryExprWithUnsupportedTypesError &error)
+    const BinaryExprWithUnsupportedTypesError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitCallWithIncompatibleArgTypeError(
-    const CallWithIncompatibleArgTypeError &error)
+    const CallWithIncompatibleArgTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitDefWithUnsupportedTypeError(
-    const DefWithUnsupportedTypeError &error)
+    const DefWithUnsupportedTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitDuplicateDefError(
-    const DuplicateDefError &error) const {assert(false);}
+    const DuplicateDefError&) const {assert(false);}
 
 void SimpleMsgPrinter::VisitFuncDefWithoutBodyNotNativeError(
-    const FuncDefWithoutBodyNotNativeError &error)
+    const FuncDefWithoutBodyNotNativeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitFuncDefWithBodyIsNativeError(
-    const FuncDefWithBodyIsNativeError &error)
+    const FuncDefWithBodyIsNativeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitFuncDefWithinNonGlobalScopeError(
-    const FuncDefWithinNonGlobalScopeError &error)
+    const FuncDefWithinNonGlobalScopeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitFuncDefWithoutReturnValueError(
-    const FuncDefWithoutReturnValueError &error)
+    const FuncDefWithoutReturnValueError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitCallWithNonFuncError(
-    const CallWithNonFuncError &error) const {assert(false);}
+    const CallWithNonFuncError&) const {assert(false);}
 
 void SimpleMsgPrinter::VisitCallWithInvalidArgsCountError(
-    const CallWithInvalidArgsCountError &error)
+    const CallWithInvalidArgsCountError&)
     const {assert(false);}
+
+void SimpleMsgPrinter::PrintOutOfRangeValueError(const TokenInfo &token) const {
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "value is out of range\n";
+}
 
 ostream &SimpleMsgPrinter::PrintFileError(
     const path &file_path, uint32_t line, uint32_t column) const {

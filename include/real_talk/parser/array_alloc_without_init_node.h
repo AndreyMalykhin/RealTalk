@@ -23,6 +23,10 @@ class ArrayAllocWithoutInitNode: public ArrayAllocNode {
     assert(!sizes_.empty());
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetOpToken() const {
+    return array_alloc_node_.GetOpToken();
+  }
+
   const std::vector< std::unique_ptr<BoundedArraySizeNode> > &GetSizes() const {
     return sizes_;
   }
