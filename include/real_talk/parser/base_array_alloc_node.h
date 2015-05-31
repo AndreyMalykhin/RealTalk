@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_PARSER_BASE_ARRAY_ALLOC_NODE_H_
 #define _REAL_TALK_PARSER_BASE_ARRAY_ALLOC_NODE_H_
 
+#include <cassert>
 #include <memory>
 #include "real_talk/parser/primitive_data_type_node.h"
 
@@ -18,7 +19,7 @@ class BaseArrayAllocNode final {
     assert(data_type_);
   }
 
-  const real_talk::lexer::TokenInfo &GetOpToken() const {
+  const real_talk::lexer::TokenInfo &GetStartToken() const {
     return op_token_;
   }
 

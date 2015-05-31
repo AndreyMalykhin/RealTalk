@@ -13,7 +13,10 @@ class NegativeNode: public UnaryExprNode {
   NegativeNode(
       const real_talk::lexer::TokenInfo &op_token,
       std::unique_ptr<ExprNode> operand)
-      : unary_expr_(op_token, move(operand)) {
+      : unary_expr_(op_token, move(operand)) {}
+
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return unary_expr_.GetOpToken();
   }
 
   virtual const real_talk::lexer::TokenInfo &GetOpToken() const override {

@@ -505,7 +505,7 @@ TEST_F(CompilerTest, Compile) {
 
     for (TestImportFileParse &test_parse: test_import_file_parses) {
       string import_file_path_token =
-          test_parse.import_stmt->GetFilePath()->GetToken().GetValue();
+          test_parse.import_stmt->GetFilePath()->GetStartToken().GetValue();
       EXPECT_CALL(lit_parser, ParseString(import_file_path_token))
           .Times(1)
           .WillOnce(Return(test_parse.search_import_file_path))
@@ -543,7 +543,7 @@ TEST_F(CompilerTest, Compile) {
     string search_import_file_path("src2/./app/module/import4.rts");
     path found_import_file_path("src2/app/module/import4.rts");
     EXPECT_CALL(lit_parser, ParseString(
-        import_stmt_ptr7->GetFilePath()->GetToken().GetValue()))
+        import_stmt_ptr7->GetFilePath()->GetStartToken().GetValue()))
         .Times(1)
         .WillOnce(Return(search_import_file_path))
         .RetiresOnSaturation();
@@ -1506,7 +1506,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
         .Times(1)
         .WillOnce(Return(main_program));
     EXPECT_CALL(lit_parser, ParseString(
-        import_stmt_ptr->GetFilePath()->GetToken().GetValue()))
+        import_stmt_ptr->GetFilePath()->GetStartToken().GetValue()))
         .Times(1)
         .WillOnce(Return(search_import_file_path));
     EXPECT_CALL(file_searcher, Search_(
@@ -1517,7 +1517,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
         .Times(1)
         .WillOnce(Throw(IOError("test")));
     EXPECT_CALL(msg_printer, PrintTokenError(
-        import_stmt_ptr->GetFilePath()->GetToken(),
+        import_stmt_ptr->GetFilePath()->GetStartToken(),
         final_input_file_path,
         "IO error while searching file"))
         .Times(1);
@@ -1607,7 +1607,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
         .Times(1)
         .WillOnce(Return(main_program));
     EXPECT_CALL(lit_parser, ParseString(
-        import_stmt_ptr->GetFilePath()->GetToken().GetValue()))
+        import_stmt_ptr->GetFilePath()->GetStartToken().GetValue()))
         .Times(1)
         .WillOnce(Return(search_import_file_path));
     EXPECT_CALL(file_searcher, Search_(
@@ -1618,7 +1618,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
         .Times(1)
         .WillOnce(Return(found_import_file_path.string()));
     EXPECT_CALL(msg_printer, PrintTokenError(
-        import_stmt_ptr->GetFilePath()->GetToken(),
+        import_stmt_ptr->GetFilePath()->GetStartToken(),
         final_input_file_path,
         "File not found"))
         .Times(1);

@@ -22,6 +22,10 @@ class BaseBinaryExprNode final {
     assert(right_operand_);
   }
 
+  const real_talk::lexer::TokenInfo &GetStartToken() const {
+    return left_operand_->GetStartToken();
+  }
+
   const real_talk::lexer::TokenInfo &GetOpToken() const {
     return op_token_;
   }

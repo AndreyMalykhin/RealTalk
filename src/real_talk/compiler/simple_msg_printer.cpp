@@ -1,14 +1,19 @@
 
 #include <string>
 #include "real_talk/lexer/token_info.h"
-#include "real_talk/parser/array_alloc_node.h"
+#include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/primitive_data_type_node.h"
 #include "real_talk/parser/array_data_type_node.h"
 #include "real_talk/parser/double_node.h"
 #include "real_talk/parser/long_node.h"
 #include "real_talk/parser/int_node.h"
+#include "real_talk/parser/string_node.h"
 #include "real_talk/parser/char_node.h"
+#include "real_talk/parser/assign_node.h"
+#include "real_talk/parser/id_node.h"
+#include "real_talk/parser/subscript_node.h"
 #include "real_talk/semantic/semantic_problems.h"
+#include "real_talk/semantic/data_type.h"
 #include "real_talk/compiler/simple_msg_printer.h"
 
 using std::ostream;
@@ -29,7 +34,7 @@ using real_talk::semantic::UnaryExprWithUnsupportedTypeError;
 using real_talk::semantic::AssignWithRightValueAssigneeError;
 using real_talk::semantic::IdWithoutDefError;
 using real_talk::semantic::SubscriptWithUnsupportedIndexTypeError;
-using real_talk::semantic::SubscriptWithNonArrayError;
+using real_talk::semantic::SubscriptWithUnsupportedOperandTypeError;
 using real_talk::semantic::ArrayAllocWithIncompatibleValueTypeError;
 using real_talk::semantic::ArrayAllocWithUnsupportedElementTypeError;
 using real_talk::semantic::ArrayAllocWithUnsupportedSizeTypeError;
@@ -102,7 +107,7 @@ void SimpleMsgPrinter::PrintHelp(const string &help) const {
 
 void SimpleMsgPrinter::VisitArrayAllocWithTooManyDimensionsError(
     const ArrayAllocWithTooManyDimensionsError &error) const {
-  const TokenInfo &token = error.GetAlloc().GetOpToken();
+  const TokenInfo &token = error.GetAlloc().GetStartToken();
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
       << "array can't have more than " << error.GetMaxCount()
       << " dimensions\n";
@@ -118,70 +123,102 @@ void SimpleMsgPrinter::VisitArrayTypeWithTooManyDimensionsError(
 
 void SimpleMsgPrinter::VisitDoubleWithOutOfRangeValueError(
     const DoubleWithOutOfRangeValueError &error) const {
-  PrintOutOfRangeValueError(error.GetDouble().GetToken());
+  PrintOutOfRangeValueError(error.GetDouble().GetStartToken());
 }
 
 void SimpleMsgPrinter::VisitLongWithOutOfRangeValueError(
     const LongWithOutOfRangeValueError &error) const {
-  PrintOutOfRangeValueError(error.GetLong().GetToken());
+  PrintOutOfRangeValueError(error.GetLong().GetStartToken());
 }
 
 void SimpleMsgPrinter::VisitIntWithOutOfRangeValueError(
     const IntWithOutOfRangeValueError &error) const {
-  PrintOutOfRangeValueError(error.GetInt().GetToken());
+  PrintOutOfRangeValueError(error.GetInt().GetStartToken());
 }
 
 void SimpleMsgPrinter::VisitCharWithMultipleCharsError(
     const CharWithMultipleCharsError &error) const {
-  const TokenInfo &token = error.GetChar().GetToken();
+  const TokenInfo &token = error.GetChar().GetStartToken();
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
       << "multiple characters\n";
 }
 
 void SimpleMsgPrinter::VisitCharWithEmptyHexValueError(
     const CharWithEmptyHexValueError &error) const {
-  const TokenInfo &token = error.GetChar().GetToken();
+  const TokenInfo &token = error.GetChar().GetStartToken();
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
       << "empty hex value\n";
 }
 
 void SimpleMsgPrinter::VisitCharWithOutOfRangeHexValueError(
-    const CharWithOutOfRangeHexValueError&)
-    const {assert(false);}
+    const CharWithOutOfRangeHexValueError &error) const {
+  PrintOutOfRangeValueError(error.GetChar().GetStartToken());
+}
 
 void SimpleMsgPrinter::VisitStringWithOutOfRangeHexValueError(
-    const StringWithOutOfRangeHexValueError&)
-    const {assert(false);}
+    const StringWithOutOfRangeHexValueError &error) const {
+  const TokenInfo &token = error.GetString().GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "out of range hex value\n";
+}
 
 void SimpleMsgPrinter::VisitStringWithEmptyHexValueError(
-    const StringWithEmptyHexValueError&)
-    const {assert(false);}
+    const StringWithEmptyHexValueError &error) const {
+  const TokenInfo &token = error.GetString().GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "empty hex value\n";
+}
+
+void SimpleMsgPrinter::VisitAssignWithRightValueAssigneeError(
+    const AssignWithRightValueAssigneeError &error) const {
+  const TokenInfo &token = error.GetAssign().GetOpToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "can't assign to rvalue\n";
+}
+
+void SimpleMsgPrinter::VisitIdWithoutDefError(
+    const IdWithoutDefError &error) const {
+  const TokenInfo &token = error.GetId().GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "undefined identifier\n";
+}
+
+void SimpleMsgPrinter::VisitSubscriptWithUnsupportedIndexTypeError(
+    const SubscriptWithUnsupportedIndexTypeError &error) const {
+  const TokenInfo &token = error.GetSubscript().GetIndex()->GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << error.GetDataType().GetName()
+      << "\" data type is not supported as index of operator \"[]\"\n";
+}
+
+void SimpleMsgPrinter::VisitSubscriptWithUnsupportedOperandTypeError(
+    const SubscriptWithUnsupportedOperandTypeError &error) const {
+  const TokenInfo &token = error.GetSubscript().GetOperand()->GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << error.GetDataType().GetName()
+      << "\" data type is not supported as operand of operator \"[]\"\n";
+}
+
+void SimpleMsgPrinter::VisitArrayAllocWithIncompatibleValueTypeError(
+    const ArrayAllocWithIncompatibleValueTypeError &error) const {
+  const TokenInfo &token =
+      error.GetAlloc().GetValues()[error.GetValueIndex()]->GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "expected \"" << error.GetDestDataType().GetName()
+      << "\" data type, but got \"" << error.GetSrcDataType().GetName()
+      << "\"\n";
+}
+
+void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedElementTypeError(
+    const ArrayAllocWithUnsupportedElementTypeError &error) const {
+  const TokenInfo &token = error.GetAlloc().GetDataType()->GetNameToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << error.GetDataType().GetName()
+      << "\" data type is not supported by array\n";
+}
 
 void SimpleMsgPrinter::VisitUnaryExprWithUnsupportedTypeError(
     const UnaryExprWithUnsupportedTypeError&)
-    const {assert(false);}
-
-void SimpleMsgPrinter::VisitAssignWithRightValueAssigneeError(
-    const AssignWithRightValueAssigneeError&)
-    const {assert(false);}
-
-void SimpleMsgPrinter::VisitIdWithoutDefError(
-    const IdWithoutDefError&) const {assert(false);}
-
-void SimpleMsgPrinter::VisitSubscriptWithUnsupportedIndexTypeError(
-    const SubscriptWithUnsupportedIndexTypeError&)
-    const {assert(false);}
-
-void SimpleMsgPrinter::VisitSubscriptWithNonArrayError(
-    const SubscriptWithNonArrayError&)
-    const {assert(false);}
-
-void SimpleMsgPrinter::VisitArrayAllocWithIncompatibleValueTypeError(
-    const ArrayAllocWithIncompatibleValueTypeError&)
-    const {assert(false);}
-
-void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedElementTypeError(
-    const ArrayAllocWithUnsupportedElementTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedSizeTypeError(
@@ -262,7 +299,7 @@ void SimpleMsgPrinter::VisitCallWithInvalidArgsCountError(
 
 void SimpleMsgPrinter::PrintOutOfRangeValueError(const TokenInfo &token) const {
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "value is out of range\n";
+      << "out of range value\n";
 }
 
 ostream &SimpleMsgPrinter::PrintFileError(

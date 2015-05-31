@@ -36,8 +36,8 @@ class ArrayAllocWithInitNode: public ArrayAllocNode {
                && value_separator_tokens_.empty()));
   }
 
-  virtual const real_talk::lexer::TokenInfo &GetOpToken() const {
-    return array_alloc_node_.GetOpToken();
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return array_alloc_node_.GetStartToken();
   }
 
   const std::vector< std::unique_ptr<UnboundedArraySizeNode> >

@@ -6679,7 +6679,8 @@ TEST_F(SimpleSemanticAnalyzerTest,
 
   SemanticAnalysis::ProgramProblems problems;
   unique_ptr<SemanticProblem> problem(
-      new SubscriptWithNonArrayError(*subscript_node_ptr));
+      new SubscriptWithUnsupportedOperandTypeError(
+          *subscript_node_ptr, unique_ptr<DataType>(new LongDataType())));
   problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));

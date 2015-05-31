@@ -11,10 +11,9 @@ namespace parser {
 
 class CharNode: public LitNode {
  public:
-  explicit CharNode(const real_talk::lexer::TokenInfo &token): token_(token) {
-  }
+  explicit CharNode(const real_talk::lexer::TokenInfo &token): token_(token) {}
 
-  const real_talk::lexer::TokenInfo &GetToken() const {
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
     return token_;
   }
 

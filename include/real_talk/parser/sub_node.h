@@ -14,7 +14,10 @@ class SubNode: public BinaryExprNode {
       const real_talk::lexer::TokenInfo &token,
       std::unique_ptr<ExprNode> left_operand,
       std::unique_ptr<ExprNode> right_operand)
-      : binary_expr_(token, move(left_operand), move(right_operand)) {
+      : binary_expr_(token, move(left_operand), move(right_operand)) {}
+
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return binary_expr_.GetStartToken();
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {

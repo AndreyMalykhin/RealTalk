@@ -27,11 +27,15 @@ class SubscriptNode: public ExprNode {
     visitor.VisitSubscript(*this);
   }
 
-  const real_talk::lexer::TokenInfo &GetStartToken() const {
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return operand_->GetStartToken();
+  }
+
+  const real_talk::lexer::TokenInfo &GetOpStartToken() const {
     return start_token_;
   }
 
-  const real_talk::lexer::TokenInfo &GetEndToken() const {
+  const real_talk::lexer::TokenInfo &GetOpEndToken() const {
     return end_token_;
   }
 

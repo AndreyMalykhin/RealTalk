@@ -15,7 +15,10 @@ class AndNode: public BinaryExprNode {
       const real_talk::lexer::TokenInfo &token,
       std::unique_ptr<ExprNode> left_operand,
       std::unique_ptr<ExprNode> right_operand)
-      : binary_expr_(token, move(left_operand), move(right_operand)) {
+      : binary_expr_(token, move(left_operand), move(right_operand)) {}
+
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return binary_expr_.GetStartToken();
   }
 
   const real_talk::lexer::TokenInfo &GetOpToken() const override {

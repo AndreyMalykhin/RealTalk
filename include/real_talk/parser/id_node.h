@@ -13,14 +13,13 @@ namespace parser {
 class IdNode: public ExprNode {
  public:
   explicit IdNode(const real_talk::lexer::TokenInfo &name_token)
-      : name_token_(name_token) {
-  }
+      : name_token_(name_token) {}
 
   virtual void Accept(NodeVisitor &visitor) const override {
     visitor.VisitId(*this);
   }
 
-  const real_talk::lexer::TokenInfo &GetNameToken() const {
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
     return name_token_;
   }
 

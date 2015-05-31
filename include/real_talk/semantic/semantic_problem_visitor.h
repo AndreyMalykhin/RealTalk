@@ -19,7 +19,7 @@ class UnaryExprWithUnsupportedTypeError;
 class AssignWithRightValueAssigneeError;
 class IdWithoutDefError;
 class SubscriptWithUnsupportedIndexTypeError;
-class SubscriptWithNonArrayError;
+class SubscriptWithUnsupportedOperandTypeError;
 class ArrayAllocWithIncompatibleValueTypeError;
 class ArrayAllocWithUnsupportedElementTypeError;
 class ArrayAllocWithUnsupportedSizeTypeError;
@@ -74,8 +74,8 @@ class SemanticProblemVisitor {
       const IdWithoutDefError &error) const = 0;
   virtual void VisitSubscriptWithUnsupportedIndexTypeError(
       const SubscriptWithUnsupportedIndexTypeError &error) const = 0;
-  virtual void VisitSubscriptWithNonArrayError(
-      const SubscriptWithNonArrayError &error) const = 0;
+  virtual void VisitSubscriptWithUnsupportedOperandTypeError(
+      const SubscriptWithUnsupportedOperandTypeError &error) const = 0;
   virtual void VisitArrayAllocWithIncompatibleValueTypeError(
       const ArrayAllocWithIncompatibleValueTypeError &error) const = 0;
   virtual void VisitArrayAllocWithUnsupportedElementTypeError(

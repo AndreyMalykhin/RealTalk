@@ -14,7 +14,7 @@
 #include "real_talk/parser/break_node.h"
 #include "real_talk/parser/branch_node.h"
 #include "real_talk/parser/if_node.h"
-#include "real_talk/parser/array_alloc_node.h"
+#include "real_talk/parser/array_alloc_with_init_node.h"
 #include "real_talk/parser/bounded_array_size_node.h"
 #include "real_talk/parser/subscript_node.h"
 #include "real_talk/parser/id_node.h"
@@ -50,6 +50,7 @@ using real_talk::parser::BreakNode;
 using real_talk::parser::BranchNode;
 using real_talk::parser::IfNode;
 using real_talk::parser::ArrayAllocNode;
+using real_talk::parser::ArrayAllocWithInitNode;
 using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::SubscriptNode;
 using real_talk::parser::IdNode;
@@ -420,31 +421,40 @@ bool SubscriptWithUnsupportedIndexTypeError::IsEqual(
       && *data_type_ == *(rhs.data_type_);
 }
 
-SubscriptWithNonArrayError::SubscriptWithNonArrayError(
-    const SubscriptNode &subscript): subscript_(subscript) {}
-
-void SubscriptWithNonArrayError::Accept(
-    const SemanticProblemVisitor *visitor) const {
-  visitor->VisitSubscriptWithNonArrayError(*this);
+SubscriptWithUnsupportedOperandTypeError::SubscriptWithUnsupportedOperandTypeError(
+    const SubscriptNode &subscript, unique_ptr<DataType> data_type)
+    : subscript_(subscript), data_type_(move(data_type)) {
+  assert(data_type_);
 }
 
-const SubscriptNode &SubscriptWithNonArrayError::GetSubscript() const {
+void SubscriptWithUnsupportedOperandTypeError::Accept(
+    const SemanticProblemVisitor *visitor) const {
+  visitor->VisitSubscriptWithUnsupportedOperandTypeError(*this);
+}
+
+const SubscriptNode &SubscriptWithUnsupportedOperandTypeError::GetSubscript()
+    const {
   return subscript_;
 }
 
-void SubscriptWithNonArrayError::Print(ostream &stream) const {
-  stream << "subscript=" << subscript_;
+const DataType &SubscriptWithUnsupportedOperandTypeError::GetDataType() const {
+  return *data_type_;
 }
 
-bool SubscriptWithNonArrayError::IsEqual(const SemanticProblem &problem) const {
-  const SubscriptWithNonArrayError &rhs =
-      static_cast<const SubscriptWithNonArrayError&>(problem);
-  return subscript_ == rhs.subscript_;
+void SubscriptWithUnsupportedOperandTypeError::Print(ostream &stream) const {
+  stream << "subscript=" << subscript_ << "; data_type=" << *data_type_;
+}
+
+bool SubscriptWithUnsupportedOperandTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const SubscriptWithUnsupportedOperandTypeError &rhs =
+      static_cast<const SubscriptWithUnsupportedOperandTypeError&>(problem);
+  return subscript_ == rhs.subscript_ && *data_type_ == *(rhs.data_type_);
 }
 
 ArrayAllocWithIncompatibleValueTypeError::
 ArrayAllocWithIncompatibleValueTypeError(
-    const ArrayAllocNode &alloc,
+    const ArrayAllocWithInitNode &alloc,
     size_t value_index,
     unique_ptr<DataType> dest_data_type,
     unique_ptr<DataType> src_data_type)
@@ -454,6 +464,7 @@ ArrayAllocWithIncompatibleValueTypeError(
       src_data_type_(move(src_data_type)) {
   assert(dest_data_type_);
   assert(src_data_type_);
+  assert(value_index_ < alloc.GetValues().size());
 }
 
 void ArrayAllocWithIncompatibleValueTypeError::Accept(
@@ -461,7 +472,7 @@ void ArrayAllocWithIncompatibleValueTypeError::Accept(
   visitor->VisitArrayAllocWithIncompatibleValueTypeError(*this);
 }
 
-const ArrayAllocNode
+const ArrayAllocWithInitNode
 &ArrayAllocWithIncompatibleValueTypeError::GetAlloc() const {
   return alloc_;
 }

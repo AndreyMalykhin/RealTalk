@@ -5,9 +5,16 @@
 #include "real_talk/parser/node.h"
 
 namespace real_talk {
+namespace lexer {
+
+class TokenInfo;
+}
+
 namespace parser {
 
 class ExprNode: public Node {
+ public:
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const = 0;
 };
 }
 }

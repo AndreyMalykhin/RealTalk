@@ -1307,7 +1307,8 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
 
   if (!subscript_data_type) {
     unique_ptr<SemanticError> error(
-        new SubscriptWithNonArrayError(subscript_node));
+        new SubscriptWithUnsupportedOperandTypeError(
+            subscript_node, operand_data_type.Clone()));
     AddError(move(error));
   }
 
@@ -1346,7 +1347,7 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
 
 void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
   const DefNode *def_node = nullptr;
-  const string &id = id_node.GetNameToken().GetValue();
+  const string &id = id_node.GetStartToken().GetValue();
 
   for (const Scope* scope: reverse(scopes_stack_)) {
     const IdDefs &scope_id_defs = scope->GetIdDefs();
@@ -1729,7 +1730,8 @@ void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBool(const BoolNode &bool_node) {
-  const bool value = lit_parser_.ParseBool(bool_node.GetToken().GetValue());
+  const bool value =
+      lit_parser_.ParseBool(bool_node.GetStartToken().GetValue());
   unique_ptr<DataType> data_type(new BoolDataType());
   unique_ptr<Lit> lit(new BoolLit(value));
   unique_ptr<DataType> casted_data_type;
@@ -1741,7 +1743,7 @@ void SimpleSemanticAnalyzer::Impl::VisitInt(const IntNode &int_node) {
   int32_t value;
 
   try {
-    value = lit_parser_.ParseInt(int_node.GetToken().GetValue());
+    value = lit_parser_.ParseInt(int_node.GetStartToken().GetValue());
   } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(
         new IntWithOutOfRangeValueError(int_node));
@@ -1758,7 +1760,7 @@ void SimpleSemanticAnalyzer::Impl::VisitLong(const LongNode &long_node) {
   int64_t value;
 
   try {
-    value = lit_parser_.ParseLong(long_node.GetToken().GetValue());
+    value = lit_parser_.ParseLong(long_node.GetStartToken().GetValue());
   } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(
         new LongWithOutOfRangeValueError(long_node));
@@ -1776,7 +1778,7 @@ void SimpleSemanticAnalyzer::Impl::VisitDouble(const DoubleNode &double_node) {
   double value;
 
   try {
-    value = lit_parser_.ParseDouble(double_node.GetToken().GetValue());
+    value = lit_parser_.ParseDouble(double_node.GetStartToken().GetValue());
   } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(
         new DoubleWithOutOfRangeValueError(double_node));
@@ -1794,7 +1796,7 @@ void SimpleSemanticAnalyzer::Impl::VisitChar(const CharNode &char_node) {
   char value;
 
   try {
-    value = lit_parser_.ParseChar(char_node.GetToken().GetValue());
+    value = lit_parser_.ParseChar(char_node.GetStartToken().GetValue());
   } catch (const LitParser::EmptyHexValueError&) {
     unique_ptr<SemanticError> error(
         new CharWithEmptyHexValueError(char_node));
@@ -1820,7 +1822,7 @@ void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
   string value;
 
   try {
-    value = lit_parser_.ParseString(string_node.GetToken().GetValue());
+    value = lit_parser_.ParseString(string_node.GetStartToken().GetValue());
   } catch (const LitParser::EmptyHexValueError&) {
     unique_ptr<SemanticError> error(
         new StringWithEmptyHexValueError(string_node));

@@ -11,10 +11,10 @@ namespace parser {
 
 class DoubleNode: public LitNode {
  public:
-  explicit DoubleNode(const real_talk::lexer::TokenInfo &token): token_(token) {
-  }
+  explicit DoubleNode(const real_talk::lexer::TokenInfo &token)
+      : token_(token) {}
 
-  const real_talk::lexer::TokenInfo &GetToken() const {
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
     return token_;
   }
 

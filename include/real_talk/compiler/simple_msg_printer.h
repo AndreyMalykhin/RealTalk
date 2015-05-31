@@ -77,8 +77,8 @@ class SimpleMsgPrinter: public MsgPrinter,
   virtual void VisitSubscriptWithUnsupportedIndexTypeError(
       const real_talk::semantic::SubscriptWithUnsupportedIndexTypeError &error)
       const override;
-  virtual void VisitSubscriptWithNonArrayError(
-      const real_talk::semantic::SubscriptWithNonArrayError &error)
+  virtual void VisitSubscriptWithUnsupportedOperandTypeError(
+      const real_talk::semantic::SubscriptWithUnsupportedOperandTypeError &error)
       const override;
   virtual void VisitArrayAllocWithIncompatibleValueTypeError(
       const real_talk::semantic::ArrayAllocWithIncompatibleValueTypeError &error)

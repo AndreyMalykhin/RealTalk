@@ -29,6 +29,10 @@ class CallNode: public ExprNode {
            || (arg_separator_tokens_.size() == args_.size() - 1));
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return operand_->GetStartToken();
+  }
+
   const std::vector< std::unique_ptr<ExprNode> > &GetArgs() const {
     return args_;
   }

@@ -12,7 +12,6 @@ class PrimitiveDataTypeNode;
 
 class ArrayAllocNode: public ExprNode {
  public:
-  virtual const real_talk::lexer::TokenInfo &GetOpToken() const = 0;
   virtual const std::unique_ptr<PrimitiveDataTypeNode> &GetDataType() const = 0;
 };
 }

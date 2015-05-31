@@ -940,7 +940,7 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     }
 
     assert(var_index_placeholder >= cmds_address_);
-    const string &id = id_node_->GetNameToken().GetValue();
+    const string &id = id_node_->GetStartToken().GetValue();
     const uint32_t id_address = var_index_placeholder - cmds_address_;
     (*id_addresses_of_global_var_refs_)[id].push_back(id_address);
   }
@@ -963,7 +963,7 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     const uint32_t func_value = numeric_limits<uint32_t>::max();
     code_->WriteUint32(func_value);
     assert(func_value_placeholder >= cmds_address_);
-    const string &id = id_node_->GetNameToken().GetValue();
+    const string &id = id_node_->GetStartToken().GetValue();
     const uint32_t id_address = func_value_placeholder - cmds_address_;
     (*id_addresses_of_func_refs)[id].push_back(id_address);
   }

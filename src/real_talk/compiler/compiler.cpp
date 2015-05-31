@@ -341,7 +341,7 @@ void Compiler::ParseFiles(
     assert(program_file_paths_it != program_file_paths->cend());
     const path &current_file_path = program_file_paths_it->second;
     const TokenInfo &search_import_file_path_token =
-        program_import_stmt.stmt->GetFilePath()->GetToken();
+        program_import_stmt.stmt->GetFilePath()->GetStartToken();
     string search_import_file_path;
 
     try {

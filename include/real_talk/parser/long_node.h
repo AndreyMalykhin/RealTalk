@@ -11,10 +11,9 @@ namespace parser {
 
 class LongNode: public LitNode {
  public:
-  explicit LongNode(const real_talk::lexer::TokenInfo &token): token_(token) {
-  }
+  explicit LongNode(const real_talk::lexer::TokenInfo &token): token_(token) {}
 
-  const real_talk::lexer::TokenInfo &GetToken() const {
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
     return token_;
   }
 
