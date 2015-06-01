@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_PARSER_PRE_TEST_LOOP_NODE_H_
 #define _REAL_TALK_PARSER_PRE_TEST_LOOP_NODE_H_
 
+#include <cassert>
 #include <memory>
 #include "real_talk/parser/stmt_node.h"
 #include "real_talk/parser/scope_node.h"
@@ -26,6 +27,10 @@ class PreTestLoopNode: public StmtNode {
         body_(move(body)) {
     assert(cond_);
     assert(body_);
+  }
+
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return start_token_;
   }
 
   const std::unique_ptr<ExprNode> &GetCond() const {

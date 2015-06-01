@@ -23,6 +23,10 @@ class ImportNode: public StmtNode {
     assert(file_path_);
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return start_token_;
+  }
+
   const std::unique_ptr<StringNode> &GetFilePath() const {
     return file_path_;
   }

@@ -24,6 +24,10 @@ class VarDefWithoutInitNode: public VarDefNode {
     assert(data_type_);
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return data_type_->GetStartToken();
+  }
+
   const real_talk::lexer::TokenInfo &GetNameToken() const override {
     return name_token_;
   }

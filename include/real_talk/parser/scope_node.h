@@ -24,6 +24,10 @@ class ScopeNode: public Node {
         end_token_(end_token) {
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return start_token_;
+  }
+
   virtual void Accept(NodeVisitor &visitor) const override {
     visitor.VisitScope(*this);
   }

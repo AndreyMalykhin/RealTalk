@@ -19,6 +19,10 @@ class ExprStmtNode: public StmtNode {
     assert(expr_);
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return expr_->GetStartToken();
+  }
+
   virtual void Accept(NodeVisitor &visitor) const override {
     visitor.VisitExprStmt(*this);
   }

@@ -3,6 +3,7 @@
 #define _REAL_TALK_PARSER_STRING_NODE_H_
 
 #include <string>
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/lit_node.h"
 #include "real_talk/lexer/token_info.h"
 

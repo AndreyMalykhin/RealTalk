@@ -21,6 +21,10 @@ class IfElseIfElseNode: public BranchNode {
     assert(else_body_);
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return if_else_if_.GetStartToken();
+  }
+
   const std::unique_ptr<IfNode> &GetIf() const override {
     return if_else_if_.GetIf();
   }

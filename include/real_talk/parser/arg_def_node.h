@@ -22,6 +22,10 @@ class ArgDefNode: public VarDefNode {
     assert(data_type_);
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return data_type_->GetStartToken();
+  }
+
   const std::unique_ptr<DataTypeNode> &GetDataType() const override {
     return data_type_;
   }

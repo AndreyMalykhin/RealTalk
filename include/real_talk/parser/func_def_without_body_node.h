@@ -32,6 +32,10 @@ class FuncDefWithoutBodyNode: public FuncDefNode {
         end_token_(end_token) {
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return base_func_def_.GetStartToken();
+  }
+
   virtual const std::vector<real_talk::lexer::TokenInfo> &GetModifierTokens()
       const override {
     return base_func_def_.GetModifierTokens();

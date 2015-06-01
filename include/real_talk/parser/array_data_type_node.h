@@ -22,8 +22,8 @@ class ArrayDataTypeNode: public DataTypeNode {
     assert(element_data_type_);
   }
 
-  virtual const real_talk::lexer::TokenInfo &GetNameToken() const override {
-    return element_data_type_->GetNameToken();
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return element_data_type_->GetStartToken();
   }
 
   const std::unique_ptr<DataTypeNode> &GetElementDataType() const {

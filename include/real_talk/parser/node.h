@@ -5,6 +5,11 @@
 #include <iostream>
 
 namespace real_talk {
+namespace lexer {
+
+class TokenInfo;
+}
+
 namespace parser {
 
 class NodeVisitor;
@@ -12,6 +17,7 @@ class NodeVisitor;
 class Node {
  public:
   virtual ~Node() {}
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const = 0;
   virtual void Accept(NodeVisitor &visitor) const = 0;
 
   friend bool operator==(const Node &lhs, const Node &rhs) {

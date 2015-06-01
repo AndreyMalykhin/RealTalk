@@ -34,6 +34,11 @@ class BaseFuncDefNode final {
            || (arg_separator_tokens_.size() == args_.size() - 1));
   }
 
+  const real_talk::lexer::TokenInfo &GetStartToken() const {
+    return modifier_tokens_.empty() ? return_data_type_->GetStartToken()
+        : modifier_tokens_.front();
+  }
+
   const std::vector<real_talk::lexer::TokenInfo> &GetModifierTokens() const {
     return modifier_tokens_;
   }

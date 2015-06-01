@@ -3,6 +3,7 @@
 #define _REAL_TALK_PARSER_PROGRAM_NODE_H_
 
 #include <boost/iterator/indirect_iterator.hpp>
+#include <cassert>
 #include <vector>
 #include <memory>
 #include "real_talk/parser/node.h"
@@ -15,7 +16,11 @@ namespace parser {
 class ProgramNode: public Node {
  public:
   explicit ProgramNode(std::vector< std::unique_ptr<StmtNode> > stmts)
-      : stmts_(move(stmts)) {
+      : stmts_(move(stmts)) {}
+
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    assert(!stmts_.empty());
+    return stmts_.front()->GetStartToken();
   }
 
   const std::vector< std::unique_ptr<StmtNode> > &GetStmts() const {

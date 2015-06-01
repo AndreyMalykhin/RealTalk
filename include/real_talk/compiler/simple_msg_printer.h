@@ -8,6 +8,11 @@
 #include "real_talk/compiler/msg_printer.h"
 
 namespace real_talk {
+namespace semantic {
+
+class DataType;
+}
+
 namespace compiler {
 
 class SimpleMsgPrinter: public MsgPrinter,
@@ -144,6 +149,12 @@ class SimpleMsgPrinter: public MsgPrinter,
       const override;
   void PrintOutOfRangeValueError(
       const real_talk::lexer::TokenInfo &token) const;
+  void PrintIncompatibleDataTypeError(
+      const real_talk::lexer::TokenInfo &token,
+      const real_talk::semantic::DataType &dest_data_type,
+      const real_talk::semantic::DataType &src_data_type) const;
+  void PrintArrayWithTooManyDimensionsError(
+      const real_talk::lexer::TokenInfo &token, size_t max_count) const;
   std::ostream &PrintFileError(const boost::filesystem::path &file_path,
                                uint32_t line,
                                uint32_t column) const;

@@ -24,6 +24,10 @@ class IfElseIfNode: public BranchNode {
     assert(if_);
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return if_->GetStartToken();
+  }
+
   virtual void Accept(NodeVisitor &visitor) const override {
     visitor.VisitIfElseIf(*this);
   }

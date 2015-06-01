@@ -14,7 +14,7 @@ class CharDataTypeNode: public PrimitiveDataTypeNode {
       : name_token_(name_token) {
   }
 
-  const real_talk::lexer::TokenInfo &GetNameToken() const override {
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
     return name_token_;
   }
 

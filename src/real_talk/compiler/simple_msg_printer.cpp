@@ -1,7 +1,13 @@
 
 #include <string>
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/import_node.h"
+#include "real_talk/parser/pre_test_loop_node.h"
+#include "real_talk/parser/continue_node.h"
+#include "real_talk/parser/break_node.h"
+#include "real_talk/parser/if_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
+#include "real_talk/parser/array_alloc_without_init_node.h"
 #include "real_talk/parser/primitive_data_type_node.h"
 #include "real_talk/parser/array_data_type_node.h"
 #include "real_talk/parser/double_node.h"
@@ -59,6 +65,7 @@ using real_talk::semantic::CallWithNonFuncError;
 using real_talk::semantic::CallWithInvalidArgsCountError;
 using real_talk::semantic::SemanticProblem;
 using real_talk::semantic::SemanticAnalysis;
+using real_talk::semantic::DataType;
 
 namespace real_talk {
 namespace compiler {
@@ -108,17 +115,13 @@ void SimpleMsgPrinter::PrintHelp(const string &help) const {
 void SimpleMsgPrinter::VisitArrayAllocWithTooManyDimensionsError(
     const ArrayAllocWithTooManyDimensionsError &error) const {
   const TokenInfo &token = error.GetAlloc().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "array can't have more than " << error.GetMaxCount()
-      << " dimensions\n";
+  PrintArrayWithTooManyDimensionsError(token, error.GetMaxCount());
 }
 
 void SimpleMsgPrinter::VisitArrayTypeWithTooManyDimensionsError(
     const ArrayTypeWithTooManyDimensionsError &error) const {
-  const TokenInfo &token = error.GetArrayType().GetNameToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "array can't have more than " << error.GetMaxCount()
-      << " dimensions\n";
+  const TokenInfo &token = error.GetArrayType().GetStartToken();
+  PrintArrayWithTooManyDimensionsError(token, error.GetMaxCount());
 }
 
 void SimpleMsgPrinter::VisitDoubleWithOutOfRangeValueError(
@@ -203,46 +206,60 @@ void SimpleMsgPrinter::VisitArrayAllocWithIncompatibleValueTypeError(
     const ArrayAllocWithIncompatibleValueTypeError &error) const {
   const TokenInfo &token =
       error.GetAlloc().GetValues()[error.GetValueIndex()]->GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "expected \"" << error.GetDestDataType().GetName()
-      << "\" data type, but got \"" << error.GetSrcDataType().GetName()
-      << "\"\n";
+  PrintIncompatibleDataTypeError(
+      token, error.GetDestDataType(), error.GetSrcDataType());
 }
 
 void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedElementTypeError(
     const ArrayAllocWithUnsupportedElementTypeError &error) const {
-  const TokenInfo &token = error.GetAlloc().GetDataType()->GetNameToken();
+  const TokenInfo &token = error.GetAlloc().GetDataType()->GetStartToken();
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
       << '"' << error.GetDataType().GetName()
-      << "\" data type is not supported by array\n";
+      << "\" data type is not supported as element of array\n";
 }
 
-void SimpleMsgPrinter::VisitUnaryExprWithUnsupportedTypeError(
-    const UnaryExprWithUnsupportedTypeError&)
-    const {assert(false);}
-
 void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedSizeTypeError(
-    const ArrayAllocWithUnsupportedSizeTypeError&)
-    const {assert(false);}
+    const ArrayAllocWithUnsupportedSizeTypeError &error) const {
+  const TokenInfo &token = error.GetSize().GetValue()->GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << error.GetDataType().GetName()
+      << "\" data type is not supported as size of array\n";
+}
 
 void SimpleMsgPrinter::VisitIfWithIncompatibleTypeError(
-    const IfWithIncompatibleTypeError&)
-    const {assert(false);}
+    const IfWithIncompatibleTypeError &error) const {
+  const TokenInfo &token = error.GetIf().GetCond()->GetStartToken();
+  PrintIncompatibleDataTypeError(
+      token, error.GetDestDataType(), error.GetSrcDataType());
+}
 
 void SimpleMsgPrinter::VisitBreakNotWithinLoopError(
-    const BreakNotWithinLoopError&) const {assert(false);}
+    const BreakNotWithinLoopError &error) const {
+  const TokenInfo &token = error.GetBreak().GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << token.GetValue() << "\" is not within a loop\n";
+}
 
 void SimpleMsgPrinter::VisitContinueNotWithinLoopError(
-    const ContinueNotWithinLoopError&)
-    const {assert(false);}
+    const ContinueNotWithinLoopError &error) const {
+  const TokenInfo &token = error.GetContinue().GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << token.GetValue() << "\" is not within a loop\n";
+}
 
 void SimpleMsgPrinter::VisitPreTestLoopWithIncompatibleTypeError(
-    const PreTestLoopWithIncompatibleTypeError&)
-    const {assert(false);}
+    const PreTestLoopWithIncompatibleTypeError &error) const {
+  const TokenInfo &token = error.GetLoop().GetCond()->GetStartToken();
+  PrintIncompatibleDataTypeError(
+      token, error.GetDestDataType(), error.GetSrcDataType());
+}
 
 void SimpleMsgPrinter::VisitImportIsNotFirstStmtError(
-    const ImportIsNotFirstStmtError&)
-    const {assert(false);}
+    const ImportIsNotFirstStmtError &error) const {
+  const TokenInfo &token = error.GetImport().GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << token.GetValue() << "\" statements must be before any other\n";
+}
 
 void SimpleMsgPrinter::VisitVarDefWithIncompatibleValueTypeError(
     const VarDefWithIncompatibleValueTypeError&)
@@ -297,9 +314,28 @@ void SimpleMsgPrinter::VisitCallWithInvalidArgsCountError(
     const CallWithInvalidArgsCountError&)
     const {assert(false);}
 
+void SimpleMsgPrinter::VisitUnaryExprWithUnsupportedTypeError(
+    const UnaryExprWithUnsupportedTypeError&)
+    const {assert(false);}
+
 void SimpleMsgPrinter::PrintOutOfRangeValueError(const TokenInfo &token) const {
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
       << "out of range value\n";
+}
+
+void SimpleMsgPrinter::PrintIncompatibleDataTypeError(
+    const TokenInfo &token,
+    const DataType &dest_data_type,
+    const DataType &src_data_type) const {
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "expected \"" << dest_data_type.GetName()
+      << "\" data type, but got \"" << src_data_type.GetName() << "\"\n";
+}
+
+void SimpleMsgPrinter::PrintArrayWithTooManyDimensionsError(
+    const TokenInfo &token, size_t max_count) const {
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "array can't have more than " << max_count << " dimensions\n";
 }
 
 ostream &SimpleMsgPrinter::PrintFileError(

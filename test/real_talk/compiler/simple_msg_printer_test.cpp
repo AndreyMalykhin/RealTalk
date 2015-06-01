@@ -6,7 +6,12 @@
 #include <memory>
 #include <string>
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/import_node.h"
+#include "real_talk/parser/pre_test_loop_node.h"
+#include "real_talk/parser/continue_node.h"
+#include "real_talk/parser/break_node.h"
 #include "real_talk/parser/array_alloc_with_init_node.h"
+#include "real_talk/parser/array_alloc_without_init_node.h"
 #include "real_talk/parser/int_data_type_node.h"
 #include "real_talk/parser/array_data_type_node.h"
 #include "real_talk/parser/var_def_without_init_node.h"
@@ -19,6 +24,7 @@
 #include "real_talk/parser/id_node.h"
 #include "real_talk/parser/bool_node.h"
 #include "real_talk/parser/subscript_node.h"
+#include "real_talk/parser/if_else_if_node.h"
 #include "real_talk/semantic/semantic_problems.h"
 #include "real_talk/semantic/bool_data_type.h"
 #include "real_talk/semantic/int_data_type.h"
@@ -34,6 +40,15 @@ using boost::filesystem::path;
 using testing::Test;
 using real_talk::lexer::TokenInfo;
 using real_talk::lexer::Token;
+using real_talk::parser::ImportNode;
+using real_talk::parser::PreTestLoopNode;
+using real_talk::parser::ContinueNode;
+using real_talk::parser::ScopeNode;
+using real_talk::parser::StmtNode;
+using real_talk::parser::IfNode;
+using real_talk::parser::IfElseIfNode;
+using real_talk::parser::ElseIfNode;
+using real_talk::parser::BreakNode;
 using real_talk::parser::PrimitiveDataTypeNode;
 using real_talk::parser::IntDataTypeNode;
 using real_talk::parser::ArrayDataTypeNode;
@@ -44,9 +59,11 @@ using real_talk::parser::IntNode;
 using real_talk::parser::CharNode;
 using real_talk::parser::StringNode;
 using real_talk::parser::UnboundedArraySizeNode;
+using real_talk::parser::BoundedArraySizeNode;
 using real_talk::parser::ExprNode;
 using real_talk::parser::AssignNode;
 using real_talk::parser::ArrayAllocWithInitNode;
+using real_talk::parser::ArrayAllocWithoutInitNode;
 using real_talk::parser::VarDefWithoutInitNode;
 using real_talk::parser::IdNode;
 using real_talk::parser::BoolNode;
@@ -72,6 +89,12 @@ using real_talk::semantic::SubscriptWithUnsupportedIndexTypeError;
 using real_talk::semantic::SubscriptWithUnsupportedOperandTypeError;
 using real_talk::semantic::ArrayAllocWithIncompatibleValueTypeError;
 using real_talk::semantic::ArrayAllocWithUnsupportedElementTypeError;
+using real_talk::semantic::ArrayAllocWithUnsupportedSizeTypeError;
+using real_talk::semantic::IfWithIncompatibleTypeError;
+using real_talk::semantic::BreakNotWithinLoopError;
+using real_talk::semantic::ContinueNotWithinLoopError;
+using real_talk::semantic::PreTestLoopWithIncompatibleTypeError;
+using real_talk::semantic::ImportIsNotFirstStmtError;
 
 namespace real_talk {
 namespace compiler {
@@ -384,7 +407,119 @@ TEST_F(SimpleMsgPrinterTest,
   ArrayAllocWithUnsupportedElementTypeError problem(
       array_alloc_node, unique_ptr<DataType>(new IntDataType()));
   string expected_msg =
-      "[Error] %1%:2:3: \"int\" data type is not supported by array\n";
+      "[Error] %1%:2:3: \"int\" data type is not supported as element of array\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithArrayAllocWithUnsupportedSizeTypeError) {
+  unique_ptr<PrimitiveDataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(2), UINT32_C(3))));
+  vector< unique_ptr<BoundedArraySizeNode> > size_nodes;
+  unique_ptr<ExprNode> size_value_node(new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(6), UINT32_C(7))));
+  auto *size_node_ptr = new BoundedArraySizeNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(5)),
+      move(size_value_node),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(8), UINT32_C(9)));
+  unique_ptr<BoundedArraySizeNode> size_node(size_node_ptr);
+  size_nodes.push_back(move(size_node));
+  ArrayAllocWithoutInitNode array_alloc_node(
+      TokenInfo(Token::kNew, "new", UINT32_C(0), UINT32_C(1)),
+      move(data_type_node),
+      move(size_nodes));
+  ArrayAllocWithUnsupportedSizeTypeError problem(
+      array_alloc_node,
+      *size_node_ptr,
+      unique_ptr<DataType>(new IntDataType()));
+  string expected_msg =
+      "[Error] %1%:6:7: \"int\" data type is not supported as size of array\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithIfWithIncompatibleTypeError) {
+  unique_ptr<ScopeNode> body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(8), UINT32_C(9)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(11))));
+  unique_ptr<ExprNode> cond_node(new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(4), UINT32_C(5))));
+  auto *if_node_ptr = new IfNode(
+      TokenInfo(Token::kIf, "if", UINT32_C(0), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(3)),
+      move(cond_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)),
+      move(body_node));
+  unique_ptr<IfNode> if_node(if_node_ptr);
+  IfElseIfNode if_else_if_node(
+      move(if_node), vector< unique_ptr<ElseIfNode> >());
+  unique_ptr<DataType> dest_data_type(new IntDataType());
+  unique_ptr<DataType> src_data_type(new LongDataType());
+  IfWithIncompatibleTypeError problem(
+      if_else_if_node,
+      *if_node_ptr,
+      move(dest_data_type),
+      move(src_data_type));
+  string expected_msg =
+      "[Error] %1%:4:5: expected \"int\" data type, but got \"long\"\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithBreakNotWithinLoopError) {
+  BreakNode break_node(
+      TokenInfo(Token::kBreak, "break", UINT32_C(0), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(3)));
+  BreakNotWithinLoopError problem(break_node);
+  string expected_msg = "[Error] %1%:0:1: \"break\" is not within a loop\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithContinueNotWithinLoopError) {
+  ContinueNode continue_node(
+      TokenInfo(Token::kContinue, "continue", UINT32_C(0), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(3)));
+  ContinueNotWithinLoopError problem(continue_node);
+  string expected_msg = "[Error] %1%:0:1: \"continue\" is not within a loop\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithPreTestLoopWithIncompatibleTypeError) {
+  unique_ptr<ExprNode> cond_node(new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(4), UINT32_C(5))));
+  unique_ptr<ScopeNode> body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(8), UINT32_C(9)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(11))));
+  PreTestLoopNode loop_node(
+      TokenInfo(Token::kWhile, "while", UINT32_C(0), UINT32_C(1)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(3)),
+      move(cond_node),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)),
+      move(body_node));
+  unique_ptr<DataType> dest_data_type(new IntDataType());
+  unique_ptr<DataType> src_data_type(new LongDataType());
+  PreTestLoopWithIncompatibleTypeError problem(
+      loop_node, move(dest_data_type), move(src_data_type));
+  string expected_msg =
+      "[Error] %1%:4:5: expected \"int\" data type, but got \"long\"\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithImportIsNotFirstStmtError) {
+  unique_ptr<StringNode> file_path_node(new StringNode(
+      TokenInfo(Token::kStringLit, "\"abc\"", UINT32_C(2), UINT32_C(3))));
+  ImportNode import_node(
+      TokenInfo(Token::kImport, "import", UINT32_C(0), UINT32_C(1)),
+      move(file_path_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(5)));
+  ImportIsNotFirstStmtError problem(import_node);
+  string expected_msg =
+      "[Error] %1%:0:1: \"import\" statements must be before any other\n";
   TestPrintSemanticProblem(problem, expected_msg);
 }
 }

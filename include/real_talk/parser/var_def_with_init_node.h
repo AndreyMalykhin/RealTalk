@@ -31,6 +31,10 @@ class VarDefWithInitNode: public VarDefNode {
     assert(value_);
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return data_type_->GetStartToken();
+  }
+
   const std::unique_ptr<ExprNode> &GetValue() const {
     return value_;
   }

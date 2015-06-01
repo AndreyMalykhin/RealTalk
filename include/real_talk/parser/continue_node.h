@@ -3,6 +3,7 @@
 #define _REAL_TALK_PARSER_CONTINUE_NODE_H_
 
 #include <memory>
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/control_flow_transfer_node.h"
 
 namespace real_talk {
@@ -15,6 +16,10 @@ class ContinueNode: public ControlFlowTransferNode {
       const real_talk::lexer::TokenInfo &end_token)
       : start_token_(start_token),
         end_token_(end_token) {
+  }
+
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return start_token_;
   }
 
   virtual void Accept(NodeVisitor &visitor) const override {

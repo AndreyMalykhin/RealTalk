@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_PARSER_IF_NODE_H_
 #define _REAL_TALK_PARSER_IF_NODE_H_
 
+#include <cassert>
 #include <memory>
 #include "real_talk/parser/scope_node.h"
 #include "real_talk/parser/expr_node.h"
@@ -25,6 +26,10 @@ class IfNode final {
         body_(move(body)) {
     assert(cond_);
     assert(body_);
+  }
+
+  const real_talk::lexer::TokenInfo &GetStartToken() const {
+    return start_token_;
   }
 
   const std::unique_ptr<ScopeNode> &GetBody() const {

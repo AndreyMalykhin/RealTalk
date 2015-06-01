@@ -34,6 +34,10 @@ class FuncDefWithBodyNode: public FuncDefNode {
     assert(body_);
   }
 
+  virtual const real_talk::lexer::TokenInfo &GetStartToken() const override {
+    return base_func_def_.GetStartToken();
+  }
+
   virtual const std::vector<real_talk::lexer::TokenInfo> &GetModifierTokens()
       const override {
     return base_func_def_.GetModifierTokens();
