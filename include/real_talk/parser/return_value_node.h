@@ -2,7 +2,10 @@
 #ifndef _REAL_TALK_PARSER_RETURN_VALUE_NODE_H_
 #define _REAL_TALK_PARSER_RETURN_VALUE_NODE_H_
 
+#include <cassert>
 #include <memory>
+#include "real_talk/parser/expr_node.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/return_node.h"
 
 namespace real_talk {

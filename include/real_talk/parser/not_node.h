@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_PARSER_NOT_NODE_H_
 #define _REAL_TALK_PARSER_NOT_NODE_H_
 
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/unary_expr_node.h"
 #include "real_talk/parser/base_unary_expr_node.h"
 

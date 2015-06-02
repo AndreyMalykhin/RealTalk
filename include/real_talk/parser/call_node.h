@@ -3,9 +3,11 @@
 #define _REAL_TALK_PARSER_CALL_NODE_H_
 
 #include <boost/iterator/indirect_iterator.hpp>
+#include <cassert>
 #include <vector>
 #include <memory>
 #include "real_talk/parser/expr_node.h"
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/lexer/token_info.h"
 
 namespace real_talk {
@@ -15,15 +17,15 @@ class CallNode: public ExprNode {
  public:
   CallNode(
       std::unique_ptr<ExprNode> operand,
-      const real_talk::lexer::TokenInfo &start_token,
+      const real_talk::lexer::TokenInfo &op_start_token,
       std::vector< std::unique_ptr<ExprNode> > args,
       const std::vector<real_talk::lexer::TokenInfo> &arg_separator_tokens,
-      const real_talk::lexer::TokenInfo &end_token)
+      const real_talk::lexer::TokenInfo &op_end_token)
       : operand_(move(operand)),
-        start_token_(start_token),
+        op_start_token_(op_start_token),
         args_(move(args)),
         arg_separator_tokens_(arg_separator_tokens),
-        end_token_(end_token) {
+        op_end_token_(op_end_token) {
     assert(operand_);
     assert((arg_separator_tokens_.empty() && args_.empty())
            || (arg_separator_tokens_.size() == args_.size() - 1));
@@ -48,8 +50,8 @@ class CallNode: public ExprNode {
  private:
   virtual bool IsEqual(const Node &node) const override {
     const CallNode &call_node = static_cast<const CallNode&>(node);
-    return start_token_ == call_node.start_token_
-        && end_token_ == call_node.end_token_
+    return op_start_token_ == call_node.op_start_token_
+        && op_end_token_ == call_node.op_end_token_
         && arg_separator_tokens_.size() ==
         call_node.arg_separator_tokens_.size()
         && std::equal(
@@ -65,11 +67,11 @@ class CallNode: public ExprNode {
   }
 
   virtual void Print(std::ostream &stream) const override {
-    stream << *operand_ << start_token_.GetValue();
+    stream << *operand_ << op_start_token_.GetValue();
 
     if (!args_.empty()) {
-      auto last_arg_it = args_.end() - 1;
-      auto arg_separator_it = arg_separator_tokens_.begin();
+      auto last_arg_it = args_.cend() - 1;
+      auto arg_separator_it = arg_separator_tokens_.cbegin();
 
       for (auto arg_it = args_.begin(); arg_it != last_arg_it; ++arg_it) {
         stream << **arg_it << arg_separator_it->GetValue() << ' ';
@@ -79,14 +81,14 @@ class CallNode: public ExprNode {
       stream << **last_arg_it;
     }
 
-    stream << end_token_.GetValue();
+    stream << op_end_token_.GetValue();
   }
 
   std::unique_ptr<ExprNode> operand_;
-  real_talk::lexer::TokenInfo start_token_;
+  real_talk::lexer::TokenInfo op_start_token_;
   std::vector< std::unique_ptr<ExprNode> > args_;
   std::vector<real_talk::lexer::TokenInfo> arg_separator_tokens_;
-  real_talk::lexer::TokenInfo end_token_;
+  real_talk::lexer::TokenInfo op_end_token_;
 };
 }
 }

@@ -931,6 +931,7 @@ CallWithIncompatibleArgTypeError::CallWithIncompatibleArgTypeError(
       src_data_type_(move(src_data_type)) {
   assert(dest_data_type_);
   assert(src_data_type_);
+  assert(arg_index < call.GetArgs().size());
 }
 
 void CallWithIncompatibleArgTypeError::Accept(

@@ -6,6 +6,12 @@
 #include <memory>
 #include <string>
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/not_node.h"
+#include "real_talk/parser/sum_node.h"
+#include "real_talk/parser/call_node.h"
+#include "real_talk/parser/return_value_node.h"
+#include "real_talk/parser/return_without_value_node.h"
+#include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/import_node.h"
 #include "real_talk/parser/pre_test_loop_node.h"
 #include "real_talk/parser/continue_node.h"
@@ -40,6 +46,12 @@ using boost::filesystem::path;
 using testing::Test;
 using real_talk::lexer::TokenInfo;
 using real_talk::lexer::Token;
+using real_talk::parser::NotNode;
+using real_talk::parser::SumNode;
+using real_talk::parser::CallNode;
+using real_talk::parser::ReturnValueNode;
+using real_talk::parser::ReturnWithoutValueNode;
+using real_talk::parser::VarDefWithInitNode;
 using real_talk::parser::ImportNode;
 using real_talk::parser::PreTestLoopNode;
 using real_talk::parser::ContinueNode;
@@ -95,6 +107,14 @@ using real_talk::semantic::BreakNotWithinLoopError;
 using real_talk::semantic::ContinueNotWithinLoopError;
 using real_talk::semantic::PreTestLoopWithIncompatibleTypeError;
 using real_talk::semantic::ImportIsNotFirstStmtError;
+using real_talk::semantic::VarDefWithIncompatibleValueTypeError;
+using real_talk::semantic::ReturnWithoutValueError;
+using real_talk::semantic::ReturnNotWithinFuncError;
+using real_talk::semantic::ReturnWithIncompatibleTypeError;
+using real_talk::semantic::CallWithIncompatibleArgTypeError;
+using real_talk::semantic::BinaryExprWithUnsupportedTypesError;
+using real_talk::semantic::UnaryExprWithUnsupportedTypeError;
+using real_talk::semantic::DefWithUnsupportedTypeError;
 
 namespace real_talk {
 namespace compiler {
@@ -472,7 +492,7 @@ TEST_F(SimpleMsgPrinterTest,
       TokenInfo(Token::kBreak, "break", UINT32_C(0), UINT32_C(1)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(3)));
   BreakNotWithinLoopError problem(break_node);
-  string expected_msg = "[Error] %1%:0:1: \"break\" is not within a loop\n";
+  string expected_msg = "[Error] %1%:0:1: \"break\" is not within loop\n";
   TestPrintSemanticProblem(problem, expected_msg);
 }
 
@@ -482,7 +502,7 @@ TEST_F(SimpleMsgPrinterTest,
       TokenInfo(Token::kContinue, "continue", UINT32_C(0), UINT32_C(1)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(3)));
   ContinueNotWithinLoopError problem(continue_node);
-  string expected_msg = "[Error] %1%:0:1: \"continue\" is not within a loop\n";
+  string expected_msg = "[Error] %1%:0:1: \"continue\" is not within loop\n";
   TestPrintSemanticProblem(problem, expected_msg);
 }
 
@@ -520,6 +540,137 @@ TEST_F(SimpleMsgPrinterTest,
   ImportIsNotFirstStmtError problem(import_node);
   string expected_msg =
       "[Error] %1%:0:1: \"import\" statements must be before any other\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithVarDefWithIncompatibleValueTypeError) {
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(1))));
+  unique_ptr<ExprNode> value_node(new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(6), UINT32_C(7))));
+  VarDefWithInitNode var_def_node(
+      move(data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(2), UINT32_C(3)),
+      TokenInfo(Token::kAssignOp, "=", UINT32_C(4), UINT32_C(5)),
+      move(value_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(9)));
+  unique_ptr<DataType> dest_data_type(new IntDataType());
+  unique_ptr<DataType> src_data_type(new LongDataType());
+  VarDefWithIncompatibleValueTypeError problem(
+      var_def_node, move(dest_data_type), move(src_data_type));
+  string expected_msg =
+      "[Error] %1%:6:7: expected \"int\" data type, but got \"long\"\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithReturnWithoutValueError) {
+  ReturnWithoutValueNode return_node(
+      TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(3)));
+  ReturnWithoutValueError problem(return_node);
+  string expected_msg = "[Error] %1%:0:1: \"return\" is without value\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithReturnNotWithinFuncError) {
+  ReturnWithoutValueNode return_node(
+      TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(1)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(3)));
+  ReturnNotWithinFuncError problem(return_node);
+  string expected_msg = "[Error] %1%:0:1: \"return\" is not within function\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithReturnWithIncompatibleTypeError) {
+  unique_ptr<ExprNode> value_node(new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(2), UINT32_C(3))));
+  ReturnValueNode return_node(
+      TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(1)),
+      move(value_node),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(5)));
+  unique_ptr<DataType> dest_data_type(new IntDataType());
+  unique_ptr<DataType> src_data_type(new LongDataType());
+  ReturnWithIncompatibleTypeError problem(
+      return_node, move(dest_data_type), move(src_data_type));
+  string expected_msg =
+      "[Error] %1%:2:3: expected \"int\" data type, but got \"long\"\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithCallWithIncompatibleArgTypeError) {
+  unique_ptr<ExprNode> operand_node(new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(0), UINT32_C(1))));
+  vector< unique_ptr<ExprNode> > arg_nodes;
+  unique_ptr<ExprNode> arg_node(new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(4), UINT32_C(5))));
+  arg_nodes.push_back(move(arg_node));
+  vector<TokenInfo> arg_separator_tokens;
+  CallNode call_node(
+      move(operand_node),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(3)),
+      move(arg_nodes),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)));
+  unique_ptr<DataType> dest_data_type(new IntDataType());
+  unique_ptr<DataType> src_data_type(new LongDataType());
+  size_t arg_index = 0;
+  CallWithIncompatibleArgTypeError problem(
+      call_node, arg_index, move(dest_data_type), move(src_data_type));
+  string expected_msg =
+      "[Error] %1%:4:5: expected \"int\" data type, but got \"long\"\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithBinaryExprWithUnsupportedTypesError) {
+  unique_ptr<ExprNode> left_operand_node(new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(1))));
+  unique_ptr<ExprNode> right_operand_node(new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(4), UINT32_C(5))));
+  SumNode sum_node(
+      TokenInfo(Token::kSumOp, "+", UINT32_C(2), UINT32_C(3)),
+      move(left_operand_node),
+      move(right_operand_node));
+  unique_ptr<DataType> left_data_type(new IntDataType());
+  unique_ptr<DataType> right_data_type(new LongDataType());
+  BinaryExprWithUnsupportedTypesError problem(
+      sum_node, move(left_data_type), move(right_data_type));
+  string expected_msg =
+      "[Error] %1%:2:3: \"int\" and \"long\" data types are not supported by operator \"+\"\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithUnaryExprWithUnsupportedTypeError) {
+  unique_ptr<ExprNode> operand_node(new IntNode(
+      TokenInfo(Token::kIntLit, "7", UINT32_C(2), UINT32_C(3))));
+  NotNode not_node(
+      TokenInfo(Token::kNotOp, "!", UINT32_C(0), UINT32_C(1)),
+      move(operand_node));
+  UnaryExprWithUnsupportedTypeError problem(
+      not_node, unique_ptr<DataType>(new IntDataType()));
+  string expected_msg =
+      "[Error] %1%:2:3: \"int\" data type is not supported by operator \"!\"\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithDefWithUnsupportedTypeError) {
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(1))));
+  VarDefWithoutInitNode var_def_node(
+      move(data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(2), UINT32_C(3)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(5)));
+  DefWithUnsupportedTypeError problem(
+      var_def_node, unique_ptr<DataType>(new IntDataType()));
+  string expected_msg =
+      "[Error] %1%:0:1: definition doesn't support \"int\" data type\n";
   TestPrintSemanticProblem(problem, expected_msg);
 }
 }

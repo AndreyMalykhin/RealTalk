@@ -3,6 +3,7 @@
 #define _REAL_TALK_PARSER_RETURN_WITHOUT_VALUE_NODE_H_
 
 #include <memory>
+#include "real_talk/parser/node_visitor.h"
 #include "real_talk/parser/return_node.h"
 
 namespace real_talk {

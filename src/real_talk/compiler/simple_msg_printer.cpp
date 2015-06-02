@@ -1,6 +1,11 @@
 
 #include <string>
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/unary_expr_node.h"
+#include "real_talk/parser/call_node.h"
+#include "real_talk/parser/return_value_node.h"
+#include "real_talk/parser/return_without_value_node.h"
+#include "real_talk/parser/var_def_with_init_node.h"
 #include "real_talk/parser/import_node.h"
 #include "real_talk/parser/pre_test_loop_node.h"
 #include "real_talk/parser/continue_node.h"
@@ -237,14 +242,14 @@ void SimpleMsgPrinter::VisitBreakNotWithinLoopError(
     const BreakNotWithinLoopError &error) const {
   const TokenInfo &token = error.GetBreak().GetStartToken();
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << '"' << token.GetValue() << "\" is not within a loop\n";
+      << '"' << token.GetValue() << "\" is not within loop\n";
 }
 
 void SimpleMsgPrinter::VisitContinueNotWithinLoopError(
     const ContinueNotWithinLoopError &error) const {
   const TokenInfo &token = error.GetContinue().GetStartToken();
   PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << '"' << token.GetValue() << "\" is not within a loop\n";
+      << '"' << token.GetValue() << "\" is not within loop\n";
 }
 
 void SimpleMsgPrinter::VisitPreTestLoopWithIncompatibleTypeError(
@@ -262,31 +267,67 @@ void SimpleMsgPrinter::VisitImportIsNotFirstStmtError(
 }
 
 void SimpleMsgPrinter::VisitVarDefWithIncompatibleValueTypeError(
-    const VarDefWithIncompatibleValueTypeError&)
-    const {assert(false);}
+    const VarDefWithIncompatibleValueTypeError &error) const {
+  const TokenInfo &token = error.GetVarDef().GetValue()->GetStartToken();
+  PrintIncompatibleDataTypeError(
+      token, error.GetDestDataType(), error.GetSrcDataType());
+}
 
 void SimpleMsgPrinter::VisitReturnWithoutValueError(
-    const ReturnWithoutValueError&) const {assert(false);}
+    const ReturnWithoutValueError &error) const {
+  const TokenInfo &token = error.GetReturn().GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << token.GetValue() << "\" is without value\n";
+}
 
 void SimpleMsgPrinter::VisitReturnNotWithinFuncError(
-    const ReturnNotWithinFuncError&)
-    const {assert(false);}
+    const ReturnNotWithinFuncError &error) const {
+  const TokenInfo &token = error.GetReturn().GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << token.GetValue() << "\" is not within function\n";
+}
 
 void SimpleMsgPrinter::VisitReturnWithIncompatibleTypeError(
-    const ReturnWithIncompatibleTypeError&)
-    const {assert(false);}
-
-void SimpleMsgPrinter::VisitBinaryExprWithUnsupportedTypesError(
-    const BinaryExprWithUnsupportedTypesError&)
-    const {assert(false);}
+    const ReturnWithIncompatibleTypeError &error) const {
+  const TokenInfo &token = error.GetReturn().GetValue()->GetStartToken();
+  PrintIncompatibleDataTypeError(
+      token, error.GetDestDataType(), error.GetSrcDataType());
+}
 
 void SimpleMsgPrinter::VisitCallWithIncompatibleArgTypeError(
-    const CallWithIncompatibleArgTypeError&)
-    const {assert(false);}
+    const CallWithIncompatibleArgTypeError &error) const {
+  const TokenInfo &token =
+      error.GetCall().GetArgs()[error.GetArgIndex()]->GetStartToken();
+  PrintIncompatibleDataTypeError(
+      token, error.GetDestDataType(), error.GetSrcDataType());
+}
+
+void SimpleMsgPrinter::VisitBinaryExprWithUnsupportedTypesError(
+    const BinaryExprWithUnsupportedTypesError &error) const {
+  const TokenInfo &token = error.GetExpr().GetOpToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << error.GetLeftOperandDataType().GetName() << "\" and \""
+      << error.GetRightOperandDataType().GetName()
+      << "\" data types are not supported by operator \"" << token.GetValue()
+      << "\"\n";
+}
+
+void SimpleMsgPrinter::VisitUnaryExprWithUnsupportedTypeError(
+    const UnaryExprWithUnsupportedTypeError &error) const {
+  const TokenInfo &token = error.GetExpr().GetOperand()->GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << '"' << error.GetDataType().GetName()
+      << "\" data type is not supported by operator \""
+      << error.GetExpr().GetOpToken().GetValue() << "\"\n";
+}
 
 void SimpleMsgPrinter::VisitDefWithUnsupportedTypeError(
-    const DefWithUnsupportedTypeError&)
-    const {assert(false);}
+    const DefWithUnsupportedTypeError &error) const {
+  const TokenInfo &token = error.GetDef().GetDataType()->GetStartToken();
+  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+      << "definition doesn't support \"" << error.GetDataType().GetName()
+      << "\" data type\n";
+}
 
 void SimpleMsgPrinter::VisitDuplicateDefError(
     const DuplicateDefError&) const {assert(false);}
@@ -312,10 +353,6 @@ void SimpleMsgPrinter::VisitCallWithNonFuncError(
 
 void SimpleMsgPrinter::VisitCallWithInvalidArgsCountError(
     const CallWithInvalidArgsCountError&)
-    const {assert(false);}
-
-void SimpleMsgPrinter::VisitUnaryExprWithUnsupportedTypeError(
-    const UnaryExprWithUnsupportedTypeError&)
     const {assert(false);}
 
 void SimpleMsgPrinter::PrintOutOfRangeValueError(const TokenInfo &token) const {
