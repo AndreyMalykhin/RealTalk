@@ -1,6 +1,8 @@
 
 #include <string>
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/func_def_with_body_node.h"
+#include "real_talk/parser/func_def_without_body_node.h"
 #include "real_talk/parser/unary_expr_node.h"
 #include "real_talk/parser/call_node.h"
 #include "real_talk/parser/return_value_node.h"
@@ -29,8 +31,10 @@
 
 using std::ostream;
 using std::string;
+using std::unique_ptr;
 using boost::filesystem::path;
 using real_talk::lexer::TokenInfo;
+using real_talk::parser::ProgramNode;
 using real_talk::semantic::ArrayAllocWithTooManyDimensionsError;
 using real_talk::semantic::ArrayTypeWithTooManyDimensionsError;
 using real_talk::semantic::DoubleWithOutOfRangeValueError;
@@ -66,7 +70,7 @@ using real_talk::semantic::FuncDefWithoutBodyNotNativeError;
 using real_talk::semantic::FuncDefWithBodyIsNativeError;
 using real_talk::semantic::FuncDefWithinNonGlobalScopeError;
 using real_talk::semantic::FuncDefWithoutReturnValueError;
-using real_talk::semantic::CallWithNonFuncError;
+using real_talk::semantic::CallWithUnsupportedTypeError;
 using real_talk::semantic::CallWithInvalidArgsCountError;
 using real_talk::semantic::SemanticProblem;
 using real_talk::semantic::SemanticAnalysis;
@@ -80,9 +84,19 @@ SimpleMsgPrinter::SimpleMsgPrinter(ostream *stream): stream_(stream) {
 }
 
 void SimpleMsgPrinter::PrintSemanticProblems(
-    const SemanticAnalysis::ProgramProblems &problems,
+    const SemanticAnalysis::ProgramProblems &program_problems,
     const ProgramFilePaths &program_file_paths) const {
-  assert(false);
+  for (const auto &program_problems_pair: program_problems) {
+    const ProgramNode *program = program_problems_pair.first;
+    const auto program_file_paths_it = program_file_paths.find(program);
+    assert(program_file_paths_it != program_file_paths.cend());
+    const path &file_path = program_file_paths_it->second;
+    const SemanticAnalysis::Problems &problems = program_problems_pair.second;
+
+    for (const unique_ptr<SemanticProblem> &problem: problems) {
+      PrintSemanticProblem(*problem, file_path);
+    }
+  }
 }
 
 void SimpleMsgPrinter::PrintSemanticProblem(
@@ -147,14 +161,13 @@ void SimpleMsgPrinter::VisitIntWithOutOfRangeValueError(
 void SimpleMsgPrinter::VisitCharWithMultipleCharsError(
     const CharWithMultipleCharsError &error) const {
   const TokenInfo &token = error.GetChar().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "multiple characters\n";
+  PrintCurrentFileError(token) << "multiple characters\n";
 }
 
 void SimpleMsgPrinter::VisitCharWithEmptyHexValueError(
     const CharWithEmptyHexValueError &error) const {
   const TokenInfo &token = error.GetChar().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << "empty hex value\n";
 }
 
@@ -166,45 +179,45 @@ void SimpleMsgPrinter::VisitCharWithOutOfRangeHexValueError(
 void SimpleMsgPrinter::VisitStringWithOutOfRangeHexValueError(
     const StringWithOutOfRangeHexValueError &error) const {
   const TokenInfo &token = error.GetString().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "out of range hex value\n";
+  PrintCurrentFileError(token) << "out of range hex value\n";
 }
 
 void SimpleMsgPrinter::VisitStringWithEmptyHexValueError(
     const StringWithEmptyHexValueError &error) const {
   const TokenInfo &token = error.GetString().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "empty hex value\n";
+  PrintCurrentFileError(token) << "empty hex value\n";
 }
 
 void SimpleMsgPrinter::VisitAssignWithRightValueAssigneeError(
     const AssignWithRightValueAssigneeError &error) const {
   const TokenInfo &token = error.GetAssign().GetOpToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "can't assign to rvalue\n";
+  PrintCurrentFileError(token) << "can't assign to rvalue\n";
 }
 
 void SimpleMsgPrinter::VisitIdWithoutDefError(
     const IdWithoutDefError &error) const {
   const TokenInfo &token = error.GetId().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "undefined identifier\n";
+  PrintCurrentFileError(token) << "undefined identifier\n";
 }
 
 void SimpleMsgPrinter::VisitSubscriptWithUnsupportedIndexTypeError(
     const SubscriptWithUnsupportedIndexTypeError &error) const {
   const TokenInfo &token = error.GetSubscript().GetIndex()->GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << error.GetDataType().GetName()
-      << "\" data type is not supported as index of operator \"[]\"\n";
+      << "\" data type is not supported as index of operator \""
+      << error.GetSubscript().GetOpStartToken().GetValue()
+      << error.GetSubscript().GetOpEndToken().GetValue() << "\"\n";
 }
 
 void SimpleMsgPrinter::VisitSubscriptWithUnsupportedOperandTypeError(
     const SubscriptWithUnsupportedOperandTypeError &error) const {
   const TokenInfo &token = error.GetSubscript().GetOperand()->GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << error.GetDataType().GetName()
-      << "\" data type is not supported as operand of operator \"[]\"\n";
+      << "\" data type is not supported as operand of operator \""
+      << error.GetSubscript().GetOpStartToken().GetValue()
+      << error.GetSubscript().GetOpEndToken().GetValue() << "\"\n";
 }
 
 void SimpleMsgPrinter::VisitArrayAllocWithIncompatibleValueTypeError(
@@ -218,7 +231,7 @@ void SimpleMsgPrinter::VisitArrayAllocWithIncompatibleValueTypeError(
 void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedElementTypeError(
     const ArrayAllocWithUnsupportedElementTypeError &error) const {
   const TokenInfo &token = error.GetAlloc().GetDataType()->GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << error.GetDataType().GetName()
       << "\" data type is not supported as element of array\n";
 }
@@ -226,7 +239,7 @@ void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedElementTypeError(
 void SimpleMsgPrinter::VisitArrayAllocWithUnsupportedSizeTypeError(
     const ArrayAllocWithUnsupportedSizeTypeError &error) const {
   const TokenInfo &token = error.GetSize().GetValue()->GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << error.GetDataType().GetName()
       << "\" data type is not supported as size of array\n";
 }
@@ -241,14 +254,14 @@ void SimpleMsgPrinter::VisitIfWithIncompatibleTypeError(
 void SimpleMsgPrinter::VisitBreakNotWithinLoopError(
     const BreakNotWithinLoopError &error) const {
   const TokenInfo &token = error.GetBreak().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << token.GetValue() << "\" is not within loop\n";
 }
 
 void SimpleMsgPrinter::VisitContinueNotWithinLoopError(
     const ContinueNotWithinLoopError &error) const {
   const TokenInfo &token = error.GetContinue().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << token.GetValue() << "\" is not within loop\n";
 }
 
@@ -262,7 +275,7 @@ void SimpleMsgPrinter::VisitPreTestLoopWithIncompatibleTypeError(
 void SimpleMsgPrinter::VisitImportIsNotFirstStmtError(
     const ImportIsNotFirstStmtError &error) const {
   const TokenInfo &token = error.GetImport().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << token.GetValue() << "\" statements must be before any other\n";
 }
 
@@ -276,14 +289,14 @@ void SimpleMsgPrinter::VisitVarDefWithIncompatibleValueTypeError(
 void SimpleMsgPrinter::VisitReturnWithoutValueError(
     const ReturnWithoutValueError &error) const {
   const TokenInfo &token = error.GetReturn().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << token.GetValue() << "\" is without value\n";
 }
 
 void SimpleMsgPrinter::VisitReturnNotWithinFuncError(
     const ReturnNotWithinFuncError &error) const {
   const TokenInfo &token = error.GetReturn().GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << token.GetValue() << "\" is not within function\n";
 }
 
@@ -305,7 +318,7 @@ void SimpleMsgPrinter::VisitCallWithIncompatibleArgTypeError(
 void SimpleMsgPrinter::VisitBinaryExprWithUnsupportedTypesError(
     const BinaryExprWithUnsupportedTypesError &error) const {
   const TokenInfo &token = error.GetExpr().GetOpToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << error.GetLeftOperandDataType().GetName() << "\" and \""
       << error.GetRightOperandDataType().GetName()
       << "\" data types are not supported by operator \"" << token.GetValue()
@@ -315,7 +328,7 @@ void SimpleMsgPrinter::VisitBinaryExprWithUnsupportedTypesError(
 void SimpleMsgPrinter::VisitUnaryExprWithUnsupportedTypeError(
     const UnaryExprWithUnsupportedTypeError &error) const {
   const TokenInfo &token = error.GetExpr().GetOperand()->GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << '"' << error.GetDataType().GetName()
       << "\" data type is not supported by operator \""
       << error.GetExpr().GetOpToken().GetValue() << "\"\n";
@@ -324,61 +337,90 @@ void SimpleMsgPrinter::VisitUnaryExprWithUnsupportedTypeError(
 void SimpleMsgPrinter::VisitDefWithUnsupportedTypeError(
     const DefWithUnsupportedTypeError &error) const {
   const TokenInfo &token = error.GetDef().GetDataType()->GetStartToken();
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << "definition doesn't support \"" << error.GetDataType().GetName()
       << "\" data type\n";
 }
 
 void SimpleMsgPrinter::VisitDuplicateDefError(
-    const DuplicateDefError&) const {assert(false);}
+    const DuplicateDefError &error) const {
+  const TokenInfo &token = error.GetDef().GetNameToken();
+  PrintCurrentFileError(token) << "duplicate definition\n";
+}
 
 void SimpleMsgPrinter::VisitFuncDefWithoutBodyNotNativeError(
-    const FuncDefWithoutBodyNotNativeError&)
-    const {assert(false);}
+    const FuncDefWithoutBodyNotNativeError &error) const {
+  const TokenInfo &token = error.GetDef().GetNameToken();
+  PrintCurrentFileError(token)
+      << "non-native function definition without body\n";
+}
 
 void SimpleMsgPrinter::VisitFuncDefWithBodyIsNativeError(
-    const FuncDefWithBodyIsNativeError&)
-    const {assert(false);}
+    const FuncDefWithBodyIsNativeError &error) const {
+  const TokenInfo &token = error.GetDef().GetNameToken();
+  PrintCurrentFileError(token) << "native function definition with body\n";
+}
 
 void SimpleMsgPrinter::VisitFuncDefWithinNonGlobalScopeError(
-    const FuncDefWithinNonGlobalScopeError&)
-    const {assert(false);}
+    const FuncDefWithinNonGlobalScopeError &error) const {
+  const TokenInfo &token = error.GetDef().GetNameToken();
+  PrintCurrentFileError(token)
+      << "function definition within non-global scope\n";
+}
 
 void SimpleMsgPrinter::VisitFuncDefWithoutReturnValueError(
-    const FuncDefWithoutReturnValueError&)
-    const {assert(false);}
+    const FuncDefWithoutReturnValueError &error) const {
+  const TokenInfo &token = error.GetDef().GetNameToken();
+  PrintCurrentFileError(token)
+      << "function doesn't always returns value\n";
+}
 
-void SimpleMsgPrinter::VisitCallWithNonFuncError(
-    const CallWithNonFuncError&) const {assert(false);}
+void SimpleMsgPrinter::VisitCallWithUnsupportedTypeError(
+    const CallWithUnsupportedTypeError &error) const {
+  const TokenInfo &token = error.GetCall().GetOperand()->GetStartToken();
+  PrintCurrentFileError(token)
+      << '"' << error.GetDataType().GetName()
+      << "\" data type is not supported by operator \""
+      << error.GetCall().GetOpStartToken().GetValue()
+      << error.GetCall().GetOpEndToken().GetValue() << "\"\n";
+}
 
 void SimpleMsgPrinter::VisitCallWithInvalidArgsCountError(
-    const CallWithInvalidArgsCountError&)
-    const {assert(false);}
+    const CallWithInvalidArgsCountError &error) const {
+  const TokenInfo &token = error.GetCall().GetOpStartToken();
+  PrintCurrentFileError(token)
+      << "expected " << error.GetExpectedCount() << " argument(s), but got "
+      << error.GetActualCount() << "\n";
+}
 
 void SimpleMsgPrinter::PrintOutOfRangeValueError(const TokenInfo &token) const {
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "out of range value\n";
+  PrintCurrentFileError(token) << "out of range value\n";
 }
 
 void SimpleMsgPrinter::PrintIncompatibleDataTypeError(
     const TokenInfo &token,
     const DataType &dest_data_type,
     const DataType &src_data_type) const {
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
-      << "expected \"" << dest_data_type.GetName()
-      << "\" data type, but got \"" << src_data_type.GetName() << "\"\n";
+  PrintCurrentFileError(token)
+      << "expected \"" << dest_data_type.GetName() << "\" data type, but got \""
+      << src_data_type.GetName() << "\"\n";
 }
 
 void SimpleMsgPrinter::PrintArrayWithTooManyDimensionsError(
     const TokenInfo &token, size_t max_count) const {
-  PrintFileError(*current_file_path_, token.GetLine(), token.GetColumn())
+  PrintCurrentFileError(token)
       << "array can't have more than " << max_count << " dimensions\n";
+}
+
+ostream &SimpleMsgPrinter::PrintCurrentFileError(const TokenInfo &token) const {
+  return PrintFileError(
+      *current_file_path_, token.GetLine(), token.GetColumn());
 }
 
 ostream &SimpleMsgPrinter::PrintFileError(
     const path &file_path, uint32_t line, uint32_t column) const {
-  return DoPrintError() << file_path.string() << ':' << line << ':'
-                        << column << ": ";
+  return DoPrintError()
+      << file_path.string() << ':' << line << ':' << column << ": ";
 }
 
 ostream &SimpleMsgPrinter::DoPrintError() const {

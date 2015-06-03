@@ -35,6 +35,14 @@ class CallNode: public ExprNode {
     return operand_->GetStartToken();
   }
 
+  const real_talk::lexer::TokenInfo &GetOpStartToken() const {
+    return op_start_token_;
+  }
+
+  const real_talk::lexer::TokenInfo &GetOpEndToken() const {
+    return op_end_token_;
+  }
+
   const std::vector< std::unique_ptr<ExprNode> > &GetArgs() const {
     return args_;
   }

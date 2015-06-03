@@ -2,15 +2,16 @@
 #ifndef _REAL_TALK_PARSER_ARG_DEF_NODE_H_
 #define _REAL_TALK_PARSER_ARG_DEF_NODE_H_
 
+#include <cassert>
 #include <string>
 #include <memory>
-#include "real_talk/parser/var_def_node.h"
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/data_type_node.h"
+#include "real_talk/parser/node_visitor.h"
+#include "real_talk/parser/var_def_node.h"
 
 namespace real_talk {
 namespace parser {
-
-class DataTypeNode;
 
 class ArgDefNode: public VarDefNode {
  public:

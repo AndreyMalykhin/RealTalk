@@ -142,8 +142,8 @@ class SimpleMsgPrinter: public MsgPrinter,
   virtual void VisitFuncDefWithoutReturnValueError(
       const real_talk::semantic::FuncDefWithoutReturnValueError &error)
       const override;
-  virtual void VisitCallWithNonFuncError(
-      const real_talk::semantic::CallWithNonFuncError &error) const override;
+  virtual void VisitCallWithUnsupportedTypeError(
+      const real_talk::semantic::CallWithUnsupportedTypeError &error) const override;
   virtual void VisitCallWithInvalidArgsCountError(
       const real_talk::semantic::CallWithInvalidArgsCountError &error)
       const override;
@@ -155,6 +155,8 @@ class SimpleMsgPrinter: public MsgPrinter,
       const real_talk::semantic::DataType &src_data_type) const;
   void PrintArrayWithTooManyDimensionsError(
       const real_talk::lexer::TokenInfo &token, size_t max_count) const;
+  std::ostream &PrintCurrentFileError(
+      const real_talk::lexer::TokenInfo &token) const;
   std::ostream &PrintFileError(const boost::filesystem::path &file_path,
                                uint32_t line,
                                uint32_t column) const;

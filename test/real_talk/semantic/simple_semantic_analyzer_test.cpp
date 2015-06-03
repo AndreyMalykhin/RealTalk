@@ -2558,11 +2558,11 @@ TEST_F(SimpleSemanticAnalyzerTest,
       new GlobalVarDefAnalysis(move(var_data_type)));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
-  unique_ptr<DataType> id_data_type(new IntDataType());
+  IntDataType id_data_type;
   unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
   unique_ptr<NodeSemanticAnalysis> id_expr_analysis(new IdAnalysis(
-      move(id_data_type),
+      id_data_type.Clone(),
       move(id_casted_data_type),
       ValueType::kLeft,
       var_def_node_ptr,
@@ -2570,8 +2570,8 @@ TEST_F(SimpleSemanticAnalyzerTest,
   node_analyzes.insert(make_pair(id_node_ptr, move(id_expr_analysis)));
 
   SemanticAnalysis::ProgramProblems problems;
-  unique_ptr<SemanticProblem> problem(
-      new CallWithNonFuncError(*call_expr_node_ptr));
+  unique_ptr<SemanticProblem> problem(new CallWithUnsupportedTypeError(
+      *call_expr_node_ptr, id_data_type.Clone()));
   problems[program_node.get()].push_back(move(problem));
 
   SemanticAnalysis analysis(move(problems), move(node_analyzes));

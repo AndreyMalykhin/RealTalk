@@ -1090,14 +1090,14 @@ bool FuncDefWithinNonGlobalScopeError::IsEqual(
 }
 
 FuncDefWithoutReturnValueError::FuncDefWithoutReturnValueError(
-    const FuncDefNode &def): def_(def) {}
+    const FuncDefWithBodyNode &def): def_(def) {}
 
 void FuncDefWithoutReturnValueError::Accept(
     const SemanticProblemVisitor *visitor) const {
   visitor->VisitFuncDefWithoutReturnValueError(*this);
 }
 
-const FuncDefNode &FuncDefWithoutReturnValueError::GetDef() const {
+const FuncDefWithBodyNode &FuncDefWithoutReturnValueError::GetDef() const {
   return def_;
 }
 
@@ -1112,25 +1112,34 @@ bool FuncDefWithoutReturnValueError::IsEqual(
   return def_ == static_cast<const Node&>(rhs.def_);
 }
 
-CallWithNonFuncError::CallWithNonFuncError(
-    const CallNode &call): call_(call) {}
-
-void CallWithNonFuncError::Accept(const SemanticProblemVisitor *visitor) const {
-  visitor->VisitCallWithNonFuncError(*this);
+CallWithUnsupportedTypeError::CallWithUnsupportedTypeError(
+    const CallNode &call, unique_ptr<DataType> data_type)
+    : call_(call), data_type_(move(data_type)) {
+  assert(data_type_);
 }
 
-const CallNode &CallWithNonFuncError::GetCall() const {
+void CallWithUnsupportedTypeError::Accept(
+    const SemanticProblemVisitor *visitor) const {
+  visitor->VisitCallWithUnsupportedTypeError(*this);
+}
+
+const CallNode &CallWithUnsupportedTypeError::GetCall() const {
   return call_;
 }
 
-void CallWithNonFuncError::Print(ostream &stream) const {
-  stream << "call=" << call_;
+const DataType &CallWithUnsupportedTypeError::GetDataType() const {
+  return *data_type_;
 }
 
-bool CallWithNonFuncError::IsEqual(const SemanticProblem &problem) const {
-  const CallWithNonFuncError &rhs =
-      static_cast<const CallWithNonFuncError&>(problem);
-  return call_ == rhs.call_;
+void CallWithUnsupportedTypeError::Print(ostream &stream) const {
+  stream << "call=" << call_ << "; data_type=" << *data_type_;
+}
+
+bool CallWithUnsupportedTypeError::IsEqual(
+    const SemanticProblem &problem) const {
+  const CallWithUnsupportedTypeError &rhs =
+      static_cast<const CallWithUnsupportedTypeError&>(problem);
+  return call_ == rhs.call_ && *data_type_ == *(rhs.data_type_);
 }
 
 CallWithInvalidArgsCountError::CallWithInvalidArgsCountError(

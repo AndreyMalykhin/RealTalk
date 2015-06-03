@@ -1384,7 +1384,8 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
       CallDataTypeDeductor().Deduct(operand_data_type);
 
   if (!call_data_type) {
-    unique_ptr<SemanticError> error(new CallWithNonFuncError(call_node));
+    unique_ptr<SemanticError> error(
+        new CallWithUnsupportedTypeError(call_node, operand_data_type.Clone()));
     AddError(move(error));
   }
 

@@ -6,6 +6,9 @@
 #include <memory>
 #include <string>
 #include "real_talk/lexer/token_info.h"
+#include "real_talk/parser/program_node.h"
+#include "real_talk/parser/func_def_with_body_node.h"
+#include "real_talk/parser/func_def_without_body_node.h"
 #include "real_talk/parser/not_node.h"
 #include "real_talk/parser/sum_node.h"
 #include "real_talk/parser/call_node.h"
@@ -39,6 +42,7 @@
 
 using std::unique_ptr;
 using std::vector;
+using std::move;
 using std::stringstream;
 using std::string;
 using boost::format;
@@ -46,6 +50,10 @@ using boost::filesystem::path;
 using testing::Test;
 using real_talk::lexer::TokenInfo;
 using real_talk::lexer::Token;
+using real_talk::parser::ProgramNode;
+using real_talk::parser::FuncDefWithBodyNode;
+using real_talk::parser::ArgDefNode;
+using real_talk::parser::FuncDefWithoutBodyNode;
 using real_talk::parser::NotNode;
 using real_talk::parser::SumNode;
 using real_talk::parser::CallNode;
@@ -80,6 +88,7 @@ using real_talk::parser::VarDefWithoutInitNode;
 using real_talk::parser::IdNode;
 using real_talk::parser::BoolNode;
 using real_talk::parser::SubscriptNode;
+using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::SemanticProblem;
 using real_talk::semantic::DataType;
 using real_talk::semantic::IntDataType;
@@ -115,6 +124,13 @@ using real_talk::semantic::CallWithIncompatibleArgTypeError;
 using real_talk::semantic::BinaryExprWithUnsupportedTypesError;
 using real_talk::semantic::UnaryExprWithUnsupportedTypeError;
 using real_talk::semantic::DefWithUnsupportedTypeError;
+using real_talk::semantic::DuplicateDefError;
+using real_talk::semantic::FuncDefWithoutBodyNotNativeError;
+using real_talk::semantic::FuncDefWithBodyIsNativeError;
+using real_talk::semantic::FuncDefWithinNonGlobalScopeError;
+using real_talk::semantic::FuncDefWithoutReturnValueError;
+using real_talk::semantic::CallWithUnsupportedTypeError;
+using real_talk::semantic::CallWithInvalidArgsCountError;
 
 namespace real_talk {
 namespace compiler {
@@ -672,6 +688,191 @@ TEST_F(SimpleMsgPrinterTest,
   string expected_msg =
       "[Error] %1%:0:1: definition doesn't support \"int\" data type\n";
   TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithDuplicateDefError) {
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(1))));
+  VarDefWithoutInitNode var_def_node(
+      move(data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(2), UINT32_C(3)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(5)));
+  DuplicateDefError problem(var_def_node);
+  string expected_msg = "[Error] %1%:2:3: duplicate definition\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithFuncDefWithoutBodyNotNativeError) {
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(1))));
+  vector<TokenInfo> modifier_tokens;
+  vector< unique_ptr<ArgDefNode> > arg_nodes;
+  vector<TokenInfo> arg_separator_tokens;
+  FuncDefWithoutBodyNode func_def_node(
+      modifier_tokens,
+      move(data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(2), UINT32_C(3)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(4), UINT32_C(5)),
+      move(arg_nodes),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(9)));
+  FuncDefWithoutBodyNotNativeError problem(func_def_node);
+  string expected_msg =
+      "[Error] %1%:2:3: non-native function definition without body\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithFuncDefWithBodyIsNativeError) {
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(1))));
+  vector<TokenInfo> modifier_tokens;
+  vector< unique_ptr<ArgDefNode> > arg_nodes;
+  vector<TokenInfo> arg_separator_tokens;
+  unique_ptr<ScopeNode> body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(8), UINT32_C(9)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(11))));
+  FuncDefWithBodyNode func_def_node(
+      modifier_tokens,
+      move(data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(2), UINT32_C(3)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(4), UINT32_C(5)),
+      move(arg_nodes),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)),
+      move(body_node));
+  FuncDefWithBodyIsNativeError problem(func_def_node);
+  string expected_msg =
+      "[Error] %1%:2:3: native function definition with body\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithFuncDefWithinNonGlobalScopeError) {
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(1))));
+  vector<TokenInfo> modifier_tokens;
+  vector< unique_ptr<ArgDefNode> > arg_nodes;
+  vector<TokenInfo> arg_separator_tokens;
+  FuncDefWithoutBodyNode func_def_node(
+      modifier_tokens,
+      move(data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(2), UINT32_C(3)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(4), UINT32_C(5)),
+      move(arg_nodes),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(9)));
+  FuncDefWithinNonGlobalScopeError problem(func_def_node);
+  string expected_msg =
+      "[Error] %1%:2:3: function definition within non-global scope\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithFuncDefWithoutReturnValueError) {
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(1))));
+  vector<TokenInfo> modifier_tokens;
+  vector< unique_ptr<ArgDefNode> > arg_nodes;
+  vector<TokenInfo> arg_separator_tokens;
+  unique_ptr<ScopeNode> body_node(new ScopeNode(
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(8), UINT32_C(9)),
+      vector< unique_ptr<StmtNode> >(),
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(11))));
+  FuncDefWithBodyNode func_def_node(
+      modifier_tokens,
+      move(data_type_node),
+      TokenInfo(Token::kName, "func", UINT32_C(2), UINT32_C(3)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(4), UINT32_C(5)),
+      move(arg_nodes),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)),
+      move(body_node));
+  FuncDefWithoutReturnValueError problem(func_def_node);
+  string expected_msg =
+      "[Error] %1%:2:3: function doesn't always returns value\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithCallWithUnsupportedTypeError) {
+  unique_ptr<ExprNode> operand_node(new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(0), UINT32_C(1))));
+  vector< unique_ptr<ExprNode> > arg_nodes;
+  unique_ptr<ExprNode> arg_node(new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(4), UINT32_C(5))));
+  arg_nodes.push_back(move(arg_node));
+  vector<TokenInfo> arg_separator_tokens;
+  CallNode call_node(
+      move(operand_node),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(3)),
+      move(arg_nodes),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)));
+  CallWithUnsupportedTypeError problem(
+      call_node, unique_ptr<DataType>(new BoolDataType()));
+  string expected_msg =
+      "[Error] %1%:0:1: \"bool\" data type is not supported by operator \"()\"\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithCallWithInvalidArgsCountError) {
+  unique_ptr<ExprNode> operand_node(new BoolNode(
+      TokenInfo(Token::kBoolFalseLit, "nah", UINT32_C(0), UINT32_C(1))));
+  vector< unique_ptr<ExprNode> > arg_nodes;
+  unique_ptr<ExprNode> arg_node(new LongNode(
+      TokenInfo(Token::kLongLit, "7L", UINT32_C(4), UINT32_C(5))));
+  arg_nodes.push_back(move(arg_node));
+  vector<TokenInfo> arg_separator_tokens;
+  CallNode call_node(
+      move(operand_node),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(3)),
+      move(arg_nodes),
+      arg_separator_tokens,
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(6), UINT32_C(7)));
+  size_t expected_args_count = 0;
+  size_t actual_args_count = 1;
+  CallWithInvalidArgsCountError problem(
+      call_node, expected_args_count, actual_args_count);
+  string expected_msg = "[Error] %1%:2:3: expected 0 argument(s), but got 1\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest, PrintSemanticProblems) {
+  SemanticAnalysis::ProgramProblems problems;
+  MsgPrinter::ProgramFilePaths file_paths;
+  vector< unique_ptr<StmtNode> > stmt_nodes;
+  ProgramNode program_node(move(stmt_nodes));
+  IntNode int_node(
+      TokenInfo(Token::kIntLit, "1", UINT32_C(0), UINT32_C(1)));
+  unique_ptr<SemanticProblem> problem(
+      new IntWithOutOfRangeValueError(int_node));
+  problems[&program_node].push_back(move(problem));
+  path file_path("src/module.rts");
+  file_paths[&program_node] = file_path;
+
+  vector< unique_ptr<StmtNode> > stmt_nodes2;
+  ProgramNode program_node2(move(stmt_nodes2));
+  IdNode id_node(
+      TokenInfo(Token::kName, "id", UINT32_C(2), UINT32_C(3)));
+  unique_ptr<SemanticProblem> problem2(new IdWithoutDefError(id_node));
+  problems[&program_node2].push_back(move(problem2));
+  path file_path2("src/module2.rts");
+  file_paths[&program_node2] = file_path2;
+  string expected_output = (format("[Error] %2%:2:3: undefined identifier\n"
+                                   "[Error] %1%:0:1: out of range value\n")
+                            % file_path.string() % file_path2.string()).str();
+  stringstream stream;
+  SimpleMsgPrinter msg_printer(&stream);
+  msg_printer.PrintSemanticProblems(problems, file_paths);
+  string actual_output = stream.str();
+  ASSERT_EQ(expected_output, actual_output);
 }
 }
 }

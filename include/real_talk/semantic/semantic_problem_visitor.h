@@ -40,7 +40,7 @@ class FuncDefWithoutBodyNotNativeError;
 class FuncDefWithBodyIsNativeError;
 class FuncDefWithinNonGlobalScopeError;
 class FuncDefWithoutReturnValueError;
-class CallWithNonFuncError;
+class CallWithUnsupportedTypeError;
 class CallWithInvalidArgsCountError;
 
 class SemanticProblemVisitor {
@@ -116,8 +116,8 @@ class SemanticProblemVisitor {
       const FuncDefWithinNonGlobalScopeError &error) const = 0;
   virtual void VisitFuncDefWithoutReturnValueError(
       const FuncDefWithoutReturnValueError &error) const = 0;
-  virtual void VisitCallWithNonFuncError(
-      const CallWithNonFuncError &error) const = 0;
+  virtual void VisitCallWithUnsupportedTypeError(
+      const CallWithUnsupportedTypeError &error) const = 0;
   virtual void VisitCallWithInvalidArgsCountError(
       const CallWithInvalidArgsCountError &error) const = 0;
 };

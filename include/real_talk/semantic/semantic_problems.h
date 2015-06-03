@@ -593,21 +593,23 @@ class FuncDefWithinNonGlobalScopeError: public SemanticError {
 class FuncDefWithoutReturnValueError: public SemanticError {
  public:
   explicit FuncDefWithoutReturnValueError(
-      const real_talk::parser::FuncDefNode &def);
-  const real_talk::parser::FuncDefNode &GetDef() const;
+      const real_talk::parser::FuncDefWithBodyNode &def);
+  const real_talk::parser::FuncDefWithBodyNode &GetDef() const;
   virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
   virtual void Print(std::ostream &stream) const override;
   virtual bool IsEqual(const SemanticProblem &rhs) const override;
 
-  const real_talk::parser::FuncDefNode &def_;
+  const real_talk::parser::FuncDefWithBodyNode &def_;
 };
 
-class CallWithNonFuncError: public SemanticError {
+class CallWithUnsupportedTypeError: public SemanticError {
  public:
-  explicit CallWithNonFuncError(const real_talk::parser::CallNode &call);
+  CallWithUnsupportedTypeError(const real_talk::parser::CallNode &call,
+                               std::unique_ptr<DataType> data_type);
   const real_talk::parser::CallNode &GetCall() const;
+  const DataType &GetDataType() const;
   virtual void Accept(const SemanticProblemVisitor *visitor) const override;
 
  private:
@@ -615,6 +617,7 @@ class CallWithNonFuncError: public SemanticError {
   virtual bool IsEqual(const SemanticProblem &rhs) const override;
 
   const real_talk::parser::CallNode &call_;
+  std::unique_ptr<DataType> data_type_;
 };
 
 class CallWithInvalidArgsCountError: public SemanticError {
