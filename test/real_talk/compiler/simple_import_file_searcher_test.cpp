@@ -1,6 +1,7 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <string>
 #include <vector>
 #include "real_talk/test/test_config.h"
 #include "real_talk/util/errors.h"

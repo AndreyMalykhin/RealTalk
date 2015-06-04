@@ -65,6 +65,7 @@ add_library(real_talk
   src/real_talk/compiler/compiler_config_parser.cpp
   src/real_talk/compiler/compiler.cpp
   src/real_talk/util/errors.cpp
+  src/real_talk/util/simple_dir_creator.cpp
 )
 add_executable(real_talk_tests
   test/main.cpp
@@ -81,6 +82,7 @@ add_executable(real_talk_tests
   test/real_talk/compiler/simple_import_file_searcher_test.cpp
   test/real_talk/compiler/simple_msg_printer_test.cpp
   test/real_talk/compiler/compiler_test.cpp
+  test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/endianness_test.cpp
   )
 target_include_directories(real_talk_tests PRIVATE test)
