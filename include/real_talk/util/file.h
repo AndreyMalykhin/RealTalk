@@ -3,7 +3,6 @@
 #define _REAL_TALK_UTIL_FILE_H_
 
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <memory>
 #include <iostream>
 
@@ -22,23 +21,14 @@ class File {
   /**
    * @throws real_talk::util::IOError
    */
-  virtual void Open(
-      const boost::filesystem::path &file_path, bool truncate) = 0;
+  virtual void Write(const boost::filesystem::path &file_path,
+                     const real_talk::code::Code &code) const = 0;
 
   /**
    * @throws real_talk::util::IOError
    */
-  virtual void Write(const real_talk::code::Code &code) = 0;
-
-  /**
-   * @throws real_talk::util::IOError
-   */
-  virtual std::unique_ptr<std::istream> Read() = 0;
-
-  virtual void Close() = 0;
-
- private:
-  boost::filesystem::fstream stream_;
+  virtual std::unique_ptr<std::istream> Read(
+      const boost::filesystem::path &file_path) const = 0;
 };
 }
 }

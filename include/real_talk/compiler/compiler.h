@@ -55,7 +55,7 @@ class Compiler {
            const MsgPrinter &msg_printer,
            const real_talk::util::DirCreator &dir_creator,
            CompilerConfig *config,
-           real_talk::util::File *file,
+           const real_talk::util::File &file,
            real_talk::code::Code *code);
   void Compile(int argc, const char *argv[]) const;
 
@@ -89,7 +89,7 @@ class Compiler {
   const MsgPrinter &msg_printer_;
   const real_talk::util::DirCreator &dir_creator_;
   CompilerConfig *config_;
-  real_talk::util::File *file_;
+  const real_talk::util::File &file_;
   real_talk::code::Code *code_;
 };
 }

@@ -215,7 +215,7 @@ Compiler::Compiler(
     const MsgPrinter &msg_printer,
     const DirCreator &dir_creator,
     CompilerConfig *config,
-    File *file,
+    const File &file,
     Code *code)
     : file_searcher_(file_searcher),
       lexer_factory_(lexer_factory),
@@ -233,7 +233,6 @@ Compiler::Compiler(
   assert(semantic_analyzer_);
   assert(code_generator_);
   assert(config_);
-  assert(file_);
   assert(code_);
 }
 
@@ -293,19 +292,8 @@ void Compiler::Compile(int argc, const char *argv[]) const {
     return;
   }
 
-  const bool truncate_output_file = true;
-
   try {
-    file_->Open(output_file_path, truncate_output_file);
-  } catch (const IOError&) {
-    const string msg = (format("Failed to create output file \"%1%\"")
-                        % output_file_path.string()).str();
-    msg_printer_.PrintError(msg);
-    return;
-  }
-
-  try {
-    file_->Write(*code_);
+    file_.Write(output_file_path, *code_);
   } catch (const IOError&) {
     const string msg = (format("Failed to write output file \"%1%\"")
                         % output_file_path.string()).str();
@@ -410,21 +398,10 @@ void Compiler::ParseFile(const path &file_path,
                          vector<ProgramImportStmt> *program_import_stmts,
                          bool *is_success) const {
   *is_success = false;
-  const bool truncate_file = false;
-
-  try {
-    file_->Open(file_path, truncate_file);
-  } catch (const IOError&) {
-    const string msg =
-        (format("Failed to open file \"%1%\"") % file_path.string()).str();
-    msg_printer_.PrintError(msg);
-    return;
-  }
-
   unique_ptr<istream> file_stream;
 
   try {
-    file_stream = file_->Read();
+    file_stream = file_.Read(file_path);
   } catch (const IOError&) {
     const string msg =
         (format("Failed to read file \"%1%\"") % file_path.string()).str();
@@ -432,7 +409,6 @@ void Compiler::ParseFile(const path &file_path,
     return;
   }
 
-  file_->Close();
   unique_ptr<Lexer> lexer = lexer_factory_.Create(*file_stream);
 
   try {

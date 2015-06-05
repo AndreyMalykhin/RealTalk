@@ -132,18 +132,16 @@ class DirCreatorMock: public DirCreator {
 
 class FileMock: public File {
  public:
-  virtual void Open(const path &file_path, bool truncate) override {
-    Open_(file_path.string(), truncate);
+  virtual unique_ptr<istream> Read(const path &file_path) const override {
+    return unique_ptr<istream>(Read_(file_path.string()));
   }
 
-  virtual unique_ptr<istream> Read() override {
-    return unique_ptr<istream>(Read_());
+  virtual void Write(const path &file_path, const Code &code) const override {
+    Write_(file_path.string(), code);
   }
 
-  MOCK_METHOD2(Open_, void(const string&, bool));
-  MOCK_METHOD0(Read_, istream*());
-  MOCK_METHOD1(Write, void(const Code&));
-  MOCK_METHOD0(Close, void());
+  MOCK_CONST_METHOD1(Read_, istream*(const string&));
+  MOCK_CONST_METHOD2(Write_, void(const string&, const Code&));
 };
 
 class LitParserMock: public LitParser {
@@ -480,18 +478,10 @@ TEST_F(CompilerTest, Compile) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream))
-        .RetiresOnSaturation();
-    EXPECT_CALL(file, Close())
-        .Times(1)
         .RetiresOnSaturation();
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
@@ -518,17 +508,9 @@ TEST_F(CompilerTest, Compile) {
           .Times(1)
           .WillOnce(Return(test_parse.found_import_file_path.string()))
           .RetiresOnSaturation();
-      bool truncate_import_file = false;
-      EXPECT_CALL(file, Open_(test_parse.found_import_file_path.string(),
-                              truncate_import_file))
-          .Times(1)
-          .RetiresOnSaturation();
-      EXPECT_CALL(file, Read_())
+      EXPECT_CALL(file, Read_(test_parse.found_import_file_path.string()))
           .Times(1)
           .WillOnce(Return(test_parse.import_file_stream))
-          .RetiresOnSaturation();
-      EXPECT_CALL(file, Close())
-          .Times(1)
           .RetiresOnSaturation();
       EXPECT_CALL(lexer_factory, Create_(Ref(*(test_parse.import_file_stream))))
           .Times(1)
@@ -581,11 +563,7 @@ TEST_F(CompilerTest, Compile) {
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
-    bool truncate_output_file = true;
-    EXPECT_CALL(file, Open_(output_file_path.string(), truncate_output_file))
-        .Times(1)
-        .RetiresOnSaturation();
-    EXPECT_CALL(file, Write(Ref(code)))
+    EXPECT_CALL(file, Write_(output_file_path.string(), Ref(code)))
         .Times(1);
   }
 
@@ -599,7 +577,7 @@ TEST_F(CompilerTest, Compile) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -638,17 +616,10 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -668,9 +639,7 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -684,7 +653,7 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -728,17 +697,10 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -761,10 +723,7 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
-    bool truncate_output_file = true;
-    EXPECT_CALL(file, Open_(output_file_path.string(), truncate_output_file))
-        .Times(1);
-    EXPECT_CALL(file, Write(Ref(code)))
+    EXPECT_CALL(file, Write_(output_file_path.string(), Ref(code)))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
     string msg = (format("Failed to write output file \"%1%\"")
@@ -783,106 +742,7 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
-                    &code);
-  compiler.Compile(argc, argv);
-}
-
-TEST_F(CompilerTest, IOErrorWhileCreatingOutputFile) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
-  path input_file_path("app/module/component.rts");
-  path final_input_file_path("src2/app/module/component.rts");
-  path output_dir_path("build2/bin2/app/module");
-  path output_file_path("build2/bin2/app/module/component.rtm2");
-  CompilerConfig config(input_file_path);
-  config.SetSrcDirPath("src2");
-  config.SetBinDirPath("build2/bin2");
-  config.SetModuleFileExtension("rtm2");
-  uint32_t code_version = UINT32_C(1);
-  Code code;
-  LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
-  FileMock file;
-  LexerFactoryMock lexer_factory;
-  SrcParserMock src_parser;
-  SemanticAnalyzerMock semantic_analyzer;
-  MsgPrinterMock msg_printer;
-  CodeGeneratorMock code_generator;
-  CompilerConfigParserMock config_parser;
-  DirCreatorMock dir_creator;
-  auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
-  vector<ProgramNode*> import_programs;
-  SemanticAnalysis::ProgramProblems semantic_problems;
-  semantic_problems.insert(
-      make_pair(main_program, SemanticAnalysis::Problems()));
-  SemanticAnalysis::NodeAnalyzes node_analyzes;
-  auto *semantic_analysis = new SemanticAnalysis(
-      move(semantic_problems), move(node_analyzes));
-  MsgPrinter::ProgramFilePaths program_file_paths =
-      {{main_program, final_input_file_path}};
-
-  {
-    InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
-        .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
-    auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
-        .Times(1)
-        .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
-    auto *input_file_lexer = new LexerMock();
-    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
-        .Times(1)
-        .WillOnce(Return(input_file_lexer));
-    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
-        .Times(1)
-        .WillOnce(Return(main_program));
-    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
-                                            IsEmpty()))
-        .Times(1)
-        .WillOnce(Return(semantic_analysis));
-    EXPECT_CALL(msg_printer, PrintSemanticProblems(
-        Ref(semantic_analysis->GetProblems()),
-        program_file_paths))
-        .Times(1);
-    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
-                                         Ref(*semantic_analysis),
-                                         code_version,
-                                         &code))
-        .Times(1);
-    EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
-        .Times(1);
-    bool truncate_output_file = true;
-    EXPECT_CALL(file, Open_(output_file_path.string(), truncate_output_file))
-        .Times(1)
-        .WillOnce(Throw(IOError("test")));
-    string msg = (format("Failed to create output file \"%1%\"")
-                  % output_file_path.string()).str();
-    EXPECT_CALL(msg_printer, PrintError(msg))
-        .Times(1);
-    EXPECT_CALL(file, Write(_))
-        .Times(0);
-  }
-
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -924,17 +784,10 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -962,9 +815,7 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
                   % output_dir_path.string()).str();
     EXPECT_CALL(msg_printer, PrintError(msg))
         .Times(1);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -978,7 +829,7 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1018,17 +869,10 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -1054,9 +898,7 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1070,7 +912,7 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1101,17 +943,10 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -1130,9 +965,7 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1146,7 +979,7 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1176,17 +1009,10 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -1207,9 +1033,7 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1223,7 +1047,7 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1252,17 +1076,10 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -1282,10 +1099,7 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0)
-        .RetiresOnSaturation();
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1299,7 +1113,7 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1328,20 +1142,13 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .RetiresOnSaturation();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
     string msg = (format("Failed to read file \"%1%\"")
                   % final_input_file_path.string()).str();
     EXPECT_CALL(msg_printer, PrintError(msg))
         .Times(1);
-    EXPECT_CALL(file, Close())
-        .Times(0);
     EXPECT_CALL(lexer_factory, Create_(_))
         .Times(0);
     EXPECT_CALL(src_parser, Parse_(_))
@@ -1354,10 +1161,7 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0)
-        .RetiresOnSaturation();
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1371,79 +1175,7 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
-                    &code);
-  compiler.Compile(argc, argv);
-}
-
-TEST_F(CompilerTest, IOErrorWhileOpeningFile) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
-  path input_file_path("app/module/component.rts");
-  path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
-  config.SetSrcDirPath("src2");
-  Code code;
-  LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
-  FileMock file;
-  LexerFactoryMock lexer_factory;
-  SrcParserMock src_parser;
-  SemanticAnalyzerMock semantic_analyzer;
-  MsgPrinterMock msg_printer;
-  CodeGeneratorMock code_generator;
-  CompilerConfigParserMock config_parser;
-  DirCreatorMock dir_creator;
-
-  {
-    InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
-        .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1)
-        .WillOnce(Throw(IOError("test")))
-        .RetiresOnSaturation();
-    string msg = (format("Failed to open file \"%1%\"")
-                  % final_input_file_path.string()).str();
-    EXPECT_CALL(msg_printer, PrintError(msg))
-        .Times(1);
-    EXPECT_CALL(file, Read_())
-        .Times(0);
-    EXPECT_CALL(file, Close())
-        .Times(0);
-    EXPECT_CALL(lexer_factory, Create_(_))
-        .Times(0);
-    EXPECT_CALL(src_parser, Parse_(_))
-        .Times(0);
-    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
-        .Times(0);
-    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
-        .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
-        .Times(0);
-    EXPECT_CALL(dir_creator, Create_(_))
-        .Times(0);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0)
-        .RetiresOnSaturation();
-    EXPECT_CALL(file, Write(_))
-        .Times(0);
-  }
-
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1488,16 +1220,10 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1);
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -1529,7 +1255,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1543,7 +1269,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1589,16 +1315,10 @@ TEST_F(CompilerTest, ImportFileNotExists) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1);
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -1630,7 +1350,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1644,7 +1364,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1691,16 +1411,10 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1);
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -1724,7 +1438,7 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1738,7 +1452,7 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1785,16 +1499,10 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
         .WillOnce(SetArgPointee<3>(Cmd::kCompile));
-    bool truncate_input_file = false;
-    EXPECT_CALL(file,
-                Open_(final_input_file_path.string(), truncate_input_file))
-        .Times(1);
     auto *input_file_stream = new stringstream();
-    EXPECT_CALL(file, Read_())
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Return(input_file_stream));
-    EXPECT_CALL(file, Close())
-        .Times(1);
     auto *input_file_lexer = new LexerMock();
     EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
         .Times(1)
@@ -1818,7 +1526,7 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1832,7 +1540,7 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1865,11 +1573,7 @@ TEST_F(CompilerTest, Help) {
         .WillOnce(Return(help));
     EXPECT_CALL(msg_printer, PrintHelp(help))
         .Times(1);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0);
-    EXPECT_CALL(file, Read_())
-        .Times(0);
-    EXPECT_CALL(file, Close())
+    EXPECT_CALL(file, Read_(_))
         .Times(0);
     EXPECT_CALL(lexer_factory, Create_(_))
         .Times(0);
@@ -1887,7 +1591,7 @@ TEST_F(CompilerTest, Help) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1901,7 +1605,7 @@ TEST_F(CompilerTest, Help) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1930,11 +1634,7 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
         .WillOnce(Throw(CompilerConfigParser::BadArgsError("test")));
     EXPECT_CALL(msg_printer, PrintError("Invalid arguments"))
         .Times(1);
-    EXPECT_CALL(file, Open_(_, _))
-        .Times(0);
-    EXPECT_CALL(file, Read_())
-        .Times(0);
-    EXPECT_CALL(file, Close())
+    EXPECT_CALL(file, Read_(_))
         .Times(0);
     EXPECT_CALL(lexer_factory, Create_(_))
         .Times(0);
@@ -1952,7 +1652,7 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
-    EXPECT_CALL(file, Write(_))
+    EXPECT_CALL(file, Write_(_, _))
         .Times(0);
   }
 
@@ -1966,7 +1666,7 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
                     msg_printer,
                     dir_creator,
                     &config,
-                    &file,
+                    file,
                     &code);
   compiler.Compile(argc, argv);
 }
