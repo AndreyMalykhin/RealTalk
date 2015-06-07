@@ -5,7 +5,7 @@ include_directories(SYSTEM thirdparty/gmock-1.7.0/include thirdparty/gmock-1.7.0
 find_library(GMOCK_LIBRARY NAMES gmock PATHS thirdparty/gmock-1.7.0/build)
 set(Boost_USE_STATIC_LIBS ON) 
 set(Boost_USE_MULTITHREADED OFF)
-find_package(Boost 1.56.0 REQUIRED COMPONENTS system filesystem)
+find_package(Boost 1.56.0 REQUIRED COMPONENTS system filesystem program_options)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-weak-vtables -Wno-padded -Wno-missing-noreturn -Wno-switch-enum -Wno-used-but-marked-unused -Wno-tautological-constant-out-of-range-compare")
 add_library(real_talk
   src/real_talk/lexer/token_info.cpp
@@ -63,6 +63,7 @@ add_library(real_talk
   src/real_talk/compiler/simple_msg_printer.cpp
   src/real_talk/compiler/compiler_config.cpp
   src/real_talk/compiler/compiler_config_parser.cpp
+  src/real_talk/compiler/simple_compiler_config_parser.cpp
   src/real_talk/compiler/compiler.cpp
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp
@@ -82,6 +83,7 @@ add_executable(real_talk_tests
   test/real_talk/code/simple_cast_cmd_generator_test.cpp
   test/real_talk/compiler/simple_import_file_searcher_test.cpp
   test/real_talk/compiler/simple_msg_printer_test.cpp
+  test/real_talk/compiler/simple_compiler_config_parser_test.cpp
   test/real_talk/compiler/compiler_test.cpp
   test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/simple_file_test.cpp

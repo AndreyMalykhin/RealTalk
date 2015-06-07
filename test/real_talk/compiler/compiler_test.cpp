@@ -25,7 +25,7 @@
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/import_file_searcher.h"
-#include "real_talk/compiler/cmd.h"
+#include "real_talk/compiler/compiler_cmd.h"
 #include "real_talk/compiler/compiler.h"
 
 using std::move;
@@ -82,7 +82,8 @@ namespace compiler {
 
 class CompilerConfigParserMock: public CompilerConfigParser {
  public:
-  MOCK_CONST_METHOD4(Parse, void(int, const char*[], CompilerConfig*, Cmd*));
+  MOCK_CONST_METHOD4(
+      Parse, void(int, const char*[], CompilerConfig*, CompilerCmd*));
   MOCK_CONST_METHOD0(GetHelp, string());
 };
 
@@ -236,7 +237,8 @@ TEST_F(CompilerTest, Compile) {
   path final_input_file_path("src2/app/module/component.rts");
   path output_dir_path("build2/bin2/app/module");
   path output_file_path("build2/bin2/app/module/component.rtm2");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
   config.SetVendorDirPath("vendor2");
@@ -477,7 +479,7 @@ TEST_F(CompilerTest, Compile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -587,7 +589,8 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -615,7 +618,7 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -665,7 +668,8 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
   path final_input_file_path("src2/app/module/component.rts");
   path output_dir_path("build2/bin2/app/module");
   path output_file_path("build2/bin2/app/module/component.rtm2");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
   config.SetModuleFileExtension("rtm2");
@@ -696,7 +700,7 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -753,7 +757,8 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   path output_dir_path("build2/bin2/app/module");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
   uint32_t code_version = UINT32_C(1);
@@ -783,7 +788,7 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -839,7 +844,8 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   uint32_t code_version = UINT32_C(1);
   Code code;
@@ -868,7 +874,7 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -922,7 +928,8 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -942,7 +949,7 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -989,7 +996,8 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -1008,7 +1016,7 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -1057,7 +1065,8 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -1075,7 +1084,7 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -1123,7 +1132,8 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -1141,7 +1151,7 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
@@ -1186,7 +1196,8 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   string search_import_file_path = "src2/app/module/import.rts";
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -1219,7 +1230,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -1281,7 +1292,8 @@ TEST_F(CompilerTest, ImportFileNotExists) {
   path final_input_file_path("src2/app/module/component.rts");
   string search_import_file_path = "src2/app/module/import.rts";
   path found_import_file_path;
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -1314,7 +1326,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -1374,7 +1386,8 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -1410,7 +1423,7 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -1462,7 +1475,8 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
@@ -1498,7 +1512,7 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kCompile));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
     auto *input_file_stream = new stringstream();
     EXPECT_CALL(file, Read_(final_input_file_path.string()))
         .Times(1)
@@ -1549,7 +1563,8 @@ TEST_F(CompilerTest, Help) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path;
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   Code code;
   LitParserMock lit_parser;
   ImportFileSearcherMock file_searcher;
@@ -1567,7 +1582,7 @@ TEST_F(CompilerTest, Help) {
     InSequence sequence;
     EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
         .Times(1)
-        .WillOnce(SetArgPointee<3>(Cmd::kHelp));
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kHelp));
     EXPECT_CALL(config_parser, GetHelp())
         .Times(1)
         .WillOnce(Return(help));
@@ -1614,7 +1629,8 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path;
-  CompilerConfig config(input_file_path);
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
   Code code;
   LitParserMock lit_parser;
   ImportFileSearcherMock file_searcher;

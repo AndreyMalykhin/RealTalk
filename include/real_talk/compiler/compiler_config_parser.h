@@ -10,7 +10,7 @@ namespace real_talk {
 namespace compiler {
 
 class CompilerConfig;
-enum class Cmd: uint8_t;
+enum class CompilerCmd: uint8_t;
 
 class CompilerConfigParser {
  public:
@@ -24,8 +24,10 @@ class CompilerConfigParser {
   /**
    * @throws real_talk::compiler::CompilerConfigParser::BadArgsError
    */
-  virtual void Parse(
-      int argc, const char *argv[], CompilerConfig *config, Cmd *cmd) const = 0;
+  virtual void Parse(int argc,
+                     const char *argv[],
+                     CompilerConfig *config,
+                     CompilerCmd *cmd) const = 0;
   virtual std::string GetHelp() const = 0;
 };
 }

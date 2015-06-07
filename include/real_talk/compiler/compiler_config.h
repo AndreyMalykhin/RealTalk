@@ -10,7 +10,8 @@ namespace compiler {
 
 class CompilerConfig {
  public:
-  explicit CompilerConfig(const boost::filesystem::path &input_file_path);
+  CompilerConfig();
+  void SetInputFilePath(const boost::filesystem::path &path);
   void SetSrcDirPath(const boost::filesystem::path &path);
   void SetBinDirPath(const boost::filesystem::path &path);
   void SetVendorDirPath(const boost::filesystem::path &path);
@@ -22,6 +23,9 @@ class CompilerConfig {
   const boost::filesystem::path &GetVendorDirPath() const;
   const boost::filesystem::path &GetModuleFileExtension() const;
   const std::vector<boost::filesystem::path> &GetImportDirPaths() const;
+  friend bool operator==(const CompilerConfig &lhs, const CompilerConfig &rhs);
+  friend std::ostream &operator<<(
+      std::ostream &stream, const CompilerConfig &config);
 
  private:
   boost::filesystem::path input_file_path_;
