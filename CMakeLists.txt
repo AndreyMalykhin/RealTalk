@@ -7,7 +7,7 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED OFF)
 find_package(Boost 1.56.0 REQUIRED COMPONENTS system filesystem program_options)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-weak-vtables -Wno-padded -Wno-missing-noreturn -Wno-switch-enum -Wno-used-but-marked-unused -Wno-tautological-constant-out-of-range-compare")
-add_library(real_talk
+add_library(real_talk_lib
   src/real_talk/lexer/token_info.cpp
   src/real_talk/lexer/simple_lexer.cpp
   src/real_talk/lexer/lexer.cpp
@@ -68,8 +68,9 @@ add_library(real_talk
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp
   src/real_talk/util/simple_file.cpp
-)
-add_executable(real_talk_tests
+  )
+SET_TARGET_PROPERTIES(real_talk_lib PROPERTIES OUTPUT_NAME realtalk)
+add_executable(real_talk_tests_exe
   test/main.cpp
   test/real_talk/parser/simple_parser_test.cpp
   test/real_talk/lexer/simple_lexer_test.cpp
@@ -88,6 +89,13 @@ add_executable(real_talk_tests
   test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/simple_file_test.cpp
   test/real_talk/util/endianness_test.cpp
-  )
-target_include_directories(real_talk_tests PRIVATE test)
-target_link_libraries(real_talk_tests ${GMOCK_LIBRARY} ${Boost_LIBRARIES} real_talk)
+)
+target_include_directories(real_talk_tests_exe PRIVATE test)
+target_link_libraries(real_talk_tests_exe ${GMOCK_LIBRARY} ${Boost_LIBRARIES} real_talk_lib)
+SET_TARGET_PROPERTIES(real_talk_tests_exe PROPERTIES OUTPUT_NAME realtalktests)
+add_executable(real_talk_compiler_exe
+  src/real_talk/compiler/main.cpp
+)
+target_link_libraries(real_talk_compiler_exe ${Boost_LIBRARIES} real_talk_lib)
+SET_TARGET_PROPERTIES(real_talk_compiler_exe PROPERTIES OUTPUT_NAME realtalkc)
+file(COPY test/test_resources DESTINATION .)

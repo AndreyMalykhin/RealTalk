@@ -11,7 +11,7 @@
 (setq company-c-headers-path-user (quote ("/Users/test/Dev/real_talk/include")))
 (setq company-clang-arguments (quote ("-I/Users/test/Dev/real_talk/include")))
 
-(setq compile-command "cd /Users/test/Dev/real_talk/build && cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j 8 && ./real_talk_tests")
+(setq compile-command "cd /Users/test/Dev/real_talk/build && cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j 8 && ./realtalktests")
 
 (require 'google-c-style)
 (defun my:enable-google-c-style()

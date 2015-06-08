@@ -4,6 +4,7 @@
 
 #include <vector>
 #include "real_talk/semantic/semantic_analyzer.h"
+#include "real_talk/compiler/msg_printer.h"
 
 namespace real_talk {
 namespace lexer {
@@ -14,6 +15,7 @@ class LexerFactory;
 namespace parser {
 
 class Parser;
+class ImportNode;
 }
 
 namespace code {
@@ -38,7 +40,6 @@ class File;
 namespace compiler {
 
 class FileParser;
-class MsgPrinter;
 class CompilerConfig;
 class CompilerConfigParser;
 class ImportFileSearcher;

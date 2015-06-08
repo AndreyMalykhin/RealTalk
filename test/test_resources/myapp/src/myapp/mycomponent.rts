@@ -1,0 +1,7 @@
+
+
+checkthisout "mylib/mylib.rts";
+checkthisout "mylib2/mylib2.rts";
+
+
+

@@ -310,7 +310,8 @@ TokenInfo SimpleLexer::ParseNumberToken() {
       case 'L': {
         token_value += GetNextChar();
         ConsumeNextChar();
-        return TokenInfo(Token::kLongLit, token_value, line_number_, start_column);
+        return TokenInfo(
+            Token::kLongLit, token_value, line_number_, start_column);
       }
       case '.': {
         token_value += GetNextChar();
