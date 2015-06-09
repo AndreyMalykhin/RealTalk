@@ -1,0 +1,15 @@
+
+
+double calc(bool a, char b, int c, long d, double e, string f, int[][] g) {
+  int h;
+
+  if (a == yeah) {
+    h = 1;
+  } else {
+    h = 0;
+  }
+
+  bringitback b + c * d - e * g[0][0] / h;
+}
+
+

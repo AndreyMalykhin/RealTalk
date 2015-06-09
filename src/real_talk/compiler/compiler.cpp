@@ -19,6 +19,7 @@
 #include "real_talk/semantic/semantic_problems.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/code.h"
+#include "real_talk/code/module_reader.h"
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/util/file.h"
 #include "real_talk/util/errors.h"
@@ -34,6 +35,8 @@ using std::unordered_set;
 using std::string;
 using std::vector;
 using std::istream;
+using std::ostream;
+using std::cout;
 using std::make_pair;
 using boost::filesystem::path;
 using boost::hash;
@@ -104,6 +107,8 @@ using real_talk::semantic::StringWithEmptyHexValueError;
 using real_talk::semantic::StringWithOutOfRangeHexValueError;
 using real_talk::code::CodeGenerator;
 using real_talk::code::Code;
+using real_talk::code::ModuleReader;
+using real_talk::code::Module;
 using real_talk::util::DirCreator;
 using real_talk::util::File;
 using real_talk::util::IOError;
@@ -280,6 +285,12 @@ void Compiler::Compile(int argc, const char *argv[]) const {
     return;
   }
 
+  Log([this](ostream *stream) {
+      this->code_->SetPosition(UINT32_C(0));
+      Module module = ModuleReader().ReadFromCode(this->code_);
+      *stream << "\n[module]\n\n" << module;
+    });
+
   path output_file_path(config_->GetBinDirPath() / config_->GetInputFilePath());
   output_file_path.replace_extension(config_->GetModuleFileExtension());
 
@@ -429,6 +440,10 @@ void Compiler::ParseFile(const path &file_path,
     return;
   }
 
+  Log([&program, &file_path](ostream *stream) {
+      *stream << "\n[program]\nfile=" << file_path << "\n\n" << **program;
+    });
+
   // must store result in var, coz reverse() doesn't play well with rvalues
   const vector<const ImportNode*> import_stmts =
       kImportsExtractor.Extract(**program);
@@ -453,6 +468,12 @@ bool Compiler::HasSemanticErrors(
   }
 
   return false;
+}
+
+void Compiler::Log(LogDataProvider data_provider) const {
+  if (config_->IsDebug()) {
+    data_provider(&cout);
+  }
 }
 }
 }

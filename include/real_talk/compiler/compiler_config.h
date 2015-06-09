@@ -17,12 +17,14 @@ class CompilerConfig {
   void SetVendorDirPath(const boost::filesystem::path &path);
   void SetModuleFileExtension(const boost::filesystem::path &path);
   void SetImportDirPaths(const std::vector<boost::filesystem::path> &paths);
+  void SetDebug(bool is_debug);
   const boost::filesystem::path &GetInputFilePath() const;
   const boost::filesystem::path &GetSrcDirPath() const;
   const boost::filesystem::path &GetBinDirPath() const;
   const boost::filesystem::path &GetVendorDirPath() const;
   const boost::filesystem::path &GetModuleFileExtension() const;
   const std::vector<boost::filesystem::path> &GetImportDirPaths() const;
+  bool IsDebug() const;
   friend bool operator==(const CompilerConfig &lhs, const CompilerConfig &rhs);
   friend std::ostream &operator<<(
       std::ostream &stream, const CompilerConfig &config);
@@ -34,6 +36,7 @@ class CompilerConfig {
   boost::filesystem::path vendor_dir_path_;
   boost::filesystem::path module_file_extension_;
   std::vector<boost::filesystem::path> import_dir_paths_;
+  bool is_debug_;
 };
 }
 }

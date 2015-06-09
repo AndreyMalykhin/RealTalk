@@ -31,7 +31,7 @@ class ElseIfNode final {
 
   friend std::ostream &operator<<(std::ostream &stream,
                                   const ElseIfNode &node) {
-    return stream << node.start_token_.GetValue() << *(node.if_);
+    return stream << node.start_token_.GetValue() << ' ' << *(node.if_);
   }
 
  private:

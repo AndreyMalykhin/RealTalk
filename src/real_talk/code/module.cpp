@@ -155,7 +155,7 @@ ostream &operator<<(ostream &stream, Module &module) {
     stream << (format("%1$#5x") % static_cast<uint32_t>(*it)).str();
   }
 
-  if (cmds_code.GetSize() != UINT32_C(0)) {
+  if (cmds_code.GetSize()) {
     CmdReader cmd_reader;
     cmd_reader.SetCode(&cmds_code);
     stream << "\ncmds=\n";

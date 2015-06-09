@@ -12,6 +12,7 @@ using std::vector;
 using std::ostringstream;
 using std::string;
 using boost::program_options::value;
+using boost::program_options::bool_switch;
 using boost::program_options::options_description;
 using boost::program_options::positional_options_description;
 using boost::program_options::variables_map;
@@ -29,7 +30,8 @@ options_description GetOptions() {
       ("input", value<path>(), "Input file")
       ("import,i",
        value< vector<path> >(),
-       "Folder, where import files will be searched");
+       "Folder, where import files will be searched")
+      ("debug,d", "Display debug info");
   return options;
 }
 }
@@ -58,6 +60,10 @@ void SimpleCompilerConfigParser::Parse(int argc, const char *argv[],
 
   if (vars.count("import")) {
     config->SetImportDirPaths(vars["import"].as< vector<path> >());
+  }
+
+  if (vars.count("debug")) {
+    config->SetDebug(true);
   }
 }
 

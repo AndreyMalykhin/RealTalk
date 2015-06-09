@@ -33,14 +33,16 @@ class SimpleCompilerConfigParserTest: public Test {
 };
 
 TEST_F(SimpleCompilerConfigParserTest, ParseWithAllOptions) {
-  int argc = 6;
+  int argc = 7;
   const char *argv[] = {"realtalkc",
+                        "--debug",
                         "--help",
                         "--import=/mylib",
                         "-i",
                         "/mylib2",
                         "app/module/component.rts"};
   CompilerConfig expected_config;
+  expected_config.SetDebug(true);
   expected_config.SetInputFilePath(path("app/module/component.rts"));
   expected_config.SetImportDirPaths(
       vector<path>({{"/mylib"}, {"/mylib2"}}));
@@ -90,7 +92,8 @@ TEST_F(SimpleCompilerConfigParserTest, GetHelp) {
       "Options:\n"
       "  -h [ --help ] \n"
       "  --input arg           Input file\n"
-      "  -i [ --import ] arg   Folder, where import files will be searched\n";
+      "  -i [ --import ] arg   Folder, where import files will be searched\n"
+      "  -d [ --debug ]        Display debug info\n";
   string actual_help = SimpleCompilerConfigParser().GetHelp();
   ASSERT_EQ(expected_help, actual_help);
 }

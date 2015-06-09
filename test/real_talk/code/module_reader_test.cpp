@@ -144,13 +144,12 @@ TEST_F(ModuleReaderTest, ReadFromStream) {
     module_code_stream.exceptions(ios::failbit | ios::badbit);
     module_code_stream.write(
         reinterpret_cast<char*>(module_code.GetData()), module_code.GetSize());
-
     Module actual_module = ModuleReader().ReadFromStream(&module_code_stream);
     ASSERT_EQ(test_data.expected_module, actual_module);
   }
 }
 
-TEST_F(ModuleReaderTest, ReadFromStreamFailsOnIOError) {
+TEST_F(ModuleReaderTest, ReadFromStreamWithIOError) {
   StreambufMock stream_buffer;
   EXPECT_CALL(stream_buffer, seekoff(_, _, _))
       .Times(1)
@@ -164,7 +163,7 @@ TEST_F(ModuleReaderTest, ReadFromStreamFailsOnIOError) {
   } catch (const IOError&) {}
 }
 
-TEST_F(ModuleReaderTest, ReadFromStreamFailsOnCodeSizeOverflowError) {
+TEST_F(ModuleReaderTest, ReadFromStreamWithCodeSizeOverflowError) {
   StreambufMock stream_buffer;
   EXPECT_CALL(stream_buffer, seekoff(_, _, _))
       .Times(AnyNumber())
