@@ -36,6 +36,7 @@ namespace util {
 
 class DirCreator;
 class File;
+class FileSearcher;
 }
 
 namespace compiler {
@@ -43,11 +44,10 @@ namespace compiler {
 class FileParser;
 class CompilerConfig;
 class CompilerConfigParser;
-class ImportFileSearcher;
 
 class Compiler {
  public:
-  Compiler(const ImportFileSearcher &file_searcher,
+  Compiler(const real_talk::util::FileSearcher &file_searcher,
            const real_talk::lexer::LexerFactory &lexer_factory,
            real_talk::parser::Parser *src_parser,
            const real_talk::semantic::LitParser &lit_parser,
@@ -84,7 +84,7 @@ class Compiler {
       bool *is_success) const;
   void Log(LogDataProvider data_provider) const;
 
-  const ImportFileSearcher &file_searcher_;
+  const real_talk::util::FileSearcher &file_searcher_;
   const real_talk::lexer::LexerFactory &lexer_factory_;
   real_talk::parser::Parser *src_parser_;
   const real_talk::semantic::LitParser &lit_parser_;

@@ -23,10 +23,10 @@
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/util/file.h"
 #include "real_talk/util/errors.h"
+#include "real_talk/util/file_searcher.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/compiler_config_parser.h"
 #include "real_talk/compiler/compiler_config.h"
-#include "real_talk/compiler/import_file_searcher.h"
 #include "real_talk/compiler/compiler_cmd.h"
 #include "real_talk/compiler/compiler.h"
 
@@ -112,6 +112,7 @@ using real_talk::code::Module;
 using real_talk::util::DirCreator;
 using real_talk::util::File;
 using real_talk::util::IOError;
+using real_talk::util::FileSearcher;
 
 namespace real_talk {
 namespace compiler {
@@ -210,7 +211,7 @@ ImportsExtractor &kImportsExtractor = *new ImportsExtractor();
 }
 
 Compiler::Compiler(
-    const ImportFileSearcher &file_searcher,
+    const FileSearcher &file_searcher,
     const LexerFactory &lexer_factory,
     Parser *src_parser,
     const LitParser &lit_parser,

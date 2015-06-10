@@ -94,7 +94,6 @@
 #include "real_talk/semantic/return_analysis.h"
 #include "real_talk/semantic/semantic_analysis.h"
 #include "real_talk/semantic/simple_semantic_analyzer.h"
-#include "real_talk/semantic/import_file_searcher.h"
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/semantic/semantic_problems.h"
 

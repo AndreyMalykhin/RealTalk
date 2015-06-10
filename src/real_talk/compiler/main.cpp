@@ -1,6 +1,7 @@
 
 #include "real_talk/util/simple_dir_creator.h"
 #include "real_talk/util/simple_file.h"
+#include "real_talk/util/simple_file_searcher.h"
 #include "real_talk/lexer/simple_lexer_factory.h"
 #include "real_talk/parser/simple_parser.h"
 #include "real_talk/semantic/simple_lit_parser.h"
@@ -9,7 +10,6 @@
 #include "real_talk/code/simple_code_generator.h"
 #include "real_talk/code/simple_cast_cmd_generator.h"
 #include "real_talk/compiler/simple_msg_printer.h"
-#include "real_talk/compiler/simple_import_file_searcher.h"
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/simple_compiler_config_parser.h"
 #include "real_talk/compiler/compiler.h"
@@ -18,7 +18,6 @@ using std::cout;
 using real_talk::compiler::Compiler;
 using real_talk::compiler::CompilerConfig;
 using real_talk::compiler::SimpleCompilerConfigParser;
-using real_talk::compiler::SimpleImportFileSearcher;
 using real_talk::compiler::SimpleMsgPrinter;
 using real_talk::lexer::SimpleLexerFactory;
 using real_talk::parser::SimpleParser;
@@ -29,6 +28,7 @@ using real_talk::code::SimpleCodeGenerator;
 using real_talk::code::SimpleCastCmdGenerator;
 using real_talk::util::SimpleDirCreator;
 using real_talk::util::SimpleFile;
+using real_talk::util::SimpleFileSearcher;
 
 int main(int argc, const char *argv[]) {
   SimpleParser src_parser;
@@ -38,7 +38,7 @@ int main(int argc, const char *argv[]) {
   SimpleCodeGenerator code_generator(cast_cmd_generator);
   CompilerConfig compiler_config;
   Code code;
-  Compiler compiler(SimpleImportFileSearcher(),
+  Compiler compiler(SimpleFileSearcher(),
                     SimpleLexerFactory(),
                     &src_parser,
                     lit_parser,

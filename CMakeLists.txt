@@ -59,7 +59,6 @@ add_library(real_talk_lib
   src/real_talk/code/id_address.cpp
   src/real_talk/code/code.cpp
   src/real_talk/code/simple_cast_cmd_generator.cpp
-  src/real_talk/compiler/simple_import_file_searcher.cpp
   src/real_talk/compiler/simple_msg_printer.cpp
   src/real_talk/compiler/compiler_config.cpp
   src/real_talk/compiler/compiler_config_parser.cpp
@@ -68,6 +67,7 @@ add_library(real_talk_lib
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp
   src/real_talk/util/simple_file.cpp
+  src/real_talk/util/simple_file_searcher.cpp
   )
 SET_TARGET_PROPERTIES(real_talk_lib PROPERTIES OUTPUT_NAME realtalk)
 add_executable(real_talk_tests_exe
@@ -82,12 +82,12 @@ add_executable(real_talk_tests_exe
   test/real_talk/code/cmd_reader_test.cpp
   test/real_talk/code/test_utils.cpp
   test/real_talk/code/simple_cast_cmd_generator_test.cpp
-  test/real_talk/compiler/simple_import_file_searcher_test.cpp
   test/real_talk/compiler/simple_msg_printer_test.cpp
   test/real_talk/compiler/simple_compiler_config_parser_test.cpp
   test/real_talk/compiler/compiler_test.cpp
   test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/simple_file_test.cpp
+  test/real_talk/util/simple_file_searcher_test.cpp
   test/real_talk/util/endianness_test.cpp
 )
 target_include_directories(real_talk_tests_exe PRIVATE test)

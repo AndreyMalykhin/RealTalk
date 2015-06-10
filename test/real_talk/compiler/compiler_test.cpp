@@ -21,10 +21,10 @@
 #include "real_talk/util/file.h"
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/util/errors.h"
+#include "real_talk/util/file_searcher.h"
 #include "real_talk/compiler/compiler_config_parser.h"
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/msg_printer.h"
-#include "real_talk/compiler/import_file_searcher.h"
 #include "real_talk/compiler/compiler_cmd.h"
 #include "real_talk/compiler/compiler.h"
 
@@ -76,6 +76,7 @@ using real_talk::code::CodeGenerator;
 using real_talk::util::File;
 using real_talk::util::DirCreator;
 using real_talk::util::IOError;
+using real_talk::util::FileSearcher;
 
 namespace real_talk {
 namespace compiler {
@@ -155,7 +156,7 @@ class LitParserMock: public LitParser {
   MOCK_CONST_METHOD1(ParseString, string(const string&));
 };
 
-class ImportFileSearcherMock: public ImportFileSearcher {
+class FileSearcherMock: public FileSearcher {
  public:
   virtual path Search(const path &file_path,
                       const path &src_dir_path,
@@ -253,7 +254,7 @@ TEST_F(CompilerTest, Compile) {
   uint32_t code_version = UINT32_C(1);
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -594,7 +595,7 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -676,7 +677,7 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
   uint32_t code_version = UINT32_C(1);
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -764,7 +765,7 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
   uint32_t code_version = UINT32_C(1);
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -850,7 +851,7 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
   uint32_t code_version = UINT32_C(1);
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -933,7 +934,7 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1001,7 +1002,7 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1070,7 +1071,7 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1137,7 +1138,7 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1201,7 +1202,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1297,7 +1298,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1391,7 +1392,7 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1480,7 +1481,7 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
   config.SetSrcDirPath("src2");
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1567,7 +1568,7 @@ TEST_F(CompilerTest, Help) {
   config.SetInputFilePath(input_file_path);
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
@@ -1633,7 +1634,7 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
   config.SetInputFilePath(input_file_path);
   Code code;
   LitParserMock lit_parser;
-  ImportFileSearcherMock file_searcher;
+  FileSearcherMock file_searcher;
   FileMock file;
   LexerFactoryMock lexer_factory;
   SrcParserMock src_parser;
