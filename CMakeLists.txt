@@ -54,6 +54,7 @@ add_library(real_talk_lib
   src/real_talk/code/simple_code_generator.cpp
   src/real_talk/code/cmd_reader.cpp
   src/real_talk/code/module_reader.cpp
+  src/real_talk/code/simple_module_writer.cpp
   src/real_talk/code/module.cpp
   src/real_talk/code/id_addresses.cpp
   src/real_talk/code/id_address.cpp
@@ -79,6 +80,7 @@ add_executable(real_talk_tests_exe
   test/real_talk/semantic/cast_resolver_test.cpp
   test/real_talk/code/simple_code_generator_test.cpp
   test/real_talk/code/module_reader_test.cpp
+  test/real_talk/code/simple_module_writer_test.cpp
   test/real_talk/code/cmd_reader_test.cpp
   test/real_talk/code/test_utils.cpp
   test/real_talk/code/simple_cast_cmd_generator_test.cpp

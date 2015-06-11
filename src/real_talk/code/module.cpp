@@ -146,14 +146,7 @@ ostream &operator<<(ostream &stream, Module &module) {
   stream << "main_cmds_code_size=" << module.GetMainCmdsCodeSize()
          << "\nfunc_cmds_code_size=" << module.GetFuncCmdsCodeSize()
          << "\ntotal_cmds_code_size=" << cmds_code.GetSize()
-         << "\ncmds_code_position=" << cmds_code.GetPosition()
-         << "\ncmds_code=";
-
-  for (const unsigned char *it = cmds_code.GetData();
-       it != cmds_code.GetData() + cmds_code.GetSize();
-       ++it) {
-    stream << (format("%1$#5x") % static_cast<uint32_t>(*it)).str();
-  }
+         << "\ncmds_code_position=" << cmds_code.GetPosition();
 
   if (cmds_code.GetSize()) {
     CmdReader cmd_reader;
