@@ -18,6 +18,8 @@ using real_talk::lexer::SimpleLexer;
 namespace real_talk {
 namespace semantic {
 
+SimpleLitParser::SimpleLitParser() {}
+
 int32_t SimpleLitParser::ParseInt(const string &str) const {
   try {
     return numeric_cast<int32_t>(stol(str));

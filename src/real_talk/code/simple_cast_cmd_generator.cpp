@@ -8,6 +8,8 @@ using real_talk::semantic::DataType;
 namespace real_talk {
 namespace code {
 
+SimpleCastCmdGenerator::SimpleCastCmdGenerator() {}
+
 CmdId SimpleCastCmdGenerator::Generate(
       const DataType &dest_data_type, const DataType &src_data_type) const {
   Handle(dest_data_type, src_data_type, Direction::kRightToLeft);

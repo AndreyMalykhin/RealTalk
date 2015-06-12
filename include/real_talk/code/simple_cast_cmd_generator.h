@@ -11,6 +11,7 @@ namespace code {
 class SimpleCastCmdGenerator: public CastCmdGenerator,
                               private real_talk::semantic::CastHandler {
  public:
+  SimpleCastCmdGenerator();
   virtual CmdId Generate(
       const real_talk::semantic::DataType &dest_data_type,
       const real_talk::semantic::DataType &src_data_type) const override;

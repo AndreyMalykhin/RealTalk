@@ -10,6 +10,7 @@ namespace semantic {
 
 class SimpleLitParser: public LitParser {
  public:
+  SimpleLitParser();
   virtual int32_t ParseInt(const std::string &str) const override;
   virtual int64_t ParseLong(const std::string &str) const override;
   virtual double ParseDouble(const std::string &str) const override;

@@ -74,6 +74,8 @@
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/cast_cmd_generator.h"
 #include "real_talk/code/code.h"
+#include "real_talk/code/module.h"
+#include "real_talk/code/simple_module_writer.h"
 
 using std::unique_ptr;
 using std::string;
@@ -311,25 +313,13 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
   const DataType &GetExprDataType(const ExprAnalysis &expr_analysis) const;
-  uint32_t GetCurrentCmdAddress() const;
   Scope *GetCurrentScope();
-
-  /**
-   * @return Address of the end of main cmds
-   */
-  uint32_t GenerateCmdsSegment();
-
-  void GenerateIdsSegment(const vector<string> &ids);
-  void GenerateIdAddressesSegment(const Impl::IdAddresses &id_addresses);
-  void GenerateMetadataSegments(uint32_t segments_metadata_address,
-                                uint32_t cmds_address,
-                                uint32_t main_cmds_size,
-                                uint32_t func_cmds_size);
+  vector<real_talk::code::IdAddresses> TransformIdAddresses(
+      const Impl::IdAddresses &id_addresses) const;
 
   const CastCmdGenerator &cast_cmd_generator_;
-  const ProgramNode *program_;
   const SemanticAnalysis *semantic_analysis_;
-  Code *code_;
+  unique_ptr<Code> code_;
   vector<string> ids_of_global_var_defs_;
   vector<string> ids_of_native_func_defs_;
   vector<IdAddress> id_addresses_of_func_defs_;
@@ -337,7 +327,6 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   Impl::IdAddresses id_addresses_of_func_refs_;
   Impl::IdAddresses id_addresses_of_native_func_refs_;
   vector<Scope*> scopes_stack_;
-  uint32_t cmds_address_;
 };
 
 class SimpleCodeGenerator::Impl::Scope {
@@ -372,8 +361,8 @@ class SimpleCodeGenerator::Impl::StmtGrouper: private NodeVisitor {
     vector<const FuncDefNode*> func_defs;
   };
 
-  GroupedStmts Group(const ProgramNode *program) {
-    program->Accept(*this);
+  GroupedStmts Group(const ProgramNode &program) {
+    program.Accept(*this);
     vector<const StmtNode*> non_func_defs = move(non_func_defs_);
     non_func_defs_.clear();
     vector<const FuncDefNode*> func_defs = move(func_defs_);
@@ -897,7 +886,6 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
   void Process(const IdNode *id_node,
                const IdAnalysis *id_analysis,
                const DefAnalysis *def_analysis,
-               uint32_t cmds_address,
                Impl::IdAddresses *id_addresses_of_global_var_refs,
                Impl::IdAddresses *id_addresses_of_func_refs,
                Impl::IdAddresses *id_addresses_of_native_func_refs,
@@ -908,7 +896,6 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     id_addresses_of_func_refs_ = id_addresses_of_func_refs;
     id_addresses_of_native_func_refs_ = id_addresses_of_native_func_refs;
     code_ = code;
-    cmds_address_ = cmds_address;
     def_analysis->Accept(*this);
   }
 
@@ -939,10 +926,8 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
           var_def_analysis.GetDataType(), code_);
     }
 
-    assert(var_index_placeholder >= cmds_address_);
     const string &id = id_node_->GetStartToken().GetValue();
-    const uint32_t id_address = var_index_placeholder - cmds_address_;
-    (*id_addresses_of_global_var_refs_)[id].push_back(id_address);
+    (*id_addresses_of_global_var_refs_)[id].push_back(var_index_placeholder);
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis &func_def_analysis) override {
@@ -962,15 +947,12 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     const uint32_t func_value_placeholder = code_->GetPosition();
     const uint32_t func_value = numeric_limits<uint32_t>::max();
     code_->WriteUint32(func_value);
-    assert(func_value_placeholder >= cmds_address_);
     const string &id = id_node_->GetStartToken().GetValue();
-    const uint32_t id_address = func_value_placeholder - cmds_address_;
-    (*id_addresses_of_func_refs)[id].push_back(id_address);
+    (*id_addresses_of_func_refs)[id].push_back(func_value_placeholder);
   }
 
   const IdNode *id_node_;
   const IdAnalysis *id_analysis_;
-  uint32_t cmds_address_;
   Impl::IdAddresses *id_addresses_of_global_var_refs_;
   Impl::IdAddresses *id_addresses_of_func_refs_;
   Impl::IdAddresses *id_addresses_of_native_func_refs_;
@@ -1615,7 +1597,8 @@ void SimpleCodeGenerator::Generate(const ProgramNode &program,
   impl_->Generate(program, semantic_analysis, version, output);
 }
 
-SimpleCodeGenerator::Impl::Impl(const CastCmdGenerator &cast_cmd_generator)
+SimpleCodeGenerator::Impl::Impl(
+    const CastCmdGenerator &cast_cmd_generator)
     : cast_cmd_generator_(cast_cmd_generator) {}
 
 void SimpleCodeGenerator::Impl::Generate(
@@ -1624,20 +1607,30 @@ void SimpleCodeGenerator::Impl::Generate(
     uint32_t version,
     Code *output) {
   assert(output);
-  program_ = &program;
   semantic_analysis_ = &semantic_analysis;
-  code_ = output;
+  code_.reset(new Code());
+  const StmtGrouper::GroupedStmts &stmts = StmtGrouper().Group(program);
 
-  code_->WriteUint32(version);
-  const uint32_t segments_metadata_address = code_->GetPosition();
-  code_->Skip(15 * sizeof(uint32_t));
-  cmds_address_ = code_->GetPosition();
-  const uint32_t main_cmds_end_address = GenerateCmdsSegment();
-  const uint32_t main_cmds_size = main_cmds_end_address - cmds_address_;
-  const uint32_t func_cmds_size = code_->GetPosition() - main_cmds_end_address;
-  GenerateMetadataSegments(
-      segments_metadata_address, cmds_address_, main_cmds_size, func_cmds_size);
+  for (const StmtNode *non_func_def: stmts.non_func_defs) {
+    non_func_def->Accept(*this);
+  }
 
+  const uint32_t main_cmds_size = code_->GetPosition();
+
+  for (const FuncDefNode *func_def: stmts.func_defs) {
+    func_def->Accept(*this);
+  }
+
+  const Module module(version,
+                      move(code_),
+                      main_cmds_size,
+                      id_addresses_of_func_defs_,
+                      ids_of_global_var_defs_,
+                      ids_of_native_func_defs_,
+                      TransformIdAddresses(id_addresses_of_func_refs_),
+                      TransformIdAddresses(id_addresses_of_native_func_refs_),
+                      TransformIdAddresses(id_addresses_of_global_var_refs_));
+  SimpleModuleWriter().Write(module, output);
   assert(scopes_stack_.empty());
   ids_of_global_var_defs_.clear();
   id_addresses_of_func_defs_.clear();
@@ -1647,92 +1640,20 @@ void SimpleCodeGenerator::Impl::Generate(
   id_addresses_of_native_func_refs_.clear();
 }
 
-uint32_t SimpleCodeGenerator::Impl::GenerateCmdsSegment() {
-  const StmtGrouper::GroupedStmts &stmts = StmtGrouper().Group(program_);
+vector<real_talk::code::IdAddresses>
+SimpleCodeGenerator::Impl::TransformIdAddresses(
+    const Impl::IdAddresses &id_addresses) const {
+  vector<real_talk::code::IdAddresses> transformed_id_addresses;
+  transformed_id_addresses.reserve(id_addresses.size());
 
-  for (const StmtNode *non_func_def: stmts.non_func_defs) {
-    non_func_def->Accept(*this);
-  }
-
-  const uint32_t main_cmds_end = code_->GetPosition();
-
-  for (const FuncDefNode *func_def: stmts.func_defs) {
-    func_def->Accept(*this);
-  }
-
-  return main_cmds_end;
-}
-
-void SimpleCodeGenerator::Impl::GenerateMetadataSegments(
-    uint32_t segments_metadata_address,
-    uint32_t cmds_address,
-    uint32_t main_cmds_size,
-    uint32_t func_cmds_size) {
-  const uint32_t global_var_defs_metadata_address = code_->GetPosition();
-  GenerateIdsSegment(ids_of_global_var_defs_);
-  const uint32_t global_var_defs_metadata_size =
-      code_->GetPosition() - global_var_defs_metadata_address;
-
-  const uint32_t func_defs_metadata_address = code_->GetPosition();
-
-  for (const IdAddress &id_address: id_addresses_of_func_defs_) {
-    code_->WriteIdAddress(id_address);
-  }
-
-  const uint32_t func_defs_metadata_size =
-      code_->GetPosition() - func_defs_metadata_address;
-
-  const uint32_t native_func_defs_metadata_address = code_->GetPosition();
-  GenerateIdsSegment(ids_of_native_func_defs_);
-  const uint32_t native_func_defs_metadata_size =
-      code_->GetPosition() - native_func_defs_metadata_address;
-
-  const uint32_t global_var_refs_metadata_address = code_->GetPosition();
-  GenerateIdAddressesSegment(id_addresses_of_global_var_refs_);
-  const uint32_t global_var_refs_metadata_size =
-      code_->GetPosition() - global_var_refs_metadata_address;
-
-  const uint32_t func_refs_metadata_address = code_->GetPosition();
-  GenerateIdAddressesSegment(id_addresses_of_func_refs_);
-  const uint32_t func_refs_metadata_size =
-      code_->GetPosition() - func_refs_metadata_address;
-
-  const uint32_t native_func_refs_metadata_address = code_->GetPosition();
-  GenerateIdAddressesSegment(id_addresses_of_native_func_refs_);
-  const uint32_t native_func_refs_metadata_size =
-      code_->GetPosition() - native_func_refs_metadata_address;
-
-  code_->SetPosition(segments_metadata_address);
-  code_->WriteUint32(cmds_address);
-  code_->WriteUint32(main_cmds_size);
-  code_->WriteUint32(func_cmds_size);
-  code_->WriteUint32(global_var_defs_metadata_address);
-  code_->WriteUint32(global_var_defs_metadata_size);
-  code_->WriteUint32(func_defs_metadata_address);
-  code_->WriteUint32(func_defs_metadata_size);
-  code_->WriteUint32(native_func_defs_metadata_address);
-  code_->WriteUint32(native_func_defs_metadata_size);
-  code_->WriteUint32(global_var_refs_metadata_address);
-  code_->WriteUint32(global_var_refs_metadata_size);
-  code_->WriteUint32(func_refs_metadata_address);
-  code_->WriteUint32(func_refs_metadata_size);
-  code_->WriteUint32(native_func_refs_metadata_address);
-  code_->WriteUint32(native_func_refs_metadata_size);
-}
-
-void SimpleCodeGenerator::Impl::GenerateIdsSegment(const vector<string> &ids) {
-  for (const string &id: ids) {
-    code_->WriteString(id);
-  }
-}
-
-void SimpleCodeGenerator::Impl::GenerateIdAddressesSegment(
-    const Impl::IdAddresses &id_addresses) {
   for (const auto &id_addresses_pair: id_addresses) {
     const string &id = id_addresses_pair.first;
     const vector<uint32_t> &addresses = id_addresses_pair.second;
-    code_->WriteIdAddresses(real_talk::code::IdAddresses(id, addresses));
+    transformed_id_addresses.push_back(
+        real_talk::code::IdAddresses(id, addresses));
   }
+
+  return transformed_id_addresses;
 }
 
 void SimpleCodeGenerator::Impl::VisitProgram(const ProgramNode &node) {
@@ -1748,7 +1669,7 @@ void SimpleCodeGenerator::Impl::VisitVarDefWithoutInit(
   const DefAnalysis &analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   VarDefNodeProcessor<CreateLocalVarCmdGenerator, CreateGlobalVarCmdGenerator>()
-      .Process(&node, &analysis, &ids_of_global_var_defs_, code_);
+      .Process(&node, &analysis, &ids_of_global_var_defs_, code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitVarDefWithInit(
@@ -1758,7 +1679,7 @@ void SimpleCodeGenerator::Impl::VisitVarDefWithInit(
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   VarDefNodeProcessor<CreateAndInitLocalVarCmdGenerator,
                       CreateAndInitGlobalVarCmdGenerator>()
-      .Process(&node, &var_def_analysis, &ids_of_global_var_defs_, code_);
+      .Process(&node, &var_def_analysis, &ids_of_global_var_defs_, code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
@@ -1890,7 +1811,7 @@ void SimpleCodeGenerator::Impl::VisitIf(
 
 void SimpleCodeGenerator::Impl::VisitFuncDefWithBody(
     const FuncDefWithBodyNode &node) {
-  const uint32_t start_address = GetCurrentCmdAddress();
+  const uint32_t start_address = code_->GetPosition();
 
   for (const unique_ptr<ArgDefNode> &arg: node.GetArgs()) {
     arg->Accept(*this);
@@ -1921,14 +1842,16 @@ void SimpleCodeGenerator::Impl::VisitFuncDefWithoutBody(
 void SimpleCodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
   const DefAnalysis &analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
-  CreateAndInitLocalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
+  CreateAndInitLocalVarCmdGenerator().Generate(
+      analysis.GetDataType(), code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   node.GetValue()->Accept(*this);
   const ExprAnalysis &value_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
-  ReturnValueCmdGenerator().Generate(GetExprDataType(value_analysis), code_);
+  ReturnValueCmdGenerator().Generate(
+      GetExprDataType(value_analysis), code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitReturnWithoutValue(
@@ -1955,7 +1878,7 @@ void SimpleCodeGenerator::Impl::VisitArrayAllocWithoutInit(
   assert(dimensions_count <= numeric_limits<uint8_t>::max());
   CreateArrayCmdGenerator().Generate(array_alloc_analysis.GetDataType(),
                                      static_cast<uint8_t>(dimensions_count),
-                                     code_);
+                                     code_.get());
   GenerateCastCmdIfNeeded(array_alloc_analysis);
 }
 
@@ -1975,7 +1898,7 @@ void SimpleCodeGenerator::Impl::VisitArrayAllocWithInit(
       array_alloc_analysis.GetDataType(),
       static_cast<uint8_t>(dimensions_count),
       static_cast<int32_t>(values_count),
-      code_);
+      code_.get());
   GenerateCastCmdIfNeeded(array_alloc_analysis);
 }
 
@@ -1988,11 +1911,10 @@ void SimpleCodeGenerator::Impl::VisitId(const IdNode &id) {
   IdNodeProcessor().Process(&id,
                             &id_analysis,
                             &def_analysis,
-                            cmds_address_,
                             &id_addresses_of_global_var_refs_,
                             &id_addresses_of_func_refs_,
                             &id_addresses_of_native_func_refs_,
-                            code_);
+                            code_.get());
   GenerateCastCmdIfNeeded(id_analysis);
 }
 
@@ -2004,7 +1926,7 @@ void SimpleCodeGenerator::Impl::VisitCall(const CallNode &node) {
   node.GetOperand()->Accept(*this);
   const ExprAnalysis &operand_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetOperand())));
-  CallCmdGenerator().Generate(GetExprDataType(operand_analysis), code_);
+  CallCmdGenerator().Generate(GetExprDataType(operand_analysis), code_.get());
   const ExprAnalysis &call_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(call_analysis);
@@ -2015,7 +1937,8 @@ void SimpleCodeGenerator::Impl::VisitAssign(const AssignNode &node) {
   node.GetLeftOperand()->Accept(*this);
   const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetLeftOperand())));
-  StoreCmdGenerator().Generate(left_operand_analysis.GetDataType(), code_);
+  StoreCmdGenerator().Generate(
+      left_operand_analysis.GetDataType(), code_.get());
   const ExprAnalysis &assign_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(assign_analysis);
@@ -2031,10 +1954,10 @@ void SimpleCodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
 
   if (subscript_analysis.IsAssignee()) {
     LoadElementAddressCmdGenerator().Generate(
-        GetExprDataType(operand_analysis), code_);
+        GetExprDataType(operand_analysis), code_.get());
   } else {
     LoadElementValueCmdGenerator().Generate(
-        GetExprDataType(operand_analysis), code_);
+        GetExprDataType(operand_analysis), code_.get());
   }
 
   GenerateCastCmdIfNeeded(subscript_analysis);
@@ -2048,7 +1971,8 @@ void SimpleCodeGenerator::Impl::VisitAnd(const AndNode &node) {
   node.GetRightOperand()->Accept(*this);
   const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetLeftOperand())));
-  AndCmdGenerator().Generate(GetExprDataType(left_operand_analysis), code_);
+  AndCmdGenerator().Generate(GetExprDataType(
+      left_operand_analysis), code_.get());
   const ExprAnalysis &and_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(and_analysis);
@@ -2063,7 +1987,8 @@ void SimpleCodeGenerator::Impl::VisitOr(const OrNode &node) {
   node.GetRightOperand()->Accept(*this);
   const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetLeftOperand())));
-  OrCmdGenerator().Generate(GetExprDataType(left_operand_analysis), code_);
+  OrCmdGenerator().Generate(GetExprDataType(
+      left_operand_analysis), code_.get());
   const ExprAnalysis &or_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(or_analysis);
@@ -2127,7 +2052,7 @@ void SimpleCodeGenerator::Impl::VisitBinaryExpr(
   node.GetRightOperand()->Accept(*this);
   const ExprAnalysis &left_operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetLeftOperand())));
-  cmd_generator->Generate(GetExprDataType(left_operand_analysis), code_);
+  cmd_generator->Generate(GetExprDataType(left_operand_analysis), code_.get());
   const ExprAnalysis &expr_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(expr_analysis);
@@ -2158,7 +2083,7 @@ void SimpleCodeGenerator::Impl::VisitUnaryExpr(
   node.GetOperand()->Accept(*this);
   const ExprAnalysis &operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetOperand())));
-  cmd_generator->Generate(GetExprDataType(operand_analysis), code_);
+  cmd_generator->Generate(GetExprDataType(operand_analysis), code_.get());
   const ExprAnalysis &expr_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(expr_analysis);
@@ -2262,11 +2187,6 @@ const NodeSemanticAnalysis &SimpleCodeGenerator::Impl::GetNodeAnalysis(
       semantic_analysis_->GetNodeAnalyzes().find(&node);
   assert(node_analysis_it != semantic_analysis_->GetNodeAnalyzes().cend());
   return *(node_analysis_it->second);
-}
-
-uint32_t SimpleCodeGenerator::Impl::GetCurrentCmdAddress() const {
-  assert(code_->GetPosition() >= cmds_address_);
-  return code_->GetPosition() - cmds_address_;
 }
 
 void SimpleCodeGenerator::Impl::WriteCurrentCmdOffset(

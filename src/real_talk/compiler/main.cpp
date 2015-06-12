@@ -9,6 +9,7 @@
 #include "real_talk/code/code.h"
 #include "real_talk/code/simple_code_generator.h"
 #include "real_talk/code/simple_cast_cmd_generator.h"
+#include "real_talk/code/simple_module_writer.h"
 #include "real_talk/compiler/simple_msg_printer.h"
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/simple_compiler_config_parser.h"
@@ -26,15 +27,16 @@ using real_talk::semantic::SimpleSemanticAnalyzer;
 using real_talk::code::Code;
 using real_talk::code::SimpleCodeGenerator;
 using real_talk::code::SimpleCastCmdGenerator;
+using real_talk::code::SimpleModuleWriter;
 using real_talk::util::SimpleDirCreator;
 using real_talk::util::SimpleFile;
 using real_talk::util::SimpleFileSearcher;
 
 int main(int argc, const char *argv[]) {
   SimpleParser src_parser;
-  SimpleLitParser lit_parser;
+  const SimpleLitParser lit_parser;
   SimpleSemanticAnalyzer semantic_analyzer(lit_parser);
-  SimpleCastCmdGenerator cast_cmd_generator;
+  const SimpleCastCmdGenerator cast_cmd_generator;
   SimpleCodeGenerator code_generator(cast_cmd_generator);
   CompilerConfig compiler_config;
   Code code;
