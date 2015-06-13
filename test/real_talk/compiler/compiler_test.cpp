@@ -18,6 +18,8 @@
 #include "real_talk/semantic/lit_parser.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/code.h"
+#include "real_talk/code/module.h"
+#include "real_talk/code/module_writer.h"
 #include "real_talk/util/file.h"
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/util/errors.h"
@@ -72,7 +74,11 @@ using real_talk::semantic::SemanticProblemVisitor;
 using real_talk::semantic::SemanticAnalyzer;
 using real_talk::semantic::LitParser;
 using real_talk::code::Code;
+using real_talk::code::IdAddress;
+using real_talk::code::IdAddresses;
 using real_talk::code::CodeGenerator;
+using real_talk::code::Module;
+using real_talk::code::ModuleWriter;
 using real_talk::util::File;
 using real_talk::util::DirCreator;
 using real_talk::util::IOError;
@@ -80,6 +86,7 @@ using real_talk::util::FileSearcher;
 
 namespace real_talk {
 namespace compiler {
+namespace {
 
 class CompilerConfigParserMock: public CompilerConfigParser {
  public:
@@ -119,8 +126,20 @@ class MsgPrinterMock: public MsgPrinter {
 
 class CodeGeneratorMock: public CodeGenerator {
  public:
-  MOCK_METHOD4(Generate, void(
-      const ProgramNode&, const SemanticAnalysis&, uint32_t, Code*));
+  virtual unique_ptr<Module> Generate(
+      const ProgramNode &program,
+      const SemanticAnalysis &semantic_analysis,
+      uint32_t version) override {
+    return unique_ptr<Module>(Generate_(program, semantic_analysis, version));
+  }
+
+  MOCK_METHOD3(Generate_, Module*(
+      const ProgramNode&, const SemanticAnalysis&, uint32_t));
+};
+
+class ModuleWriterMock: public ModuleWriter {
+ public:
+  MOCK_CONST_METHOD2(Write, void(const Module&, Code*));
 };
 
 class DirCreatorMock: public DirCreator {
@@ -212,6 +231,7 @@ class SemanticErrorMock: public SemanticError {
   virtual void Print(ostream&) const override {}
   virtual bool IsEqual(const SemanticProblem&) const override {return true;}
 };
+}
 
 class CompilerTest: public Test {
  protected:
@@ -251,8 +271,25 @@ TEST_F(CompilerTest, Compile) {
     import_dir_path_strs.push_back(path.string());
   }
 
+  Code module_code;
+  unique_ptr<Code> cmds_code(new Code());
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
+  uint32_t main_cmds_code_size = UINT32_C(0);
   uint32_t code_version = UINT32_C(1);
-  Code code;
+  auto *module = new Module(code_version,
+                            move(cmds_code),
+                            main_cmds_code_size,
+                            id_addresses_of_func_defs,
+                            ids_of_global_var_defs,
+                            ids_of_native_func_defs,
+                            id_addresses_of_func_refs,
+                            id_addresses_of_native_func_refs,
+                            id_addresses_of_global_var_refs);
   LitParserMock lit_parser;
   FileSearcherMock file_searcher;
   FileMock file;
@@ -263,6 +300,7 @@ TEST_F(CompilerTest, Compile) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
 
   vector< unique_ptr<StmtNode> > main_program_stmts;
   unique_ptr<StringNode> file_path_expr1(new StringNode(TokenInfo(
@@ -559,14 +597,16 @@ TEST_F(CompilerTest, Compile) {
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
         .Times(1);
-    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
-                                         Ref(*semantic_analysis),
-                                         code_version,
-                                         &code))
+    EXPECT_CALL(code_generator, Generate_(Ref(*main_program),
+                                          Ref(*semantic_analysis),
+                                          code_version))
+        .Times(1)
+        .WillOnce(Return(module));
+    EXPECT_CALL(module_writer, Write(Ref(*module), &module_code))
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
-    EXPECT_CALL(file, Write_(output_file_path.string(), Ref(code)))
+    EXPECT_CALL(file, Write_(output_file_path.string(), Ref(module_code)))
         .Times(1);
   }
 
@@ -579,9 +619,10 @@ TEST_F(CompilerTest, Compile) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
-                    &code);
+                    &module_code);
   compiler.Compile(argc, argv);
 }
 
@@ -604,6 +645,7 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
   auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
   vector<ProgramNode*> import_programs;
   SemanticAnalysis::ProgramProblems semantic_problems;
@@ -639,7 +681,9 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
         .Times(1);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -656,6 +700,7 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -674,8 +719,25 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
   config.SetModuleFileExtension("rtm2");
+  Code module_code;
+  unique_ptr<Code> cmds_code(new Code());
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
+  uint32_t main_cmds_code_size = UINT32_C(0);
   uint32_t code_version = UINT32_C(1);
-  Code code;
+  auto *module = new Module(code_version,
+                            move(cmds_code),
+                            main_cmds_code_size,
+                            id_addresses_of_func_defs,
+                            ids_of_global_var_defs,
+                            ids_of_native_func_defs,
+                            id_addresses_of_func_refs,
+                            id_addresses_of_native_func_refs,
+                            id_addresses_of_global_var_refs);
   LitParserMock lit_parser;
   FileSearcherMock file_searcher;
   FileMock file;
@@ -686,6 +748,7 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
   auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
   vector<ProgramNode*> import_programs;
   SemanticAnalysis::ProgramProblems semantic_problems;
@@ -721,14 +784,16 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
         .Times(1);
-    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
-                                         Ref(*semantic_analysis),
-                                         code_version,
-                                         &code))
+    EXPECT_CALL(code_generator, Generate_(Ref(*main_program),
+                                          Ref(*semantic_analysis),
+                                          code_version))
+        .Times(1)
+        .WillOnce(Return(module));
+    EXPECT_CALL(module_writer, Write(Ref(*module), &module_code))
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
-    EXPECT_CALL(file, Write_(output_file_path.string(), Ref(code)))
+    EXPECT_CALL(file, Write_(output_file_path.string(), Ref(module_code)))
         .Times(1)
         .WillOnce(Throw(IOError("test")));
     string msg = (format("Failed to write output file \"%1%\"")
@@ -746,9 +811,10 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
-                    &code);
+                    &module_code);
   compiler.Compile(argc, argv);
 }
 
@@ -762,8 +828,25 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
   config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
   config.SetBinDirPath("build2/bin2");
+  Code module_code;
+  unique_ptr<Code> cmds_code(new Code());
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
+  uint32_t main_cmds_code_size = UINT32_C(0);
   uint32_t code_version = UINT32_C(1);
-  Code code;
+  auto *module = new Module(code_version,
+                            move(cmds_code),
+                            main_cmds_code_size,
+                            id_addresses_of_func_defs,
+                            ids_of_global_var_defs,
+                            ids_of_native_func_defs,
+                            id_addresses_of_func_refs,
+                            id_addresses_of_native_func_refs,
+                            id_addresses_of_global_var_refs);
   LitParserMock lit_parser;
   FileSearcherMock file_searcher;
   FileMock file;
@@ -774,6 +857,7 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
   auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
   vector<ProgramNode*> import_programs;
   SemanticAnalysis::ProgramProblems semantic_problems;
@@ -809,10 +893,12 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
         .Times(1);
-    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
-                                         Ref(*semantic_analysis),
-                                         code_version,
-                                         &code))
+    EXPECT_CALL(code_generator, Generate_(Ref(*main_program),
+                                          Ref(*semantic_analysis),
+                                          code_version))
+        .Times(1)
+        .WillOnce(Return(module));
+    EXPECT_CALL(module_writer, Write(Ref(*module), &module_code))
         .Times(1);
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1)
@@ -834,9 +920,10 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
-                    &code);
+                    &module_code);
   compiler.Compile(argc, argv);
 }
 
@@ -860,6 +947,7 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
   auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
   vector<ProgramNode*> import_programs;
   SemanticAnalysis::ProgramProblems semantic_problems;
@@ -895,14 +983,15 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
         Ref(semantic_analysis->GetProblems()),
         program_file_paths))
         .Times(1);
-    EXPECT_CALL(code_generator, Generate(Ref(*main_program),
+    EXPECT_CALL(code_generator, Generate_(Ref(*main_program),
                                          Ref(*semantic_analysis),
-                                         code_version,
-                                         &code))
+                                         code_version))
         .Times(1)
         .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
     EXPECT_CALL(msg_printer, PrintError("Code size exceeds 32 bits"))
         .Times(1);
+    EXPECT_CALL(module_writer, Write(_, _))
+        .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
     EXPECT_CALL(file, Write_(_, _))
@@ -918,6 +1007,7 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -943,6 +1033,7 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
   Parser::UnexpectedTokenError error(
         TokenInfo(Token::kFileEnd, "", UINT32_C(1), UINT32_C(2)), "test");
 
@@ -969,7 +1060,9 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -986,6 +1079,7 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1011,6 +1105,7 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
   Lexer::UnexpectedCharError error('a', UINT32_C(1), UINT32_C(2), "test");
 
   {
@@ -1038,7 +1133,9 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1055,6 +1152,7 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1080,6 +1178,7 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
 
   {
     InSequence sequence;
@@ -1105,7 +1204,9 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1122,6 +1223,7 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1147,6 +1249,7 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
 
   {
     InSequence sequence;
@@ -1168,7 +1271,9 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1185,6 +1290,7 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1211,6 +1317,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
 
   vector< unique_ptr<StmtNode> > main_program_stmts;
   unique_ptr<StringNode> file_path_expr(new StringNode(TokenInfo(
@@ -1263,7 +1370,9 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1280,6 +1389,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1307,6 +1417,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
 
   vector< unique_ptr<StmtNode> > main_program_stmts;
   unique_ptr<StringNode> file_path_expr(new StringNode(TokenInfo(
@@ -1359,7 +1470,9 @@ TEST_F(CompilerTest, ImportFileNotExists) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1376,6 +1489,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1401,6 +1515,7 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
 
   vector< unique_ptr<StmtNode> > main_program_stmts;
   string import_file_path_token = "\"app/module/import.rts\"";
@@ -1448,7 +1563,9 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1465,6 +1582,7 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1490,6 +1608,7 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
 
   vector< unique_ptr<StmtNode> > main_program_stmts;
   string import_file_path_token = "\"app/module/import.rts\"";
@@ -1537,7 +1656,9 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1554,6 +1675,7 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1577,6 +1699,7 @@ TEST_F(CompilerTest, Help) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
   string help = "test";
 
   {
@@ -1603,7 +1726,9 @@ TEST_F(CompilerTest, Help) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1620,6 +1745,7 @@ TEST_F(CompilerTest, Help) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);
@@ -1643,6 +1769,7 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
   CodeGeneratorMock code_generator;
   CompilerConfigParserMock config_parser;
   DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
 
   {
     InSequence sequence;
@@ -1665,7 +1792,9 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
         .Times(0);
     EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
         .Times(0);
-    EXPECT_CALL(code_generator, Generate(_, _, _, _))
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
         .Times(0);
     EXPECT_CALL(dir_creator, Create_(_))
         .Times(0);
@@ -1682,6 +1811,7 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
                     &code_generator,
                     msg_printer,
                     dir_creator,
+                    module_writer,
                     &config,
                     file,
                     &code);

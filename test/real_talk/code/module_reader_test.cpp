@@ -11,10 +11,10 @@
 #include "real_talk/util/errors.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/module_reader.h"
+#include "real_talk/code/simple_module_writer.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/id_address.h"
 #include "real_talk/code/id_addresses.h"
-#include "real_talk/code/test_utils.h"
 #include "real_talk/code/code.h"
 
 using std::numeric_limits;
@@ -69,7 +69,6 @@ class ModuleReaderTest: public Test {
       cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
       cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
       cmds_code->SetPosition(UINT32_C(0));
-      vector<path> import_file_paths = {"src/class.rt", "src/class2.rt"};
       vector<string> ids_of_global_var_defs = {"var", "var2"};
       vector<IdAddress> id_addresses_of_func_defs =
           {{"func", UINT32_C(1)}, {"func2", UINT32_C(2)}};
@@ -100,7 +99,6 @@ class ModuleReaderTest: public Test {
     {
       unique_ptr<Code> cmds_code(new Code());
       cmds_code->SetPosition(UINT32_C(0));
-      vector<path> import_file_paths;
       vector<string> ids_of_global_var_defs;
       vector<IdAddress> id_addresses_of_func_defs;
       vector<string> ids_of_native_func_defs;
@@ -129,7 +127,7 @@ class ModuleReaderTest: public Test {
 TEST_F(ModuleReaderTest, ReadFromCode) {
   for (const TestModule &test_data: GetDataForReadFromTest()) {
     Code module_code;
-    WriteModule(test_data.expected_module, module_code);
+    SimpleModuleWriter().Write(test_data.expected_module, &module_code);
     module_code.SetPosition(UINT32_C(0));
     Module actual_module = ModuleReader().ReadFromCode(&module_code);
     ASSERT_EQ(test_data.expected_module, actual_module);
@@ -139,7 +137,7 @@ TEST_F(ModuleReaderTest, ReadFromCode) {
 TEST_F(ModuleReaderTest, ReadFromStream) {
   for (const TestModule &test_data: GetDataForReadFromTest()) {
     Code module_code;
-    WriteModule(test_data.expected_module, module_code);
+    SimpleModuleWriter().Write(test_data.expected_module, &module_code);
     stringstream module_code_stream;
     module_code_stream.exceptions(ios::failbit | ios::badbit);
     module_code_stream.write(

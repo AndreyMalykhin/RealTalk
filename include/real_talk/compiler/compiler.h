@@ -23,6 +23,7 @@ namespace code {
 
 class Code;
 class CodeGenerator;
+class ModuleWriter;
 }
 
 namespace semantic {
@@ -56,6 +57,7 @@ class Compiler {
            real_talk::code::CodeGenerator *code_generator,
            const MsgPrinter &msg_printer,
            const real_talk::util::DirCreator &dir_creator,
+           const real_talk::code::ModuleWriter &module_writer,
            CompilerConfig *config,
            const real_talk::util::File &file,
            real_talk::code::Code *code);
@@ -93,6 +95,7 @@ class Compiler {
   real_talk::code::CodeGenerator *code_generator_;
   const MsgPrinter &msg_printer_;
   const real_talk::util::DirCreator &dir_creator_;
+  const real_talk::code::ModuleWriter &module_writer_;
   CompilerConfig *config_;
   const real_talk::util::File &file_;
   real_talk::code::Code *code_;

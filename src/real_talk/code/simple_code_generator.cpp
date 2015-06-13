@@ -192,10 +192,9 @@ namespace code {
 class SimpleCodeGenerator::Impl: private NodeVisitor {
  public:
   explicit Impl(const CastCmdGenerator &cast_cmd_generator);
-  void Generate(const ProgramNode &program,
-                const SemanticAnalysis &semantic_analysis,
-                uint32_t version,
-                Code *output);
+  unique_ptr<Module> Generate(const ProgramNode &program,
+                              const SemanticAnalysis &semantic_analysis,
+                              uint32_t version);
 
  private:
   class StmtGrouper;
@@ -1590,23 +1589,21 @@ SimpleCodeGenerator::SimpleCodeGenerator(
 
 SimpleCodeGenerator::~SimpleCodeGenerator() {}
 
-void SimpleCodeGenerator::Generate(const ProgramNode &program,
-                                   const SemanticAnalysis &semantic_analysis,
-                                   uint32_t version,
-                                   Code *output) {
-  impl_->Generate(program, semantic_analysis, version, output);
+unique_ptr<Module> SimpleCodeGenerator::Generate(
+    const ProgramNode &program,
+    const SemanticAnalysis &semantic_analysis,
+    uint32_t version) {
+  return impl_->Generate(program, semantic_analysis, version);
 }
 
 SimpleCodeGenerator::Impl::Impl(
     const CastCmdGenerator &cast_cmd_generator)
     : cast_cmd_generator_(cast_cmd_generator) {}
 
-void SimpleCodeGenerator::Impl::Generate(
+unique_ptr<Module> SimpleCodeGenerator::Impl::Generate(
     const ProgramNode &program,
     const SemanticAnalysis &semantic_analysis,
-    uint32_t version,
-    Code *output) {
-  assert(output);
+    uint32_t version) {
   semantic_analysis_ = &semantic_analysis;
   code_.reset(new Code());
   const StmtGrouper::GroupedStmts &stmts = StmtGrouper().Group(program);
@@ -1621,23 +1618,24 @@ void SimpleCodeGenerator::Impl::Generate(
     func_def->Accept(*this);
   }
 
-  const Module module(version,
-                      move(code_),
-                      main_cmds_size,
-                      id_addresses_of_func_defs_,
-                      ids_of_global_var_defs_,
-                      ids_of_native_func_defs_,
-                      TransformIdAddresses(id_addresses_of_func_refs_),
-                      TransformIdAddresses(id_addresses_of_native_func_refs_),
-                      TransformIdAddresses(id_addresses_of_global_var_refs_));
-  SimpleModuleWriter().Write(module, output);
   assert(scopes_stack_.empty());
+  unique_ptr<Module> module(new Module(
+      version,
+      move(code_),
+      main_cmds_size,
+      id_addresses_of_func_defs_,
+      ids_of_global_var_defs_,
+      ids_of_native_func_defs_,
+      TransformIdAddresses(id_addresses_of_func_refs_),
+      TransformIdAddresses(id_addresses_of_native_func_refs_),
+      TransformIdAddresses(id_addresses_of_global_var_refs_)));
   ids_of_global_var_defs_.clear();
   id_addresses_of_func_defs_.clear();
   ids_of_native_func_defs_.clear();
   id_addresses_of_global_var_refs_.clear();
   id_addresses_of_func_refs_.clear();
   id_addresses_of_native_func_refs_.clear();
+  return module;
 }
 
 vector<real_talk::code::IdAddresses>

@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_CODE_CODE_GENERATOR_H_
 #define _REAL_TALK_CODE_CODE_GENERATOR_H_
 
+#include <memory>
 #include <cstdint>
 
 namespace real_talk {
@@ -17,6 +18,7 @@ class SemanticAnalysis;
 
 namespace code {
 
+class Module;
 class Code;
 
 class CodeGenerator {
@@ -26,11 +28,10 @@ class CodeGenerator {
   /**
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
-  virtual void Generate(
+  virtual std::unique_ptr<Module> Generate(
       const real_talk::parser::ProgramNode &program,
       const real_talk::semantic::SemanticAnalysis &semantic_analysis,
-      uint32_t version,
-      Code *output) = 0;
+      uint32_t version) = 0;
 };
 }
 }

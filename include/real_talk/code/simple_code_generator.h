@@ -2,7 +2,6 @@
 #ifndef _REAL_TALK_CODE_SIMPLE_CODE_GENERATOR_H_
 #define _REAL_TALK_CODE_SIMPLE_CODE_GENERATOR_H_
 
-#include <memory>
 #include "real_talk/code/code_generator.h"
 
 namespace real_talk {
@@ -14,11 +13,10 @@ class SimpleCodeGenerator: public CodeGenerator {
  public:
   explicit SimpleCodeGenerator(const CastCmdGenerator &cast_cmd_generator);
   virtual ~SimpleCodeGenerator() override;
-  virtual void Generate(
+  virtual std::unique_ptr<Module> Generate(
       const real_talk::parser::ProgramNode &program,
       const real_talk::semantic::SemanticAnalysis &semantic_analysis,
-      uint32_t version,
-      Code *output) override;
+      uint32_t version) override;
 
  private:
   class Impl;

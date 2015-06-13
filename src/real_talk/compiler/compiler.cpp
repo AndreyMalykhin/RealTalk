@@ -19,7 +19,8 @@
 #include "real_talk/semantic/semantic_problems.h"
 #include "real_talk/code/code_generator.h"
 #include "real_talk/code/code.h"
-#include "real_talk/code/module_reader.h"
+#include "real_talk/code/module.h"
+#include "real_talk/code/module_writer.h"
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/util/file.h"
 #include "real_talk/util/errors.h"
@@ -107,7 +108,7 @@ using real_talk::semantic::StringWithEmptyHexValueError;
 using real_talk::semantic::StringWithOutOfRangeHexValueError;
 using real_talk::code::CodeGenerator;
 using real_talk::code::Code;
-using real_talk::code::ModuleReader;
+using real_talk::code::ModuleWriter;
 using real_talk::code::Module;
 using real_talk::util::DirCreator;
 using real_talk::util::File;
@@ -220,6 +221,7 @@ Compiler::Compiler(
     CodeGenerator *code_generator,
     const MsgPrinter &msg_printer,
     const DirCreator &dir_creator,
+    const ModuleWriter &module_writer,
     CompilerConfig *config,
     const File &file,
     Code *code)
@@ -232,6 +234,7 @@ Compiler::Compiler(
       code_generator_(code_generator),
       msg_printer_(msg_printer),
       dir_creator_(dir_creator),
+      module_writer_(module_writer),
       config_(config),
       file_(file),
       code_(code) {
@@ -277,21 +280,22 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   }
 
   const uint32_t code_version = UINT32_C(1);
+  unique_ptr<Module> module;
 
   try {
-    code_generator_->Generate(
-        *main_program, *semantic_analysis, code_version, code_);
+    module = code_generator_->Generate(
+        *main_program, *semantic_analysis, code_version);
   } catch (const Code::CodeSizeOverflowError&) {
     msg_printer_.PrintError("Code size exceeds 32 bits");
     return;
   }
 
-  Log([this](ostream *stream) {
-      this->code_->SetPosition(UINT32_C(0));
-      Module module = ModuleReader().ReadFromCode(this->code_);
-      *stream << "\n[module]\n\n" << module;
+  Log([&module](ostream *stream) {
+      module->GetCmdsCode().SetPosition(0);
+      *stream << "\n[module]\n\n" << *module;
     });
 
+  module_writer_.Write(*module, code_);
   path output_file_path(config_->GetBinDirPath() / config_->GetInputFilePath());
   output_file_path.replace_extension(config_->GetModuleFileExtension());
 

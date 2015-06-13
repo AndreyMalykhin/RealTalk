@@ -49,6 +49,7 @@ int main(int argc, const char *argv[]) {
                     &code_generator,
                     SimpleMsgPrinter(&cout),
                     SimpleDirCreator(),
+                    SimpleModuleWriter(),
                     &compiler_config,
                     SimpleFile(),
                     &code);
