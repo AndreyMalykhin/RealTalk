@@ -5,16 +5,16 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-#include <iostream>
 #include "real_talk/code/id_addresses.h"
 #include "real_talk/code/id_address.h"
+#include "real_talk/code/code_container.h"
 
 namespace real_talk {
 namespace code {
 
 class Code;
 
-class Module {
+class Module: public CodeContainer {
  public:
   Module(uint32_t version,
          std::unique_ptr<Code> cmds_code,
@@ -25,6 +25,7 @@ class Module {
          const std::vector<IdAddresses> &id_addresses_of_func_refs,
          const std::vector<IdAddresses> &id_addresses_of_native_func_refs,
          const std::vector<IdAddresses> &id_addresses_of_global_var_refs);
+  virtual void Accept(const CodeContainerVisitor &visitor) const override;
   Code &GetCmdsCode();
   const Code &GetCmdsCode() const;
   uint32_t GetMainCmdsCodeSize() const;
@@ -36,10 +37,11 @@ class Module {
   const std::vector<std::string> &GetIdsOfGlobalVarDefs() const;
   const std::vector<std::string> &GetIdsOfNativeFuncDefs() const;
   const std::vector<IdAddresses> &GetIdAddressesOfGlobalVarRefs() const;
-  friend bool operator==(const Module &lhs, const Module &rhs);
-  friend std::ostream &operator<<(std::ostream &stream, Module &module);
 
  private:
+  virtual bool IsEqual(const CodeContainer &container) const override;
+  virtual void Print(std::ostream &stream) override;
+
   uint32_t version_;
   std::unique_ptr<Code> cmds_code_;
   uint32_t main_cmds_code_size_;

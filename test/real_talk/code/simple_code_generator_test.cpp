@@ -277,6 +277,8 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(expected_cmd_id);
+    uint32_t var_index = numeric_limits<uint32_t>::max();
+    cmds_code->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<string> ids_of_global_var_defs = {"var"};
@@ -340,6 +342,8 @@ class SimpleCodeGeneratorTest: public Test {
     }
 
     cmds_code->WriteCmdId(expected_cmd_id);
+    uint32_t var_index = numeric_limits<uint32_t>::max();
+    cmds_code->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<string> ids_of_global_var_defs = {"var"};
@@ -843,9 +847,10 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(create_var_cmd_id);
+    uint32_t var_index = numeric_limits<uint32_t>::max();
+    cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t var_index_placeholder = cmds_code->GetPosition();
-    uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
@@ -999,10 +1004,11 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(create_var_cmd_id);
+    uint32_t var_index = numeric_limits<uint32_t>::max();
+    cmds_code->WriteUint32(var_index);
     cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
     cmds_code->WriteCmdId(CmdId::kLoadGlobalVarAddress);
     uint32_t var_index_placeholder = cmds_code->GetPosition();
-    uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
@@ -1196,12 +1202,13 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kCreateGlobalArrayVar);
+    uint32_t var_index = numeric_limits<uint32_t>::max();
+    cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(CmdId::kLoadCharValue);
     cmds_code->WriteChar('a');
     cmds_code->WriteCmdId(CmdId::kCastCharToInt);
     cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
     uint32_t var_index_placeholder = cmds_code->GetPosition();
-    uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(CmdId::kUnload);
@@ -1327,13 +1334,14 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kCreateGlobalArrayVar);
+    uint32_t var_index = numeric_limits<uint32_t>::max();
+    cmds_code->WriteUint32(var_index);
     cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
     cmds_code->WriteCmdId(CmdId::kLoadCharValue);
     cmds_code->WriteChar('a');
     cmds_code->WriteCmdId(CmdId::kCastCharToInt);
     cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
     uint32_t var_index_placeholder = cmds_code->GetPosition();
-    uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(store_cmd_id);

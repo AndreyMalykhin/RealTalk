@@ -58,8 +58,8 @@ class Compiler {
            const MsgPrinter &msg_printer,
            const real_talk::util::DirCreator &dir_creator,
            const real_talk::code::ModuleWriter &module_writer,
-           CompilerConfig *config,
            const real_talk::util::File &file,
+           CompilerConfig *config,
            real_talk::code::Code *code);
   void Compile(int argc, const char *argv[]) const;
 
@@ -96,8 +96,8 @@ class Compiler {
   const MsgPrinter &msg_printer_;
   const real_talk::util::DirCreator &dir_creator_;
   const real_talk::code::ModuleWriter &module_writer_;
-  CompilerConfig *config_;
   const real_talk::util::File &file_;
+  CompilerConfig *config_;
   real_talk::code::Code *code_;
 };
 }

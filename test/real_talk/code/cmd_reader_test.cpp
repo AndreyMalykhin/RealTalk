@@ -68,6 +68,7 @@ class CmdReaderTest: public Test {
       CmdId cmd_id, const CreateGlobalVarCmd &expected_cmd) {
     Code code;
     code.WriteCmdId(cmd_id);
+    code.WriteUint32(expected_cmd.GetVarIndex());
     TestGetNextCmd(code, expected_cmd);
   }
 
@@ -75,6 +76,7 @@ class CmdReaderTest: public Test {
       CmdId cmd_id, const CreateAndInitGlobalVarCmd &expected_cmd) {
     Code code;
     code.WriteCmdId(cmd_id);
+    code.WriteUint32(expected_cmd.GetVarIndex());
     TestGetNextCmd(code, expected_cmd);
   }
 
@@ -119,37 +121,44 @@ class CmdReaderTest: public Test {
 };
 
 TEST_F(CmdReaderTest, CreateGlobalIntVarCmd) {
-  CreateGlobalIntVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateGlobalIntVarCmd expected_cmd(var_index);
   TestCreateGlobalVarCmd(CmdId::kCreateGlobalIntVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateGlobalArrayVarCmd) {
-  CreateGlobalArrayVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateGlobalArrayVarCmd expected_cmd(var_index);
   TestCreateGlobalVarCmd(CmdId::kCreateGlobalArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateGlobalLongVarCmd) {
-  CreateGlobalLongVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateGlobalLongVarCmd expected_cmd(var_index);
   TestCreateGlobalVarCmd(CmdId::kCreateGlobalLongVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateGlobalDoubleVarCmd) {
-  CreateGlobalDoubleVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateGlobalDoubleVarCmd expected_cmd(var_index);
   TestCreateGlobalVarCmd(CmdId::kCreateGlobalDoubleVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateGlobalCharVarCmd) {
-  CreateGlobalCharVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateGlobalCharVarCmd expected_cmd(var_index);
   TestCreateGlobalVarCmd(CmdId::kCreateGlobalCharVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateGlobalStringVarCmd) {
-  CreateGlobalStringVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateGlobalStringVarCmd expected_cmd(var_index);
   TestCreateGlobalVarCmd(CmdId::kCreateGlobalStringVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateGlobalBoolVarCmd) {
-  CreateGlobalBoolVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateGlobalBoolVarCmd expected_cmd(var_index);
   TestCreateGlobalVarCmd(CmdId::kCreateGlobalBoolVar, expected_cmd);
 }
 
@@ -264,43 +273,50 @@ TEST_F(CmdReaderTest, LoadDoubleValueCmd) {
 }
 
 TEST_F(CmdReaderTest, CreateAndInitGlobalIntVarCmd) {
-  CreateAndInitGlobalIntVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateAndInitGlobalIntVarCmd expected_cmd(var_index);
   TestCreateAndInitGlobalVarCmd(
       CmdId::kCreateAndInitGlobalIntVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitGlobalArrayVarCmd) {
-  CreateAndInitGlobalArrayVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateAndInitGlobalArrayVarCmd expected_cmd(var_index);
   TestCreateAndInitGlobalVarCmd(
       CmdId::kCreateAndInitGlobalArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitGlobalLongVarCmd) {
-  CreateAndInitGlobalLongVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateAndInitGlobalLongVarCmd expected_cmd(var_index);
   TestCreateAndInitGlobalVarCmd(
       CmdId::kCreateAndInitGlobalLongVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitGlobalDoubleVarCmd) {
-  CreateAndInitGlobalDoubleVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateAndInitGlobalDoubleVarCmd expected_cmd(var_index);
   TestCreateAndInitGlobalVarCmd(
       CmdId::kCreateAndInitGlobalDoubleVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitGlobalCharVarCmd) {
-  CreateAndInitGlobalCharVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateAndInitGlobalCharVarCmd expected_cmd(var_index);
   TestCreateAndInitGlobalVarCmd(
       CmdId::kCreateAndInitGlobalCharVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitGlobalStringVarCmd) {
-  CreateAndInitGlobalStringVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateAndInitGlobalStringVarCmd expected_cmd(var_index);
   TestCreateAndInitGlobalVarCmd(
       CmdId::kCreateAndInitGlobalStringVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitGlobalBoolVarCmd) {
-  CreateAndInitGlobalBoolVarCmd expected_cmd;
+  uint32_t var_index = UINT32_C(7);
+  CreateAndInitGlobalBoolVarCmd expected_cmd(var_index);
   TestCreateAndInitGlobalVarCmd(
       CmdId::kCreateAndInitGlobalBoolVar, expected_cmd);
 }

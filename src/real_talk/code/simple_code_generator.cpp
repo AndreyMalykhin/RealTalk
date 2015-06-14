@@ -484,6 +484,8 @@ class SimpleCodeGenerator::Impl::CreateGlobalVarCmdGenerator
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
     data_type.Accept(*this);
+    const uint32_t var_index = numeric_limits<uint32_t>::max();
+    code->WriteUint32(var_index);
   }
 
  private:
@@ -527,6 +529,8 @@ class SimpleCodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
   void Generate(const DataType &data_type, Code *code) {
     code_ = code;
     data_type.Accept(*this);
+    const uint32_t var_index = numeric_limits<uint32_t>::max();
+    code->WriteUint32(var_index);
   }
 
  private:

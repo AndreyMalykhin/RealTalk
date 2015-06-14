@@ -222,8 +222,8 @@ Compiler::Compiler(
     const MsgPrinter &msg_printer,
     const DirCreator &dir_creator,
     const ModuleWriter &module_writer,
-    CompilerConfig *config,
     const File &file,
+    CompilerConfig *config,
     Code *code)
     : file_searcher_(file_searcher),
       lexer_factory_(lexer_factory),
@@ -235,8 +235,8 @@ Compiler::Compiler(
       msg_printer_(msg_printer),
       dir_creator_(dir_creator),
       module_writer_(module_writer),
-      config_(config),
       file_(file),
+      config_(config),
       code_(code) {
   assert(src_parser_);
   assert(semantic_analyzer_);

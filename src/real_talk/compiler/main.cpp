@@ -50,8 +50,8 @@ int main(int argc, const char *argv[]) {
                     SimpleMsgPrinter(&cout),
                     SimpleDirCreator(),
                     SimpleModuleWriter(),
-                    &compiler_config,
                     SimpleFile(),
+                    &compiler_config,
                     &code);
   compiler.Compile(argc, argv);
   return EXIT_SUCCESS;

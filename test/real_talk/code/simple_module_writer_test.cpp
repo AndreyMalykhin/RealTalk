@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 #include "real_talk/code/code.h"
-#include "real_talk/code/module_reader.h"
+#include "real_talk/code/module.h"
+#include "real_talk/code/simple_module_reader.h"
 #include "real_talk/code/simple_module_writer.h"
 
 using std::vector;
@@ -23,9 +24,10 @@ class SimpleModuleWriterTest: public Test {
 
   string PrintCode(Code *code) {
     code->SetPosition(UINT32_C(0));
-    Module module = ModuleReader().ReadFromCode(code);
+    unique_ptr<Module> module = SimpleModuleReader().ReadFromCode(code);
+    assert(module);
     ostringstream result;
-    result << module;
+    result << *module;
     return result.str();
   }
 };

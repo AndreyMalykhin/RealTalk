@@ -4,7 +4,7 @@
 #include <vector>
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/module.h"
-#include "real_talk/code/module_reader.h"
+#include "real_talk/code/simple_module_reader.h"
 #include "real_talk/code/code.h"
 
 using std::string;
@@ -16,7 +16,7 @@ using std::unique_ptr;
 namespace real_talk {
 namespace code {
 
-Module ModuleReader::ReadFromCode(Code *module_code) {
+unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *module_code) const {
   assert(module_code);
   const uint32_t version = module_code->ReadUint32();
   const uint32_t cmds_address = module_code->ReadUint32();
@@ -93,18 +93,19 @@ Module ModuleReader::ReadFromCode(Code *module_code) {
     id_addresses_of_native_func_refs.push_back(module_code->ReadIdAddresses());
   }
 
-  return Module(version,
-                move(cmds_code),
-                main_cmds_size,
-                id_addresses_of_func_defs,
-                ids_of_global_var_defs,
-                ids_of_native_func_defs,
-                id_addresses_of_func_refs,
-                id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs);
+  return unique_ptr<Module>(new Module(version,
+                                       move(cmds_code),
+                                       main_cmds_size,
+                                       id_addresses_of_func_defs,
+                                       ids_of_global_var_defs,
+                                       ids_of_native_func_defs,
+                                       id_addresses_of_func_refs,
+                                       id_addresses_of_native_func_refs,
+                                       id_addresses_of_global_var_refs));
 }
 
-Module ModuleReader::ReadFromStream(istream *code_stream) {
+unique_ptr<Module> SimpleModuleReader::ReadFromStream(
+    istream *code_stream) const {
   assert(code_stream);
   Code module_code(*code_stream);
   return ReadFromCode(&module_code);

@@ -42,9 +42,11 @@ Educational-purpose programming language with:
     src
         real_talk
             lexer // source code tokenizer
-            parser // source code parser; syntax tree
-            semantic // semantic analyzer
+            parser // source code parser
+            semantic // program semantic analyzer
             code // bytecode generator
+            compiler
+            linker // executable and library maker (TODO)
             vm // virtual machine (TODO)
 
 ###Dependencies

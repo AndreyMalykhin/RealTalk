@@ -10,7 +10,7 @@
 #include <limits>
 #include "real_talk/util/errors.h"
 #include "real_talk/code/cmd.h"
-#include "real_talk/code/module_reader.h"
+#include "real_talk/code/simple_module_reader.h"
 #include "real_talk/code/simple_module_writer.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/id_address.h"
@@ -54,7 +54,7 @@ class StreambufMock: public stringbuf {
                streampos(streamoff, ios_base::seekdir, ios_base::openmode));
 };
 
-class ModuleReaderTest: public Test {
+class SimpleModuleReaderTest: public Test {
  protected:
   virtual void SetUp() override {}
   virtual void TearDown() override {}
@@ -98,7 +98,6 @@ class ModuleReaderTest: public Test {
 
     {
       unique_ptr<Code> cmds_code(new Code());
-      cmds_code->SetPosition(UINT32_C(0));
       vector<string> ids_of_global_var_defs;
       vector<IdAddress> id_addresses_of_func_defs;
       vector<string> ids_of_native_func_defs;
@@ -124,17 +123,19 @@ class ModuleReaderTest: public Test {
   }
 };
 
-TEST_F(ModuleReaderTest, ReadFromCode) {
+TEST_F(SimpleModuleReaderTest, ReadFromCode) {
   for (const TestModule &test_data: GetDataForReadFromTest()) {
     Code module_code;
     SimpleModuleWriter().Write(test_data.expected_module, &module_code);
     module_code.SetPosition(UINT32_C(0));
-    Module actual_module = ModuleReader().ReadFromCode(&module_code);
-    ASSERT_EQ(test_data.expected_module, actual_module);
+    unique_ptr<Module> actual_module =
+        SimpleModuleReader().ReadFromCode(&module_code);
+    ASSERT_TRUE(actual_module.get());
+    ASSERT_EQ(test_data.expected_module, *actual_module);
   }
 }
 
-TEST_F(ModuleReaderTest, ReadFromStream) {
+TEST_F(SimpleModuleReaderTest, ReadFromStream) {
   for (const TestModule &test_data: GetDataForReadFromTest()) {
     Code module_code;
     SimpleModuleWriter().Write(test_data.expected_module, &module_code);
@@ -142,18 +143,20 @@ TEST_F(ModuleReaderTest, ReadFromStream) {
     module_code_stream.exceptions(ios::failbit | ios::badbit);
     module_code_stream.write(
         reinterpret_cast<char*>(module_code.GetData()), module_code.GetSize());
-    Module actual_module = ModuleReader().ReadFromStream(&module_code_stream);
-    ASSERT_EQ(test_data.expected_module, actual_module);
+    unique_ptr<Module> actual_module =
+        SimpleModuleReader().ReadFromStream(&module_code_stream);
+    ASSERT_TRUE(actual_module.get());
+    ASSERT_EQ(test_data.expected_module, *actual_module);
   }
 }
 
-TEST_F(ModuleReaderTest, ReadFromStreamWithIOError) {
+TEST_F(SimpleModuleReaderTest, ReadFromStreamWithIOError) {
   StreambufMock stream_buffer;
   EXPECT_CALL(stream_buffer, seekoff(_, _, _))
       .Times(1)
       .WillOnce(Throw(ios::failure("seekoff() error")));
   iostream module_code_stream(&stream_buffer);
-  ModuleReader reader;
+  SimpleModuleReader reader;
 
   try {
     reader.ReadFromStream(&module_code_stream);
@@ -161,13 +164,13 @@ TEST_F(ModuleReaderTest, ReadFromStreamWithIOError) {
   } catch (const IOError&) {}
 }
 
-TEST_F(ModuleReaderTest, ReadFromStreamWithCodeSizeOverflowError) {
+TEST_F(SimpleModuleReaderTest, ReadFromStreamWithCodeSizeOverflowError) {
   StreambufMock stream_buffer;
   EXPECT_CALL(stream_buffer, seekoff(_, _, _))
       .Times(AnyNumber())
       .WillRepeatedly(Return(numeric_limits<int64_t>::max()));
   iostream module_code_stream(&stream_buffer);
-  ModuleReader reader;
+  SimpleModuleReader reader;
 
   try {
     reader.ReadFromStream(&module_code_stream);

@@ -45,20 +45,20 @@ namespace real_talk {
 namespace code {
 namespace {
 
-const CreateGlobalIntVarCmd &kCreateGlobalIntVarCmd =
-    *new CreateGlobalIntVarCmd();
-const CreateGlobalArrayVarCmd &kCreateGlobalArrayVarCmd =
-    *new CreateGlobalArrayVarCmd();
-const CreateGlobalLongVarCmd &kCreateGlobalLongVarCmd =
-    *new CreateGlobalLongVarCmd();
-const CreateGlobalDoubleVarCmd &kCreateGlobalDoubleVarCmd =
-    *new CreateGlobalDoubleVarCmd();
-const CreateGlobalCharVarCmd &kCreateGlobalCharVarCmd =
-    *new CreateGlobalCharVarCmd();
-const CreateGlobalStringVarCmd &kCreateGlobalStringVarCmd =
-    *new CreateGlobalStringVarCmd();
-const CreateGlobalBoolVarCmd &kCreateGlobalBoolVarCmd =
-    *new CreateGlobalBoolVarCmd();
+CreateGlobalIntVarCmd &kCreateGlobalIntVarCmd =
+    *new CreateGlobalIntVarCmd(UINT32_C(0));
+CreateGlobalArrayVarCmd &kCreateGlobalArrayVarCmd =
+    *new CreateGlobalArrayVarCmd(UINT32_C(0));
+CreateGlobalLongVarCmd &kCreateGlobalLongVarCmd =
+    *new CreateGlobalLongVarCmd(UINT32_C(0));
+CreateGlobalDoubleVarCmd &kCreateGlobalDoubleVarCmd =
+    *new CreateGlobalDoubleVarCmd(UINT32_C(0));
+CreateGlobalCharVarCmd &kCreateGlobalCharVarCmd =
+    *new CreateGlobalCharVarCmd(UINT32_C(0));
+CreateGlobalStringVarCmd &kCreateGlobalStringVarCmd =
+    *new CreateGlobalStringVarCmd(UINT32_C(0));
+CreateGlobalBoolVarCmd &kCreateGlobalBoolVarCmd =
+    *new CreateGlobalBoolVarCmd(UINT32_C(0));
 
 const CreateLocalIntVarCmd &kCreateLocalIntVarCmd =
     *new CreateLocalIntVarCmd();
@@ -87,20 +87,20 @@ LoadFuncValueCmd &kLoadFuncValueCmd = *new LoadFuncValueCmd(UINT32_C(0));
 LoadNativeFuncValueCmd &kLoadNativeFuncValueCmd =
     *new LoadNativeFuncValueCmd(UINT32_C(0));
 
-const CreateAndInitGlobalIntVarCmd &kCreateAndInitGlobalIntVarCmd =
-    *new CreateAndInitGlobalIntVarCmd();
-const CreateAndInitGlobalArrayVarCmd &kCreateAndInitGlobalArrayVarCmd =
-    *new CreateAndInitGlobalArrayVarCmd();
-const CreateAndInitGlobalLongVarCmd &kCreateAndInitGlobalLongVarCmd =
-    *new CreateAndInitGlobalLongVarCmd();
-const CreateAndInitGlobalDoubleVarCmd &kCreateAndInitGlobalDoubleVarCmd =
-    *new CreateAndInitGlobalDoubleVarCmd();
-const CreateAndInitGlobalCharVarCmd &kCreateAndInitGlobalCharVarCmd =
-    *new CreateAndInitGlobalCharVarCmd();
-const CreateAndInitGlobalStringVarCmd &kCreateAndInitGlobalStringVarCmd =
-    *new CreateAndInitGlobalStringVarCmd();
-const CreateAndInitGlobalBoolVarCmd &kCreateAndInitGlobalBoolVarCmd =
-    *new CreateAndInitGlobalBoolVarCmd();
+CreateAndInitGlobalIntVarCmd &kCreateAndInitGlobalIntVarCmd =
+    *new CreateAndInitGlobalIntVarCmd(UINT32_C(0));
+CreateAndInitGlobalArrayVarCmd &kCreateAndInitGlobalArrayVarCmd =
+    *new CreateAndInitGlobalArrayVarCmd(UINT32_C(0));
+CreateAndInitGlobalLongVarCmd &kCreateAndInitGlobalLongVarCmd =
+    *new CreateAndInitGlobalLongVarCmd(UINT32_C(0));
+CreateAndInitGlobalDoubleVarCmd &kCreateAndInitGlobalDoubleVarCmd =
+    *new CreateAndInitGlobalDoubleVarCmd(UINT32_C(0));
+CreateAndInitGlobalCharVarCmd &kCreateAndInitGlobalCharVarCmd =
+    *new CreateAndInitGlobalCharVarCmd(UINT32_C(0));
+CreateAndInitGlobalStringVarCmd &kCreateAndInitGlobalStringVarCmd =
+    *new CreateAndInitGlobalStringVarCmd(UINT32_C(0));
+CreateAndInitGlobalBoolVarCmd &kCreateAndInitGlobalBoolVarCmd =
+    *new CreateAndInitGlobalBoolVarCmd(UINT32_C(0));
 
 CreateIntArrayCmd &kCreateIntArrayCmd = *new CreateIntArrayCmd(UINT8_C(1));
 CreateLongArrayCmd &kCreateLongArrayCmd = *new CreateLongArrayCmd(UINT8_C(1));
@@ -344,24 +344,31 @@ const Cmd &CmdReader::GetNextCmd() {
 
   switch (code_->ReadCmdId()) {
     case CmdId::kCreateGlobalIntVar:
+      kCreateGlobalIntVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateGlobalIntVarCmd;
       break;
     case CmdId::kCreateGlobalArrayVar:
+      kCreateGlobalArrayVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateGlobalArrayVarCmd;
       break;
     case CmdId::kCreateGlobalLongVar:
+      kCreateGlobalLongVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateGlobalLongVarCmd;
       break;
     case CmdId::kCreateGlobalDoubleVar:
+      kCreateGlobalDoubleVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateGlobalDoubleVarCmd;
       break;
     case CmdId::kCreateGlobalCharVar:
+      kCreateGlobalCharVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateGlobalCharVarCmd;
       break;
     case CmdId::kCreateGlobalStringVar:
+      kCreateGlobalStringVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateGlobalStringVarCmd;
       break;
     case CmdId::kCreateGlobalBoolVar:
+      kCreateGlobalBoolVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateGlobalBoolVarCmd;
       break;
     case CmdId::kCreateLocalIntVar:
@@ -413,24 +420,31 @@ const Cmd &CmdReader::GetNextCmd() {
       cmd = &kLoadDoubleValueCmd;
       break;
     case CmdId::kCreateAndInitGlobalIntVar:
+      kCreateAndInitGlobalIntVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalIntVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalArrayVar:
+      kCreateAndInitGlobalArrayVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalArrayVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalLongVar:
+      kCreateAndInitGlobalLongVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalLongVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalDoubleVar:
+      kCreateAndInitGlobalDoubleVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalDoubleVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalCharVar:
+      kCreateAndInitGlobalCharVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalCharVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalStringVar:
+      kCreateAndInitGlobalStringVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalStringVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalBoolVar:
+      kCreateAndInitGlobalBoolVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalBoolVarCmd;
       break;
     case CmdId::kCreateAndInitLocalIntVar:

@@ -6,7 +6,7 @@ find_library(GMOCK_LIBRARY NAMES gmock PATHS thirdparty/gmock-1.7.0/build)
 set(Boost_USE_STATIC_LIBS ON) 
 set(Boost_USE_MULTITHREADED OFF)
 find_package(Boost 1.56.0 REQUIRED COMPONENTS system filesystem program_options)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-weak-vtables -Wno-padded -Wno-missing-noreturn -Wno-switch-enum -Wno-used-but-marked-unused -Wno-tautological-constant-out-of-range-compare -Wno-unused-member-function")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-weak-vtables -Wno-padded -Wno-missing-noreturn -Wno-switch-enum -Wno-used-but-marked-unused -Wno-tautological-constant-out-of-range-compare")
 add_library(real_talk_lib
   src/real_talk/lexer/token_info.cpp
   src/real_talk/lexer/simple_lexer.cpp
@@ -53,7 +53,7 @@ add_library(real_talk_lib
   src/real_talk/semantic/cast_handler.cpp
   src/real_talk/code/simple_code_generator.cpp
   src/real_talk/code/cmd_reader.cpp
-  src/real_talk/code/module_reader.cpp
+  src/real_talk/code/simple_module_reader.cpp
   src/real_talk/code/simple_module_writer.cpp
   src/real_talk/code/module.cpp
   src/real_talk/code/id_addresses.cpp
@@ -79,13 +79,14 @@ add_executable(real_talk_tests_exe
   test/real_talk/semantic/simple_lit_parser_test.cpp
   test/real_talk/semantic/cast_resolver_test.cpp
   test/real_talk/code/simple_code_generator_test.cpp
-  test/real_talk/code/module_reader_test.cpp
+  test/real_talk/code/simple_module_reader_test.cpp
   test/real_talk/code/simple_module_writer_test.cpp
   test/real_talk/code/cmd_reader_test.cpp
   test/real_talk/code/simple_cast_cmd_generator_test.cpp
   test/real_talk/compiler/simple_msg_printer_test.cpp
   test/real_talk/compiler/simple_compiler_config_parser_test.cpp
   test/real_talk/compiler/compiler_test.cpp
+  test/real_talk/linker/linker_app_test.cpp
   test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/simple_file_test.cpp
   test/real_talk/util/simple_file_searcher_test.cpp

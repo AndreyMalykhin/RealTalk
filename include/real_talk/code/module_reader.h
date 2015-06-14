@@ -4,22 +4,24 @@
 
 #include <memory>
 #include <iostream>
-#include "real_talk/code/module.h"
 
 namespace real_talk {
 namespace code {
 
+class Module;
 class Code;
 
 class ModuleReader {
  public:
-  Module ReadFromCode(Code *code);
+  virtual ~ModuleReader() {}
+  virtual std::unique_ptr<Module> ReadFromCode(Code *code) const = 0;
 
   /**
    * @throws real_talk::util::IOError
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
-  Module ReadFromStream(std::istream *code_stream);
+  virtual std::unique_ptr<Module> ReadFromStream(
+      std::istream *code_stream) const = 0;
 };
 }
 }

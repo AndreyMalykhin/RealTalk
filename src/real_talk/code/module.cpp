@@ -84,83 +84,78 @@ const vector<IdAddresses> &Module::GetIdAddressesOfGlobalVarRefs() const {
   return id_addresses_of_global_var_refs_;
 }
 
-bool operator==(const Module &lhs, const Module &rhs) {
-  return lhs.version_ == rhs.version_
-      && lhs.main_cmds_code_size_ == rhs.main_cmds_code_size_
-      && *(lhs.cmds_code_) == *(rhs.cmds_code_)
-      && lhs.id_addresses_of_global_var_refs_
+bool Module::IsEqual(const CodeContainer &container) const {
+  const Module &rhs = static_cast<const Module&>(container);
+  return version_ == rhs.version_
+      && main_cmds_code_size_ == rhs.main_cmds_code_size_
+      && *(cmds_code_) == *(rhs.cmds_code_)
+      && id_addresses_of_global_var_refs_
       == rhs.id_addresses_of_global_var_refs_
-      && lhs.ids_of_native_func_defs_ == rhs.ids_of_native_func_defs_
-      && lhs.ids_of_global_var_defs_ == rhs.ids_of_global_var_defs_
-      && lhs.id_addresses_of_func_refs_ == rhs.id_addresses_of_func_refs_
-      && lhs.id_addresses_of_native_func_refs_
+      && ids_of_native_func_defs_ == rhs.ids_of_native_func_defs_
+      && ids_of_global_var_defs_ == rhs.ids_of_global_var_defs_
+      && id_addresses_of_func_refs_ == rhs.id_addresses_of_func_refs_
+      && id_addresses_of_native_func_refs_
       == rhs.id_addresses_of_native_func_refs_
-      && lhs.id_addresses_of_func_defs_ == rhs.id_addresses_of_func_defs_;
+      && id_addresses_of_func_defs_ == rhs.id_addresses_of_func_defs_;
 }
 
-ostream &operator<<(ostream &stream, Module &module) {
-  stream << "version=" << module.GetVersion() << "\n"
+void Module::Print(ostream &stream) {
+  stream << "version=" << version_ << "\n"
          << "id_addresses_of_func_defs=\n";
 
-  for (const IdAddress &id_address_of_func_def:
-           module.GetIdAddressesOfFuncDefs()) {
+  for (const IdAddress &id_address_of_func_def: id_addresses_of_func_defs_) {
     stream << id_address_of_func_def << "\n";
   }
 
   stream << "ids_of_native_func_defs=\n";
 
-  for (const string &id_of_native_func_def:
-           module.GetIdsOfNativeFuncDefs()) {
+  for (const string &id_of_native_func_def: ids_of_native_func_defs_) {
     stream << id_of_native_func_def << "\n";
   }
 
   stream << "id_addresses_of_func_refs=\n";
 
-  for (const IdAddresses &id_addresses_of_func_ref:
-           module.GetIdAddressesOfFuncRefs()) {
+  for (const IdAddresses &id_addresses_of_func_ref
+           : id_addresses_of_func_refs_) {
     stream << id_addresses_of_func_ref << "\n";
   }
 
   stream << "id_addresses_of_native_func_refs=\n";
 
-  for (const IdAddresses &id_addresses_of_native_func_ref:
-           module.GetIdAddressesOfNativeFuncRefs()) {
+  for (const IdAddresses &id_addresses_of_native_func_ref
+           : id_addresses_of_native_func_refs_) {
     stream << id_addresses_of_native_func_ref << "\n";
   }
 
   stream << "ids_of_global_var_defs=\n";
 
-  for (const string &id_of_global_var_def:
-           module.GetIdsOfGlobalVarDefs()) {
+  for (const string &id_of_global_var_def: ids_of_global_var_defs_) {
     stream << id_of_global_var_def << "\n";
   }
 
   stream << "id_addresses_of_global_var_refs=\n";
 
-  for (const IdAddresses &id_addresses_of_global_var_ref:
-           module.GetIdAddressesOfGlobalVarRefs()) {
+  for (const IdAddresses &id_addresses_of_global_var_ref
+           : id_addresses_of_global_var_refs_) {
     stream << id_addresses_of_global_var_ref << "\n";
   }
 
-  Code &cmds_code = module.GetCmdsCode();
-  stream << "main_cmds_code_size=" << module.GetMainCmdsCodeSize()
-         << "\nfunc_cmds_code_size=" << module.GetFuncCmdsCodeSize()
-         << "\ntotal_cmds_code_size=" << cmds_code.GetSize()
-         << "\ncmds_code_position=" << cmds_code.GetPosition();
+  stream << "main_cmds_code_size=" << main_cmds_code_size_
+         << "\nfunc_cmds_code_size=" << GetFuncCmdsCodeSize()
+         << "\ntotal_cmds_code_size=" << cmds_code_->GetSize()
+         << "\ncmds_code_position=" << cmds_code_->GetPosition();
 
-  if (cmds_code.GetSize()) {
+  if (cmds_code_->GetSize()) {
     CmdReader cmd_reader;
-    cmd_reader.SetCode(&cmds_code);
+    cmd_reader.SetCode(cmds_code_.get());
     stream << "\ncmds=\n";
 
-    while (cmds_code.GetPosition() != cmds_code.GetSize()) {
-      stream << cmds_code.GetPosition();
+    while (cmds_code_->GetPosition() != cmds_code_->GetSize()) {
+      stream << cmds_code_->GetPosition();
       const Cmd &cmd = cmd_reader.GetNextCmd();
       stream << " " << cmd << "\n";
     }
   }
-
-  return stream;
 }
 }
 }

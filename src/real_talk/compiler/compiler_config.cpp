@@ -11,7 +11,7 @@ namespace compiler {
 
 CompilerConfig::CompilerConfig()
     : src_dir_path_("src"),
-      bin_dir_path_("bin"),
+      bin_dir_path_("build/bin"),
       vendor_dir_path_("vendor"),
       module_file_extension_("rtm"),
       is_debug_(false) {}

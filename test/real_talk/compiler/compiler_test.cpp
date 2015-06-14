@@ -167,12 +167,12 @@ class FileMock: public File {
 
 class LitParserMock: public LitParser {
  public:
-  MOCK_CONST_METHOD1(ParseBool, bool(const string&));
-  MOCK_CONST_METHOD1(ParseInt, int32_t(const string&));
-  MOCK_CONST_METHOD1(ParseLong, int64_t(const string&));
-  MOCK_CONST_METHOD1(ParseDouble, double(const string&));
-  MOCK_CONST_METHOD1(ParseChar, char(const string&));
   MOCK_CONST_METHOD1(ParseString, string(const string&));
+  virtual bool ParseBool(const string&) const override {assert(false);}
+  virtual int32_t ParseInt(const string&) const override {assert(false);}
+  virtual int64_t ParseLong(const string&) const override {assert(false);}
+  virtual double ParseDouble(const string&) const override {assert(false);}
+  virtual char ParseChar(const string&) const override {assert(false);}
 };
 
 class FileSearcherMock: public FileSearcher {
@@ -219,7 +219,7 @@ class SrcParserMock: public Parser {
 
 class LexerMock: public Lexer {
  public:
-  MOCK_METHOD0(GetNextToken, TokenInfo());
+  virtual TokenInfo GetNextToken() override {assert(false);}
 };
 
 class SemanticErrorMock: public SemanticError {
@@ -243,7 +243,7 @@ TEST_F(CompilerTest, Compile) {
   struct TestImportFileParse {
     ImportNode *import_stmt;
     istream *import_file_stream;
-    string search_import_file_path;
+    path search_import_file_path;
     path found_import_file_path;
     ProgramNode *import_program;
     Lexer *lexer;
@@ -265,31 +265,16 @@ TEST_F(CompilerTest, Compile) {
   config.SetVendorDirPath("vendor2");
   config.SetModuleFileExtension("rtm2");
   config.SetImportDirPaths(vector<path>({"/mylib", "/mylib2"}));
-  vector<string> import_dir_path_strs;
+  vector<string> import_dir_paths;
 
   for (const path &path: config.GetImportDirPaths()) {
-    import_dir_path_strs.push_back(path.string());
+    import_dir_paths.push_back(path.string());
   }
 
   Code module_code;
-  unique_ptr<Code> cmds_code(new Code());
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
-  uint32_t main_cmds_code_size = UINT32_C(0);
   uint32_t code_version = UINT32_C(1);
-  auto *module = new Module(code_version,
-                            move(cmds_code),
-                            main_cmds_code_size,
-                            id_addresses_of_func_defs,
-                            ids_of_global_var_defs,
-                            ids_of_native_func_defs,
-                            id_addresses_of_func_refs,
-                            id_addresses_of_native_func_refs,
-                            id_addresses_of_global_var_refs);
+  auto *module = new Module(
+      code_version, unique_ptr<Code>(new Code()), 0, {}, {}, {}, {}, {}, {});
   LitParserMock lit_parser;
   FileSearcherMock file_searcher;
   FileMock file;
@@ -426,7 +411,7 @@ TEST_F(CompilerTest, Compile) {
 
   {
     auto *import_file_stream = new stringstream();
-    string search_import_file_path("app/module/import1.rts");
+    path search_import_file_path("app/module/import1.rts");
     path found_import_file_path("src2/app/module/import1.rts");
     TestImportFileParse test_import_file_parse = {import_stmt_ptr1,
                                                   import_file_stream,
@@ -441,7 +426,7 @@ TEST_F(CompilerTest, Compile) {
 
   {
     auto *import_file_stream = new stringstream();
-    string search_import_file_path("app/module/import2.rts");
+    path search_import_file_path("app/module/import2.rts");
     path found_import_file_path("src2/app/module/import2.rts");
     TestImportFileParse test_import_file_parse = {import_stmt_ptr2,
                                                   import_file_stream,
@@ -456,7 +441,7 @@ TEST_F(CompilerTest, Compile) {
 
   {
     auto *import_file_stream = new stringstream();
-    string search_import_file_path("app/module/import3.rts");
+    path search_import_file_path("app/module/import3.rts");
     path found_import_file_path("src2/app/module/import3.rts");
     TestImportFileParse test_import_file_parse = {import_stmt_ptr3,
                                                   import_file_stream,
@@ -471,7 +456,7 @@ TEST_F(CompilerTest, Compile) {
 
   {
     auto *import_file_stream = new stringstream();
-    string search_import_file_path("app/module/import4.rts");
+    path search_import_file_path("app/module/import4.rts");
     path found_import_file_path("src2/app/module/import4.rts");
     TestImportFileParse test_import_file_parse = {import_stmt_ptr4,
                                                   import_file_stream,
@@ -486,7 +471,7 @@ TEST_F(CompilerTest, Compile) {
 
   {
     auto *import_file_stream = new stringstream();
-    string search_import_file_path("app/module/import5.rts");
+    path search_import_file_path("app/module/import5.rts");
     path found_import_file_path("src2/app/module/import5.rts");
     TestImportFileParse test_import_file_parse = {import_stmt_ptr5,
                                                   import_file_stream,
@@ -501,7 +486,7 @@ TEST_F(CompilerTest, Compile) {
 
   {
     auto *import_file_stream = new stringstream();
-    string search_import_file_path("app/module/import6.rts");
+    path search_import_file_path("app/module/import6.rts");
     path found_import_file_path("src2/app/module/import6.rts");
     TestImportFileParse test_import_file_parse = {import_stmt_ptr6,
                                                   import_file_stream,
@@ -534,18 +519,18 @@ TEST_F(CompilerTest, Compile) {
         .WillOnce(Return(main_program))
         .RetiresOnSaturation();
 
-    for (TestImportFileParse &test_parse: test_import_file_parses) {
+    for (const TestImportFileParse &test_parse: test_import_file_parses) {
       string import_file_path_token =
           test_parse.import_stmt->GetFilePath()->GetStartToken().GetValue();
       EXPECT_CALL(lit_parser, ParseString(import_file_path_token))
           .Times(1)
-          .WillOnce(Return(test_parse.search_import_file_path))
+          .WillOnce(Return(test_parse.search_import_file_path.string()))
           .RetiresOnSaturation();
       EXPECT_CALL(file_searcher, Search_(
-          test_parse.search_import_file_path,
+          test_parse.search_import_file_path.string(),
           config.GetSrcDirPath().string(),
           config.GetVendorDirPath().string(),
-          import_dir_path_strs))
+          import_dir_paths))
           .Times(1)
           .WillOnce(Return(test_parse.found_import_file_path.string()))
           .RetiresOnSaturation();
@@ -563,18 +548,18 @@ TEST_F(CompilerTest, Compile) {
           .RetiresOnSaturation();
     }
 
-    string search_import_file_path("src2/./app/module/import4.rts");
+    path search_import_file_path("src2/./app/module/import4.rts");
     path found_import_file_path("src2/app/module/import4.rts");
     EXPECT_CALL(lit_parser, ParseString(
         import_stmt_ptr7->GetFilePath()->GetStartToken().GetValue()))
         .Times(1)
-        .WillOnce(Return(search_import_file_path))
+        .WillOnce(Return(search_import_file_path.string()))
         .RetiresOnSaturation();
     EXPECT_CALL(file_searcher, Search_(
-        search_import_file_path,
+        search_import_file_path.string(),
         config.GetSrcDirPath().string(),
         config.GetVendorDirPath().string(),
-        import_dir_path_strs))
+        import_dir_paths))
         .Times(1)
         .WillOnce(Return(found_import_file_path.string()))
         .RetiresOnSaturation();
@@ -620,8 +605,8 @@ TEST_F(CompilerTest, Compile) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &module_code);
   compiler.Compile(argc, argv);
 }
@@ -701,8 +686,8 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -812,8 +797,8 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &module_code);
   compiler.Compile(argc, argv);
 }
@@ -921,8 +906,8 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &module_code);
   compiler.Compile(argc, argv);
 }
@@ -1008,8 +993,8 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1080,8 +1065,8 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1153,8 +1138,8 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1224,8 +1209,8 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1291,8 +1276,8 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1302,7 +1287,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  string search_import_file_path = "src2/app/module/import.rts";
+  path search_import_file_path("src2/app/module/import.rts");
   CompilerConfig config;
   config.SetInputFilePath(input_file_path);
   config.SetSrcDirPath("src2");
@@ -1353,9 +1338,9 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
     EXPECT_CALL(lit_parser, ParseString(
         import_stmt_ptr->GetFilePath()->GetStartToken().GetValue()))
         .Times(1)
-        .WillOnce(Return(search_import_file_path));
+        .WillOnce(Return(search_import_file_path.string()));
     EXPECT_CALL(file_searcher, Search_(
-        search_import_file_path,
+        search_import_file_path.string(),
         config.GetSrcDirPath().string(),
         config.GetVendorDirPath().string(),
         IsEmpty()))
@@ -1390,8 +1375,8 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1401,7 +1386,7 @@ TEST_F(CompilerTest, ImportFileNotExists) {
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
-  string search_import_file_path = "src2/app/module/import.rts";
+  path search_import_file_path("src2/app/module/import.rts");
   path found_import_file_path;
   CompilerConfig config;
   config.SetInputFilePath(input_file_path);
@@ -1453,9 +1438,9 @@ TEST_F(CompilerTest, ImportFileNotExists) {
     EXPECT_CALL(lit_parser, ParseString(
         import_stmt_ptr->GetFilePath()->GetStartToken().GetValue()))
         .Times(1)
-        .WillOnce(Return(search_import_file_path));
+        .WillOnce(Return(search_import_file_path.string()));
     EXPECT_CALL(file_searcher, Search_(
-        search_import_file_path,
+        search_import_file_path.string(),
         config.GetSrcDirPath().string(),
         config.GetVendorDirPath().string(),
         IsEmpty()))
@@ -1490,8 +1475,8 @@ TEST_F(CompilerTest, ImportFileNotExists) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1583,8 +1568,8 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1676,8 +1661,8 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1746,8 +1731,8 @@ TEST_F(CompilerTest, Help) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
@@ -1812,8 +1797,8 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
                     msg_printer,
                     dir_creator,
                     module_writer,
-                    &config,
                     file,
+                    &config,
                     &code);
   compiler.Compile(argc, argv);
 }
