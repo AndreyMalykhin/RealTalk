@@ -56,6 +56,8 @@ add_library(real_talk_lib
   src/real_talk/code/simple_module_reader.cpp
   src/real_talk/code/simple_module_writer.cpp
   src/real_talk/code/module.cpp
+  src/real_talk/code/exe.cpp
+  src/real_talk/code/code_container.cpp
   src/real_talk/code/id_addresses.cpp
   src/real_talk/code/id_address.cpp
   src/real_talk/code/code.cpp
@@ -65,6 +67,8 @@ add_library(real_talk_lib
   src/real_talk/compiler/compiler_config_parser.cpp
   src/real_talk/compiler/simple_compiler_config_parser.cpp
   src/real_talk/compiler/compiler.cpp
+  src/real_talk/linker/linker_config.cpp
+  src/real_talk/linker/linker_app.cpp
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp
   src/real_talk/util/simple_file.cpp

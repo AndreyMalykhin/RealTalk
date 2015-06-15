@@ -37,6 +37,18 @@ class LinkerApp {
             LinkerConfig *config,
             real_talk::code::Code *output_code);
   void Run(int argc, const char *argv[]) const;
+
+ private:
+  const LinkerConfigParser &config_parser_;
+  const MsgPrinter &msg_printer_;
+  const real_talk::util::FileSearcher &file_searcher_;
+  const real_talk::code::ModuleReader &module_reader_;
+  const LinkerFactory &linker_factory_;
+  const real_talk::code::CodeContainerWriter &code_container_writer_;
+  const real_talk::util::DirCreator &dir_creator_;
+  const real_talk::util::File &file_;
+  LinkerConfig *config_;
+  real_talk::code::Code *output_code_;
 };
 }
 }
