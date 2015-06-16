@@ -20,6 +20,10 @@ class Linker {
   typedef std::vector< std::unique_ptr<real_talk::code::Module> > Modules;
 
   virtual ~Linker() {}
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
   virtual std::unique_ptr<real_talk::code::CodeContainer> Link(
       const Linker::Modules &modules,
       uint32_t output_code_version) const = 0;

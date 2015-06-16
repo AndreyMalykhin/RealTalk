@@ -13,6 +13,10 @@ enum class LinkerCmd: uint8_t;
 class LinkerConfigParser {
  public:
   virtual ~LinkerConfigParser() {}
+
+  /**
+   * @throws real_talk::linker::LinkerConfigParser::BadArgsError
+   */
   virtual void Parse(int argc,
                      const char *argv[],
                      LinkerConfig *config,

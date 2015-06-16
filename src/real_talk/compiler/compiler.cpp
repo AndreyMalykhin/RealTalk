@@ -285,17 +285,16 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   try {
     module = code_generator_->Generate(
         *main_program, *semantic_analysis, code_version);
+    Log([&module](ostream *stream) {
+      module->GetCmdsCode().SetPosition(0);
+      *stream << "\n[module]\n\n" << *module;
+    });
+    module_writer_.Write(*module, code_);
   } catch (const Code::CodeSizeOverflowError&) {
     msg_printer_.PrintError("Code size exceeds 32 bits");
     return;
   }
 
-  Log([&module](ostream *stream) {
-      module->GetCmdsCode().SetPosition(0);
-      *stream << "\n[module]\n\n" << *module;
-    });
-
-  module_writer_.Write(*module, code_);
   path output_file_path(config_->GetBinDirPath() / config_->GetInputFilePath());
   output_file_path.replace_extension(config_->GetModuleFileExtension());
 

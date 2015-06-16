@@ -1,9 +1,11 @@
 
+#include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <string>
 #include <vector>
+#include "real_talk/util/errors.h"
 #include "real_talk/util/dir_creator.h"
 #include "real_talk/util/file.h"
 #include "real_talk/util/file_searcher.h"
@@ -31,8 +33,11 @@ using testing::InSequence;
 using testing::NotNull;
 using testing::Return;
 using testing::Throw;
+using testing::_;
 using testing::SetArgPointee;
 using boost::filesystem::path;
+using boost::format;
+using real_talk::util::IOError;
 using real_talk::util::DirCreator;
 using real_talk::util::File;
 using real_talk::util::FileSearcher;
@@ -159,7 +164,7 @@ class LinkerAppTest: public Test {
   virtual void TearDown() override {}
 };
 
-TEST_F(LinkerAppTest, Run) {
+TEST_F(LinkerAppTest, Link) {
   struct TestModuleRead {
     path search_input_file_path;
     path found_input_file_path;
@@ -274,6 +279,153 @@ TEST_F(LinkerAppTest, Run) {
     EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
         .Times(1);
     EXPECT_CALL(file, Write_(output_file_path.string(), Ref(output_code)))
+        .Times(1);
+  }
+
+  LinkerApp app(config_parser,
+                msg_printer,
+                file_searcher,
+                module_reader,
+                linker_factory,
+                code_container_writer,
+                dir_creator,
+                file,
+                &config,
+                &output_code);
+  app.Run(argc, argv);
+}
+
+TEST_F(LinkerAppTest, Help) {
+  LinkerConfigParserMock config_parser;
+  MsgPrinterMock msg_printer;
+  FileSearcherMock file_searcher;
+  ModuleReaderMock module_reader;
+  DirCreatorMock dir_creator;
+  FileMock file;
+  Code output_code;
+  LinkerFactoryMock linker_factory;
+  CodeContainerWriterMock code_container_writer;
+  LinkerMock linker;
+  int argc = 1;
+  const char *argv[] = {"realtalkl"};
+  LinkerConfig config;
+  string help = "test";
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(LinkerCmd::kHelp));
+    EXPECT_CALL(config_parser, GetHelp())
+        .Times(1)
+        .WillOnce(Return(help));
+    EXPECT_CALL(msg_printer, PrintHelp(help))
+        .Times(1);
+    EXPECT_CALL(file_searcher, Search_(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(file, Read_(_))
+        .Times(0);
+    EXPECT_CALL(module_reader, ReadFromStream_(_))
+        .Times(0);
+    EXPECT_CALL(linker_factory, Create_())
+        .Times(0);
+    EXPECT_CALL(linker, Link_(_, _))
+        .Times(0);
+    EXPECT_CALL(code_container_writer, Write(_, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write_(_, _))
+        .Times(0);
+  }
+
+  LinkerApp app(config_parser,
+                msg_printer,
+                file_searcher,
+                module_reader,
+                linker_factory,
+                code_container_writer,
+                dir_creator,
+                file,
+                &config,
+                &output_code);
+  app.Run(argc, argv);
+}
+
+TEST_F(LinkerAppTest, IOErrorWhileWritingOutputFile) {
+  LinkerConfigParserMock config_parser;
+  MsgPrinterMock msg_printer;
+  FileSearcherMock file_searcher;
+  ModuleReaderMock module_reader;
+  DirCreatorMock dir_creator;
+  FileMock file;
+  Code output_code;
+  LinkerFactoryMock linker_factory;
+  CodeContainerWriterMock code_container_writer;
+  auto *linker = new LinkerMock();
+  uint32_t output_code_version = UINT32_C(1);
+  auto *output_code_container = new Module(
+      output_code_version,
+      unique_ptr<Code>(new Code()),
+      0,
+      {},
+      {},
+      {},
+      {},
+      {},
+      {});
+  int argc = 1;
+  const char *argv[] = {"realtalkl"};
+  path output_dir_path("build2/bin2");
+  path output_file_path("build2/bin2/lib.rtl2");
+  LinkerConfig config;
+  config.SetInputFilePaths(vector<path>({"app/module/component.rtm"}));
+  config.SetOutputFilePath("lib.rtl2");
+  config.SetBinDirPath("build2/bin2");
+  vector<string> import_dir_paths;
+  path search_input_file_path("app/module/component.rtm");
+  path found_input_file_path("build2/bin2/app/module/component.rtm");
+  auto *input_file_stream = new stringstream();
+  auto *module = new Module(
+      2, unique_ptr<Code>(new Code()), 0, {}, {}, {}, {}, {}, {});
+  vector<Module*> modules;
+  modules.push_back(module);
+  string msg = (format("Failed to write output file \"%1%\"")
+                % output_file_path.string()).str();
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(LinkerCmd::kLink));
+    EXPECT_CALL(file_searcher, Search_(
+        search_input_file_path.string(),
+        config.GetBinDirPath().string(),
+        config.GetVendorDirPath().string(),
+        import_dir_paths))
+        .Times(1)
+        .WillOnce(Return(found_input_file_path.string()));
+    EXPECT_CALL(file, Read_(found_input_file_path.string()))
+        .Times(1)
+        .WillOnce(Return(input_file_stream));
+    EXPECT_CALL(module_reader, ReadFromStream_(input_file_stream))
+        .Times(1)
+        .WillOnce(Return(module));
+    EXPECT_CALL(linker_factory, Create_())
+        .Times(1)
+        .WillOnce(Return(linker));
+    EXPECT_CALL(*linker, Link_(modules, output_code_version))
+        .Times(1)
+        .WillOnce(Return(output_code_container));
+    EXPECT_CALL(code_container_writer,
+                Write(Ref(*output_code_container), &output_code))
+        .Times(1);
+    EXPECT_CALL(dir_creator, Create_(output_dir_path.string()))
+        .Times(1);
+    EXPECT_CALL(file, Write_(output_file_path.string(), Ref(output_code)))
+        .Times(1)
+        .WillOnce(Throw(IOError("test")));
+    EXPECT_CALL(msg_printer, PrintError(msg))
         .Times(1);
   }
 

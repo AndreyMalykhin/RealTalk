@@ -249,11 +249,8 @@ TEST_F(CompilerTest, Compile) {
     Lexer *lexer;
   };
 
-  int argc = 4;
-  const char *argv[] = {"realtalkc",
-                        "--import=/mylib",
-                        "--import=/mylib2",
-                        "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   path output_dir_path("build2/bin2/app/module");
@@ -612,8 +609,8 @@ TEST_F(CompilerTest, Compile) {
 }
 
 TEST_F(CompilerTest, ThereAreSemanticErrors) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   CompilerConfig config;
@@ -693,8 +690,8 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
 }
 
 TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   path output_dir_path("build2/bin2/app/module");
@@ -804,8 +801,8 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
 }
 
 TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   path output_dir_path("build2/bin2/app/module");
@@ -913,8 +910,8 @@ TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
 }
 
 TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   CompilerConfig config;
@@ -999,9 +996,114 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
   compiler.Compile(argc, argv);
 }
 
+TEST_F(CompilerTest, CodeSizeOverflowErrorWhileWritingModule) {
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
+  path input_file_path("app/module/component.rts");
+  path final_input_file_path("src2/app/module/component.rts");
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
+  config.SetSrcDirPath("src2");
+  Code module_code;
+  unique_ptr<Code> cmds_code(new Code());
+  vector<string> ids_of_global_var_defs;
+  vector<IdAddress> id_addresses_of_func_defs;
+  vector<string> ids_of_native_func_defs;
+  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> id_addresses_of_native_func_refs;
+  uint32_t main_cmds_code_size = UINT32_C(0);
+  uint32_t code_version = UINT32_C(1);
+  auto *module = new Module(code_version,
+                            move(cmds_code),
+                            main_cmds_code_size,
+                            id_addresses_of_func_defs,
+                            ids_of_global_var_defs,
+                            ids_of_native_func_defs,
+                            id_addresses_of_func_refs,
+                            id_addresses_of_native_func_refs,
+                            id_addresses_of_global_var_refs);
+  LitParserMock lit_parser;
+  FileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
+  auto *main_program = new ProgramNode(vector< unique_ptr<StmtNode> >());
+  vector<ProgramNode*> import_programs;
+  SemanticAnalysis::ProgramProblems semantic_problems;
+  semantic_problems.insert(
+      make_pair(main_program, SemanticAnalysis::Problems()));
+  SemanticAnalysis::NodeAnalyzes node_analyzes;
+  auto *semantic_analysis = new SemanticAnalysis(
+      move(semantic_problems), move(node_analyzes));
+  MsgPrinter::ProgramFilePaths program_file_paths =
+      {{main_program, final_input_file_path}};
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kCompile));
+    auto *input_file_stream = new stringstream();
+    EXPECT_CALL(file, Read_(final_input_file_path.string()))
+        .Times(1)
+        .WillOnce(Return(input_file_stream));
+    auto *input_file_lexer = new LexerMock();
+    EXPECT_CALL(lexer_factory, Create_(Ref(*input_file_stream)))
+        .Times(1)
+        .WillOnce(Return(input_file_lexer));
+    EXPECT_CALL(src_parser, Parse_(input_file_lexer))
+        .Times(1)
+        .WillOnce(Return(main_program));
+    EXPECT_CALL(semantic_analyzer, Analyze_(Ref(*main_program),
+                                            IsEmpty()))
+        .Times(1)
+        .WillOnce(Return(semantic_analysis));
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(
+        Ref(semantic_analysis->GetProblems()),
+        program_file_paths))
+        .Times(1);
+    EXPECT_CALL(code_generator, Generate_(Ref(*main_program),
+                                         Ref(*semantic_analysis),
+                                         code_version))
+        .Times(1)
+        .WillOnce(Return(module));
+    EXPECT_CALL(module_writer, Write(Ref(*module), &module_code))
+        .Times(1)
+        .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
+    EXPECT_CALL(msg_printer, PrintError("Code size exceeds 32 bits"))
+        .Times(1);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write_(_, _))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    module_writer,
+                    file,
+                    &config,
+                    &module_code);
+  compiler.Compile(argc, argv);
+}
+
 TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   CompilerConfig config;
@@ -1072,8 +1174,8 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
 }
 
 TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   CompilerConfig config;
@@ -1145,8 +1247,8 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
 }
 
 TEST_F(CompilerTest, IOErrorWhileParsingFile) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   CompilerConfig config;
@@ -1216,8 +1318,8 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
 }
 
 TEST_F(CompilerTest, IOErrorWhileReadingFile) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   CompilerConfig config;
@@ -1283,8 +1385,8 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
 }
 
 TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   path search_import_file_path("src2/app/module/import.rts");
@@ -1382,8 +1484,8 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
 }
 
 TEST_F(CompilerTest, ImportFileNotExists) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   path search_import_file_path("src2/app/module/import.rts");
@@ -1482,8 +1584,8 @@ TEST_F(CompilerTest, ImportFileNotExists) {
 }
 
 TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   CompilerConfig config;
@@ -1575,8 +1677,8 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
 }
 
 TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
-  int argc = 2;
-  const char *argv[] = {"realtalkc", "app/module/component.rts"};
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
   path final_input_file_path("src2/app/module/component.rts");
   CompilerConfig config;
