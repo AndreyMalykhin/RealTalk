@@ -130,6 +130,10 @@ class LinkerMock: public Linker {
 
 class CodeContainerWriterMock: public CodeContainerWriter {
  public:
+  virtual void Write(const Module&, Code*) const override {
+    assert(false);
+  }
+
   MOCK_CONST_METHOD2(Write, void(const CodeContainer&, Code*));
 };
 

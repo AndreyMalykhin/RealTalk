@@ -75,7 +75,6 @@
 #include "real_talk/code/cast_cmd_generator.h"
 #include "real_talk/code/code.h"
 #include "real_talk/code/module.h"
-#include "real_talk/code/simple_module_writer.h"
 
 using std::unique_ptr;
 using std::string;

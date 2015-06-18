@@ -11,7 +11,7 @@
 #include "real_talk/util/errors.h"
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/simple_module_reader.h"
-#include "real_talk/code/simple_module_writer.h"
+#include "real_talk/code/simple_code_container_writer.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/id_address.h"
 #include "real_talk/code/id_addresses.h"
@@ -126,7 +126,7 @@ class SimpleModuleReaderTest: public Test {
 TEST_F(SimpleModuleReaderTest, ReadFromCode) {
   for (const TestModule &test_data: GetDataForReadFromTest()) {
     Code module_code;
-    SimpleModuleWriter().Write(test_data.expected_module, &module_code);
+    SimpleCodeContainerWriter().Write(test_data.expected_module, &module_code);
     module_code.SetPosition(UINT32_C(0));
     unique_ptr<Module> actual_module =
         SimpleModuleReader().ReadFromCode(&module_code);
@@ -138,7 +138,7 @@ TEST_F(SimpleModuleReaderTest, ReadFromCode) {
 TEST_F(SimpleModuleReaderTest, ReadFromStream) {
   for (const TestModule &test_data: GetDataForReadFromTest()) {
     Code module_code;
-    SimpleModuleWriter().Write(test_data.expected_module, &module_code);
+    SimpleCodeContainerWriter().Write(test_data.expected_module, &module_code);
     stringstream module_code_stream;
     module_code_stream.exceptions(ios::failbit | ios::badbit);
     module_code_stream.write(

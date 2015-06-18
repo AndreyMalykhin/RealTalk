@@ -6,7 +6,7 @@
 #include "real_talk/code/code.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/simple_module_reader.h"
-#include "real_talk/code/simple_module_writer.h"
+#include "real_talk/code/simple_code_container_writer.h"
 
 using std::vector;
 using std::string;
@@ -17,7 +17,7 @@ using testing::Test;
 namespace real_talk {
 namespace code {
 
-class SimpleModuleWriterTest: public Test {
+class SimpleCodeContainerWriterTest: public Test {
  protected:
   virtual void SetUp() override {}
   virtual void TearDown() override {}
@@ -32,7 +32,7 @@ class SimpleModuleWriterTest: public Test {
   }
 };
 
-TEST_F(SimpleModuleWriterTest, Write) {
+TEST_F(SimpleCodeContainerWriterTest, WriteWithModule) {
   unique_ptr<Code> cmds_code(new Code());
   cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
@@ -124,7 +124,7 @@ TEST_F(SimpleModuleWriterTest, Write) {
   expected_code.WriteUint32(native_func_refs_metadata_size);
 
   Code actual_code;
-  SimpleModuleWriter().Write(module, &actual_code);
+  SimpleCodeContainerWriter().Write(module, &actual_code);
   ASSERT_EQ(expected_code, actual_code)
       << "expected=\n" << PrintCode(&expected_code)
       << "\nactual=\n" << PrintCode(&actual_code);

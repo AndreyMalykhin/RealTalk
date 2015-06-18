@@ -4,7 +4,7 @@
 #include <string>
 #include "real_talk/code/code.h"
 #include "real_talk/code/module.h"
-#include "real_talk/code/simple_module_writer.h"
+#include "real_talk/code/simple_code_container_writer.h"
 
 using std::vector;
 using std::string;
@@ -26,7 +26,12 @@ void WriteIdAddresses(const vector<IdAddresses> &id_addresses, Code *code) {
 }
 }
 
-void SimpleModuleWriter::Write(const Module &module, Code *code) const {
+void SimpleCodeContainerWriter::Write(
+    const CodeContainer&, Code*) const {
+  assert(false);
+}
+
+void SimpleCodeContainerWriter::Write(const Module &module, Code *code) const {
   assert(code);
   code->WriteUint32(module.GetVersion());
   const uint32_t segments_metadata_address = code->GetPosition();
