@@ -608,6 +608,76 @@ TEST_F(CompilerTest, Compile) {
   compiler.Compile(argc, argv);
 }
 
+TEST_F(CompilerTest, Help) {
+  int argc = 1;
+  const char *argv[] = {"realtalkc"};
+  path input_file_path;
+  CompilerConfig config;
+  config.SetInputFilePath(input_file_path);
+  Code code;
+  LitParserMock lit_parser;
+  FileSearcherMock file_searcher;
+  FileMock file;
+  LexerFactoryMock lexer_factory;
+  SrcParserMock src_parser;
+  SemanticAnalyzerMock semantic_analyzer;
+  MsgPrinterMock msg_printer;
+  CodeGeneratorMock code_generator;
+  CompilerConfigParserMock config_parser;
+  DirCreatorMock dir_creator;
+  ModuleWriterMock module_writer;
+  string help = "test";
+
+  {
+    InSequence sequence;
+    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+        .Times(1)
+        .WillOnce(SetArgPointee<3>(CompilerCmd::kHelp));
+    EXPECT_CALL(config_parser, GetHelp())
+        .Times(1)
+        .WillOnce(Return(help));
+    EXPECT_CALL(msg_printer, PrintHelp(help))
+        .Times(1);
+    EXPECT_CALL(file, Read_(_))
+        .Times(0);
+    EXPECT_CALL(lexer_factory, Create_(_))
+        .Times(0);
+    EXPECT_CALL(src_parser, Parse_(_))
+        .Times(0);
+    EXPECT_CALL(lit_parser, ParseString(_))
+        .Times(0);
+    EXPECT_CALL(file_searcher, Search_(_, _, _, _))
+        .Times(0);
+    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
+        .Times(0);
+    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
+        .Times(0);
+    EXPECT_CALL(code_generator, Generate_(_, _, _))
+        .Times(0);
+    EXPECT_CALL(module_writer, Write(_, _))
+        .Times(0);
+    EXPECT_CALL(dir_creator, Create_(_))
+        .Times(0);
+    EXPECT_CALL(file, Write_(_, _))
+        .Times(0);
+  }
+
+  Compiler compiler(file_searcher,
+                    lexer_factory,
+                    &src_parser,
+                    lit_parser,
+                    config_parser,
+                    &semantic_analyzer,
+                    &code_generator,
+                    msg_printer,
+                    dir_creator,
+                    module_writer,
+                    file,
+                    &config,
+                    &code);
+  compiler.Compile(argc, argv);
+}
+
 TEST_F(CompilerTest, ThereAreSemanticErrors) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
@@ -689,7 +759,7 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
+TEST_F(CompilerTest, IOErrorWhileWritingFile) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -800,7 +870,7 @@ TEST_F(CompilerTest, IOErrorWhileWritingOutputFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, IOErrorWhileCreatingOutputDir) {
+TEST_F(CompilerTest, IOErrorWhileCreatingDir) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1384,7 +1454,7 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
+TEST_F(CompilerTest, IOErrorWhileSearchingFile) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1483,7 +1553,7 @@ TEST_F(CompilerTest, IOErrorWhileSearchingImportFile) {
   compiler.Compile(argc, argv);
 }
 
-TEST_F(CompilerTest, ImportFileNotExists) {
+TEST_F(CompilerTest, FileNotExists) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1737,76 +1807,6 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
     EXPECT_CALL(msg_printer, PrintSemanticProblem(Eq(ByRef(semantic_problem)),
                                                   final_input_file_path))
         .Times(1);
-    EXPECT_CALL(file_searcher, Search_(_, _, _, _))
-        .Times(0);
-    EXPECT_CALL(semantic_analyzer, Analyze_(_, _))
-        .Times(0);
-    EXPECT_CALL(msg_printer, PrintSemanticProblems(_, _))
-        .Times(0);
-    EXPECT_CALL(code_generator, Generate_(_, _, _))
-        .Times(0);
-    EXPECT_CALL(module_writer, Write(_, _))
-        .Times(0);
-    EXPECT_CALL(dir_creator, Create_(_))
-        .Times(0);
-    EXPECT_CALL(file, Write_(_, _))
-        .Times(0);
-  }
-
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
-}
-
-TEST_F(CompilerTest, Help) {
-  int argc = 1;
-  const char *argv[] = {"realtalkc"};
-  path input_file_path;
-  CompilerConfig config;
-  config.SetInputFilePath(input_file_path);
-  Code code;
-  LitParserMock lit_parser;
-  FileSearcherMock file_searcher;
-  FileMock file;
-  LexerFactoryMock lexer_factory;
-  SrcParserMock src_parser;
-  SemanticAnalyzerMock semantic_analyzer;
-  MsgPrinterMock msg_printer;
-  CodeGeneratorMock code_generator;
-  CompilerConfigParserMock config_parser;
-  DirCreatorMock dir_creator;
-  ModuleWriterMock module_writer;
-  string help = "test";
-
-  {
-    InSequence sequence;
-    EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
-        .Times(1)
-        .WillOnce(SetArgPointee<3>(CompilerCmd::kHelp));
-    EXPECT_CALL(config_parser, GetHelp())
-        .Times(1)
-        .WillOnce(Return(help));
-    EXPECT_CALL(msg_printer, PrintHelp(help))
-        .Times(1);
-    EXPECT_CALL(file, Read_(_))
-        .Times(0);
-    EXPECT_CALL(lexer_factory, Create_(_))
-        .Times(0);
-    EXPECT_CALL(src_parser, Parse_(_))
-        .Times(0);
-    EXPECT_CALL(lit_parser, ParseString(_))
-        .Times(0);
     EXPECT_CALL(file_searcher, Search_(_, _, _, _))
         .Times(0);
     EXPECT_CALL(semantic_analyzer, Analyze_(_, _))

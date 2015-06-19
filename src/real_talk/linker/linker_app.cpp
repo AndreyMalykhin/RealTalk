@@ -64,7 +64,13 @@ LinkerApp::LinkerApp(
 
 void LinkerApp::Run(int argc, const char *argv[]) const {
   LinkerCmd cmd;
-  config_parser_.Parse(argc, argv, config_, &cmd);
+
+  try {
+    config_parser_.Parse(argc, argv, config_, &cmd);
+  } catch (const LinkerConfigParser::BadArgsError&) {
+    msg_printer_.PrintError("Invalid arguments");
+    return;
+  }
 
   if (cmd == LinkerCmd::kHelp) {
     msg_printer_.PrintHelp(config_parser_.GetHelp());
@@ -75,25 +81,67 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
   Linker::Modules modules;
 
   for (const path &search_input_file_path: config_->GetInputFilePaths()) {
-    const path found_input_file_path = file_searcher_.Search(
+    path found_input_file_path;
+
+    try {
+      found_input_file_path = file_searcher_.Search(
         search_input_file_path,
         config_->GetBinDirPath(),
         config_->GetVendorDirPath(),
         config_->GetImportDirPaths());
-    unique_ptr<istream> input_file_stream = file_.Read(found_input_file_path);
-    unique_ptr<Module> module =
-        module_reader_.ReadFromStream(input_file_stream.get());
-    modules.push_back(move(module));
+    } catch (const IOError&) {
+      const string msg = (format("IO error while searching file %1%")
+                          % search_input_file_path.string()).str();
+      msg_printer_.PrintError(msg);
+      return;
+    }
+
+    if (found_input_file_path.empty()) {
+      const string msg = (format("File not found %1%")
+                          % search_input_file_path.string()).str();
+      msg_printer_.PrintError(msg);
+      return;
+    }
+
+    try {
+      unique_ptr<istream> input_file_stream = file_.Read(found_input_file_path);
+      unique_ptr<Module> module =
+          module_reader_.ReadFromStream(input_file_stream.get());
+      modules.push_back(move(module));
+    } catch (const Code::CodeSizeOverflowError&) {
+      msg_printer_.PrintError("Code size exceeds 32 bits");
+      return;
+    } catch (const IOError&) {
+      const string msg = (format("Failed to read input file %1%")
+                          % found_input_file_path.string()).str();
+      msg_printer_.PrintError(msg);
+      return;
+    }
   }
 
   const unique_ptr<Linker> linker = linker_factory_.Create();
   const uint32_t output_code_version = UINT32_C(1);
-  const unique_ptr<CodeContainer> output_code_container =
-      linker->Link(modules, output_code_version);
-  code_container_writer_.Write(*output_code_container, output_code_);
+
+  try {
+    const unique_ptr<CodeContainer> output_code_container =
+        linker->Link(modules, output_code_version);
+    code_container_writer_.Write(*output_code_container, output_code_);
+  } catch (const Code::CodeSizeOverflowError&) {
+    msg_printer_.PrintError("Code size exceeds 32 bits");
+    return;
+  }
+
   path output_file_path(
       config_->GetBinDirPath() / config_->GetOutputFilePath());
-  dir_creator_.Create(output_file_path.parent_path());
+
+  try {
+    dir_creator_.Create(output_file_path.parent_path());
+  } catch (const IOError&) {
+    const string msg = (format("Failed to create output folder \"%1%\"")
+                        % output_file_path.parent_path().string()).str();
+    msg_printer_.PrintError(msg);
+    return;
+  }
 
   try {
     file_.Write(output_file_path, *output_code_);

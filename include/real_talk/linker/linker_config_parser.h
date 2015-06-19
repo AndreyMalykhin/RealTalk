@@ -2,6 +2,8 @@
 #ifndef _REAL_TALK_LINKER_LINKER_CONFIG_PARSER_H_
 #define _REAL_TALK_LINKER_LINKER_CONFIG_PARSER_H_
 
+#include <cstdint>
+#include <stdexcept>
 #include <string>
 
 namespace real_talk {
@@ -12,6 +14,11 @@ enum class LinkerCmd: uint8_t;
 
 class LinkerConfigParser {
  public:
+  class BadArgsError: public std::runtime_error {
+   public:
+    explicit BadArgsError(const std::string &msg): std::runtime_error(msg) {}
+  };
+
   virtual ~LinkerConfigParser() {}
 
   /**

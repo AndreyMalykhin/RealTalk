@@ -16,7 +16,7 @@ class CompilerConfigParser {
  public:
   class BadArgsError: public std::runtime_error {
    public:
-    explicit BadArgsError(const std::string &msg);
+    explicit BadArgsError(const std::string &msg): std::runtime_error(msg) {}
   };
 
   virtual ~CompilerConfigParser() {}
