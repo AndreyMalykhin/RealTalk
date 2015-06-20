@@ -46,13 +46,13 @@ namespace {
 struct TestModule {
   Module expected_module;
 };
-}
 
 class StreambufMock: public stringbuf {
  public:
   MOCK_METHOD3(seekoff,
                streampos(streamoff, ios_base::seekdir, ios_base::openmode));
 };
+}
 
 class SimpleModuleReaderTest: public Test {
  protected:
@@ -139,12 +139,12 @@ TEST_F(SimpleModuleReaderTest, ReadFromStream) {
   for (const TestModule &test_data: GetDataForReadFromTest()) {
     Code module_code;
     SimpleCodeContainerWriter().Write(test_data.expected_module, &module_code);
-    stringstream module_code_stream;
-    module_code_stream.exceptions(ios::failbit | ios::badbit);
-    module_code_stream.write(
+    stringstream stream;
+    stream.exceptions(ios::failbit | ios::badbit);
+    stream.write(
         reinterpret_cast<char*>(module_code.GetData()), module_code.GetSize());
     unique_ptr<Module> actual_module =
-        SimpleModuleReader().ReadFromStream(&module_code_stream);
+        SimpleModuleReader().ReadFromStream(&stream);
     ASSERT_TRUE(actual_module.get());
     ASSERT_EQ(test_data.expected_module, *actual_module);
   }
@@ -155,11 +155,11 @@ TEST_F(SimpleModuleReaderTest, ReadFromStreamWithIOError) {
   EXPECT_CALL(stream_buffer, seekoff(_, _, _))
       .Times(1)
       .WillOnce(Throw(ios::failure("seekoff() error")));
-  iostream module_code_stream(&stream_buffer);
+  iostream stream(&stream_buffer);
   SimpleModuleReader reader;
 
   try {
-    reader.ReadFromStream(&module_code_stream);
+    reader.ReadFromStream(&stream);
     FAIL();
   } catch (const IOError&) {}
 }
@@ -169,11 +169,11 @@ TEST_F(SimpleModuleReaderTest, ReadFromStreamWithCodeSizeOverflowError) {
   EXPECT_CALL(stream_buffer, seekoff(_, _, _))
       .Times(AnyNumber())
       .WillRepeatedly(Return(numeric_limits<int64_t>::max()));
-  iostream module_code_stream(&stream_buffer);
+  iostream stream(&stream_buffer);
   SimpleModuleReader reader;
 
   try {
-    reader.ReadFromStream(&module_code_stream);
+    reader.ReadFromStream(&stream);
     FAIL();
   } catch (const Code::CodeSizeOverflowError&) {}
 }

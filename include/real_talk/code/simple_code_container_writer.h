@@ -10,7 +10,8 @@ namespace code {
 class SimpleCodeContainerWriter: public CodeContainerWriter {
  public:
   virtual void Write(const CodeContainer &container, Code *code) const override;
-  virtual void Write(const Module &container, Code *code) const override;
+  virtual void Write(const Module &module, Code *code) const override;
+  virtual void Write(const Exe &exe, Code *code) const override;
 };
 }
 }

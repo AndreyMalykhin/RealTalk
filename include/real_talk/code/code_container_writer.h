@@ -3,6 +3,7 @@
 #define _REAL_TALK_CODE_CODE_CONTAINER_WRITER_H_
 
 #include "real_talk/code/module_writer.h"
+#include "real_talk/code/exe_writer.h"
 
 namespace real_talk {
 namespace code {
@@ -10,7 +11,7 @@ namespace code {
 class CodeContainer;
 class Code;
 
-class CodeContainerWriter: public ModuleWriter {
+class CodeContainerWriter: public ModuleWriter, public ExeWriter {
  public:
   virtual ~CodeContainerWriter() {}
 
@@ -20,6 +21,7 @@ class CodeContainerWriter: public ModuleWriter {
   virtual void Write(const CodeContainer &container, Code *code) const = 0;
 
   using ModuleWriter::Write;
+  using ExeWriter::Write;
 };
 }
 }

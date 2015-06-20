@@ -122,10 +122,10 @@ class Code {
   void WriteIdAddress(const IdAddress &id_address);
 
  private:
-  bool HasEnoughCapacity(uint32_t bytes_count) const;
-  bool HasEnoughSize(uint32_t bytes_count) const;
+  bool HasEnoughCapacity(uint32_t bytes_count) const noexcept;
+  bool HasEnoughSize(uint32_t bytes_count) const noexcept;
   void EnsureCapacity(uint32_t bytes_count);
-  void AfterWrite(uint32_t count);
+  void AfterWrite(uint32_t count) noexcept;
 
   uint32_t size_;
   uint32_t capacity_;

@@ -330,16 +330,16 @@ const ArithmeticNegateDoubleCmd &kArithmeticNegateDoubleCmd =
     *new ArithmeticNegateDoubleCmd();
 }
 
-void CmdReader::SetCode(Code *code) {
+void CmdReader::SetCode(Code *code) noexcept {
   assert(code);
   code_ = code;
 }
 
-Code *CmdReader::GetCode() const {
+Code *CmdReader::GetCode() const noexcept {
   return code_;
 }
 
-const Cmd &CmdReader::GetNextCmd() {
+const Cmd &CmdReader::GetNextCmd() noexcept {
   const Cmd *cmd = nullptr;
 
   switch (code_->ReadCmdId()) {
@@ -916,27 +916,27 @@ const Cmd &CmdReader::GetNextCmd() {
   return *cmd;
 }
 
-inline void CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) {
+inline void CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) noexcept {
   cmd.SetDimensionsCount(code_->ReadUint8());
 }
 
 inline void CmdReader::ReadCreateAndInitArrayCmd(
-    CreateAndInitArrayCmd &cmd) {
+    CreateAndInitArrayCmd &cmd) noexcept {
   cmd.SetDimensionsCount(code_->ReadUint8());
   cmd.SetValuesCount(code_->ReadInt32());
 }
 
-inline void CmdReader::ReadJumpCmd(JumpCmd &cmd) {
+inline void CmdReader::ReadJumpCmd(JumpCmd &cmd) noexcept {
   cmd.SetOffset(code_->ReadInt32());
 }
 
 inline void CmdReader::ReadLoadGlobalVarValueCmd(
-    LoadGlobalVarValueCmd &cmd) {
+    LoadGlobalVarValueCmd &cmd) noexcept {
   cmd.SetVarIndex(code_->ReadUint32());
 }
 
 inline void CmdReader::ReadLoadLocalVarValueCmd(
-    LoadLocalVarValueCmd &cmd) {
+    LoadLocalVarValueCmd &cmd) noexcept {
   cmd.SetVarIndex(code_->ReadUint32());
 }
 }

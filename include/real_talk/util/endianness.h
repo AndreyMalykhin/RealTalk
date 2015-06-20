@@ -12,16 +12,14 @@ namespace util {
 
 #if defined BOOST_BIG_ENDIAN
 
-namespace {
-
-inline uint32_t SwapBytes32(uint32_t input) {
+uint32_t SwapBytes32(uint32_t input) {
   return ((input << 24) & 0xFF000000)
       | ((input << 8) & 0x00FF0000)
       | ((input >> 8) & 0x0000FF00)
       | ((input >> 24) & 0x000000FF);
 }
 
-inline uint64_t SwapBytes64(uint64_t input) {
+uint64_t SwapBytes64(uint64_t input) {
   return ((input << 56) & 0xFF00000000000000)
       | ((input << 40) & 0x00FF000000000000)
       | ((input << 24) & 0x0000FF0000000000)
@@ -30,7 +28,6 @@ inline uint64_t SwapBytes64(uint64_t input) {
       | ((input >> 24) & 0x0000000000FF0000)
       | ((input >> 40) & 0x000000000000FF00)
       | ((input >> 56) & 0x00000000000000FF);
-}
 }
 
 inline uint32_t ToLittleEndian32(uint32_t input) {

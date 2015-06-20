@@ -15,16 +15,16 @@ class LoadLocalVarValueCmd;
 
 class CmdReader {
  public:
-  void SetCode(Code *code);
-  Code *GetCode() const;
-  const Cmd &GetNextCmd();
+  void SetCode(Code *code) noexcept;
+  Code *GetCode() const noexcept;
+  const Cmd &GetNextCmd() noexcept;
 
  private:
-  void ReadCreateArrayCmd(CreateArrayCmd &cmd);
-  void ReadJumpCmd(JumpCmd &cmd);
-  void ReadCreateAndInitArrayCmd(CreateAndInitArrayCmd &cmd);
-  void ReadLoadGlobalVarValueCmd(LoadGlobalVarValueCmd &cmd);
-  void ReadLoadLocalVarValueCmd(LoadLocalVarValueCmd &cmd);
+  void ReadCreateArrayCmd(CreateArrayCmd &cmd) noexcept;
+  void ReadJumpCmd(JumpCmd &cmd) noexcept;
+  void ReadCreateAndInitArrayCmd(CreateAndInitArrayCmd &cmd) noexcept;
+  void ReadLoadGlobalVarValueCmd(LoadGlobalVarValueCmd &cmd) noexcept;
+  void ReadLoadLocalVarValueCmd(LoadLocalVarValueCmd &cmd) noexcept;
 
   Code *code_;
 };

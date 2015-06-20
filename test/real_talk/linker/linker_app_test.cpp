@@ -46,6 +46,7 @@ using real_talk::code::CodeContainer;
 using real_talk::code::CodeContainerWriter;
 using real_talk::code::ModuleReader;
 using real_talk::code::Module;
+using real_talk::code::Exe;
 
 namespace real_talk {
 namespace linker {
@@ -131,6 +132,10 @@ class LinkerMock: public Linker {
 class CodeContainerWriterMock: public CodeContainerWriter {
  public:
   virtual void Write(const Module&, Code*) const override {
+    assert(false);
+  }
+
+  virtual void Write(const Exe&, Code*) const override {
     assert(false);
   }
 

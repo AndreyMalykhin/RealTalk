@@ -16,81 +16,81 @@ using std::unique_ptr;
 namespace real_talk {
 namespace code {
 
-unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *module_code) const {
-  assert(module_code);
-  const uint32_t version = module_code->ReadUint32();
-  const uint32_t cmds_address = module_code->ReadUint32();
-  const uint32_t main_cmds_size = module_code->ReadUint32();
-  const uint32_t func_cmds_size = module_code->ReadUint32();
-  const uint32_t global_var_defs_metadata_address = module_code->ReadUint32();
-  const uint32_t global_var_defs_metadata_size = module_code->ReadUint32();
-  const uint32_t func_defs_metadata_address = module_code->ReadUint32();
-  const uint32_t func_defs_metadata_size = module_code->ReadUint32();
-  const uint32_t native_func_defs_metadata_address = module_code->ReadUint32();
-  const uint32_t native_func_defs_metadata_size = module_code->ReadUint32();
-  const uint32_t global_var_refs_metadata_address = module_code->ReadUint32();
-  const uint32_t global_var_refs_metadata_size = module_code->ReadUint32();
-  const uint32_t func_refs_metadata_address = module_code->ReadUint32();
-  const uint32_t func_refs_metadata_size = module_code->ReadUint32();
-  const uint32_t native_func_refs_metadata_address = module_code->ReadUint32();
-  const uint32_t native_func_refs_metadata_size = module_code->ReadUint32();
+unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
+  assert(code);
+  const uint32_t version = code->ReadUint32();
+  const uint32_t cmds_address = code->ReadUint32();
+  const uint32_t main_cmds_size = code->ReadUint32();
+  const uint32_t func_cmds_size = code->ReadUint32();
+  const uint32_t global_var_defs_metadata_address = code->ReadUint32();
+  const uint32_t global_var_defs_metadata_size = code->ReadUint32();
+  const uint32_t func_defs_metadata_address = code->ReadUint32();
+  const uint32_t func_defs_metadata_size = code->ReadUint32();
+  const uint32_t native_func_defs_metadata_address = code->ReadUint32();
+  const uint32_t native_func_defs_metadata_size = code->ReadUint32();
+  const uint32_t global_var_refs_metadata_address = code->ReadUint32();
+  const uint32_t global_var_refs_metadata_size = code->ReadUint32();
+  const uint32_t func_refs_metadata_address = code->ReadUint32();
+  const uint32_t func_refs_metadata_size = code->ReadUint32();
+  const uint32_t native_func_refs_metadata_address = code->ReadUint32();
+  const uint32_t native_func_refs_metadata_size = code->ReadUint32();
 
-  module_code->SetPosition(cmds_address);
+  code->SetPosition(cmds_address);
   unique_ptr<Code> cmds_code(new Code(
-      module_code->GetDataAtPosition(), main_cmds_size + func_cmds_size));
+      code->GetDataAtPosition(), main_cmds_size + func_cmds_size));
 
-  module_code->SetPosition(global_var_defs_metadata_address);
+  code->SetPosition(global_var_defs_metadata_address);
   vector<string> ids_of_global_var_defs;
   const unsigned char * const global_var_defs_metadata_end =
-      module_code->GetDataAtPosition() + global_var_defs_metadata_size;
+      code->GetDataAtPosition() + global_var_defs_metadata_size;
 
-  while (module_code->GetDataAtPosition() != global_var_defs_metadata_end) {
-    ids_of_global_var_defs.push_back(module_code->ReadString());
+  while (code->GetDataAtPosition() != global_var_defs_metadata_end) {
+    ids_of_global_var_defs.push_back(code->ReadString());
   }
 
-  module_code->SetPosition(func_defs_metadata_address);
+  code->SetPosition(func_defs_metadata_address);
   vector<IdAddress> id_addresses_of_func_defs;
   const unsigned char * const func_defs_metadata_end =
-      module_code->GetDataAtPosition() + func_defs_metadata_size;
+      code->GetDataAtPosition() + func_defs_metadata_size;
 
-  while (module_code->GetDataAtPosition() != func_defs_metadata_end) {
-    id_addresses_of_func_defs.push_back(module_code->ReadIdAddress());
+  while (code->GetDataAtPosition() != func_defs_metadata_end) {
+    id_addresses_of_func_defs.push_back(code->ReadIdAddress());
   }
 
-  module_code->SetPosition(native_func_defs_metadata_address);
+  code->SetPosition(native_func_defs_metadata_address);
   vector<string> ids_of_native_func_defs;
   const unsigned char * const native_func_defs_metadata_end =
-      module_code->GetDataAtPosition() + native_func_defs_metadata_size;
+      code->GetDataAtPosition() + native_func_defs_metadata_size;
 
-  while (module_code->GetDataAtPosition() != native_func_defs_metadata_end) {
-    ids_of_native_func_defs.push_back(module_code->ReadString());
+  while (code->GetDataAtPosition() != native_func_defs_metadata_end) {
+    ids_of_native_func_defs.push_back(code->ReadString());
   }
 
-  module_code->SetPosition(global_var_refs_metadata_address);
+  code->SetPosition(global_var_refs_metadata_address);
   vector<IdAddresses> id_addresses_of_global_var_refs;
   const unsigned char * const global_var_refs_metadata_end =
-      module_code->GetDataAtPosition() + global_var_refs_metadata_size;
+      code->GetDataAtPosition() + global_var_refs_metadata_size;
 
-  while (module_code->GetDataAtPosition() != global_var_refs_metadata_end) {
-    id_addresses_of_global_var_refs.push_back(module_code->ReadIdAddresses());
+  while (code->GetDataAtPosition() != global_var_refs_metadata_end) {
+    id_addresses_of_global_var_refs.push_back(code->ReadIdAddresses());
   }
 
-  module_code->SetPosition(func_refs_metadata_address);
+  code->SetPosition(func_refs_metadata_address);
   vector<IdAddresses> id_addresses_of_func_refs;
   const unsigned char * const func_refs_metadata_end =
-      module_code->GetDataAtPosition() + func_refs_metadata_size;
+      code->GetDataAtPosition() + func_refs_metadata_size;
 
-  while (module_code->GetDataAtPosition() != func_refs_metadata_end) {
-    id_addresses_of_func_refs.push_back(module_code->ReadIdAddresses());
+  while (code->GetDataAtPosition() != func_refs_metadata_end) {
+    id_addresses_of_func_refs.push_back(code->ReadIdAddresses());
   }
 
-  module_code->SetPosition(native_func_refs_metadata_address);
+  code->SetPosition(native_func_refs_metadata_address);
   vector<IdAddresses> id_addresses_of_native_func_refs;
   const unsigned char * const native_func_refs_metadata_end =
-      module_code->GetDataAtPosition() + native_func_refs_metadata_size;
+      code->GetDataAtPosition() + native_func_refs_metadata_size;
 
-  while (module_code->GetDataAtPosition() != native_func_refs_metadata_end) {
-    id_addresses_of_native_func_refs.push_back(module_code->ReadIdAddresses());
+  while (code->GetDataAtPosition() != native_func_refs_metadata_end) {
+    id_addresses_of_native_func_refs.push_back(code->ReadIdAddresses());
   }
 
   return unique_ptr<Module>(new Module(version,
@@ -104,11 +104,10 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *module_code) const {
                                        id_addresses_of_global_var_refs));
 }
 
-unique_ptr<Module> SimpleModuleReader::ReadFromStream(
-    istream *code_stream) const {
-  assert(code_stream);
-  Code module_code(*code_stream);
-  return ReadFromCode(&module_code);
+unique_ptr<Module> SimpleModuleReader::ReadFromStream(istream *stream) const {
+  assert(stream);
+  Code code(*stream);
+  return ReadFromCode(&code);
 }
 }
 }

@@ -5,7 +5,7 @@
 #include <string>
 #include "real_talk/code/code.h"
 #include "real_talk/code/module.h"
-#include "real_talk/code/simple_module_reader.h"
+#include "real_talk/code/exe.h"
 #include "real_talk/code/simple_code_container_writer.h"
 
 using std::vector;
@@ -21,15 +21,6 @@ class SimpleCodeContainerWriterTest: public Test {
  protected:
   virtual void SetUp() override {}
   virtual void TearDown() override {}
-
-  string PrintCode(Code *code) {
-    code->SetPosition(UINT32_C(0));
-    unique_ptr<Module> module = SimpleModuleReader().ReadFromCode(code);
-    assert(module);
-    ostringstream result;
-    result << *module;
-    return result.str();
-  }
 };
 
 TEST_F(SimpleCodeContainerWriterTest, WriteWithModule) {
@@ -62,7 +53,6 @@ TEST_F(SimpleCodeContainerWriterTest, WriteWithModule) {
                 id_addresses_of_func_refs,
                 id_addresses_of_native_func_refs,
                 id_addresses_of_global_var_refs);
-
   Code expected_code;
   expected_code.WriteUint32(module.GetVersion());
   uint32_t segments_metadata_address = expected_code.GetPosition();
@@ -122,12 +112,58 @@ TEST_F(SimpleCodeContainerWriterTest, WriteWithModule) {
   expected_code.WriteUint32(func_refs_metadata_size);
   expected_code.WriteUint32(native_func_refs_metadata_address);
   expected_code.WriteUint32(native_func_refs_metadata_size);
-
   Code actual_code;
   SimpleCodeContainerWriter().Write(module, &actual_code);
-  ASSERT_EQ(expected_code, actual_code)
-      << "expected=\n" << PrintCode(&expected_code)
-      << "\nactual=\n" << PrintCode(&actual_code);
+  ASSERT_EQ(expected_code, actual_code);
+}
+
+TEST_F(SimpleCodeContainerWriterTest, WriteWithExe) {
+  unique_ptr<Code> cmds_code(new Code());
+  cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
+  cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
+  cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
+  cmds_code->SetPosition(UINT32_C(0));
+  vector<string> ids_of_native_func_defs = {"native_func", "native_func2"};
+  vector<IdAddresses> id_addresses_of_native_func_refs =
+      {{"func3", {UINT32_C(1), UINT32_C(2)}},
+       {"func4", {UINT32_C(3), UINT32_C(4)}}};
+  uint32_t version = UINT32_C(1);
+  Exe exe(version,
+          move(cmds_code),
+          main_cmds_code_size,
+          ids_of_native_func_defs,
+          id_addresses_of_native_func_refs);
+  Code expected_code;
+  expected_code.WriteUint32(exe.GetVersion());
+  uint32_t segments_metadata_address = expected_code.GetPosition();
+  expected_code.Skip(7 * sizeof(uint32_t));
+  uint32_t cmds_address = expected_code.GetPosition();
+  expected_code.WriteBytes(
+      exe.GetCmdsCode().GetData(), exe.GetCmdsCode().GetSize());
+  uint32_t native_func_defs_metadata_address = expected_code.GetPosition();
+  expected_code.WriteString("native_func");
+  expected_code.WriteString("native_func2");
+  uint32_t native_func_defs_metadata_size =
+      expected_code.GetPosition() - native_func_defs_metadata_address;
+  uint32_t native_func_refs_metadata_address = expected_code.GetPosition();
+  expected_code.WriteIdAddresses(
+      IdAddresses("func3", vector<uint32_t>({UINT32_C(1), UINT32_C(2)})));
+  expected_code.WriteIdAddresses(
+      IdAddresses("func4", vector<uint32_t>({UINT32_C(3), UINT32_C(4)})));
+  uint32_t native_func_refs_metadata_size =
+      expected_code.GetPosition() - native_func_refs_metadata_address;
+  expected_code.SetPosition(segments_metadata_address);
+  expected_code.WriteUint32(cmds_address);
+  expected_code.WriteUint32(exe.GetMainCmdsCodeSize());
+  expected_code.WriteUint32(exe.GetFuncCmdsCodeSize());
+  expected_code.WriteUint32(native_func_defs_metadata_address);
+  expected_code.WriteUint32(native_func_defs_metadata_size);
+  expected_code.WriteUint32(native_func_refs_metadata_address);
+  expected_code.WriteUint32(native_func_refs_metadata_size);
+  Code actual_code;
+  SimpleCodeContainerWriter().Write(exe, &actual_code);
+  ASSERT_EQ(expected_code, actual_code);
 }
 }
 }
