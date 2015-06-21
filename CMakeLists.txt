@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.0.2)
 project(REAL_TALK)
 include_directories(include)
 include_directories(SYSTEM thirdparty/gmock-1.7.0/include thirdparty/gmock-1.7.0/gtest/include)
-find_library(GMOCK_LIBRARY NAMES gmock PATHS thirdparty/gmock-1.7.0/build)
+find_library(gmock_lib NAMES gmock PATHS thirdparty/gmock-1.7.0/build)
 set(Boost_USE_STATIC_LIBS ON) 
 set(Boost_USE_MULTITHREADED OFF)
 find_package(Boost 1.56.0 REQUIRED COMPONENTS system filesystem program_options)
@@ -69,6 +69,7 @@ add_library(real_talk_lib
   src/real_talk/compiler/compiler.cpp
   src/real_talk/linker/linker_config.cpp
   src/real_talk/linker/linker_app.cpp
+  src/real_talk/linker/lib_linker.cpp
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp
   src/real_talk/util/simple_file.cpp
@@ -92,13 +93,14 @@ add_executable(real_talk_tests_exe
   test/real_talk/compiler/simple_compiler_config_parser_test.cpp
   test/real_talk/compiler/compiler_test.cpp
   test/real_talk/linker/linker_app_test.cpp
+  test/real_talk/linker/lib_linker_test.cpp
   test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/simple_file_test.cpp
   test/real_talk/util/simple_file_searcher_test.cpp
   test/real_talk/util/endianness_test.cpp
 )
 target_include_directories(real_talk_tests_exe PRIVATE test)
-target_link_libraries(real_talk_tests_exe ${GMOCK_LIBRARY} ${Boost_LIBRARIES} real_talk_lib)
+target_link_libraries(real_talk_tests_exe ${gmock_lib} ${Boost_LIBRARIES} real_talk_lib)
 SET_TARGET_PROPERTIES(real_talk_tests_exe PROPERTIES OUTPUT_NAME realtalktests)
 add_executable(real_talk_compiler_exe
   src/real_talk/compiler/main.cpp

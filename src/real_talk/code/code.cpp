@@ -21,6 +21,12 @@ Code::Code(): size_(UINT32_C(0)),
               current_byte_(bytes_.get()) {
 }
 
+Code::Code(uint32_t size): size_(size),
+                           capacity_(size),
+                           bytes_(new unsigned char[size]),
+                           current_byte_(bytes_.get()) {
+}
+
 Code::Code(const unsigned char *bytes, uint32_t size)
     : size_(size),
       capacity_(size),
@@ -258,11 +264,11 @@ void Code::WriteIdAddress(const IdAddress &id_address) {
   WriteUint32(id_address.GetAddress());
 }
 
-bool Code::HasEnoughCapacity(uint32_t bytes_count) const {
+bool Code::HasEnoughCapacity(uint32_t bytes_count) const noexcept {
   return capacity_ - GetPosition() >= bytes_count;
 }
 
-bool Code::HasEnoughSize(uint32_t bytes_count) const {
+bool Code::HasEnoughSize(uint32_t bytes_count) const noexcept {
   return size_ - GetPosition() >= bytes_count;
 }
 
@@ -287,7 +293,7 @@ void Code::EnsureCapacity(uint32_t bytes_count) {
   assert(capacity_ >= size_ + bytes_count);
 }
 
-void Code::AfterWrite(uint32_t written_bytes_count) {
+void Code::AfterWrite(uint32_t written_bytes_count) noexcept {
   assert(size_ >= GetPosition());
   const uint32_t available_size = size_ - GetPosition();
 

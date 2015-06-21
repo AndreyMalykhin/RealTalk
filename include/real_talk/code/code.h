@@ -28,6 +28,7 @@ class Code {
    */
   explicit Code(std::istream &stream);
 
+  explicit Code(uint32_t size);
   Code(const unsigned char *bytes, uint32_t size);
   Code();
   unsigned char *GetData() noexcept;

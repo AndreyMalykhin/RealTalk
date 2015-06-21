@@ -25,8 +25,7 @@ class Linker {
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
   virtual std::unique_ptr<real_talk::code::CodeContainer> Link(
-      const Linker::Modules &modules,
-      uint32_t output_code_version) const = 0;
+      const Linker::Modules &modules, uint32_t output_version) const = 0;
 };
 }
 }
