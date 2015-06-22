@@ -15,6 +15,7 @@ class IdAddresses {
   IdAddresses(const std::string &id, const std::vector<uint32_t> &addresses);
   const std::string &GetId() const;
   const std::vector<uint32_t> &GetAddresses() const;
+  std::vector<uint32_t> &GetAddresses();
   friend bool operator==(const IdAddresses &lhs, const IdAddresses &rhs);
   friend std::ostream &operator<<(
       std::ostream &stream, const IdAddresses &id_addresses);

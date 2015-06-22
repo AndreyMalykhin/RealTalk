@@ -22,6 +22,10 @@ const vector<uint32_t> &IdAddresses::GetAddresses() const {
   return addresses_;
 }
 
+vector<uint32_t> &IdAddresses::GetAddresses() {
+  return addresses_;
+}
+
 ostream &operator<<(ostream &stream, const IdAddresses &id_addresses) {
   stream << "id=" << id_addresses.id_ << "; addresses=";
 
