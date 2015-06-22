@@ -206,10 +206,10 @@ TEST_F(LibLinkerTest, Link) {
   vector<IdAddresses> id_addresses_of_global_var_refs =
       {{"var", var_index_placeholders}, {"var2", var_index_placeholders2}};
   vector<IdAddresses> id_addresses_of_func_refs =
-      {{"func", func_index_placeholders}, {"func2", func_index_placeholders2}};
+      {{"func2", func_index_placeholders2}, {"func", func_index_placeholders}};
   vector<IdAddresses> id_addresses_of_native_func_refs =
-      {{"native_func", native_func_index_placeholders},
-       {"native_func2", native_func_index_placeholders2}};
+      {{"native_func2", native_func_index_placeholders2},
+       {"native_func", native_func_index_placeholders}};
   uint32_t module_version = UINT32_C(1);
   Module expected_module(module_version,
                          move(cmds_code),
