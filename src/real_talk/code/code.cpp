@@ -170,29 +170,23 @@ void Code::WriteDouble(double value) {
 }
 
 bool Code::ReadBool() noexcept {
-  assert(HasEnoughSize(sizeof(uint8_t)));
-  const uint8_t value = *reinterpret_cast<uint8_t*>(current_byte_);
-  current_byte_ += sizeof(value);
-  return static_cast<bool>(value);
+  return static_cast<bool>(ReadUint8());
 }
 
 void Code::WriteBool(bool value) {
-  EnsureCapacity(sizeof(uint8_t));
-  *reinterpret_cast<uint8_t*>(current_byte_) = static_cast<uint8_t>(value);
-  AfterWrite(sizeof(uint8_t));
+  WriteUint8(static_cast<uint8_t>(value));
 }
 
 char Code::ReadChar() noexcept {
-  assert(HasEnoughSize(sizeof(char)));
-  const char value = *reinterpret_cast<char*>(current_byte_);
-  current_byte_ += sizeof(value);
-  return value;
+  const uint8_t c = ReadUint8();
+  assert(c <= std::numeric_limits<char>::max());
+  return static_cast<char>(c);
 }
 
 void Code::WriteChar(char value) {
-  EnsureCapacity(sizeof(value));
-  *reinterpret_cast<char*>(current_byte_) = value;
-  AfterWrite(sizeof(value));
+  assert(value >= 0);
+  assert(value <= std::numeric_limits<uint8_t>::max());
+  WriteUint8(static_cast<uint8_t>(value));
 }
 
 void Code::WriteBytes(const unsigned char *bytes, uint32_t count) {

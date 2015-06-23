@@ -1,4 +1,5 @@
 
+#include <boost/format.hpp>
 #include <unordered_map>
 #include <unordered_set>
 #include <cassert>
@@ -19,6 +20,7 @@ using std::unordered_set;
 using std::string;
 using std::numeric_limits;
 using std::unique_ptr;
+using boost::format;
 using real_talk::code::CodeContainer;
 using real_talk::code::Code;
 using real_talk::code::Module;
@@ -31,6 +33,11 @@ namespace linker {
 namespace {
 
 typedef unordered_map<string, size_t> IdIndexes;
+
+void ThrowDuplicateDefError(const string &id) {
+  throw Linker::DuplicateDefError(
+      id, (format("Duplicate definition; id=%1%") % id).str());
+}
 
 uint32_t GetNewAddress(uint32_t old_address,
                        uint32_t main_cmds_size,
@@ -82,14 +89,18 @@ void MergeIdAddressList(const vector<IdAddress> &input_id_addresses,
                         unordered_set<string> *ids,
                         vector<IdAddress> *output_id_addresses) {
   for (const IdAddress &id_address: input_id_addresses) {
-    const bool is_duplicate_id =
-        !ids->insert(id_address.GetId()).second;
-    assert(!is_duplicate_id);
+    const string &id = id_address.GetId();
+    const bool is_duplicate_id = !ids->insert(id).second;
+
+    if (is_duplicate_id) {
+      ThrowDuplicateDefError(id);
+    }
+
     const uint32_t new_address = GetNewAddress(id_address.GetAddress(),
                                                main_cmds_size,
                                                main_cmds_current_address,
                                                func_cmds_current_address);
-    output_id_addresses->push_back(IdAddress(id_address.GetId(), new_address));
+    output_id_addresses->push_back(IdAddress(id, new_address));
   }
 }
 
@@ -98,8 +109,18 @@ void MergeIds(const vector<string> &input_id_list,
               vector<string> *output_id_list) {
   for (const string &id: input_id_list) {
     const bool is_duplicate_id = !output_id_set->insert(id).second;
-    assert(!is_duplicate_id);
+
+    if (is_duplicate_id) {
+      ThrowDuplicateDefError(id);
+    }
+
     output_id_list->push_back(id);
+  }
+}
+
+void CheckAddressOverflow(uint32_t address, uint32_t addition) {
+  if (address + addition < address) {
+    throw Code::CodeSizeOverflowError("Code size exceeds 32 bits");
   }
 }
 }
@@ -110,7 +131,10 @@ unique_ptr<CodeContainer> LibLinker::Link(
   uint32_t cmds_size = UINT32_C(0);
 
   for (const unique_ptr<Module> &module: modules) {
+    CheckAddressOverflow(
+        func_cmds_current_address, module->GetMainCmdsCodeSize());
     func_cmds_current_address += module->GetMainCmdsCodeSize();
+    CheckAddressOverflow(cmds_size, module->GetCmdsCode().GetSize());
     cmds_size += module->GetCmdsCode().GetSize();
   }
 
@@ -131,12 +155,13 @@ unique_ptr<CodeContainer> LibLinker::Link(
 
   for (const unique_ptr<Module> &module: modules) {
     output_cmds->SetPosition(main_cmds_current_address);
-    const unsigned char *input_cmds = module->GetCmdsCode().GetData();
+    const unsigned char *main_cmds = module->GetCmdsCode().GetData();
     const uint32_t main_cmds_size = module->GetMainCmdsCodeSize();
-    output_cmds->WriteBytes(input_cmds, main_cmds_size);
+    output_cmds->WriteBytes(main_cmds, main_cmds_size);
     output_cmds->SetPosition(func_cmds_current_address);
+    const unsigned char *func_cmds = main_cmds + main_cmds_size;
     const uint32_t func_cmds_size = module->GetFuncCmdsCodeSize();
-    output_cmds->WriteBytes(input_cmds + main_cmds_size, func_cmds_size);
+    output_cmds->WriteBytes(func_cmds, func_cmds_size);
     MergeIds(module->GetIdsOfGlobalVarDefs(),
              &ids_of_global_var_defs_set,
              &ids_of_global_var_defs_list);

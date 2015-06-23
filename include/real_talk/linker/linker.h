@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <string>
 
 namespace real_talk {
 namespace code {
@@ -19,10 +20,21 @@ class Linker {
  public:
   typedef std::vector< std::unique_ptr<real_talk::code::Module> > Modules;
 
+  class DuplicateDefError: public std::runtime_error {
+   public:
+    DuplicateDefError(const std::string &id, const std::string &msg)
+        : std::runtime_error(msg), id_(id) {}
+    const std::string &GetId() const {return id_;}
+
+   private:
+    std::string id_;
+  };
+
   virtual ~Linker() {}
 
   /**
    * @throws real_talk::code::Code::CodeSizeOverflowError
+   * @throws real_talk::linker::Linker::DuplicateDefError
    */
   virtual std::unique_ptr<real_talk::code::CodeContainer> Link(
       const Linker::Modules &modules, uint32_t output_version) const = 0;

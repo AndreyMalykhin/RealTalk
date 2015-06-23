@@ -35,10 +35,23 @@ class LibLinkerTest: public Test {
     stream << *module;
     return stream.str();
   }
+
+  void TestDuplicateDefError(
+      const Linker::Modules &modules, const string &expected_id) {
+    uint32_t module_version = UINT32_C(1);
+
+    try {
+      LibLinker().Link(modules, module_version);
+      FAIL();
+    } catch (const Linker::DuplicateDefError &error) {
+      string actual_id = error.GetId();
+      ASSERT_EQ(expected_id, actual_id);
+    }
+  }
 };
 
 TEST_F(LibLinkerTest, Link) {
-  LibLinker::Modules modules;
+  Linker::Modules modules;
 
   {
     unique_ptr<Code> cmds_code(new Code());
@@ -226,6 +239,159 @@ TEST_F(LibLinkerTest, Link) {
   ASSERT_EQ(expected_module, *actual_module)
       << "[expected]\n" << PrintModule(&expected_module)
       << "\n[actual]\n" << PrintModule(actual_module.get());
+}
+
+TEST_F(LibLinkerTest, GlobalVarDuplicateDefError) {
+  Linker::Modules modules;
+  string expected_id = "var";
+
+  {
+    unique_ptr<Code> cmds_code(new Code());
+    vector<string> ids_of_global_var_defs = {expected_id};
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
+    uint32_t module_version = UINT32_C(1);
+    uint32_t main_cmds_code_size = UINT32_C(0);
+    unique_ptr<Module> module(new Module(module_version,
+                                         move(cmds_code),
+                                         main_cmds_code_size,
+                                         id_addresses_of_func_defs,
+                                         ids_of_global_var_defs,
+                                         ids_of_native_func_defs,
+                                         id_addresses_of_func_refs,
+                                         id_addresses_of_native_func_refs,
+                                         id_addresses_of_global_var_refs));
+    modules.push_back(move(module));
+  }
+
+  {
+    unique_ptr<Code> cmds_code(new Code());
+    vector<string> ids_of_global_var_defs = {expected_id};
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
+    uint32_t module_version = UINT32_C(1);
+    uint32_t main_cmds_code_size = UINT32_C(0);
+    unique_ptr<Module> module(new Module(module_version,
+                                         move(cmds_code),
+                                         main_cmds_code_size,
+                                         id_addresses_of_func_defs,
+                                         ids_of_global_var_defs,
+                                         ids_of_native_func_defs,
+                                         id_addresses_of_func_refs,
+                                         id_addresses_of_native_func_refs,
+                                         id_addresses_of_global_var_refs));
+    modules.push_back(move(module));
+  }
+
+  TestDuplicateDefError(modules, expected_id);
+}
+
+TEST_F(LibLinkerTest, FuncDuplicateDefError) {
+  Linker::Modules modules;
+  string expected_id = "func";
+
+  {
+    unique_ptr<Code> cmds_code(new Code());
+    vector<string> ids_of_global_var_defs;
+    vector<IdAddress> id_addresses_of_func_defs = {{expected_id, UINT32_C(0)}};
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
+    uint32_t module_version = UINT32_C(1);
+    uint32_t main_cmds_code_size = UINT32_C(0);
+    unique_ptr<Module> module(new Module(module_version,
+                                         move(cmds_code),
+                                         main_cmds_code_size,
+                                         id_addresses_of_func_defs,
+                                         ids_of_global_var_defs,
+                                         ids_of_native_func_defs,
+                                         id_addresses_of_func_refs,
+                                         id_addresses_of_native_func_refs,
+                                         id_addresses_of_global_var_refs));
+    modules.push_back(move(module));
+  }
+
+  {
+    unique_ptr<Code> cmds_code(new Code());
+    vector<string> ids_of_global_var_defs;
+    vector<IdAddress> id_addresses_of_func_defs = {{expected_id, UINT32_C(1)}};
+    vector<string> ids_of_native_func_defs;
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
+    uint32_t module_version = UINT32_C(1);
+    uint32_t main_cmds_code_size = UINT32_C(0);
+    unique_ptr<Module> module(new Module(module_version,
+                                         move(cmds_code),
+                                         main_cmds_code_size,
+                                         id_addresses_of_func_defs,
+                                         ids_of_global_var_defs,
+                                         ids_of_native_func_defs,
+                                         id_addresses_of_func_refs,
+                                         id_addresses_of_native_func_refs,
+                                         id_addresses_of_global_var_refs));
+    modules.push_back(move(module));
+  }
+
+  TestDuplicateDefError(modules, expected_id);
+}
+
+TEST_F(LibLinkerTest, NativeFuncDuplicateDefError) {
+  Linker::Modules modules;
+  string expected_id = "native_func";
+
+  {
+    unique_ptr<Code> cmds_code(new Code());
+    vector<string> ids_of_global_var_defs;
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs = {expected_id};
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
+    uint32_t module_version = UINT32_C(1);
+    uint32_t main_cmds_code_size = UINT32_C(0);
+    unique_ptr<Module> module(new Module(module_version,
+                                         move(cmds_code),
+                                         main_cmds_code_size,
+                                         id_addresses_of_func_defs,
+                                         ids_of_global_var_defs,
+                                         ids_of_native_func_defs,
+                                         id_addresses_of_func_refs,
+                                         id_addresses_of_native_func_refs,
+                                         id_addresses_of_global_var_refs));
+    modules.push_back(move(module));
+  }
+
+  {
+    unique_ptr<Code> cmds_code(new Code());
+    vector<string> ids_of_global_var_defs;
+    vector<IdAddress> id_addresses_of_func_defs;
+    vector<string> ids_of_native_func_defs = {expected_id};
+    vector<IdAddresses> id_addresses_of_global_var_refs;
+    vector<IdAddresses> id_addresses_of_func_refs;
+    vector<IdAddresses> id_addresses_of_native_func_refs;
+    uint32_t module_version = UINT32_C(1);
+    uint32_t main_cmds_code_size = UINT32_C(0);
+    unique_ptr<Module> module(new Module(module_version,
+                                         move(cmds_code),
+                                         main_cmds_code_size,
+                                         id_addresses_of_func_defs,
+                                         ids_of_global_var_defs,
+                                         ids_of_native_func_defs,
+                                         id_addresses_of_func_refs,
+                                         id_addresses_of_native_func_refs,
+                                         id_addresses_of_global_var_refs));
+    modules.push_back(move(module));
+  }
+
+  TestDuplicateDefError(modules, expected_id);
 }
 }
 }
