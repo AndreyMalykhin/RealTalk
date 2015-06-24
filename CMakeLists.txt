@@ -70,6 +70,7 @@ add_library(real_talk_lib
   src/real_talk/linker/linker_config.cpp
   src/real_talk/linker/linker_app.cpp
   src/real_talk/linker/lib_linker.cpp
+  src/real_talk/linker/exe_linker.cpp
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp
   src/real_talk/util/simple_file.cpp
@@ -94,6 +95,7 @@ add_executable(real_talk_tests_exe
   test/real_talk/compiler/compiler_test.cpp
   test/real_talk/linker/linker_app_test.cpp
   test/real_talk/linker/lib_linker_test.cpp
+  test/real_talk/linker/exe_linker_test.cpp
   test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/simple_file_test.cpp
   test/real_talk/util/simple_file_searcher_test.cpp

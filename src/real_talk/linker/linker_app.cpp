@@ -129,6 +129,11 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
   } catch (const Code::CodeSizeOverflowError&) {
     msg_printer_.PrintError("Code size exceeds 32 bits");
     return;
+  } catch (const Linker::DuplicateDefError &error) {
+    const string msg =
+        (format("Duplicate definition of id \"%1%\"") % error.GetId()).str();
+    msg_printer_.PrintError(msg);
+    return;
   }
 
   path output_file_path(
