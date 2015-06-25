@@ -42,7 +42,7 @@ TEST_F(ExeLinkerTest, Link) {
     vector<uint32_t> var_index_placeholders;
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
-    cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
     vector<uint32_t> var_index_placeholders2;
     var_index_placeholders2.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
@@ -56,7 +56,7 @@ TEST_F(ExeLinkerTest, Link) {
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
     uint32_t func_def_address = cmds_code->GetPosition();
-    cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
     var_index_placeholders2.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
@@ -94,7 +94,7 @@ TEST_F(ExeLinkerTest, Link) {
     vector<uint32_t> var_index_placeholders2;
     var_index_placeholders2.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
-    cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
     vector<uint32_t> var_index_placeholders;
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
@@ -108,7 +108,7 @@ TEST_F(ExeLinkerTest, Link) {
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
     uint32_t func_def_address2 = cmds_code->GetPosition();
-    cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
@@ -145,7 +145,7 @@ TEST_F(ExeLinkerTest, Link) {
   cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
   uint32_t var_index = UINT32_C(0);
   cmds_code->WriteUint32(var_index);
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
   uint32_t var_index2 = UINT32_C(1);
   cmds_code->WriteUint32(var_index2);
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
@@ -158,7 +158,7 @@ TEST_F(ExeLinkerTest, Link) {
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
   cmds_code->WriteUint32(var_index2);
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
   cmds_code->WriteUint32(var_index);
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
   vector<uint32_t> func_address_placeholders;
@@ -170,7 +170,7 @@ TEST_F(ExeLinkerTest, Link) {
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
   uint32_t func_def_address = cmds_code->GetPosition();
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
   cmds_code->WriteUint32(var_index2);
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
   func_address_placeholders2.push_back(cmds_code->GetPosition());
@@ -180,7 +180,7 @@ TEST_F(ExeLinkerTest, Link) {
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kReturn);
   uint32_t func_def_address2 = cmds_code->GetPosition();
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
   cmds_code->WriteUint32(var_index);
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
   func_address_placeholders.push_back(cmds_code->GetPosition());
@@ -197,7 +197,7 @@ TEST_F(ExeLinkerTest, Link) {
   cmds_code->WriteUint32(func_def_address2);
   cmds_code->SetPosition(func_address_placeholders2.at(1));
   cmds_code->WriteUint32(func_def_address2);
-  cmds_code->SetPosition(cmds_code->GetSize());
+  cmds_code->SetPosition(UINT32_C(0));
   vector<string> ids_of_native_func_defs = {"native_func", "native_func2"};
   vector<IdAddresses> id_addresses_of_native_func_refs =
       {{"native_func2", native_func_index_placeholders2},
@@ -211,9 +211,23 @@ TEST_F(ExeLinkerTest, Link) {
   unique_ptr<CodeContainer> actual_exe =
       ExeLinker().Link(modules, expected_exe.GetVersion());
   ASSERT_TRUE(actual_exe.get());
+  std::cout << expected_exe.GetCmdsCode().GetPosition() << std::endl;
+  std::cout << actual_exe->GetCmdsCode().GetPosition() << std::endl;
   ASSERT_EQ(expected_exe, *actual_exe)
       << "[expected]\n" << PrintCodeContainer(&expected_exe)
       << "\n[actual]\n" << PrintCodeContainer(actual_exe.get());
+}
+
+TEST_F(ExeLinkerTest, GlobalVarMissingDefError) {
+  
+}
+
+TEST_F(ExeLinkerTest, FuncMissingDefError) {
+  
+}
+
+TEST_F(ExeLinkerTest, NativeFuncMissingDefError) {
+  
 }
 
 TEST_F(ExeLinkerTest, GlobalVarDuplicateDefError) {

@@ -49,12 +49,12 @@ uint32_t GetNewAddress(uint32_t old_address,
                         : (func_cmds_current_address - main_cmds_size));
 }
 
-void MergeIdAddressesList(uint32_t main_cmds_size,
-                          uint32_t main_cmds_current_address,
-                          uint32_t func_cmds_current_address,
-                          const vector<IdAddresses> &input_id_addresses,
-                          IdIndexes *id_indexes,
-                          vector<IdAddresses> *output_id_addresses) {
+void CollectIdAddressesList(uint32_t main_cmds_size,
+                            uint32_t main_cmds_current_address,
+                            uint32_t func_cmds_current_address,
+                            const vector<IdAddresses> &input_id_addresses,
+                            IdIndexes *id_indexes,
+                            vector<IdAddresses> *output_id_addresses) {
   for (const IdAddresses &id_addresses_item: input_id_addresses) {
     const string &id = id_addresses_item.GetId();
     size_t id_index = output_id_addresses->size();
@@ -82,12 +82,12 @@ void MergeIdAddressesList(uint32_t main_cmds_size,
   }
 }
 
-void MergeIdAddressList(const vector<IdAddress> &input_id_addresses,
-                        uint32_t main_cmds_size,
-                        uint32_t main_cmds_current_address,
-                        uint32_t func_cmds_current_address,
-                        unordered_set<string> *ids,
-                        vector<IdAddress> *output_id_addresses) {
+void CollectIdAddressList(const vector<IdAddress> &input_id_addresses,
+                          uint32_t main_cmds_size,
+                          uint32_t main_cmds_current_address,
+                          uint32_t func_cmds_current_address,
+                          unordered_set<string> *ids,
+                          vector<IdAddress> *output_id_addresses) {
   for (const IdAddress &id_address: input_id_addresses) {
     const string &id = id_address.GetId();
     const bool is_duplicate_id = !ids->insert(id).second;
@@ -104,9 +104,9 @@ void MergeIdAddressList(const vector<IdAddress> &input_id_addresses,
   }
 }
 
-void MergeIds(const vector<string> &input_id_list,
-              unordered_set<string> *output_id_set,
-              vector<string> *output_id_list) {
+void CollectIds(const vector<string> &input_id_list,
+                unordered_set<string> *output_id_set,
+                vector<string> *output_id_list) {
   for (const string &id: input_id_list) {
     const bool is_duplicate_id = !output_id_set->insert(id).second;
 
@@ -162,36 +162,36 @@ unique_ptr<CodeContainer> LibLinker::Link(
     const unsigned char *func_cmds = main_cmds + main_cmds_size;
     const uint32_t func_cmds_size = module->GetFuncCmdsCodeSize();
     output_cmds->WriteBytes(func_cmds, func_cmds_size);
-    MergeIds(module->GetIdsOfGlobalVarDefs(),
-             &ids_of_global_var_defs_set,
-             &ids_of_global_var_defs_list);
-    MergeIds(module->GetIdsOfNativeFuncDefs(),
-             &ids_of_native_func_defs_set,
-             &ids_of_native_func_defs_list);
-    MergeIdAddressList(module->GetIdAddressesOfFuncDefs(),
-                       main_cmds_size,
-                       main_cmds_current_address,
-                       func_cmds_current_address,
-                       &ids_of_func_defs,
-                       &id_addresses_of_func_defs);
-    MergeIdAddressesList(main_cmds_size,
+    CollectIds(module->GetIdsOfGlobalVarDefs(),
+               &ids_of_global_var_defs_set,
+               &ids_of_global_var_defs_list);
+    CollectIds(module->GetIdsOfNativeFuncDefs(),
+               &ids_of_native_func_defs_set,
+               &ids_of_native_func_defs_list);
+    CollectIdAddressList(module->GetIdAddressesOfFuncDefs(),
+                         main_cmds_size,
                          main_cmds_current_address,
                          func_cmds_current_address,
-                         module->GetIdAddressesOfGlobalVarRefs(),
-                         &id_indexes_of_global_var_refs,
-                         &id_addresses_of_global_var_refs);
-    MergeIdAddressesList(main_cmds_size,
-                         main_cmds_current_address,
-                         func_cmds_current_address,
-                         module->GetIdAddressesOfFuncRefs(),
-                         &id_indexes_of_func_refs,
-                         &id_addresses_of_func_refs);
-    MergeIdAddressesList(main_cmds_size,
-                         main_cmds_current_address,
-                         func_cmds_current_address,
-                         module->GetIdAddressesOfNativeFuncRefs(),
-                         &id_indexes_of_native_func_refs,
-                         &id_addresses_of_native_func_refs);
+                         &ids_of_func_defs,
+                         &id_addresses_of_func_defs);
+    CollectIdAddressesList(main_cmds_size,
+                           main_cmds_current_address,
+                           func_cmds_current_address,
+                           module->GetIdAddressesOfGlobalVarRefs(),
+                           &id_indexes_of_global_var_refs,
+                           &id_addresses_of_global_var_refs);
+    CollectIdAddressesList(main_cmds_size,
+                           main_cmds_current_address,
+                           func_cmds_current_address,
+                           module->GetIdAddressesOfFuncRefs(),
+                           &id_indexes_of_func_refs,
+                           &id_addresses_of_func_refs);
+    CollectIdAddressesList(main_cmds_size,
+                           main_cmds_current_address,
+                           func_cmds_current_address,
+                           module->GetIdAddressesOfNativeFuncRefs(),
+                           &id_indexes_of_native_func_refs,
+                           &id_addresses_of_native_func_refs);
     main_cmds_current_address += main_cmds_size;
     func_cmds_current_address += func_cmds_size;
   }
@@ -211,6 +211,7 @@ unique_ptr<CodeContainer> LibLinker::Link(
          id_addresses.GetAddresses().end());
   }
 
+  output_cmds->SetPosition(UINT32_C(0));
   const uint32_t main_cmds_size = main_cmds_current_address;
   return unique_ptr<CodeContainer>(new Module(
       output_version,

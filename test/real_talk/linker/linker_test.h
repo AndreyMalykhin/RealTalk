@@ -19,7 +19,6 @@ class LinkerTest: public testing::Test {
   virtual std::unique_ptr<Linker> CreateLinker() const = 0;
 
   std::string PrintCodeContainer(real_talk::code::CodeContainer *container) {
-    container->GetCmdsCode().SetPosition(UINT32_C(0));
     std::ostringstream stream;
     stream << *container;
     return stream.str();
