@@ -30,11 +30,22 @@ class Linker {
     std::string id_;
   };
 
+  class MissingDefError: public std::runtime_error {
+   public:
+    MissingDefError(const std::string &id, const std::string &msg)
+        : std::runtime_error(msg), id_(id) {}
+    const std::string &GetId() const {return id_;}
+
+   private:
+    std::string id_;
+  };
+
   virtual ~Linker() {}
 
   /**
    * @throws real_talk::code::Code::CodeSizeOverflowError
    * @throws real_talk::linker::Linker::DuplicateDefError
+   * @throws real_talk::linker::Linker::MissingDefError
    */
   virtual std::unique_ptr<real_talk::code::CodeContainer> Link(
       const Linker::Modules &modules, uint32_t output_version) const = 0;

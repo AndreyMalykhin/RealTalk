@@ -41,6 +41,11 @@ void ThrowDuplicateDefError(const string &id) {
       id, (format("Duplicate definition; id=%1%") % id).str());
 }
 
+void ThrowMissingDefError(const string &id) {
+  throw Linker::MissingDefError(
+      id, (format("Missing definition; id=%1%") % id).str());
+}
+
 uint32_t GetNewAddress(uint32_t old_address,
                        uint32_t main_cmds_size,
                        uint32_t main_cmds_current_address,
@@ -155,8 +160,13 @@ void FillAddressPlaceholders(const vector<IdAddresses> &placeholders,
                              uint32_t func_cmds_current_address,
                              Code *output_cmds) {
   for (const IdAddresses &placeholder: placeholders) {
-    const auto addresses_it = addresses.find(placeholder.GetId());
-    assert(addresses_it != addresses.cend());
+    const string &id = placeholder.GetId();
+    const auto addresses_it = addresses.find(id);
+
+    if (addresses_it == addresses.cend()) {
+      ThrowMissingDefError(id);
+    }
+
     const uint32_t address = addresses_it->second;
 
     for (const uint32_t old_placeholder_address: placeholder.GetAddresses()) {
@@ -245,6 +255,13 @@ unique_ptr<CodeContainer> ExeLinker::Link(
   }
 
   for (IdAddresses &id_addresses: id_addresses_of_native_func_refs) {
+    const string &id = id_addresses.GetId();
+    const bool is_id_defined = ids_of_native_func_defs_set.count(id) == 1;
+
+    if (!is_id_defined) {
+      ThrowMissingDefError(id);
+    }
+
     sort(id_addresses.GetAddresses().begin(),
          id_addresses.GetAddresses().end());
   }
