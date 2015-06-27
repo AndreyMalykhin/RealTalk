@@ -69,6 +69,7 @@ add_library(real_talk_lib
   src/real_talk/compiler/compiler.cpp
   src/real_talk/linker/linker_config.cpp
   src/real_talk/linker/linker_app.cpp
+  src/real_talk/linker/base_linker.cpp
   src/real_talk/linker/lib_linker.cpp
   src/real_talk/linker/exe_linker.cpp
   src/real_talk/util/errors.cpp
