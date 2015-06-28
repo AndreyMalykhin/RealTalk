@@ -41,11 +41,11 @@ void SimpleCodeContainerWriter::Write(const Exe &exe, Code *code) const {
   code->WriteBytes(
       exe.GetCmdsCode().GetData(), exe.GetCmdsCode().GetSize());
   const uint32_t native_func_defs_metadata_address = code->GetPosition();
-  WriteIds(exe.GetIdsOfNativeFuncDefs(), code);
+  WriteIds(exe.GetNativeFuncDefs(), code);
   const uint32_t native_func_defs_metadata_size =
       code->GetPosition() - native_func_defs_metadata_address;
   const uint32_t native_func_refs_metadata_address = code->GetPosition();
-  WriteIdAddresses(exe.GetIdAddressesOfNativeFuncRefs(), code);
+  WriteIdAddresses(exe.GetNativeFuncRefs(), code);
   const uint32_t native_func_refs_metadata_size =
       code->GetPosition() - native_func_refs_metadata_address;
   code->SetPosition(segments_metadata_address);
@@ -67,31 +67,31 @@ void SimpleCodeContainerWriter::Write(const Module &module, Code *code) const {
   code->WriteBytes(
       module.GetCmdsCode().GetData(), module.GetCmdsCode().GetSize());
   const uint32_t global_var_defs_metadata_address = code->GetPosition();
-  WriteIds(module.GetIdsOfGlobalVarDefs(), code);
+  WriteIds(module.GetGlobalVarDefs(), code);
   const uint32_t global_var_defs_metadata_size =
       code->GetPosition() - global_var_defs_metadata_address;
   const uint32_t func_defs_metadata_address = code->GetPosition();
 
-  for (const IdAddress &id_address: module.GetIdAddressesOfFuncDefs()) {
+  for (const IdAddress &id_address: module.GetFuncDefs()) {
     code->WriteIdAddress(id_address);
   }
 
   const uint32_t func_defs_metadata_size =
       code->GetPosition() - func_defs_metadata_address;
   const uint32_t native_func_defs_metadata_address = code->GetPosition();
-  WriteIds(module.GetIdsOfNativeFuncDefs(), code);
+  WriteIds(module.GetNativeFuncDefs(), code);
   const uint32_t native_func_defs_metadata_size =
       code->GetPosition() - native_func_defs_metadata_address;
   const uint32_t global_var_refs_metadata_address = code->GetPosition();
-  WriteIdAddresses(module.GetIdAddressesOfGlobalVarRefs(), code);
+  WriteIdAddresses(module.GetGlobalVarRefs(), code);
   const uint32_t global_var_refs_metadata_size =
       code->GetPosition() - global_var_refs_metadata_address;
   const uint32_t func_refs_metadata_address = code->GetPosition();
-  WriteIdAddresses(module.GetIdAddressesOfFuncRefs(), code);
+  WriteIdAddresses(module.GetFuncRefs(), code);
   const uint32_t func_refs_metadata_size =
       code->GetPosition() - func_refs_metadata_address;
   const uint32_t native_func_refs_metadata_address = code->GetPosition();
-  WriteIdAddresses(module.GetIdAddressesOfNativeFuncRefs(), code);
+  WriteIdAddresses(module.GetNativeFuncRefs(), code);
   const uint32_t native_func_refs_metadata_size =
       code->GetPosition() - native_func_refs_metadata_address;
   code->SetPosition(segments_metadata_address);

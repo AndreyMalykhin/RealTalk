@@ -318,12 +318,12 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   const CastCmdGenerator &cast_cmd_generator_;
   const SemanticAnalysis *semantic_analysis_;
   unique_ptr<Code> code_;
-  vector<string> ids_of_global_var_defs_;
-  vector<string> ids_of_native_func_defs_;
-  vector<IdAddress> id_addresses_of_func_defs_;
-  Impl::IdAddresses id_addresses_of_global_var_refs_;
-  Impl::IdAddresses id_addresses_of_func_refs_;
-  Impl::IdAddresses id_addresses_of_native_func_refs_;
+  vector<string> global_var_defs_;
+  vector<string> native_func_defs_;
+  vector<IdAddress> func_defs_;
+  Impl::IdAddresses global_var_refs_;
+  Impl::IdAddresses func_refs_;
+  Impl::IdAddresses native_func_refs_;
   vector<Scope*> scopes_stack_;
 };
 
@@ -888,15 +888,15 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
   void Process(const IdNode *id_node,
                const IdAnalysis *id_analysis,
                const DefAnalysis *def_analysis,
-               Impl::IdAddresses *id_addresses_of_global_var_refs,
-               Impl::IdAddresses *id_addresses_of_func_refs,
-               Impl::IdAddresses *id_addresses_of_native_func_refs,
+               Impl::IdAddresses *global_var_refs,
+               Impl::IdAddresses *func_refs,
+               Impl::IdAddresses *native_func_refs,
                Code *code) {
     id_node_ = id_node;
     id_analysis_ = id_analysis;
-    id_addresses_of_global_var_refs_ = id_addresses_of_global_var_refs;
-    id_addresses_of_func_refs_ = id_addresses_of_func_refs;
-    id_addresses_of_native_func_refs_ = id_addresses_of_native_func_refs;
+    global_var_refs_ = global_var_refs;
+    func_refs_ = func_refs;
+    native_func_refs_ = native_func_refs;
     code_ = code;
     def_analysis->Accept(*this);
   }
@@ -929,20 +929,20 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     }
 
     const string &id = id_node_->GetStartToken().GetValue();
-    (*id_addresses_of_global_var_refs_)[id].push_back(var_index_placeholder);
+    (*global_var_refs_)[id].push_back(var_index_placeholder);
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis &func_def_analysis) override {
     const bool is_native = func_def_analysis.GetDataType().IsNative();
     CmdId cmd;
-    Impl::IdAddresses *id_addresses_of_func_refs;
+    Impl::IdAddresses *func_refs;
 
     if (is_native) {
       cmd = CmdId::kLoadNativeFuncValue;
-      id_addresses_of_func_refs = id_addresses_of_native_func_refs_;
+      func_refs = native_func_refs_;
     } else {
       cmd = CmdId::kLoadFuncValue;
-      id_addresses_of_func_refs = id_addresses_of_func_refs_;
+      func_refs = func_refs_;
     }
 
     code_->WriteCmdId(cmd);
@@ -950,14 +950,14 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     const uint32_t func_value = numeric_limits<uint32_t>::max();
     code_->WriteUint32(func_value);
     const string &id = id_node_->GetStartToken().GetValue();
-    (*id_addresses_of_func_refs)[id].push_back(func_value_placeholder);
+    (*func_refs)[id].push_back(func_value_placeholder);
   }
 
   const IdNode *id_node_;
   const IdAnalysis *id_analysis_;
-  Impl::IdAddresses *id_addresses_of_global_var_refs_;
-  Impl::IdAddresses *id_addresses_of_func_refs_;
-  Impl::IdAddresses *id_addresses_of_native_func_refs_;
+  Impl::IdAddresses *global_var_refs_;
+  Impl::IdAddresses *func_refs_;
+  Impl::IdAddresses *native_func_refs_;
   Code *code_;
 };
 
@@ -968,10 +968,10 @@ class SimpleCodeGenerator::Impl::VarDefNodeProcessor
  public:
   void Process(const VarDefNode *var_def_node,
                const DefAnalysis *var_def_analysis,
-               vector<string> *ids_of_global_var_defs,
+               vector<string> *global_var_defs,
                Code *code) {
     var_def_node_ = var_def_node;
-    ids_of_global_var_defs_ = ids_of_global_var_defs;
+    global_var_defs_ = global_var_defs;
     code_ = code;
     var_def_analysis->Accept(*this);
   }
@@ -985,13 +985,13 @@ class SimpleCodeGenerator::Impl::VarDefNodeProcessor
       override {
     TCreateGlobalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
     const string &id = var_def_node_->GetNameToken().GetValue();
-    ids_of_global_var_defs_->push_back(id);
+    global_var_defs_->push_back(id);
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis&) override {assert(false);}
 
   const VarDefNode *var_def_node_;
-  vector<string> *ids_of_global_var_defs_;
+  vector<string> *global_var_defs_;
   Code *code_;
 };
 
@@ -1626,18 +1626,18 @@ unique_ptr<Module> SimpleCodeGenerator::Impl::Generate(
       version,
       move(code_),
       main_cmds_size,
-      id_addresses_of_func_defs_,
-      ids_of_global_var_defs_,
-      ids_of_native_func_defs_,
-      TransformIdAddresses(id_addresses_of_func_refs_),
-      TransformIdAddresses(id_addresses_of_native_func_refs_),
-      TransformIdAddresses(id_addresses_of_global_var_refs_)));
-  ids_of_global_var_defs_.clear();
-  id_addresses_of_func_defs_.clear();
-  ids_of_native_func_defs_.clear();
-  id_addresses_of_global_var_refs_.clear();
-  id_addresses_of_func_refs_.clear();
-  id_addresses_of_native_func_refs_.clear();
+      func_defs_,
+      global_var_defs_,
+      native_func_defs_,
+      TransformIdAddresses(func_refs_),
+      TransformIdAddresses(native_func_refs_),
+      TransformIdAddresses(global_var_refs_)));
+  global_var_defs_.clear();
+  func_defs_.clear();
+  native_func_defs_.clear();
+  global_var_refs_.clear();
+  func_refs_.clear();
+  native_func_refs_.clear();
   return module;
 }
 
@@ -1670,7 +1670,7 @@ void SimpleCodeGenerator::Impl::VisitVarDefWithoutInit(
   const DefAnalysis &analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   VarDefNodeProcessor<CreateLocalVarCmdGenerator, CreateGlobalVarCmdGenerator>()
-      .Process(&node, &analysis, &ids_of_global_var_defs_, code_.get());
+      .Process(&node, &analysis, &global_var_defs_, code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitVarDefWithInit(
@@ -1680,7 +1680,7 @@ void SimpleCodeGenerator::Impl::VisitVarDefWithInit(
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   VarDefNodeProcessor<CreateAndInitLocalVarCmdGenerator,
                       CreateAndInitGlobalVarCmdGenerator>()
-      .Process(&node, &var_def_analysis, &ids_of_global_var_defs_, code_.get());
+      .Process(&node, &var_def_analysis, &global_var_defs_, code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
@@ -1831,13 +1831,13 @@ void SimpleCodeGenerator::Impl::VisitFuncDefWithBody(
   }
 
   const string &id = node.GetNameToken().GetValue();
-  id_addresses_of_func_defs_.push_back(IdAddress(id, start_address));
+  func_defs_.push_back(IdAddress(id, start_address));
 }
 
 void SimpleCodeGenerator::Impl::VisitFuncDefWithoutBody(
     const FuncDefWithoutBodyNode &node) {
   const string &id = node.GetNameToken().GetValue();
-  ids_of_native_func_defs_.push_back(id);
+  native_func_defs_.push_back(id);
 }
 
 void SimpleCodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
@@ -1912,9 +1912,9 @@ void SimpleCodeGenerator::Impl::VisitId(const IdNode &id) {
   IdNodeProcessor().Process(&id,
                             &id_analysis,
                             &def_analysis,
-                            &id_addresses_of_global_var_refs_,
-                            &id_addresses_of_func_refs_,
-                            &id_addresses_of_native_func_refs_,
+                            &global_var_refs_,
+                            &func_refs_,
+                            &native_func_refs_,
                             code_.get());
   GenerateCastCmdIfNeeded(id_analysis);
 }

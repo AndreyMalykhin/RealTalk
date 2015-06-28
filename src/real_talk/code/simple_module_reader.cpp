@@ -40,68 +40,68 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition(), main_cmds_size + func_cmds_size));
 
   code->SetPosition(global_var_defs_metadata_address);
-  vector<string> ids_of_global_var_defs;
+  vector<string> global_var_defs;
   const unsigned char * const global_var_defs_metadata_end =
       code->GetDataAtPosition() + global_var_defs_metadata_size;
 
   while (code->GetDataAtPosition() != global_var_defs_metadata_end) {
-    ids_of_global_var_defs.push_back(code->ReadString());
+    global_var_defs.push_back(code->ReadString());
   }
 
   code->SetPosition(func_defs_metadata_address);
-  vector<IdAddress> id_addresses_of_func_defs;
+  vector<IdAddress> func_defs;
   const unsigned char * const func_defs_metadata_end =
       code->GetDataAtPosition() + func_defs_metadata_size;
 
   while (code->GetDataAtPosition() != func_defs_metadata_end) {
-    id_addresses_of_func_defs.push_back(code->ReadIdAddress());
+    func_defs.push_back(code->ReadIdAddress());
   }
 
   code->SetPosition(native_func_defs_metadata_address);
-  vector<string> ids_of_native_func_defs;
+  vector<string> native_func_defs;
   const unsigned char * const native_func_defs_metadata_end =
       code->GetDataAtPosition() + native_func_defs_metadata_size;
 
   while (code->GetDataAtPosition() != native_func_defs_metadata_end) {
-    ids_of_native_func_defs.push_back(code->ReadString());
+    native_func_defs.push_back(code->ReadString());
   }
 
   code->SetPosition(global_var_refs_metadata_address);
-  vector<IdAddresses> id_addresses_of_global_var_refs;
+  vector<IdAddresses> global_var_refs;
   const unsigned char * const global_var_refs_metadata_end =
       code->GetDataAtPosition() + global_var_refs_metadata_size;
 
   while (code->GetDataAtPosition() != global_var_refs_metadata_end) {
-    id_addresses_of_global_var_refs.push_back(code->ReadIdAddresses());
+    global_var_refs.push_back(code->ReadIdAddresses());
   }
 
   code->SetPosition(func_refs_metadata_address);
-  vector<IdAddresses> id_addresses_of_func_refs;
+  vector<IdAddresses> func_refs;
   const unsigned char * const func_refs_metadata_end =
       code->GetDataAtPosition() + func_refs_metadata_size;
 
   while (code->GetDataAtPosition() != func_refs_metadata_end) {
-    id_addresses_of_func_refs.push_back(code->ReadIdAddresses());
+    func_refs.push_back(code->ReadIdAddresses());
   }
 
   code->SetPosition(native_func_refs_metadata_address);
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<IdAddresses> native_func_refs;
   const unsigned char * const native_func_refs_metadata_end =
       code->GetDataAtPosition() + native_func_refs_metadata_size;
 
   while (code->GetDataAtPosition() != native_func_refs_metadata_end) {
-    id_addresses_of_native_func_refs.push_back(code->ReadIdAddresses());
+    native_func_refs.push_back(code->ReadIdAddresses());
   }
 
   return unique_ptr<Module>(new Module(version,
                                        move(cmds_code),
                                        main_cmds_size,
-                                       id_addresses_of_func_defs,
-                                       ids_of_global_var_defs,
-                                       ids_of_native_func_defs,
-                                       id_addresses_of_func_refs,
-                                       id_addresses_of_native_func_refs,
-                                       id_addresses_of_global_var_refs));
+                                       func_defs,
+                                       global_var_defs,
+                                       native_func_defs,
+                                       func_refs,
+                                       native_func_refs,
+                                       global_var_refs));
 }
 
 unique_ptr<Module> SimpleModuleReader::ReadFromStream(istream *stream) const {

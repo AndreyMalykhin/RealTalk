@@ -119,7 +119,8 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
     }
   }
 
-  const unique_ptr<Linker> linker = linker_factory_.Create();
+  const unique_ptr<Linker> linker =
+      linker_factory_.Create(config_->GetOutputFileType());
   const uint32_t output_code_version = UINT32_C(1);
 
   try {

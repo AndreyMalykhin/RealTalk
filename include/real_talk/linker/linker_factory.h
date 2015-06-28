@@ -8,11 +8,13 @@ namespace real_talk {
 namespace linker {
 
 class Linker;
+enum class OutputFileType: uint8_t;
 
 class LinkerFactory {
  public:
   virtual ~LinkerFactory() {}
-  virtual std::unique_ptr<Linker> Create() const = 0;
+  virtual std::unique_ptr<Linker> Create(
+      OutputFileType output_file_type) const = 0;
 };
 }
 }

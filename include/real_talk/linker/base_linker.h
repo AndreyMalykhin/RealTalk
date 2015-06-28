@@ -24,6 +24,7 @@ class BaseLinker: public Linker {
   typedef std::unordered_map<std::string, size_t> IdIndexes;
   static void ThrowDuplicateDefError(const std::string &id);
   static void ThrowMissingDefError(const std::string &id);
+  static void ThrowDefsCountOverflowError();
   static uint32_t GetAbsoluteAddress(uint32_t relative_address,
                                      uint32_t main_cmds_size,
                                      uint32_t main_cmds_start_address,

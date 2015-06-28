@@ -88,13 +88,13 @@ unique_ptr<CodeContainer> LibLinker::Link(
                     func_cmds_current_address,
                     cmds.get());
     const uint32_t module_main_cmds_size = module->GetMainCmdsCodeSize();
-    CollectDefs(module->GetIdsOfGlobalVarDefs(),
+    CollectDefs(module->GetGlobalVarDefs(),
                 &unique_global_var_defs,
                 &ordered_global_var_defs);
-    CollectDefs(module->GetIdsOfNativeFuncDefs(),
+    CollectDefs(module->GetNativeFuncDefs(),
                 &unique_native_func_defs,
                 &ordered_native_func_defs);
-    CollectFuncDefs(module->GetIdAddressesOfFuncDefs(),
+    CollectFuncDefs(module->GetFuncDefs(),
                     module_main_cmds_size,
                     main_cmds_current_address,
                     func_cmds_current_address,
@@ -103,19 +103,19 @@ unique_ptr<CodeContainer> LibLinker::Link(
     CollectRefs(module_main_cmds_size,
                 main_cmds_current_address,
                 func_cmds_current_address,
-                module->GetIdAddressesOfGlobalVarRefs(),
+                module->GetGlobalVarRefs(),
                 &id_indexes_of_global_var_refs,
                 &global_var_refs);
     CollectRefs(module_main_cmds_size,
                 main_cmds_current_address,
                 func_cmds_current_address,
-                module->GetIdAddressesOfFuncRefs(),
+                module->GetFuncRefs(),
                 &id_indexes_of_func_refs,
                 &func_refs);
     CollectRefs(module_main_cmds_size,
                 main_cmds_current_address,
                 func_cmds_current_address,
-                module->GetIdAddressesOfNativeFuncRefs(),
+                module->GetNativeFuncRefs(),
                 &id_indexes_of_native_func_refs,
                 &native_func_refs);
     main_cmds_current_address += module_main_cmds_size;

@@ -32,28 +32,28 @@ unique_ptr<Exe> SimpleExeReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition(), main_cmds_size + func_cmds_size));
 
   code->SetPosition(native_func_defs_metadata_address);
-  vector<string> ids_of_native_func_defs;
+  vector<string> native_func_defs;
   const unsigned char * const native_func_defs_metadata_end =
       code->GetDataAtPosition() + native_func_defs_metadata_size;
 
   while (code->GetDataAtPosition() != native_func_defs_metadata_end) {
-    ids_of_native_func_defs.push_back(code->ReadString());
+    native_func_defs.push_back(code->ReadString());
   }
 
   code->SetPosition(native_func_refs_metadata_address);
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<IdAddresses> native_func_refs;
   const unsigned char * const native_func_refs_metadata_end =
       code->GetDataAtPosition() + native_func_refs_metadata_size;
 
   while (code->GetDataAtPosition() != native_func_refs_metadata_end) {
-    id_addresses_of_native_func_refs.push_back(code->ReadIdAddresses());
+    native_func_refs.push_back(code->ReadIdAddresses());
   }
 
   return unique_ptr<Exe>(new Exe(version,
                                  move(cmds_code),
                                  main_cmds_size,
-                                 ids_of_native_func_defs,
-                                 id_addresses_of_native_func_refs));
+                                 native_func_defs,
+                                 native_func_refs));
 }
 
 unique_ptr<Exe> SimpleExeReader::ReadFromStream(istream *stream) const {

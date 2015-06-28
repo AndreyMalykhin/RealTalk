@@ -30,29 +30,29 @@ TEST_F(SimpleCodeContainerWriterTest, WriteWithModule) {
   cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
   cmds_code->SetPosition(UINT32_C(0));
-  vector<string> ids_of_global_var_defs = {"var", "var2"};
-  vector<IdAddress> id_addresses_of_func_defs =
+  vector<string> global_var_defs = {"var", "var2"};
+  vector<IdAddress> func_defs =
       {{"func", UINT32_C(1)}, {"func2", UINT32_C(2)}};
-  vector<string> ids_of_native_func_defs = {"native_func", "native_func2"};
-  vector<IdAddresses> id_addresses_of_global_var_refs =
+  vector<string> native_func_defs = {"native_func", "native_func2"};
+  vector<IdAddresses> global_var_refs =
       {{"var", {UINT32_C(3), UINT32_C(4)}},
        {"var2", {UINT32_C(5), UINT32_C(6)}}};
-  vector<IdAddresses> id_addresses_of_func_refs =
+  vector<IdAddresses> func_refs =
       {{"func", {UINT32_C(7), UINT32_C(8)}},
        {"func2", {UINT32_C(9), UINT32_C(10)}}};
-  vector<IdAddresses> id_addresses_of_native_func_refs =
+  vector<IdAddresses> native_func_refs =
       {{"func3", {UINT32_C(11), UINT32_C(12)}},
        {"func4", {UINT32_C(13), UINT32_C(14)}}};
   uint32_t version = UINT32_C(1);
   Module module(version,
                 move(cmds_code),
                 main_cmds_code_size,
-                id_addresses_of_func_defs,
-                ids_of_global_var_defs,
-                ids_of_native_func_defs,
-                id_addresses_of_func_refs,
-                id_addresses_of_native_func_refs,
-                id_addresses_of_global_var_refs);
+                func_defs,
+                global_var_defs,
+                native_func_defs,
+                func_refs,
+                native_func_refs,
+                global_var_refs);
   Code expected_code;
   expected_code.WriteUint32(module.GetVersion());
   uint32_t segments_metadata_address = expected_code.GetPosition();
@@ -124,16 +124,16 @@ TEST_F(SimpleCodeContainerWriterTest, WriteWithExe) {
   cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
   cmds_code->SetPosition(UINT32_C(0));
-  vector<string> ids_of_native_func_defs = {"native_func", "native_func2"};
-  vector<IdAddresses> id_addresses_of_native_func_refs =
+  vector<string> native_func_defs = {"native_func", "native_func2"};
+  vector<IdAddresses> native_func_refs =
       {{"func3", {UINT32_C(1), UINT32_C(2)}},
        {"func4", {UINT32_C(3), UINT32_C(4)}}};
   uint32_t version = UINT32_C(1);
   Exe exe(version,
           move(cmds_code),
           main_cmds_code_size,
-          ids_of_native_func_defs,
-          id_addresses_of_native_func_refs);
+          native_func_defs,
+          native_func_refs);
   Code expected_code;
   expected_code.WriteUint32(exe.GetVersion());
   uint32_t segments_metadata_address = expected_code.GetPosition();

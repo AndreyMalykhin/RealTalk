@@ -30,6 +30,10 @@ void BaseLinker::ThrowMissingDefError(const string &id) {
       id, (format("Missing definition; id=%1%") % id).str());
 }
 
+void BaseLinker::ThrowDefsCountOverflowError() {
+  throw Linker::DefsCountOverflowError("Definitions count exceeds 32 bits");
+}
+
 uint32_t BaseLinker::GetAbsoluteAddress(uint32_t relative_address,
                                         uint32_t main_cmds_size,
                                         uint32_t main_cmds_start_address,
@@ -91,6 +95,10 @@ void BaseLinker::CollectDefs(const vector<string> &input_defs,
 
     if (is_duplicate_id) {
       ThrowDuplicateDefError(id);
+    }
+
+    if (output_ordered_defs->size() + 1 < output_ordered_defs->size()) {
+      ThrowDefsCountOverflowError();
     }
 
     output_ordered_defs->push_back(id);

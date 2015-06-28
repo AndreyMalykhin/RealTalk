@@ -773,23 +773,23 @@ TEST_F(CompilerTest, IOErrorWhileWritingFile) {
   config.SetModuleFileExtension("rtm2");
   Code module_code;
   unique_ptr<Code> cmds_code(new Code());
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t main_cmds_code_size = UINT32_C(0);
   uint32_t code_version = UINT32_C(1);
   auto *module = new Module(code_version,
                             move(cmds_code),
                             main_cmds_code_size,
-                            id_addresses_of_func_defs,
-                            ids_of_global_var_defs,
-                            ids_of_native_func_defs,
-                            id_addresses_of_func_refs,
-                            id_addresses_of_native_func_refs,
-                            id_addresses_of_global_var_refs);
+                            func_defs,
+                            global_var_defs,
+                            native_func_defs,
+                            func_refs,
+                            native_func_refs,
+                            global_var_refs);
   LitParserMock lit_parser;
   FileSearcherMock file_searcher;
   FileMock file;
@@ -882,23 +882,23 @@ TEST_F(CompilerTest, IOErrorWhileCreatingDir) {
   config.SetBinDirPath("build2/bin2");
   Code module_code;
   unique_ptr<Code> cmds_code(new Code());
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t main_cmds_code_size = UINT32_C(0);
   uint32_t code_version = UINT32_C(1);
   auto *module = new Module(code_version,
                             move(cmds_code),
                             main_cmds_code_size,
-                            id_addresses_of_func_defs,
-                            ids_of_global_var_defs,
-                            ids_of_native_func_defs,
-                            id_addresses_of_func_refs,
-                            id_addresses_of_native_func_refs,
-                            id_addresses_of_global_var_refs);
+                            func_defs,
+                            global_var_defs,
+                            native_func_defs,
+                            func_refs,
+                            native_func_refs,
+                            global_var_refs);
   LitParserMock lit_parser;
   FileSearcherMock file_searcher;
   FileMock file;
@@ -1076,23 +1076,23 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileWritingModule) {
   config.SetSrcDirPath("src2");
   Code module_code;
   unique_ptr<Code> cmds_code(new Code());
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t main_cmds_code_size = UINT32_C(0);
   uint32_t code_version = UINT32_C(1);
   auto *module = new Module(code_version,
                             move(cmds_code),
                             main_cmds_code_size,
-                            id_addresses_of_func_defs,
-                            ids_of_global_var_defs,
-                            ids_of_native_func_defs,
-                            id_addresses_of_func_refs,
-                            id_addresses_of_native_func_refs,
-                            id_addresses_of_global_var_refs);
+                            func_defs,
+                            global_var_defs,
+                            native_func_defs,
+                            func_refs,
+                            native_func_refs,
+                            global_var_refs);
   LitParserMock lit_parser;
   FileSearcherMock file_searcher;
   FileMock file;

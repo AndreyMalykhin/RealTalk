@@ -64,25 +64,25 @@ TEST_F(LibLinkerTest, Link) {
     native_func_index_placeholders2.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kReturn);
-    vector<string> ids_of_global_var_defs = {"var"};
-    vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
-    vector<string> ids_of_native_func_defs = {"native_func"};
-    vector<IdAddresses> id_addresses_of_global_var_refs =
+    vector<string> global_var_defs = {"var"};
+    vector<IdAddress> func_defs = {{"func", func_def_address}};
+    vector<string> native_func_defs = {"native_func"};
+    vector<IdAddresses> global_var_refs =
         {{"var", var_index_placeholders}, {"var2", var_index_placeholders2}};
-    vector<IdAddresses> id_addresses_of_func_refs =
+    vector<IdAddresses> func_refs =
         {{"func2", func_address_placeholders2}};
-    vector<IdAddresses> id_addresses_of_native_func_refs =
+    vector<IdAddresses> native_func_refs =
         {{"native_func2", native_func_index_placeholders2}};
     uint32_t module_version = UINT32_C(1);
     unique_ptr<Module> module(new Module(module_version,
                                          move(cmds_code),
                                          main_cmds_code_size,
-                                         id_addresses_of_func_defs,
-                                         ids_of_global_var_defs,
-                                         ids_of_native_func_defs,
-                                         id_addresses_of_func_refs,
-                                         id_addresses_of_native_func_refs,
-                                         id_addresses_of_global_var_refs));
+                                         func_defs,
+                                         global_var_defs,
+                                         native_func_defs,
+                                         func_refs,
+                                         native_func_refs,
+                                         global_var_refs));
     modules.push_back(move(module));
   }
 
@@ -116,26 +116,26 @@ TEST_F(LibLinkerTest, Link) {
     native_func_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kReturn);
-    vector<string> ids_of_global_var_defs = {"var2"};
-    vector<IdAddress> id_addresses_of_func_defs =
+    vector<string> global_var_defs = {"var2"};
+    vector<IdAddress> func_defs =
         {{"func2", func_def_address2}};
-    vector<string> ids_of_native_func_defs = {"native_func2"};
-    vector<IdAddresses> id_addresses_of_global_var_refs =
+    vector<string> native_func_defs = {"native_func2"};
+    vector<IdAddresses> global_var_refs =
         {{"var2", var_index_placeholders2}, {"var", var_index_placeholders}};
-    vector<IdAddresses> id_addresses_of_func_refs =
+    vector<IdAddresses> func_refs =
         {{"func", func_address_placeholders}};
-    vector<IdAddresses> id_addresses_of_native_func_refs =
+    vector<IdAddresses> native_func_refs =
         {{"native_func", native_func_index_placeholders}};
     uint32_t module_version = UINT32_C(1);
     unique_ptr<Module> module(new Module(module_version,
                                          move(cmds_code),
                                          main_cmds_code_size,
-                                         id_addresses_of_func_defs,
-                                         ids_of_global_var_defs,
-                                         ids_of_native_func_defs,
-                                         id_addresses_of_func_refs,
-                                         id_addresses_of_native_func_refs,
-                                         id_addresses_of_global_var_refs));
+                                         func_defs,
+                                         global_var_defs,
+                                         native_func_defs,
+                                         func_refs,
+                                         native_func_refs,
+                                         global_var_refs));
     modules.push_back(move(module));
   }
 
@@ -194,28 +194,28 @@ TEST_F(LibLinkerTest, Link) {
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kReturn);
   cmds_code->SetPosition(UINT32_C(0));
-  vector<string> ids_of_global_var_defs = {"var", "var2"};
-  vector<IdAddress> id_addresses_of_func_defs =
+  vector<string> global_var_defs = {"var", "var2"};
+  vector<IdAddress> func_defs =
       {{"func", func_def_address}, {"func2", func_def_address2}};
-  vector<string> ids_of_native_func_defs = {"native_func", "native_func2"};
-  vector<IdAddresses> id_addresses_of_global_var_refs =
+  vector<string> native_func_defs = {"native_func", "native_func2"};
+  vector<IdAddresses> global_var_refs =
       {{"var", var_index_placeholders}, {"var2", var_index_placeholders2}};
-  vector<IdAddresses> id_addresses_of_func_refs =
+  vector<IdAddresses> func_refs =
       {{"func2", func_address_placeholders2},
        {"func", func_address_placeholders}};
-  vector<IdAddresses> id_addresses_of_native_func_refs =
+  vector<IdAddresses> native_func_refs =
       {{"native_func2", native_func_index_placeholders2},
        {"native_func", native_func_index_placeholders}};
   uint32_t module_version = UINT32_C(1);
   Module expected_module(module_version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   unique_ptr<CodeContainer> actual_module =
       LibLinker().Link(modules, expected_module.GetVersion());
   ASSERT_TRUE(actual_module.get());

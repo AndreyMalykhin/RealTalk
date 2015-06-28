@@ -104,11 +104,11 @@ class ModuleReaderMock: public ModuleReader {
 
 class LinkerFactoryMock: public LinkerFactory {
  public:
-  virtual unique_ptr<Linker> Create() const override {
-    return unique_ptr<Linker>(Create_());
+  virtual unique_ptr<Linker> Create(OutputFileType output_file_type) const override {
+    return unique_ptr<Linker>(Create_(output_file_type));
   }
 
-  MOCK_CONST_METHOD0(Create_, Linker*());
+  MOCK_CONST_METHOD1(Create_, Linker*(OutputFileType));
 };
 
 class LinkerMock: public Linker {
@@ -276,7 +276,7 @@ TEST_F(LinkerAppTest, Link) {
           .RetiresOnSaturation();
     }
 
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(config.GetOutputFileType()))
         .Times(1)
         .WillOnce(Return(linker));
     EXPECT_CALL(*linker, Link_(modules, output_code_version))
@@ -336,7 +336,7 @@ TEST_F(LinkerAppTest, Help) {
         .Times(0);
     EXPECT_CALL(module_reader, ReadFromStream_(_))
         .Times(0);
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(_))
         .Times(0);
     EXPECT_CALL(linker, Link_(_, _))
         .Times(0);
@@ -390,6 +390,7 @@ TEST_F(LinkerAppTest, IOErrorWhileWritingFile) {
   LinkerConfig config;
   config.SetInputFilePaths(vector<path>({"app/module/component.rtm"}));
   config.SetOutputFilePath("app/lib.rtl2");
+  config.SetOutputFileType(OutputFileType::kLib);
   config.SetBinDirPath("build2/bin2");
   vector<string> import_dir_paths;
   path search_input_file_path("app/module/component.rtm");
@@ -420,7 +421,7 @@ TEST_F(LinkerAppTest, IOErrorWhileWritingFile) {
     EXPECT_CALL(module_reader, ReadFromStream_(input_file_stream))
         .Times(1)
         .WillOnce(Return(module));
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(config.GetOutputFileType()))
         .Times(1)
         .WillOnce(Return(linker));
     EXPECT_CALL(*linker, Link_(modules, output_code_version))
@@ -479,6 +480,7 @@ TEST_F(LinkerAppTest, IOErrorWhileCreatingDir) {
   LinkerConfig config;
   config.SetInputFilePaths(vector<path>({"app/module/component.rtm"}));
   config.SetOutputFilePath("app/lib.rtl2");
+  config.SetOutputFileType(OutputFileType::kLib);
   config.SetBinDirPath("build2/bin2");
   vector<string> import_dir_paths;
   path search_input_file_path("app/module/component.rtm");
@@ -509,7 +511,7 @@ TEST_F(LinkerAppTest, IOErrorWhileCreatingDir) {
     EXPECT_CALL(module_reader, ReadFromStream_(input_file_stream))
         .Times(1)
         .WillOnce(Return(module));
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(config.GetOutputFileType()))
         .Times(1)
         .WillOnce(Return(linker));
     EXPECT_CALL(*linker, Link_(modules, output_code_version))
@@ -565,6 +567,7 @@ TEST_F(LinkerAppTest, CodeSizeOverflowErrorWhileWritingCode) {
   int argc = 1;
   const char *argv[] = {"realtalkl"};
   LinkerConfig config;
+  config.SetOutputFileType(OutputFileType::kLib);
   config.SetInputFilePaths(vector<path>({"app/module/component.rtm"}));
   config.SetBinDirPath("build2/bin2");
   vector<string> import_dir_paths;
@@ -594,7 +597,7 @@ TEST_F(LinkerAppTest, CodeSizeOverflowErrorWhileWritingCode) {
     EXPECT_CALL(module_reader, ReadFromStream_(input_file_stream))
         .Times(1)
         .WillOnce(Return(module));
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(config.GetOutputFileType()))
         .Times(1)
         .WillOnce(Return(linker));
     EXPECT_CALL(*linker, Link_(modules, output_code_version))
@@ -640,6 +643,7 @@ TEST_F(LinkerAppTest, DuplicateDefErrorWhileLinkingModules) {
   int argc = 1;
   const char *argv[] = {"realtalkl"};
   LinkerConfig config;
+  config.SetOutputFileType(OutputFileType::kLib);
   config.SetInputFilePaths(vector<path>({"app/module/component.rtm"}));
   config.SetBinDirPath("build2/bin2");
   vector<string> import_dir_paths;
@@ -669,7 +673,7 @@ TEST_F(LinkerAppTest, DuplicateDefErrorWhileLinkingModules) {
     EXPECT_CALL(module_reader, ReadFromStream_(input_file_stream))
         .Times(1)
         .WillOnce(Return(module));
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(config.GetOutputFileType()))
         .Times(1)
         .WillOnce(Return(linker));
     EXPECT_CALL(*linker, Link_(modules, output_code_version))
@@ -713,6 +717,7 @@ TEST_F(LinkerAppTest, CodeSizeOverflowErrorWhileLinkingModules) {
   int argc = 1;
   const char *argv[] = {"realtalkl"};
   LinkerConfig config;
+  config.SetOutputFileType(OutputFileType::kLib);
   config.SetInputFilePaths(vector<path>({"app/module/component.rtm"}));
   config.SetBinDirPath("build2/bin2");
   vector<string> import_dir_paths;
@@ -742,7 +747,7 @@ TEST_F(LinkerAppTest, CodeSizeOverflowErrorWhileLinkingModules) {
     EXPECT_CALL(module_reader, ReadFromStream_(input_file_stream))
         .Times(1)
         .WillOnce(Return(module));
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(config.GetOutputFileType()))
         .Times(1)
         .WillOnce(Return(linker));
     EXPECT_CALL(*linker, Link_(modules, output_code_version))
@@ -812,7 +817,7 @@ TEST_F(LinkerAppTest, CodeSizeOverflowErrorWhileReadingModule) {
         .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
     EXPECT_CALL(msg_printer, PrintError("Code size exceeds 32 bits"))
         .Times(1);
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(_))
         .Times(0);
     EXPECT_CALL(linker, Link_(_, _))
         .Times(0);
@@ -880,7 +885,7 @@ TEST_F(LinkerAppTest, IOErrorWhileReadingFileStream) {
         .WillOnce(Throw(IOError("test")));
     EXPECT_CALL(msg_printer, PrintError(msg))
         .Times(1);
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(_))
         .Times(0);
     EXPECT_CALL(linker, Link_(_, _))
         .Times(0);
@@ -946,7 +951,7 @@ TEST_F(LinkerAppTest, IOErrorWhileReadingFile) {
         .Times(1);
     EXPECT_CALL(module_reader, ReadFromStream_(_))
         .Times(0);
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(_))
         .Times(0);
     EXPECT_CALL(linker, Link_(_, _))
         .Times(0);
@@ -1009,7 +1014,7 @@ TEST_F(LinkerAppTest, IOErrorWhileSearchingFile) {
         .Times(0);
     EXPECT_CALL(module_reader, ReadFromStream_(_))
         .Times(0);
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(_))
         .Times(0);
     EXPECT_CALL(linker, Link_(_, _))
         .Times(0);
@@ -1073,7 +1078,7 @@ TEST_F(LinkerAppTest, FileNotExists) {
         .Times(0);
     EXPECT_CALL(module_reader, ReadFromStream_(_))
         .Times(0);
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(_))
         .Times(0);
     EXPECT_CALL(linker, Link_(_, _))
         .Times(0);
@@ -1126,7 +1131,7 @@ TEST_F(LinkerAppTest, BadArgsErrorWhileParsingConfig) {
         .Times(0);
     EXPECT_CALL(module_reader, ReadFromStream_(_))
         .Times(0);
-    EXPECT_CALL(linker_factory, Create_())
+    EXPECT_CALL(linker_factory, Create_(_))
         .Times(0);
     EXPECT_CALL(linker, Link_(_, _))
         .Times(0);

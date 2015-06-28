@@ -44,48 +44,48 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> ids_of_global_var_defs = {expected_id};
-      std::vector<real_talk::code::IdAddress> id_addresses_of_func_defs;
-      std::vector<std::string> ids_of_native_func_defs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_global_var_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_func_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_native_func_refs;
+      std::vector<std::string> global_var_defs = {expected_id};
+      std::vector<real_talk::code::IdAddress> func_defs;
+      std::vector<std::string> native_func_defs;
+      std::vector<real_talk::code::IdAddresses> global_var_refs;
+      std::vector<real_talk::code::IdAddresses> func_refs;
+      std::vector<real_talk::code::IdAddresses> native_func_refs;
       uint32_t module_version = UINT32_C(1);
       uint32_t main_cmds_code_size = UINT32_C(0);
       std::unique_ptr<real_talk::code::Module> module(
           new real_talk::code::Module(module_version,
                                       std::move(cmds_code),
                                       main_cmds_code_size,
-                                      id_addresses_of_func_defs,
-                                      ids_of_global_var_defs,
-                                      ids_of_native_func_defs,
-                                      id_addresses_of_func_refs,
-                                      id_addresses_of_native_func_refs,
-                                      id_addresses_of_global_var_refs));
+                                      func_defs,
+                                      global_var_defs,
+                                      native_func_defs,
+                                      func_refs,
+                                      native_func_refs,
+                                      global_var_refs));
       modules.push_back(std::move(module));
     }
 
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> ids_of_global_var_defs = {expected_id};
-      std::vector<real_talk::code::IdAddress> id_addresses_of_func_defs;
-      std::vector<std::string> ids_of_native_func_defs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_global_var_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_func_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_native_func_refs;
+      std::vector<std::string> global_var_defs = {expected_id};
+      std::vector<real_talk::code::IdAddress> func_defs;
+      std::vector<std::string> native_func_defs;
+      std::vector<real_talk::code::IdAddresses> global_var_refs;
+      std::vector<real_talk::code::IdAddresses> func_refs;
+      std::vector<real_talk::code::IdAddresses> native_func_refs;
       uint32_t module_version = UINT32_C(1);
       uint32_t main_cmds_code_size = UINT32_C(0);
       std::unique_ptr<real_talk::code::Module> module(
           new real_talk::code::Module(module_version,
                                       std::move(cmds_code),
                                       main_cmds_code_size,
-                                      id_addresses_of_func_defs,
-                                      ids_of_global_var_defs,
-                                      ids_of_native_func_defs,
-                                      id_addresses_of_func_refs,
-                                      id_addresses_of_native_func_refs,
-                                      id_addresses_of_global_var_refs));
+                                      func_defs,
+                                      global_var_defs,
+                                      native_func_defs,
+                                      func_refs,
+                                      native_func_refs,
+                                      global_var_refs));
       modules.push_back(std::move(module));
     }
 
@@ -99,50 +99,50 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> ids_of_global_var_defs;
-      std::vector<real_talk::code::IdAddress> id_addresses_of_func_defs =
+      std::vector<std::string> global_var_defs;
+      std::vector<real_talk::code::IdAddress> func_defs =
           {{expected_id, UINT32_C(0)}};
-      std::vector<std::string> ids_of_native_func_defs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_global_var_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_func_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_native_func_refs;
+      std::vector<std::string> native_func_defs;
+      std::vector<real_talk::code::IdAddresses> global_var_refs;
+      std::vector<real_talk::code::IdAddresses> func_refs;
+      std::vector<real_talk::code::IdAddresses> native_func_refs;
       uint32_t module_version = UINT32_C(1);
       uint32_t main_cmds_code_size = UINT32_C(0);
       std::unique_ptr<real_talk::code::Module> module(
           new real_talk::code::Module(module_version,
                                       std::move(cmds_code),
                                       main_cmds_code_size,
-                                      id_addresses_of_func_defs,
-                                      ids_of_global_var_defs,
-                                      ids_of_native_func_defs,
-                                      id_addresses_of_func_refs,
-                                      id_addresses_of_native_func_refs,
-                                      id_addresses_of_global_var_refs));
+                                      func_defs,
+                                      global_var_defs,
+                                      native_func_defs,
+                                      func_refs,
+                                      native_func_refs,
+                                      global_var_refs));
       modules.push_back(std::move(module));
     }
 
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> ids_of_global_var_defs;
-      std::vector<real_talk::code::IdAddress> id_addresses_of_func_defs =
+      std::vector<std::string> global_var_defs;
+      std::vector<real_talk::code::IdAddress> func_defs =
           {{expected_id, UINT32_C(1)}};
-      std::vector<std::string> ids_of_native_func_defs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_global_var_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_func_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_native_func_refs;
+      std::vector<std::string> native_func_defs;
+      std::vector<real_talk::code::IdAddresses> global_var_refs;
+      std::vector<real_talk::code::IdAddresses> func_refs;
+      std::vector<real_talk::code::IdAddresses> native_func_refs;
       uint32_t module_version = UINT32_C(1);
       uint32_t main_cmds_code_size = UINT32_C(0);
       std::unique_ptr<real_talk::code::Module> module(
           new real_talk::code::Module(module_version,
                                       std::move(cmds_code),
                                       main_cmds_code_size,
-                                      id_addresses_of_func_defs,
-                                      ids_of_global_var_defs,
-                                      ids_of_native_func_defs,
-                                      id_addresses_of_func_refs,
-                                      id_addresses_of_native_func_refs,
-                                      id_addresses_of_global_var_refs));
+                                      func_defs,
+                                      global_var_defs,
+                                      native_func_defs,
+                                      func_refs,
+                                      native_func_refs,
+                                      global_var_refs));
       modules.push_back(std::move(module));
     }
 
@@ -156,48 +156,48 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> ids_of_global_var_defs;
-      std::vector<real_talk::code::IdAddress> id_addresses_of_func_defs;
-      std::vector<std::string> ids_of_native_func_defs = {expected_id};
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_global_var_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_func_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_native_func_refs;
+      std::vector<std::string> global_var_defs;
+      std::vector<real_talk::code::IdAddress> func_defs;
+      std::vector<std::string> native_func_defs = {expected_id};
+      std::vector<real_talk::code::IdAddresses> global_var_refs;
+      std::vector<real_talk::code::IdAddresses> func_refs;
+      std::vector<real_talk::code::IdAddresses> native_func_refs;
       uint32_t module_version = UINT32_C(1);
       uint32_t main_cmds_code_size = UINT32_C(0);
       std::unique_ptr<real_talk::code::Module> module(
           new real_talk::code::Module(module_version,
                                       std::move(cmds_code),
                                       main_cmds_code_size,
-                                      id_addresses_of_func_defs,
-                                      ids_of_global_var_defs,
-                                      ids_of_native_func_defs,
-                                      id_addresses_of_func_refs,
-                                      id_addresses_of_native_func_refs,
-                                      id_addresses_of_global_var_refs));
+                                      func_defs,
+                                      global_var_defs,
+                                      native_func_defs,
+                                      func_refs,
+                                      native_func_refs,
+                                      global_var_refs));
       modules.push_back(std::move(module));
     }
 
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> ids_of_global_var_defs;
-      std::vector<real_talk::code::IdAddress> id_addresses_of_func_defs;
-      std::vector<std::string> ids_of_native_func_defs = {expected_id};
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_global_var_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_func_refs;
-      std::vector<real_talk::code::IdAddresses> id_addresses_of_native_func_refs;
+      std::vector<std::string> global_var_defs;
+      std::vector<real_talk::code::IdAddress> func_defs;
+      std::vector<std::string> native_func_defs = {expected_id};
+      std::vector<real_talk::code::IdAddresses> global_var_refs;
+      std::vector<real_talk::code::IdAddresses> func_refs;
+      std::vector<real_talk::code::IdAddresses> native_func_refs;
       uint32_t module_version = UINT32_C(1);
       uint32_t main_cmds_code_size = UINT32_C(0);
       std::unique_ptr<real_talk::code::Module> module(
           new real_talk::code::Module(module_version,
                                       std::move(cmds_code),
                                       main_cmds_code_size,
-                                      id_addresses_of_func_defs,
-                                      ids_of_global_var_defs,
-                                      ids_of_native_func_defs,
-                                      id_addresses_of_func_refs,
-                                      id_addresses_of_native_func_refs,
-                                      id_addresses_of_global_var_refs));
+                                      func_defs,
+                                      global_var_defs,
+                                      native_func_defs,
+                                      func_refs,
+                                      native_func_refs,
+                                      global_var_refs));
       modules.push_back(std::move(module));
     }
 

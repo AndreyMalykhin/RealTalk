@@ -38,7 +38,10 @@ void ExeLinker::CollectGlobalVarDefs(
     unordered_map<string, uint32_t> *output_var_indexes,
     uint32_t *next_var_index) {
   for (const string &id: var_defs) {
-    assert(*next_var_index + 1 > *next_var_index);
+    if (*next_var_index + 1 < *next_var_index) {
+      ThrowDefsCountOverflowError();
+    }
+
     const bool is_duplicate_id = !output_var_indexes->insert(
         make_pair(id, (*next_var_index)++)).second;
 
@@ -57,7 +60,7 @@ unordered_map<string, uint32_t> ExeLinker::CollectFuncDefs(
   for (const unique_ptr<Module> &module: modules) {
     const uint32_t module_main_cmds_size = module->GetMainCmdsCodeSize();
 
-    for (const IdAddress &func_def: module->GetIdAddressesOfFuncDefs()) {
+    for (const IdAddress &func_def: module->GetFuncDefs()) {
       const uint32_t func_address = GetAbsoluteAddress(
           func_def.GetAddress(),
           module_main_cmds_size,
@@ -121,7 +124,7 @@ unique_ptr<CodeContainer> ExeLinker::Link(
     func_cmds_current_address += module->GetMainCmdsCodeSize();
     CheckAddressOverflow(cmds_size, module->GetCmdsCode().GetSize());
     cmds_size += module->GetCmdsCode().GetSize();
-    CollectGlobalVarDefs(module->GetIdsOfGlobalVarDefs(),
+    CollectGlobalVarDefs(module->GetGlobalVarDefs(),
                          &global_var_indexes,
                          &next_global_var_index);
   }
@@ -142,25 +145,25 @@ unique_ptr<CodeContainer> ExeLinker::Link(
                     func_cmds_current_address,
                     cmds.get());
     const uint32_t module_main_cmds_size = module->GetMainCmdsCodeSize();
-    FillAddressPlaceholders(module->GetIdAddressesOfGlobalVarRefs(),
+    FillAddressPlaceholders(module->GetGlobalVarRefs(),
                             global_var_indexes,
                             module_main_cmds_size,
                             main_cmds_current_address,
                             func_cmds_current_address,
                             cmds.get());
-    FillAddressPlaceholders(module->GetIdAddressesOfFuncRefs(),
+    FillAddressPlaceholders(module->GetFuncRefs(),
                             func_addresses,
                             module_main_cmds_size,
                             main_cmds_current_address,
                             func_cmds_current_address,
                             cmds.get());
-    CollectDefs(module->GetIdsOfNativeFuncDefs(),
+    CollectDefs(module->GetNativeFuncDefs(),
                 &unique_native_func_defs,
                 &ordered_native_func_defs);
     CollectRefs(module_main_cmds_size,
                 main_cmds_current_address,
                 func_cmds_current_address,
-                module->GetIdAddressesOfNativeFuncRefs(),
+                module->GetNativeFuncRefs(),
                 &id_indexes_of_native_func_refs,
                 &native_func_refs);
     main_cmds_current_address += module_main_cmds_size;

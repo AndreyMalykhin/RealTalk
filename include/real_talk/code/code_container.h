@@ -25,8 +25,8 @@ class CodeContainer {
   uint32_t GetMainCmdsCodeSize() const;
   uint32_t GetFuncCmdsCodeSize() const;
   uint32_t GetVersion() const;
-  const std::vector<IdAddresses> &GetIdAddressesOfNativeFuncRefs() const;
-  const std::vector<std::string> &GetIdsOfNativeFuncDefs() const;
+  const std::vector<IdAddresses> &GetNativeFuncRefs() const;
+  const std::vector<std::string> &GetNativeFuncDefs() const;
   friend bool operator==(const CodeContainer &lhs, const CodeContainer &rhs);
   friend std::ostream &operator<<(
       std::ostream &stream, CodeContainer &container);
@@ -36,8 +36,8 @@ class CodeContainer {
         uint32_t version,
         std::unique_ptr<Code> cmds_code,
         uint32_t main_cmds_code_size,
-        const std::vector<std::string> &ids_of_native_func_defs,
-        const std::vector<IdAddresses> &id_addresses_of_native_func_refs);
+        const std::vector<std::string> &native_func_defs,
+        const std::vector<IdAddresses> &native_func_refs);
 
  private:
   virtual bool IsEqual(const CodeContainer &container) const = 0;
@@ -46,8 +46,8 @@ class CodeContainer {
   uint32_t version_;
   std::unique_ptr<Code> cmds_code_;
   uint32_t main_cmds_code_size_;
-  std::vector<std::string> ids_of_native_func_defs_;
-  std::vector<IdAddresses> id_addresses_of_native_func_refs_;
+  std::vector<std::string> native_func_defs_;
+  std::vector<IdAddresses> native_func_refs_;
 };
 }
 }

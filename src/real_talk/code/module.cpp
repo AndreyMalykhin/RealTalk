@@ -22,75 +22,75 @@ Module::Module(
     uint32_t version,
     unique_ptr<Code> cmds_code,
     uint32_t main_cmds_code_size,
-    const vector<IdAddress> &id_addresses_of_func_defs,
-    const vector<string> &ids_of_global_var_defs,
-    const vector<string> &ids_of_native_func_defs,
-    const vector<IdAddresses> &id_addresses_of_func_refs,
-    const vector<IdAddresses> &id_addresses_of_native_func_refs,
-    const vector<IdAddresses> &id_addresses_of_global_var_refs)
+    const vector<IdAddress> &func_defs,
+    const vector<string> &global_var_defs,
+    const vector<string> &native_func_defs,
+    const vector<IdAddresses> &func_refs,
+    const vector<IdAddresses> &native_func_refs,
+    const vector<IdAddresses> &global_var_refs)
     : CodeContainer(version,
                     move(cmds_code),
                     main_cmds_code_size,
-                    ids_of_native_func_defs,
-                    id_addresses_of_native_func_refs),
-      id_addresses_of_func_defs_(id_addresses_of_func_defs),
-      ids_of_global_var_defs_(ids_of_global_var_defs),
-      id_addresses_of_func_refs_(id_addresses_of_func_refs),
-      id_addresses_of_global_var_refs_(id_addresses_of_global_var_refs) {}
+                    native_func_defs,
+                    native_func_refs),
+      func_defs_(func_defs),
+      global_var_defs_(global_var_defs),
+      func_refs_(func_refs),
+      global_var_refs_(global_var_refs) {}
 
 void Module::Accept(const CodeContainerVisitor &visitor) const {
   visitor.VisitModule(*this);
 }
 
-const vector<IdAddress> &Module::GetIdAddressesOfFuncDefs() const {
-  return id_addresses_of_func_defs_;
+const vector<IdAddress> &Module::GetFuncDefs() const {
+  return func_defs_;
 }
 
-const vector<IdAddresses> &Module::GetIdAddressesOfFuncRefs() const {
-  return id_addresses_of_func_refs_;
+const vector<IdAddresses> &Module::GetFuncRefs() const {
+  return func_refs_;
 }
 
-const vector<string> &Module::GetIdsOfGlobalVarDefs() const {
-  return ids_of_global_var_defs_;
+const vector<string> &Module::GetGlobalVarDefs() const {
+  return global_var_defs_;
 }
 
-const vector<IdAddresses> &Module::GetIdAddressesOfGlobalVarRefs() const {
-  return id_addresses_of_global_var_refs_;
+const vector<IdAddresses> &Module::GetGlobalVarRefs() const {
+  return global_var_refs_;
 }
 
 bool Module::IsEqual(const CodeContainer &container) const {
   const Module &rhs = static_cast<const Module&>(container);
-  return id_addresses_of_global_var_refs_
-      == rhs.id_addresses_of_global_var_refs_
-      && ids_of_global_var_defs_ == rhs.ids_of_global_var_defs_
-      && id_addresses_of_func_refs_ == rhs.id_addresses_of_func_refs_
-      && id_addresses_of_func_defs_ == rhs.id_addresses_of_func_defs_;
+  return global_var_refs_
+      == rhs.global_var_refs_
+      && global_var_defs_ == rhs.global_var_defs_
+      && func_refs_ == rhs.func_refs_
+      && func_defs_ == rhs.func_defs_;
 }
 
 void Module::Print(ostream &stream) {
-  stream << "id_addresses_of_func_defs=\n";
+  stream << "func_defs=\n";
 
-  for (const IdAddress &id_address_of_func_def: id_addresses_of_func_defs_) {
+  for (const IdAddress &id_address_of_func_def: func_defs_) {
     stream << id_address_of_func_def << "\n";
   }
 
-  stream << "id_addresses_of_func_refs=\n";
+  stream << "func_refs=\n";
 
   for (const IdAddresses &id_addresses_of_func_ref
-           : id_addresses_of_func_refs_) {
+           : func_refs_) {
     stream << id_addresses_of_func_ref << "\n";
   }
 
-  stream << "ids_of_global_var_defs=\n";
+  stream << "global_var_defs=\n";
 
-  for (const string &id_of_global_var_def: ids_of_global_var_defs_) {
+  for (const string &id_of_global_var_def: global_var_defs_) {
     stream << id_of_global_var_def << "\n";
   }
 
-  stream << "id_addresses_of_global_var_refs=\n";
+  stream << "global_var_refs=\n";
 
   for (const IdAddresses &id_addresses_of_global_var_ref
-           : id_addresses_of_global_var_refs_) {
+           : global_var_refs_) {
     stream << id_addresses_of_global_var_ref << "\n";
   }
 }

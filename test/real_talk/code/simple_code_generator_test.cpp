@@ -281,22 +281,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs = {"var"};
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs = {"var"};
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(vector<TestCast>(),
                  program_node,
                  semantic_analysis,
@@ -346,22 +346,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs = {"var"};
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs = {"var"};
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -410,22 +410,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -457,22 +457,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(vector<TestCast>(),
                  program_node,
                  semantic_analysis,
@@ -501,22 +501,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(vector<TestCast>(),
                  program_node,
                  semantic_analysis,
@@ -617,22 +617,22 @@ class SimpleCodeGeneratorTest: public Test {
         {move(dest_data_type2), move(src_data_type2), CmdId::kCastCharToInt};
     test_casts.push_back(move(test_cast2));
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -702,22 +702,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -785,22 +785,22 @@ class SimpleCodeGeneratorTest: public Test {
     uint32_t func_def_address = cmds_code->GetPosition();
     cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs = {{"func", func_def_address}};
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -855,23 +855,23 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs = {"var"};
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs =
+    vector<string> global_var_defs = {"var"};
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs =
         {{"var", {var_index_placeholder}}};
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(vector<TestCast>(),
                  program_node,
                  semantic_analysis,
@@ -924,22 +924,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(vector<TestCast>(),
                  program_node,
                  semantic_analysis,
@@ -1013,23 +1013,23 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs = {"var"};
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs =
+    vector<string> global_var_defs = {"var"};
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs =
         {{"var", {var_index_placeholder}}};
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -1101,22 +1101,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -1214,23 +1214,23 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs = {"var"};
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs =
+    vector<string> global_var_defs = {"var"};
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs =
         {{"var", {var_index_placeholder}}};
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -1347,23 +1347,23 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(store_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs = {"var"};
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs =
+    vector<string> global_var_defs = {"var"};
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs =
         {{"var", {var_index_placeholder}}};
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -1408,22 +1408,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -1463,22 +1463,22 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> ids_of_global_var_defs;
-    vector<IdAddress> id_addresses_of_func_defs;
-    vector<string> ids_of_native_func_defs;
-    vector<IdAddresses> id_addresses_of_global_var_refs;
-    vector<IdAddresses> id_addresses_of_func_refs;
-    vector<IdAddresses> id_addresses_of_native_func_refs;
+    vector<string> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
                            move(cmds_code),
                            main_cmds_code_size,
-                           id_addresses_of_func_defs,
-                           ids_of_global_var_defs,
-                           ids_of_native_func_defs,
-                           id_addresses_of_func_refs,
-                           id_addresses_of_native_func_refs,
-                           id_addresses_of_global_var_refs);
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
     TestGenerate(move(test_casts),
                  program_node,
                  semantic_analysis,
@@ -1657,22 +1657,22 @@ TEST_F(SimpleCodeGeneratorTest, ExprStmt) {
   cmds_code->WriteCmdId(CmdId::kUnload);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -1797,22 +1797,22 @@ TEST_F(SimpleCodeGeneratorTest, Import) {
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -2922,22 +2922,22 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -3122,22 +3122,22 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -3288,22 +3288,22 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -3449,22 +3449,22 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -3544,22 +3544,22 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -3637,22 +3637,22 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -3735,22 +3735,22 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -3830,22 +3830,22 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -3928,22 +3928,22 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -4054,22 +4054,22 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -4149,22 +4149,22 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -4272,22 +4272,22 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -4372,22 +4372,22 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs = {{"func", func_def_address}};
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -4447,22 +4447,22 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kReturn);
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs = {{"func", func_def_address}};
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -4786,22 +4786,22 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithoutBody) {
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs = {{"func"}};
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs = {{"func"}};
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -5638,23 +5638,23 @@ TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs = {{"func", func_def_address}};
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs =
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs = {{"func", func_def_address}};
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs =
       {{"func", {func_ref_address}}};
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(move(test_casts),
                program_node,
                semantic_analysis,
@@ -5807,23 +5807,23 @@ TEST_F(SimpleCodeGeneratorTest, NativeCall) {
   cmds_code->WriteCmdId(CmdId::kCallNative);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs = {"func"};
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs =
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs = {"func"};
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs =
       {{"func", {func_ref_address}}};
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(move(test_casts),
                program_node,
                semantic_analysis,
@@ -6190,22 +6190,22 @@ TEST_F(SimpleCodeGeneratorTest, And) {
   cmds_code->WriteCmdId(CmdId::kUnload);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,
@@ -6278,22 +6278,22 @@ TEST_F(SimpleCodeGeneratorTest, Or) {
   cmds_code->WriteCmdId(CmdId::kUnload);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> ids_of_global_var_defs;
-  vector<IdAddress> id_addresses_of_func_defs;
-  vector<string> ids_of_native_func_defs;
-  vector<IdAddresses> id_addresses_of_global_var_refs;
-  vector<IdAddresses> id_addresses_of_func_refs;
-  vector<IdAddresses> id_addresses_of_native_func_refs;
+  vector<string> global_var_defs;
+  vector<IdAddress> func_defs;
+  vector<string> native_func_defs;
+  vector<IdAddresses> global_var_refs;
+  vector<IdAddresses> func_refs;
+  vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
                          move(cmds_code),
                          main_cmds_code_size,
-                         id_addresses_of_func_defs,
-                         ids_of_global_var_defs,
-                         ids_of_native_func_defs,
-                         id_addresses_of_func_refs,
-                         id_addresses_of_native_func_refs,
-                         id_addresses_of_global_var_refs);
+                         func_defs,
+                         global_var_defs,
+                         native_func_defs,
+                         func_refs,
+                         native_func_refs,
+                         global_var_refs);
   TestGenerate(vector<TestCast>(),
                program_node,
                semantic_analysis,

@@ -20,6 +20,12 @@ class Linker {
  public:
   typedef std::vector< std::unique_ptr<real_talk::code::Module> > Modules;
 
+  class DefsCountOverflowError: public std::runtime_error {
+   public:
+    explicit DefsCountOverflowError(const std::string &msg)
+        : std::runtime_error(msg) {}
+  };
+
   class DuplicateDefError: public std::runtime_error {
    public:
     DuplicateDefError(const std::string &id, const std::string &msg)
