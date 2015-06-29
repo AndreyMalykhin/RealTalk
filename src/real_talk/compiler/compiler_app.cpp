@@ -29,7 +29,7 @@
 #include "real_talk/compiler/compiler_config_parser.h"
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/compiler_cmd.h"
-#include "real_talk/compiler/compiler.h"
+#include "real_talk/compiler/compiler_app.h"
 
 using std::unique_ptr;
 using std::unordered_set;
@@ -211,7 +211,7 @@ class ImportsExtractor: private NodeVisitor {
 ImportsExtractor &kImportsExtractor = *new ImportsExtractor();
 }
 
-Compiler::Compiler(
+CompilerApp::CompilerApp(
     const FileSearcher &file_searcher,
     const LexerFactory &lexer_factory,
     Parser *src_parser,
@@ -245,7 +245,7 @@ Compiler::Compiler(
   assert(code_);
 }
 
-void Compiler::Compile(int argc, const char *argv[]) const {
+void CompilerApp::Run(int argc, const char *argv[]) const {
   CompilerCmd cmd;
 
   try {
@@ -317,7 +317,7 @@ void Compiler::Compile(int argc, const char *argv[]) const {
   }
 }
 
-void Compiler::ParseFiles(
+void CompilerApp::ParseFiles(
     unique_ptr<ProgramNode> *main_program,
     SemanticAnalyzer::ImportPrograms *import_programs,
     MsgPrinter::ProgramFilePaths *program_file_paths,
@@ -408,7 +408,7 @@ void Compiler::ParseFiles(
   *is_success = true;
 }
 
-void Compiler::ParseFile(const path &file_path,
+void CompilerApp::ParseFile(const path &file_path,
                          unique_ptr<ProgramNode> *program,
                          vector<ProgramImportStmt> *program_import_stmts,
                          bool *is_success) const {
@@ -460,7 +460,7 @@ void Compiler::ParseFile(const path &file_path,
   *is_success = true;
 }
 
-bool Compiler::HasSemanticErrors(
+bool CompilerApp::HasSemanticErrors(
     const SemanticAnalysis &semantic_analysis) const {
   for (const SemanticAnalysis::ProgramProblems::value_type &program_problems
            : semantic_analysis.GetProblems()) {
@@ -474,9 +474,9 @@ bool Compiler::HasSemanticErrors(
   return false;
 }
 
-void Compiler::Log(LogDataProvider data_provider) const {
+void CompilerApp::Log(LogDataWriter data_writer) const {
   if (config_->IsDebug()) {
-    data_provider(&cout);
+    data_writer(&cout);
   }
 }
 }

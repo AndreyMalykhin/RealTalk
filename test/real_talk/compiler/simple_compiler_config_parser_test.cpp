@@ -50,7 +50,7 @@ TEST_F(SimpleCompilerConfigParserTest, ParseWithAllOptions) {
   TestParse(argc, argv, expected_config, expected_cmd);
 }
 
-TEST_F(SimpleCompilerConfigParserTest, ParseWithInputOption) {
+TEST_F(SimpleCompilerConfigParserTest, ParseWithRequiredOptions) {
   int argc = 2;
   const char *argv[] = {"realtalkc", "app/module/component.rts"};
   CompilerConfig expected_config;

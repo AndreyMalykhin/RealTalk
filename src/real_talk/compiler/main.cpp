@@ -13,10 +13,10 @@
 #include "real_talk/compiler/simple_msg_printer.h"
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/simple_compiler_config_parser.h"
-#include "real_talk/compiler/compiler.h"
+#include "real_talk/compiler/compiler_app.h"
 
 using std::cout;
-using real_talk::compiler::Compiler;
+using real_talk::compiler::CompilerApp;
 using real_talk::compiler::CompilerConfig;
 using real_talk::compiler::SimpleCompilerConfigParser;
 using real_talk::compiler::SimpleMsgPrinter;
@@ -40,19 +40,19 @@ int main(int argc, const char *argv[]) {
   SimpleCodeGenerator code_generator(cast_cmd_generator);
   CompilerConfig compiler_config;
   Code code;
-  Compiler compiler(SimpleFileSearcher(),
-                    SimpleLexerFactory(),
-                    &src_parser,
-                    lit_parser,
-                    SimpleCompilerConfigParser(),
-                    &semantic_analyzer,
-                    &code_generator,
-                    SimpleMsgPrinter(&cout),
-                    SimpleDirCreator(),
-                    SimpleCodeContainerWriter(),
-                    SimpleFile(),
-                    &compiler_config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(SimpleFileSearcher(),
+                       SimpleLexerFactory(),
+                       &src_parser,
+                       lit_parser,
+                       SimpleCompilerConfigParser(),
+                       &semantic_analyzer,
+                       &code_generator,
+                       SimpleMsgPrinter(&cout),
+                       SimpleDirCreator(),
+                       SimpleCodeContainerWriter(),
+                       SimpleFile(),
+                       &compiler_config,
+                       &code);
+  compiler.Run(argc, argv);
   return EXIT_SUCCESS;
 }

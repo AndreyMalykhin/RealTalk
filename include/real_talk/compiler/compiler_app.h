@@ -1,6 +1,6 @@
 
-#ifndef _REAL_TALK_COMPILER_COMPILER_H_
-#define _REAL_TALK_COMPILER_COMPILER_H_
+#ifndef _REAL_TALK_COMPILER_COMPILER_APP_H_
+#define _REAL_TALK_COMPILER_COMPILER_APP_H_
 
 #include <vector>
 #include <functional>
@@ -46,25 +46,25 @@ class FileParser;
 class CompilerConfig;
 class CompilerConfigParser;
 
-class Compiler {
+class CompilerApp {
  public:
-  Compiler(const real_talk::util::FileSearcher &file_searcher,
-           const real_talk::lexer::LexerFactory &lexer_factory,
-           real_talk::parser::Parser *src_parser,
-           const real_talk::semantic::LitParser &lit_parser,
-           const CompilerConfigParser &config_parser,
-           real_talk::semantic::SemanticAnalyzer *semantic_analyzer,
-           real_talk::code::CodeGenerator *code_generator,
-           const MsgPrinter &msg_printer,
-           const real_talk::util::DirCreator &dir_creator,
-           const real_talk::code::ModuleWriter &module_writer,
-           const real_talk::util::File &file,
-           CompilerConfig *config,
-           real_talk::code::Code *code);
-  void Compile(int argc, const char *argv[]) const;
+  CompilerApp(const real_talk::util::FileSearcher &file_searcher,
+              const real_talk::lexer::LexerFactory &lexer_factory,
+              real_talk::parser::Parser *src_parser,
+              const real_talk::semantic::LitParser &lit_parser,
+              const CompilerConfigParser &config_parser,
+              real_talk::semantic::SemanticAnalyzer *semantic_analyzer,
+              real_talk::code::CodeGenerator *code_generator,
+              const MsgPrinter &msg_printer,
+              const real_talk::util::DirCreator &dir_creator,
+              const real_talk::code::ModuleWriter &module_writer,
+              const real_talk::util::File &file,
+              CompilerConfig *config,
+              real_talk::code::Code *code);
+  void Run(int argc, const char *argv[]) const;
 
  private:
-  typedef std::function<void (std::ostream *stream)> LogDataProvider;
+  typedef std::function<void (std::ostream *stream)> LogDataWriter;
 
   struct ProgramImportStmt {
     const real_talk::parser::ProgramNode *program;
@@ -84,7 +84,7 @@ class Compiler {
       std::unique_ptr<real_talk::parser::ProgramNode> *program,
       std::vector<ProgramImportStmt> *program_import_stmts,
       bool *is_success) const;
-  void Log(LogDataProvider data_provider) const;
+  void Log(LogDataWriter data_provider) const;
 
   const real_talk::util::FileSearcher &file_searcher_;
   const real_talk::lexer::LexerFactory &lexer_factory_;

@@ -17,6 +17,7 @@ using boost::program_options::options_description;
 using boost::program_options::positional_options_description;
 using boost::program_options::variables_map;
 using boost::program_options::command_line_parser;
+using boost::program_options::error;
 using boost::filesystem::path;
 
 namespace real_talk {
@@ -36,34 +37,40 @@ options_description GetOptions() {
 }
 }
 
-void SimpleCompilerConfigParser::Parse(int argc, const char *argv[],
+void SimpleCompilerConfigParser::Parse(int argc,
+                                       const char *argv[],
                                        CompilerConfig *config,
                                        CompilerCmd *cmd) const {
   assert(config);
   assert(cmd);
-  options_description options = GetOptions();
-  positional_options_description positional_options;
-  positional_options.add("input", -1);
-  variables_map vars;
-  command_line_parser cmd_line_parser(argc, argv);
-  cmd_line_parser.options(options).positional(positional_options);
-  store(cmd_line_parser.run(), vars);
-  notify(vars);
-  *cmd = (vars.empty() || vars.count("help"))
-         ? CompilerCmd::kHelp : CompilerCmd::kCompile;
 
-  if (vars.count("input")) {
-    config->SetInputFilePath(vars["input"].as<path>());
-  } else if (*cmd == CompilerCmd::kCompile) {
-    throw BadArgsError("Input file is required");
-  }
+  try {
+    options_description options = GetOptions();
+    positional_options_description positional_options;
+    positional_options.add("input", -1);
+    variables_map vars;
+    command_line_parser cmd_line_parser(argc, argv);
+    cmd_line_parser.options(options).positional(positional_options);
+    store(cmd_line_parser.run(), vars);
+    notify(vars);
+    *cmd = (vars.empty() || vars.count("help"))
+           ? CompilerCmd::kHelp : CompilerCmd::kCompile;
 
-  if (vars.count("import")) {
-    config->SetImportDirPaths(vars["import"].as< vector<path> >());
-  }
+    if (vars.count("input")) {
+      config->SetInputFilePath(vars["input"].as<path>());
+    } else if (*cmd == CompilerCmd::kCompile) {
+      throw BadArgsError("Input file is required");
+    }
 
-  if (vars.count("debug")) {
-    config->SetDebug(true);
+    if (vars.count("import")) {
+      config->SetImportDirPaths(vars["import"].as< vector<path> >());
+    }
+
+    if (vars.count("debug")) {
+      config->SetDebug(true);
+    }
+  } catch (const error &e) {
+    throw BadArgsError(e.what());
   }
 }
 

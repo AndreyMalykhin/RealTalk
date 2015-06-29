@@ -28,7 +28,7 @@
 #include "real_talk/compiler/compiler_config.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/compiler_cmd.h"
-#include "real_talk/compiler/compiler.h"
+#include "real_talk/compiler/compiler_app.h"
 
 using std::move;
 using std::unordered_map;
@@ -233,13 +233,13 @@ class SemanticErrorMock: public SemanticError {
 };
 }
 
-class CompilerTest: public Test {
+class CompilerAppTest: public Test {
  protected:
   virtual void SetUp() override {}
   virtual void TearDown() override {}
 };
 
-TEST_F(CompilerTest, Compile) {
+TEST_F(CompilerAppTest, Run) {
   struct TestImportFileParse {
     ImportNode *import_stmt;
     istream *import_file_stream;
@@ -592,23 +592,23 @@ TEST_F(CompilerTest, Compile) {
         .Times(1);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &module_code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &module_code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, Help) {
+TEST_F(CompilerAppTest, Help) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path;
@@ -662,23 +662,23 @@ TEST_F(CompilerTest, Help) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, ThereAreSemanticErrors) {
+TEST_F(CompilerAppTest, ThereAreSemanticErrors) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -743,23 +743,23 @@ TEST_F(CompilerTest, ThereAreSemanticErrors) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, IOErrorWhileWritingFile) {
+TEST_F(CompilerAppTest, IOErrorWhileWritingFile) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -854,23 +854,23 @@ TEST_F(CompilerTest, IOErrorWhileWritingFile) {
         .Times(1);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &module_code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &module_code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, IOErrorWhileCreatingDir) {
+TEST_F(CompilerAppTest, IOErrorWhileCreatingDir) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -963,23 +963,23 @@ TEST_F(CompilerTest, IOErrorWhileCreatingDir) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &module_code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &module_code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
+TEST_F(CompilerAppTest, CodeSizeOverflowErrorWhileGeneratingCode) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1036,8 +1036,8 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
         program_file_paths))
         .Times(1);
     EXPECT_CALL(code_generator, Generate_(Ref(*main_program),
-                                         Ref(*semantic_analysis),
-                                         code_version))
+                                          Ref(*semantic_analysis),
+                                          code_version))
         .Times(1)
         .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
     EXPECT_CALL(msg_printer, PrintError("Code size exceeds 32 bits"))
@@ -1050,23 +1050,23 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileGeneratingCode) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, CodeSizeOverflowErrorWhileWritingModule) {
+TEST_F(CompilerAppTest, CodeSizeOverflowErrorWhileWritingModule) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1140,8 +1140,8 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileWritingModule) {
         program_file_paths))
         .Times(1);
     EXPECT_CALL(code_generator, Generate_(Ref(*main_program),
-                                         Ref(*semantic_analysis),
-                                         code_version))
+                                          Ref(*semantic_analysis),
+                                          code_version))
         .Times(1)
         .WillOnce(Return(module));
     EXPECT_CALL(module_writer, Write(Ref(*module), &module_code))
@@ -1155,23 +1155,23 @@ TEST_F(CompilerTest, CodeSizeOverflowErrorWhileWritingModule) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &module_code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &module_code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
+TEST_F(CompilerAppTest, UnexpectedTokenErrorWhileParsingFile) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1192,7 +1192,7 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
   DirCreatorMock dir_creator;
   ModuleWriterMock module_writer;
   Parser::UnexpectedTokenError error(
-        TokenInfo(Token::kFileEnd, "", UINT32_C(1), UINT32_C(2)), "test");
+      TokenInfo(Token::kFileEnd, "", UINT32_C(1), UINT32_C(2)), "test");
 
   {
     InSequence sequence;
@@ -1227,23 +1227,23 @@ TEST_F(CompilerTest, UnexpectedTokenErrorWhileParsingFile) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
+TEST_F(CompilerAppTest, UnexpectedCharErrorWhileParsingFile) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1300,23 +1300,23 @@ TEST_F(CompilerTest, UnexpectedCharErrorWhileParsingFile) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, IOErrorWhileParsingFile) {
+TEST_F(CompilerAppTest, IOErrorWhileParsingFile) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1371,23 +1371,23 @@ TEST_F(CompilerTest, IOErrorWhileParsingFile) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, IOErrorWhileReadingFile) {
+TEST_F(CompilerAppTest, IOErrorWhileReadingFile) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1438,23 +1438,23 @@ TEST_F(CompilerTest, IOErrorWhileReadingFile) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, IOErrorWhileSearchingFile) {
+TEST_F(CompilerAppTest, IOErrorWhileSearchingFile) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1537,23 +1537,23 @@ TEST_F(CompilerTest, IOErrorWhileSearchingFile) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, FileNotExists) {
+TEST_F(CompilerAppTest, FileNotExists) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1637,23 +1637,23 @@ TEST_F(CompilerTest, FileNotExists) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
+TEST_F(CompilerAppTest, EmptyHexValueErrorWhileParsingImportFilePath) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1730,23 +1730,23 @@ TEST_F(CompilerTest, EmptyHexValueErrorWhileParsingImportFilePath) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
+TEST_F(CompilerAppTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path("app/module/component.rts");
@@ -1823,23 +1823,23 @@ TEST_F(CompilerTest, HexValueOutOfRangeErrorWhileParsingImportFilePath) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 
-TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
+TEST_F(CompilerAppTest, BadArgsErrorWhileParsingConfig) {
   int argc = 1;
   const char *argv[] = {"realtalkc"};
   path input_file_path;
@@ -1889,20 +1889,20 @@ TEST_F(CompilerTest, BadArgsErrorWhileParsingConfig) {
         .Times(0);
   }
 
-  Compiler compiler(file_searcher,
-                    lexer_factory,
-                    &src_parser,
-                    lit_parser,
-                    config_parser,
-                    &semantic_analyzer,
-                    &code_generator,
-                    msg_printer,
-                    dir_creator,
-                    module_writer,
-                    file,
-                    &config,
-                    &code);
-  compiler.Compile(argc, argv);
+  CompilerApp compiler(file_searcher,
+                       lexer_factory,
+                       &src_parser,
+                       lit_parser,
+                       config_parser,
+                       &semantic_analyzer,
+                       &code_generator,
+                       msg_printer,
+                       dir_creator,
+                       module_writer,
+                       file,
+                       &config,
+                       &code);
+  compiler.Run(argc, argv);
 }
 }
 }

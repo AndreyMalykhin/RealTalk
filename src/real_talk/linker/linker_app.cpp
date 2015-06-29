@@ -20,6 +20,8 @@
 
 using std::unique_ptr;
 using std::istream;
+using std::cout;
+using std::ostream;
 using std::move;
 using std::string;
 using boost::filesystem::path;
@@ -126,6 +128,10 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
   try {
     const unique_ptr<CodeContainer> output_code_container =
         linker->Link(modules, output_code_version);
+    Log([&output_code_container](ostream *stream) {
+        output_code_container->GetCmdsCode().SetPosition(0);
+        *stream << "[output]\n\n" << *output_code_container;
+      });
     code_container_writer_.Write(*output_code_container, output_code_);
   } catch (const Code::CodeSizeOverflowError&) {
     msg_printer_.PrintError("Code size exceeds 32 bits");
@@ -155,6 +161,12 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
     const string msg = (format("Failed to write output file \"%1%\"")
                         % output_file_path.string()).str();
     msg_printer_.PrintError(msg);
+  }
+}
+
+void LinkerApp::Log(LogDataWriter data_writer) const {
+  if (config_->IsDebug()) {
+    data_writer(&cout);
   }
 }
 }
