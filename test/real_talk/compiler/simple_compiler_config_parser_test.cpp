@@ -92,7 +92,7 @@ TEST_F(SimpleCompilerConfigParserTest, GetHelp) {
       "Options:\n"
       "  -h [ --help ] \n"
       "  --input arg           Input file\n"
-      "  -i [ --import ] arg   Folder, where import files will be searched\n"
+      "  -i [ --import ] arg   Path to project, where import files will be searched\n"
       "  -d [ --debug ]        Display debug info\n";
   string actual_help = SimpleCompilerConfigParser().GetHelp();
   ASSERT_EQ(expected_help, actual_help);

@@ -141,6 +141,11 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
         (format("Duplicate definition of id \"%1%\"") % error.GetId()).str();
     msg_printer_.PrintError(msg);
     return;
+  } catch (const Linker::MissingDefError &error) {
+    const string msg =
+        (format("Missing definition of id \"%1%\"") % error.GetId()).str();
+    msg_printer_.PrintError(msg);
+    return;
   }
 
   path output_file_path(

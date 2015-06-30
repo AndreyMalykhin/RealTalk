@@ -480,9 +480,13 @@ class SimpleCodeGenerator::Impl::StmtGrouper: private NodeVisitor {
 class SimpleCodeGenerator::Impl::CreateGlobalVarCmdGenerator
     : private DataTypeVisitor {
  public:
-  void Generate(const DataType &data_type, Code *code) {
+  void Generate(
+      const DataType &data_type, uint32_t *var_index_placeholder, Code *code) {
+    assert(var_index_placeholder);
+    assert(code);
     code_ = code;
     data_type.Accept(*this);
+    *var_index_placeholder = code->GetPosition();
     const uint32_t var_index = numeric_limits<uint32_t>::max();
     code->WriteUint32(var_index);
   }
@@ -525,9 +529,13 @@ class SimpleCodeGenerator::Impl::CreateGlobalVarCmdGenerator
 class SimpleCodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
     : private DataTypeVisitor {
  public:
-  void Generate(const DataType &data_type, Code *code) {
+  void Generate(
+      const DataType &data_type, uint32_t *var_index_placeholder, Code *code) {
+    assert(var_index_placeholder);
+    assert(code);
     code_ = code;
     data_type.Accept(*this);
+    *var_index_placeholder = code->GetPosition();
     const uint32_t var_index = numeric_limits<uint32_t>::max();
     code->WriteUint32(var_index);
   }
@@ -792,16 +800,15 @@ class SimpleCodeGenerator::Impl::ReturnValueCmdGenerator
 class SimpleCodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
     : private DataTypeVisitor {
  public:
-  /**
-   * @return Address of placeholder for var index
-   */
-  uint32_t Generate(const DataType &data_type, Code *code) {
+  void Generate(
+      const DataType &data_type, uint32_t *var_index_placeholder, Code *code) {
+    assert(var_index_placeholder);
+    assert(code);
     code_ = code;
     data_type.Accept(*this);
-    const uint32_t var_index_placeholder = code_->GetPosition();
+    *var_index_placeholder = code_->GetPosition();
     const uint32_t var_index = numeric_limits<uint32_t>::max();
     code_->WriteUint32(var_index);
-    return var_index_placeholder;
   }
 
  private:
@@ -924,8 +931,8 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
       var_index_placeholder = code_->GetPosition();
       code_->WriteUint32(numeric_limits<uint32_t>::max());
     } else {
-      var_index_placeholder = LoadGlobalVarValueCmdGenerator().Generate(
-          var_def_analysis.GetDataType(), code_);
+      LoadGlobalVarValueCmdGenerator().Generate(
+          var_def_analysis.GetDataType(), &var_index_placeholder, code_);
     }
 
     const string &id = id_node_->GetStartToken().GetValue();
@@ -969,9 +976,16 @@ class SimpleCodeGenerator::Impl::VarDefNodeProcessor
   void Process(const VarDefNode *var_def_node,
                const DefAnalysis *var_def_analysis,
                vector<string> *global_var_defs,
+               Impl::IdAddresses *global_var_refs,
                Code *code) {
+    assert(var_def_node);
+    assert(var_def_analysis);
+    assert(global_var_defs);
+    assert(global_var_refs);
+    assert(code);
     var_def_node_ = var_def_node;
     global_var_defs_ = global_var_defs;
+    global_var_refs_ = global_var_refs;
     code_ = code;
     var_def_analysis->Accept(*this);
   }
@@ -983,15 +997,19 @@ class SimpleCodeGenerator::Impl::VarDefNodeProcessor
 
   virtual void VisitGlobalVarDef(const GlobalVarDefAnalysis &analysis)
       override {
-    TCreateGlobalVarCmdGenerator().Generate(analysis.GetDataType(), code_);
+    uint32_t var_index_placeholder;
+    TCreateGlobalVarCmdGenerator().Generate(
+        analysis.GetDataType(), &var_index_placeholder, code_);
     const string &id = var_def_node_->GetNameToken().GetValue();
     global_var_defs_->push_back(id);
+    (*global_var_refs_)[id].push_back(var_index_placeholder);
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis&) override {assert(false);}
 
   const VarDefNode *var_def_node_;
   vector<string> *global_var_defs_;
+  Impl::IdAddresses *global_var_refs_;
   Code *code_;
 };
 
@@ -1670,7 +1688,11 @@ void SimpleCodeGenerator::Impl::VisitVarDefWithoutInit(
   const DefAnalysis &analysis =
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   VarDefNodeProcessor<CreateLocalVarCmdGenerator, CreateGlobalVarCmdGenerator>()
-      .Process(&node, &analysis, &global_var_defs_, code_.get());
+      .Process(&node,
+               &analysis,
+               &global_var_defs_,
+               &global_var_refs_,
+               code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitVarDefWithInit(
@@ -1680,7 +1702,11 @@ void SimpleCodeGenerator::Impl::VisitVarDefWithInit(
       static_cast<const DefAnalysis&>(GetNodeAnalysis(node));
   VarDefNodeProcessor<CreateAndInitLocalVarCmdGenerator,
                       CreateAndInitGlobalVarCmdGenerator>()
-      .Process(&node, &var_def_analysis, &global_var_defs_, code_.get());
+      .Process(&node,
+               &var_def_analysis,
+               &global_var_defs_,
+               &global_var_refs_,
+               code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {

@@ -31,7 +31,7 @@ options_description GetOptions() {
       ("input", value<path>(), "Input file")
       ("import,i",
        value< vector<path> >(),
-       "Folder, where import files will be searched")
+       "Path to project, where import files will be searched")
       ("debug,d", "Display debug info");
   return options;
 }

@@ -215,6 +215,7 @@ using real_talk::semantic::CharLit;
 
 namespace real_talk {
 namespace code {
+namespace {
 
 struct TestCast {
   unique_ptr<DataType> dest_data_type;
@@ -226,11 +227,19 @@ class CastCmdGeneratorMock: public CastCmdGenerator {
  public:
   MOCK_CONST_METHOD2(Generate, CmdId(const DataType&, const DataType&));
 };
+}
 
 class SimpleCodeGeneratorTest: public Test {
  protected:
   virtual void SetUp() override {}
   virtual void TearDown() override {}
+
+  string PrintModule(Module &module) {
+    stringstream stream;
+    module.GetCmdsCode().SetPosition(UINT32_C(0));
+    stream << module;
+    return stream.str();
+  }
 
   void TestGenerate(vector<TestCast> test_casts,
                     const ProgramNode &program_node,
@@ -253,7 +262,9 @@ class SimpleCodeGeneratorTest: public Test {
     unique_ptr<Module> actual_module =
         generator.Generate(program_node, semantic_analysis, version);
     ASSERT_TRUE(actual_module.get());
-    ASSERT_EQ(expected_module, *actual_module);
+    ASSERT_EQ(expected_module, *actual_module)
+        << "[expected]\n" << PrintModule(expected_module)
+        << "[actual]\n" << PrintModule(*actual_module);
   }
 
   void TestGlobalVarDefWithoutInit(unique_ptr<DataTypeNode> data_type_node,
@@ -277,6 +288,7 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(expected_cmd_id);
+    uint32_t var_index_placeholder = cmds_code->GetPosition();
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
@@ -284,7 +296,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<string> global_var_defs = {"var"};
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
-    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> global_var_refs = {{"var", {var_index_placeholder}}};
     vector<IdAddresses> func_refs;
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
@@ -343,13 +355,14 @@ class SimpleCodeGeneratorTest: public Test {
 
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t var_index = numeric_limits<uint32_t>::max();
+    uint32_t var_index_placeholder = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<string> global_var_defs = {"var"};
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
-    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> global_var_refs = {{"var", {var_index_placeholder}}};
     vector<IdAddresses> func_refs;
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
@@ -847,10 +860,11 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(create_var_cmd_id);
+    uint32_t var_index_placeholder = cmds_code->GetPosition();
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
-    uint32_t var_index_placeholder = cmds_code->GetPosition();
+    uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(CmdId::kUnload);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
@@ -859,7 +873,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs =
-        {{"var", {var_index_placeholder}}};
+        {{"var", {var_index_placeholder, var_index_placeholder2}}};
     vector<IdAddresses> func_refs;
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
@@ -1004,11 +1018,12 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(create_var_cmd_id);
+    uint32_t var_index_placeholder = cmds_code->GetPosition();
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
     cmds_code->WriteCmdId(CmdId::kLoadGlobalVarAddress);
-    uint32_t var_index_placeholder = cmds_code->GetPosition();
+    uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
@@ -1017,7 +1032,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs =
-        {{"var", {var_index_placeholder}}};
+        {{"var", {var_index_placeholder, var_index_placeholder2}}};
     vector<IdAddresses> func_refs;
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
@@ -1202,13 +1217,14 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kCreateGlobalArrayVar);
+    uint32_t var_index_placeholder = cmds_code->GetPosition();
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(CmdId::kLoadCharValue);
     cmds_code->WriteChar('a');
     cmds_code->WriteCmdId(CmdId::kCastCharToInt);
     cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
-    uint32_t var_index_placeholder = cmds_code->GetPosition();
+    uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(CmdId::kUnload);
@@ -1218,7 +1234,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs =
-        {{"var", {var_index_placeholder}}};
+        {{"var", {var_index_placeholder, var_index_placeholder2}}};
     vector<IdAddresses> func_refs;
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
@@ -1334,6 +1350,7 @@ class SimpleCodeGeneratorTest: public Test {
 
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kCreateGlobalArrayVar);
+    uint32_t var_index_placeholder = cmds_code->GetPosition();
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
@@ -1341,7 +1358,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteChar('a');
     cmds_code->WriteCmdId(CmdId::kCastCharToInt);
     cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
-    uint32_t var_index_placeholder = cmds_code->GetPosition();
+    uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(store_cmd_id);
@@ -1351,7 +1368,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs =
-        {{"var", {var_index_placeholder}}};
+        {{"var", {var_index_placeholder, var_index_placeholder2}}};
     vector<IdAddresses> func_refs;
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
@@ -9172,26 +9189,5 @@ TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateDouble) {
                 operand_code,
                 expected_cmd_id);
 }
-
-// TEST_F(SimpleCodeGeneratorTest, GenerateFailsOnCodeSizeOverflowError) {
-//   CodeMock actual_code;
-//   EXPECT_CALL(actual_code, WriteUint32(_))
-//       .Times(1)
-//       .WillOnce(Throw(Code::CodeSizeOverflowError("test")));
-
-//   vector< unique_ptr<StmtNode> > stmt_nodes;
-//   ProgramNode program_node(move(stmt_nodes));
-//   SemanticAnalysis::ProgramProblems problems;
-//   SemanticAnalysis::NodeAnalyzes node_analyzes;
-//   SemanticAnalysis semantic_analysis(move(problems), move(node_analyzes));
-//   CastCmdGeneratorMock cast_cmd_generator;
-//   SimpleCodeGenerator generator(cast_cmd_generator);
-//   uint32_t version = UINT32_C(1);
-
-//   try {
-//     generator.Generate(program_node, semantic_analysis, version, &actual_code);
-//     FAIL();
-//   } catch (const Code::CodeSizeOverflowError&) {}
-// }
 }
 }

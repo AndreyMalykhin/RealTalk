@@ -11,8 +11,8 @@ class Exe;
 class CodeContainerVisitor {
  public:
   virtual ~CodeContainerVisitor() {}
-  virtual void VisitModule(const Module&) const = 0;
-  virtual void VisitExe(const Exe&) const = 0;
+  virtual void VisitModule(const Module &module) const = 0;
+  virtual void VisitExe(const Exe &exe) const = 0;
 };
 }
 }
