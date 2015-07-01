@@ -499,9 +499,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    uint32_t body_local_vars_count = UINT32_C(0);
+    vector<const VarDefNode*> body_local_var_defs;
     unique_ptr<NodeSemanticAnalysis> body_analysis(
-        new ScopeAnalysis(body_local_vars_count));
+        new ScopeAnalysis(body_local_var_defs));
     node_analyzes.insert(
         make_pair(body_node_ptr, move(body_analysis)));
     unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -947,9 +947,9 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
       new ReturnAnalysis(func_def_node_ptr));
   node_analyzes.insert(make_pair(return_stmt_node_ptr, move(return_analysis)));
 
-  uint32_t body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> body_local_var_defs = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   IntDataType *func_return_data_type_ptr = new IntDataType();
@@ -1019,9 +1019,9 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyWithoutArgsAndReturnValue) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
@@ -1148,9 +1148,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
     unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    uint32_t body_local_vars_count1 = UINT32_C(0);
+    vector<const VarDefNode*> body_local_var_defs1;
     unique_ptr<NodeSemanticAnalysis> body_analysis1(
-        new ScopeAnalysis(body_local_vars_count1));
+        new ScopeAnalysis(body_local_var_defs1));
     node_analyzes.insert(make_pair(body_node_ptr1, move(body_analysis1)));
     unique_ptr<DataType> return_data_type1(new VoidDataType());
     vector< unique_ptr<DataType> > arg_data_types1;
@@ -1373,14 +1373,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
       new ReturnAnalysis(func_def_node_ptr));
   node_analyzes.insert(make_pair(return_node_ptr, move(return_analysis)));
 
-  uint32_t if_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> if_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
 
-  uint32_t func_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> func_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
-      new ScopeAnalysis(func_body_local_vars_count));
+      new ScopeAnalysis(func_body_local_var_defs));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
 
   bool is_func_native = false;
@@ -2026,9 +2026,9 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
       new ReturnAnalysis(func_def_node_ptr));
   node_analyzes.insert(make_pair(return_stmt_node_ptr, move(return_analysis)));
 
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   VoidDataType *func_return_data_type_ptr = new VoidDataType();
@@ -2194,9 +2194,9 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
   test_lit_parses.chars = {{"'a'", 'a'}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> body_local_var_defs = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -2321,9 +2321,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
   test_lit_parses.longs = {{"7L", INT64_C(7)}};
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> body_local_var_defs = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -2458,9 +2458,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> body_local_var_defs = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -2654,14 +2654,14 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t if_body_local_vars_count1 = UINT32_C(1);
+  vector<const VarDefNode*> if_body_local_var_defs1 = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
-      new ScopeAnalysis(if_body_local_vars_count1));
+      new ScopeAnalysis(if_body_local_var_defs1));
   node_analyzes.insert(make_pair(if_body_ptr1, move(if_body_analysis1)));
 
-  uint32_t if_body_local_vars_count2 = UINT32_C(1);
+  vector<const VarDefNode*> if_body_local_var_defs2 = {var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis2(
-      new ScopeAnalysis(if_body_local_vars_count2));
+      new ScopeAnalysis(if_body_local_var_defs2));
   node_analyzes.insert(make_pair(if_body_ptr2, move(if_body_analysis2)));
 
   unique_ptr<DataType> var_data_type1(new BoolDataType());
@@ -2759,9 +2759,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t func_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> func_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
-      new ScopeAnalysis(func_body_local_vars_count));
+      new ScopeAnalysis(func_body_local_var_defs));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
   bool is_func_native = false;
 
@@ -2884,14 +2884,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t func_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> func_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
-      new ScopeAnalysis(func_body_local_vars_count));
+      new ScopeAnalysis(func_body_local_var_defs));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
 
-  uint32_t if_body_local_vars_count1 = UINT32_C(0);
+  vector<const VarDefNode*> if_body_local_var_defs1;
   unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
-      new ScopeAnalysis(if_body_local_vars_count1));
+      new ScopeAnalysis(if_body_local_var_defs1));
   node_analyzes.insert(make_pair(if_body_node_ptr1, move(if_body_analysis1)));
   bool is_func_native = false;
 
@@ -3048,19 +3048,19 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t if_body_local_vars_count1 = UINT32_C(1);
+  vector<const VarDefNode*> if_body_local_var_defs1 = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
-      new ScopeAnalysis(if_body_local_vars_count1));
+      new ScopeAnalysis(if_body_local_var_defs1));
   node_analyzes.insert(make_pair(if_body_ptr1, move(if_body_analysis1)));
 
-  uint32_t if_body_local_vars_count2 = UINT32_C(1);
+  vector<const VarDefNode*> if_body_local_var_defs2 = {var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis2(
-      new ScopeAnalysis(if_body_local_vars_count2));
+      new ScopeAnalysis(if_body_local_var_defs2));
   node_analyzes.insert(make_pair(if_body_ptr2, move(if_body_analysis2)));
 
-  uint32_t else_body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> else_body_local_var_defs = {var_def_node_ptr4};
   unique_ptr<NodeSemanticAnalysis> else_body_analysis(
-      new ScopeAnalysis(else_body_local_vars_count));
+      new ScopeAnalysis(else_body_local_var_defs));
   node_analyzes.insert(make_pair(else_body_ptr, move(else_body_analysis)));
 
   unique_ptr<DataType> var_data_type1(new BoolDataType());
@@ -3171,9 +3171,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t func_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> func_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
-      new ScopeAnalysis(func_body_local_vars_count));
+      new ScopeAnalysis(func_body_local_var_defs));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
   bool is_func_native = false;
 
@@ -3303,14 +3303,14 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t func_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> func_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
-      new ScopeAnalysis(func_body_local_vars_count));
+      new ScopeAnalysis(func_body_local_var_defs));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
 
-  uint32_t if_body_local_vars_count1 = UINT32_C(0);
+  vector<const VarDefNode*> if_body_local_var_defs1;
   unique_ptr<NodeSemanticAnalysis> if_body_analysis1(
-      new ScopeAnalysis(if_body_local_vars_count1));
+      new ScopeAnalysis(if_body_local_var_defs1));
   node_analyzes.insert(make_pair(if_body_node_ptr1, move(if_body_analysis1)));
   bool is_func_native = false;
 
@@ -3593,9 +3593,9 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> body_local_var_defs = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> var_def_data_type1(new BoolDataType());
@@ -3672,9 +3672,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t func_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> func_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> func_body_analysis(
-      new ScopeAnalysis(func_body_local_vars_count));
+      new ScopeAnalysis(func_body_local_var_defs));
   node_analyzes.insert(make_pair(func_body_node_ptr, move(func_body_analysis)));
   bool is_func_native = false;
 
@@ -3777,14 +3777,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(2);
+  vector<const VarDefNode*> body_local_var_defs =
+      {var_def_node_ptr2, var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
-  uint32_t flow_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> continue_analysis(
-      new ControlFlowTransferAnalysis(flow_local_vars_count));
+      new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(continue_node_ptr, move(continue_analysis)));
 
   unique_ptr<DataType> var_def_data_type1(new BoolDataType());
@@ -3906,14 +3907,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(2);
+  vector<const VarDefNode*> body_local_var_defs =
+      {var_def_node_ptr2, var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
-  uint32_t flow_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> break_analysis(
-      new ControlFlowTransferAnalysis(flow_local_vars_count));
+      new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
 
   unique_ptr<DataType> var_def_data_type1(new BoolDataType());
@@ -4551,9 +4553,9 @@ TEST_F(SimpleSemanticAnalyzerTest, AndWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -4702,9 +4704,9 @@ TEST_F(SimpleSemanticAnalyzerTest, OrWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -4853,9 +4855,9 @@ TEST_F(SimpleSemanticAnalyzerTest, MulWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -5004,9 +5006,9 @@ TEST_F(SimpleSemanticAnalyzerTest, DivWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -5155,9 +5157,9 @@ TEST_F(SimpleSemanticAnalyzerTest, SumWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -5306,9 +5308,9 @@ TEST_F(SimpleSemanticAnalyzerTest, SubWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -5457,9 +5459,9 @@ TEST_F(SimpleSemanticAnalyzerTest, EqualWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -5612,9 +5614,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -5767,9 +5769,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -5921,9 +5923,9 @@ TEST_F(SimpleSemanticAnalyzerTest, NotEqualWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -6075,9 +6077,9 @@ TEST_F(SimpleSemanticAnalyzerTest, GreaterWithUnsupportedDataTypesIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   unique_ptr<DataType> return_data_type(new VoidDataType());
@@ -6926,9 +6928,9 @@ TEST_F(SimpleSemanticAnalyzerTest, NotWithUnsupportedDataTypeIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   bool is_func_native = false;
@@ -7059,9 +7061,9 @@ TEST_F(SimpleSemanticAnalyzerTest, NegativeWithUnsupportedDataTypeIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   bool is_func_native = false;
@@ -7192,9 +7194,9 @@ TEST_F(SimpleSemanticAnalyzerTest, PreIncWithUnsupportedDataTypeIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   bool is_func_native = false;
@@ -7325,9 +7327,9 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
 
   bool is_func_native = false;

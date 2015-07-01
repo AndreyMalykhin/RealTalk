@@ -307,7 +307,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   void VisitUnaryExpr(
       const UnaryExprNode &node, ExprCmdGenerator *cmd_generator);
   void WriteCurrentCmdOffset(const vector<uint32_t> &offset_placeholders);
-  void GenerateJumpCmdStart(uint32_t local_vars_count);
+  void GenerateJumpCmdStart(size_t local_vars_count);
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
   const DataType &GetExprDataType(const ExprAnalysis &expr_analysis) const;
@@ -1730,7 +1730,7 @@ void SimpleCodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
   node.GetBody()->Accept(*this);
   const ScopeAnalysis &body_analysis = static_cast<const ScopeAnalysis&>(
       GetNodeAnalysis(*(node.GetBody())));
-  GenerateJumpCmdStart(body_analysis.GetLocalVarsCount());
+  GenerateJumpCmdStart(body_analysis.GetLocalVarDefs().size());
   const int64_t start_offset = static_cast<int64_t>(start_address)
                                - (static_cast<int64_t>(code_->GetPosition())
                                   + static_cast<int64_t>(sizeof(int32_t)));
@@ -1779,9 +1779,10 @@ void SimpleCodeGenerator::Impl::VisitIfElseIfElse(
   const ScopeAnalysis &else_body_analysis = static_cast<const ScopeAnalysis&>(
       GetNodeAnalysis(*if_else_if_else.GetElseBody()));
 
-  if (else_body_analysis.GetLocalVarsCount() > 0) {
+  if (else_body_analysis.GetLocalVarDefs().size() > 0) {
     code_->WriteCmdId(CmdId::kDestroyLocalVars);
-    code_->WriteUint32(else_body_analysis.GetLocalVarsCount());
+    code_->WriteUint32(
+        static_cast<uint32_t>(else_body_analysis.GetLocalVarDefs().size()));
   }
 
   WriteCurrentCmdOffset(branch_end_offset_placeholders);
@@ -1823,12 +1824,13 @@ void SimpleCodeGenerator::Impl::VisitIf(
       static_cast<const ScopeAnalysis&>(GetNodeAnalysis(*node.GetBody()));
 
   if (branch_end_offset_placeholder == nullptr) {
-    if (body_analysis.GetLocalVarsCount() > 0) {
+    if (body_analysis.GetLocalVarDefs().size() > 0) {
       code_->WriteCmdId(CmdId::kDestroyLocalVars);
-      code_->WriteUint32(body_analysis.GetLocalVarsCount());
+      code_->WriteUint32(
+          static_cast<uint32_t>(body_analysis.GetLocalVarDefs().size()));
     }
   } else {
-    GenerateJumpCmdStart(body_analysis.GetLocalVarsCount());
+    GenerateJumpCmdStart(body_analysis.GetLocalVarDefs().size());
     *branch_end_offset_placeholder = code_->GetPosition();
     code_->Skip(sizeof(int32_t));
   }
@@ -2233,11 +2235,10 @@ void SimpleCodeGenerator::Impl::WriteCurrentCmdOffset(
   code_->SetPosition(current_address);
 }
 
-void SimpleCodeGenerator::Impl::GenerateJumpCmdStart(
-    uint32_t local_vars_count) {
+void SimpleCodeGenerator::Impl::GenerateJumpCmdStart(size_t local_vars_count) {
   if (local_vars_count > UINT32_C(0)) {
     code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-    code_->WriteUint32(local_vars_count);
+    code_->WriteUint32(static_cast<uint32_t>(local_vars_count));
   } else {
     code_->WriteCmdId(CmdId::kDirectJump);
   }

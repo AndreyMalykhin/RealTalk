@@ -203,6 +203,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
 
  private:
   enum class ScopeType: uint8_t;
+  struct OrderedDef;
   class AssigneeContext;
   class Scope;
   class SemanticErrorException;
@@ -221,7 +222,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
   class SubscriptDataTypeDeductor;
   class CallDataTypeDeductor;
 
-  typedef unordered_map<string, const DefNode*> IdDefs;
+  typedef unordered_map<string, const OrderedDef> IdDefs;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -400,6 +401,11 @@ enum class SimpleSemanticAnalyzer::Impl::ScopeType: uint8_t {
   kGlobal = UINT8_C(2),
   kLoop = UINT8_C(3),
   kFunc = UINT8_C(4)
+};
+
+struct SimpleSemanticAnalyzer::Impl::OrderedDef {
+  const DefNode *def_node;
+  size_t index;
 };
 
 class SimpleSemanticAnalyzer::Impl::Scope {
@@ -1351,10 +1357,10 @@ void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
 
   for (const Scope* scope: reverse(scopes_stack_)) {
     const IdDefs &scope_id_defs = scope->GetIdDefs();
-    IdDefs::const_iterator scope_id_def_it = scope_id_defs.find(id);
+    const auto scope_id_defs_it = scope_id_defs.find(id);
 
-    if (scope_id_def_it != scope_id_defs.end()) {
-      def_node = scope_id_def_it->second;
+    if (scope_id_defs_it != scope_id_defs.cend()) {
+      def_node = scope_id_defs_it->second.def_node;
       break;
     }
   }
@@ -1846,10 +1852,17 @@ void SimpleSemanticAnalyzer::Impl::VisitScope(const ScopeNode &scope_node) {
     stmt->Accept(*this);
   }
 
-  const size_t local_vars_count = GetCurrentScope()->GetIdDefs().size();
-  assert(local_vars_count <= numeric_limits<uint32_t>::max());
+  vector<const VarDefNode*> local_var_defs;
+
+  for (const auto &id_def: GetCurrentScope()->GetIdDefs()) {
+    if (is_var_def) {
+      const OrderedDef &def = id_def.second;
+      local_var_defs[def.index](def.def_node);
+    }
+  }
+
   unique_ptr<NodeSemanticAnalysis> scope_analysis(
-      new ScopeAnalysis(static_cast<uint32_t>(local_vars_count)));
+      new ScopeAnalysis(local_var_defs));
   node_analyzes_.insert(make_pair(&scope_node, move(scope_analysis)));
 }
 
@@ -1958,8 +1971,9 @@ void SimpleSemanticAnalyzer::Impl::AddDefAnalysis(
   node_analyzes_.insert(make_pair(&def_node, move(def_analysis)));
   Scope *current_scope = GetCurrentScope();
   const string &id = def_node.GetNameToken().GetValue();
-  const bool is_id_already_exists =
-      !current_scope->GetIdDefs().insert(make_pair(id, &def_node)).second;
+  const size_t def_index = current_scope->GetIdDefs().size();
+  const bool is_id_already_exists = !current_scope->GetIdDefs().insert(
+      make_pair(id, OrderedDef{&def_node, def_index})).second;
 
   if (is_id_already_exists) {
     unique_ptr<SemanticError> error(new DuplicateDefError(def_node));

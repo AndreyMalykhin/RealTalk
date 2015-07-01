@@ -2,6 +2,7 @@
 #include <cassert>
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/create_local_var_cmd.h"
+#include "real_talk/code/destroy_local_var_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/create_and_init_global_var_cmd.h"
@@ -74,6 +75,21 @@ const CreateLocalStringVarCmd &kCreateLocalStringVarCmd =
     *new CreateLocalStringVarCmd();
 const CreateLocalBoolVarCmd &kCreateLocalBoolVarCmd =
     *new CreateLocalBoolVarCmd();
+
+const DestroyLocalIntVarCmd &kDestroyLocalIntVarCmd =
+    *new DestroyLocalIntVarCmd();
+const DestroyLocalArrayVarCmd &kDestroyLocalArrayVarCmd =
+    *new DestroyLocalArrayVarCmd();
+const DestroyLocalLongVarCmd &kDestroyLocalLongVarCmd =
+    *new DestroyLocalLongVarCmd();
+const DestroyLocalDoubleVarCmd &kDestroyLocalDoubleVarCmd =
+    *new DestroyLocalDoubleVarCmd();
+const DestroyLocalCharVarCmd &kDestroyLocalCharVarCmd =
+    *new DestroyLocalCharVarCmd();
+const DestroyLocalStringVarCmd &kDestroyLocalStringVarCmd =
+    *new DestroyLocalStringVarCmd();
+const DestroyLocalBoolVarCmd &kDestroyLocalBoolVarCmd =
+    *new DestroyLocalBoolVarCmd();
 
 const UnloadCmd &kUnloadCmd = *new UnloadCmd();
 
@@ -391,6 +407,27 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       break;
     case CmdId::kCreateLocalBoolVar:
       cmd = &kCreateLocalBoolVarCmd;
+      break;
+    case CmdId::kDestroyLocalIntVar:
+      cmd = &kDestroyLocalIntVarCmd;
+      break;
+    case CmdId::kDestroyLocalArrayVar:
+      cmd = &kDestroyLocalArrayVarCmd;
+      break;
+    case CmdId::kDestroyLocalLongVar:
+      cmd = &kDestroyLocalLongVarCmd;
+      break;
+    case CmdId::kDestroyLocalDoubleVar:
+      cmd = &kDestroyLocalDoubleVarCmd;
+      break;
+    case CmdId::kDestroyLocalCharVar:
+      cmd = &kDestroyLocalCharVarCmd;
+      break;
+    case CmdId::kDestroyLocalStringVar:
+      cmd = &kDestroyLocalStringVarCmd;
+      break;
+    case CmdId::kDestroyLocalBoolVar:
+      cmd = &kDestroyLocalBoolVarCmd;
       break;
     case CmdId::kUnload:
       cmd = &kUnloadCmd;

@@ -5,6 +5,7 @@
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/create_local_var_cmd.h"
+#include "real_talk/code/destroy_local_var_cmd.h"
 #include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/code/create_and_init_global_var_cmd.h"
@@ -208,6 +209,55 @@ TEST_F(CmdReaderTest, CreateLocalArrayVarCmd) {
   CreateLocalArrayVarCmd expected_cmd;
   Code code;
   code.WriteCmdId(CmdId::kCreateLocalArrayVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalIntVarCmd) {
+  DestroyLocalIntVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDestroyLocalIntVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalLongVarCmd) {
+  DestroyLocalLongVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDestroyLocalLongVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalDoubleVarCmd) {
+  DestroyLocalDoubleVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDestroyLocalDoubleVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalBoolVarCmd) {
+  DestroyLocalBoolVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalCharVarCmd) {
+  DestroyLocalCharVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDestroyLocalCharVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalStringVarCmd) {
+  DestroyLocalStringVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDestroyLocalStringVar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalArrayVarCmd) {
+  DestroyLocalArrayVarCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kDestroyLocalArrayVar);
   TestGetNextCmd(code, expected_cmd);
 }
 

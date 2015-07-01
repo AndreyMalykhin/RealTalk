@@ -774,9 +774,9 @@ class SimpleCodeGeneratorTest: public Test {
     ProgramNode program_node(move(program_stmt_nodes));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes(move(value_analyzes));
-    uint32_t body_local_vars_count = UINT32_C(0);
+    vector<const VarDefNode*> body_local_vars_defs;
     unique_ptr<NodeSemanticAnalysis> body_analysis(
-        new ScopeAnalysis(body_local_vars_count));
+        new ScopeAnalysis(body_local_vars_defs));
     node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
     vector< unique_ptr<DataType> > arg_data_types;
     bool is_func_native = false;
@@ -2829,18 +2829,18 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t if_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> if_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
-  uint32_t else_if_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> else_if_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> else_if_body_analysis(
-      new ScopeAnalysis(else_if_body_local_vars_count));
+      new ScopeAnalysis(else_if_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
-  uint32_t else_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> else_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> else_body_analysis(
-      new ScopeAnalysis(else_body_local_vars_count));
+      new ScopeAnalysis(else_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_body_node_ptr, move(else_body_analysis)));
   unique_ptr<DataType> int_casted_data_type;
@@ -3041,18 +3041,18 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t if_body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> if_body_local_var_defs = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
-  uint32_t else_if_body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> else_if_body_local_var_defs = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> else_if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(else_if_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
-  uint32_t else_body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> else_body_local_var_defs = {var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> else_body_analysis(
-      new ScopeAnalysis(else_body_local_vars_count));
+      new ScopeAnalysis(else_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_body_node_ptr, move(else_body_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
@@ -3092,7 +3092,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(if_body_local_vars_count);
+  cmds_code->WriteUint32(if_body_local_var_defs);
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3110,7 +3110,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(else_if_body_local_vars_count);
+  cmds_code->WriteUint32(else_if_body_local_var_defs);
   uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3123,7 +3123,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->SetPosition(else_address);
   cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(else_body_local_vars_count);
+  cmds_code->WriteUint32(else_body_local_var_defs);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3221,13 +3221,13 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t if_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> if_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
-  uint32_t else_if_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> else_if_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> else_if_body_analysis(
-      new ScopeAnalysis(else_if_body_local_vars_count));
+      new ScopeAnalysis(else_if_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
   unique_ptr<DataType> int_casted_data_type;
@@ -3389,13 +3389,13 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t if_body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> if_body_local_var_defs = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
-  uint32_t else_if_body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> else_if_body_local_var_defs = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> else_if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(else_if_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
@@ -3432,7 +3432,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(if_body_local_vars_count);
+  cmds_code->WriteUint32(if_body_local_var_defs);
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3450,7 +3450,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(else_if_body_local_vars_count);
+  cmds_code->WriteUint32(else_if_body_local_var_defs);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3520,9 +3520,9 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t if_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> if_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
   unique_ptr<DataType> int_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
@@ -3616,9 +3616,9 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t if_body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> if_body_local_var_defs = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
-      new ScopeAnalysis(if_body_local_vars_count));
+      new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
@@ -3643,7 +3643,7 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(if_body_local_vars_count);
+  cmds_code->WriteUint32(if_body_local_var_defs);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3705,9 +3705,9 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t loop_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> loop_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
-      new ScopeAnalysis(loop_body_local_vars_count));
+      new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
   unique_ptr<DataType> int_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> int_analysis(new LitAnalysis(
@@ -3804,9 +3804,9 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t loop_body_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> loop_body_local_var_defs = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
-      new ScopeAnalysis(loop_body_local_vars_count));
+      new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
@@ -3832,7 +3832,7 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(loop_body_local_vars_count);
+  cmds_code->WriteUint32(loop_body_local_var_defs);
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
@@ -3896,13 +3896,13 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t loop_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> loop_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
-      new ScopeAnalysis(loop_body_local_vars_count));
+      new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
-  uint32_t flow_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> break_analysis(
-      new ControlFlowTransferAnalysis(flow_local_vars_count));
+      new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
@@ -4010,13 +4010,14 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t loop_body_local_vars_count = UINT32_C(2);
+  vector<const VarDefNode*> loop_body_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
-      new ScopeAnalysis(loop_body_local_vars_count));
+      new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
-  uint32_t flow_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> break_analysis(
-      new ControlFlowTransferAnalysis(flow_local_vars_count));
+      new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
@@ -4046,12 +4047,12 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(flow_local_vars_count);
+  cmds_code->WriteUint32(flow_local_var_defs);
   uint32_t loop_end_offset_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(loop_body_local_vars_count);
+  cmds_code->WriteUint32(loop_body_local_var_defs);
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
@@ -4120,13 +4121,13 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t loop_body_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> loop_body_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
-      new ScopeAnalysis(loop_body_local_vars_count));
+      new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
-  uint32_t flow_local_vars_count = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> continue_analysis(
-      new ControlFlowTransferAnalysis(flow_local_vars_count));
+      new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(continue_node_ptr, move(continue_analysis)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
@@ -4231,13 +4232,14 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t loop_body_local_vars_count = UINT32_C(2);
+  vector<const VarDefNode*> loop_body_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
-      new ScopeAnalysis(loop_body_local_vars_count));
+      new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
-  uint32_t flow_local_vars_count = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> continue_analysis(
-      new ControlFlowTransferAnalysis(flow_local_vars_count));
+      new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(continue_node_ptr, move(continue_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
@@ -4267,14 +4269,14 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(flow_local_vars_count);
+  cmds_code->WriteUint32(flow_local_var_defs);
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->WriteInt32(loop_start_offset);
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(loop_body_local_vars_count);
+  cmds_code->WriteUint32(loop_body_local_var_defs);
   int32_t loop_start_offset2 = static_cast<int32_t>(loop_start_address)
                                - (static_cast<int32_t>(cmds_code->GetPosition())
                                   + static_cast<int32_t>(sizeof(int32_t)));
@@ -4314,6 +4316,15 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
 
 TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> arg_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(3), UINT32_C(3))));
+  ArgDefNode *arg_def_node_ptr = new ArgDefNode(
+      move(arg_data_type_node),
+      TokenInfo(Token::kName, "arg", UINT32_C(4), UINT32_C(4)));
+  unique_ptr<ArgDefNode> arg_def_node(arg_def_node_ptr);
+  arg_def_nodes.push_back(move(arg_def_node));
+
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
   unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(10), UINT32_C(10))));
@@ -4328,15 +4339,6 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
       move(body_stmt_nodes),
       TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
   unique_ptr<ScopeNode> body_node(body_node_ptr);
-
-  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
-  unique_ptr<DataTypeNode> arg_data_type_node(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(3), UINT32_C(3))));
-  ArgDefNode *arg_def_node_ptr = new ArgDefNode(
-      move(arg_data_type_node),
-      TokenInfo(Token::kName, "arg", UINT32_C(4), UINT32_C(4)));
-  unique_ptr<ArgDefNode> arg_def_node(arg_def_node_ptr);
-  arg_def_nodes.push_back(move(arg_def_node));
 
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
@@ -4356,9 +4358,10 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(2);
+  vector<const VarDefNode*> body_local_var_defs =
+      {arg_def_node_ptr, var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
@@ -4378,7 +4381,6 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       move(func_data_type), is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -4387,6 +4389,8 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
+  // cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  // cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
   vector<string> global_var_defs;
@@ -4415,14 +4419,30 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
 TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
+  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
+  auto *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  body_stmt_nodes.push_back(move(var_def_node));
   unique_ptr<StmtNode> return_node(new ReturnWithoutValueNode(
-      TokenInfo(Token::kReturn, "return", UINT32_C(5), UINT32_C(5)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6))));
+      TokenInfo(Token::kReturn, "return", UINT32_C(8), UINT32_C(8)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9))));
   body_stmt_nodes.push_back(move(return_node));
+  unique_ptr<DataTypeNode> var_data_type_node2(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(10), UINT32_C(10))));
+  auto *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(var_data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  body_stmt_nodes.push_back(move(var_def_node2));
   ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
   unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
@@ -4442,9 +4462,22 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t body_local_vars_count = UINT32_C(0);
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  uint32_t var_index_within_func2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  // vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
+  // unique_ptr<NodeSemanticAnalysis> return_analysis(
+  //     new ControlFlowTransferAnalysis(flow_local_var_defs));
+  // node_analyzes.insert(make_pair(return_node_ptr, move(return_analysis)));
+  vector<const VarDefNode*> body_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
@@ -4455,13 +4488,16 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
       move(func_data_type), is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
   uint32_t func_def_address = cmds_code->GetPosition();
+  // cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
+  // cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
+  // cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  // cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
   vector<string> global_var_defs;
@@ -5589,9 +5625,10 @@ TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis2(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(arg_def_node_ptr2, move(arg_def_analysis2)));
-  uint32_t body_local_vars_count = UINT32_C(2);
+  vector<const VarDefNode*> body_local_var_defs =
+      {arg_def_node_ptr, arg_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_vars_count));
+      new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
   unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;
@@ -5653,14 +5690,15 @@ TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
+  // cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  // cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
   vector<string> global_var_defs;
   vector<IdAddress> func_defs = {{"func", func_def_address}};
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
-  vector<IdAddresses> func_refs =
-      {{"func", {func_ref_address}}};
+  vector<IdAddresses> func_refs = {{"func", {func_ref_address}}};
   vector<IdAddresses> native_func_refs;
   uint32_t version = UINT32_C(1);
   Module expected_module(version,
