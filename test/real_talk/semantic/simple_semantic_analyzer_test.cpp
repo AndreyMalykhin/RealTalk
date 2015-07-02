@@ -127,6 +127,7 @@ using real_talk::parser::StmtNode;
 using real_talk::parser::ExprNode;
 using real_talk::parser::DefNode;
 using real_talk::parser::ArgDefNode;
+using real_talk::parser::VarDefNode;
 using real_talk::parser::VarDefWithoutInitNode;
 using real_talk::parser::VarDefWithInitNode;
 using real_talk::parser::IdNode;

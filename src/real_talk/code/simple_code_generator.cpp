@@ -177,7 +177,6 @@ using real_talk::semantic::DoubleDataType;
 using real_talk::semantic::CharDataType;
 using real_talk::semantic::StringDataType;
 using real_talk::semantic::VoidDataType;
-using real_talk::semantic::DataStorage;
 using real_talk::semantic::IntLit;
 using real_talk::semantic::LongLit;
 using real_talk::semantic::BoolLit;
@@ -1743,7 +1742,7 @@ void SimpleCodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
 void SimpleCodeGenerator::Impl::VisitBreak(const BreakNode &node) {
   const ControlFlowTransferAnalysis &break_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
-  GenerateJumpCmdStart(break_analysis.GetFlowLocalVarsCount());
+  GenerateJumpCmdStart(break_analysis.GetFlowLocalVarDefs().size());
   const uint32_t flow_end_address_placeholder = code_->GetPosition();
   GetCurrentScope()->GetEndAddressPlaceholders().push_back(
       flow_end_address_placeholder);
@@ -1753,7 +1752,7 @@ void SimpleCodeGenerator::Impl::VisitBreak(const BreakNode &node) {
 void SimpleCodeGenerator::Impl::VisitContinue(const ContinueNode &node) {
   const ControlFlowTransferAnalysis &continue_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
-  GenerateJumpCmdStart(continue_analysis.GetFlowLocalVarsCount());
+  GenerateJumpCmdStart(continue_analysis.GetFlowLocalVarDefs().size());
   const int64_t scope_start_offset =
       static_cast<int64_t>(GetCurrentScope()->GetStartAddress())
       - (static_cast<int64_t>(code_->GetPosition())

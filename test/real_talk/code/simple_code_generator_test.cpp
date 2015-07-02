@@ -120,6 +120,7 @@ using boost::numeric_cast;
 using real_talk::lexer::Token;
 using real_talk::lexer::TokenInfo;
 using real_talk::parser::StmtNode;
+using real_talk::parser::VarDefNode;
 using real_talk::parser::VarDefWithoutInitNode;
 using real_talk::parser::VarDefWithInitNode;
 using real_talk::parser::DataTypeNode;
@@ -203,7 +204,6 @@ using real_talk::semantic::StringDataType;
 using real_talk::semantic::BoolDataType;
 using real_talk::semantic::VoidDataType;
 using real_talk::semantic::FuncDataType;
-using real_talk::semantic::DataStorage;
 using real_talk::semantic::ValueType;
 using real_talk::semantic::Lit;
 using real_talk::semantic::IntLit;
@@ -3092,7 +3092,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(if_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(if_body_local_var_defs.size()));
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3110,7 +3110,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(else_if_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(else_if_body_local_var_defs.size()));
   uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3123,7 +3123,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->SetPosition(else_address);
   cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(else_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(else_body_local_var_defs.size()));
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3432,7 +3432,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(if_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(if_body_local_var_defs.size()));
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3450,7 +3450,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(else_if_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(else_if_body_local_var_defs.size()));
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3643,7 +3643,7 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(if_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(if_body_local_var_defs.size()));
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3832,7 +3832,7 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(loop_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(loop_body_local_var_defs.size()));
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
@@ -4047,12 +4047,12 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(flow_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(flow_local_var_defs.size()));
   uint32_t loop_end_offset_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(loop_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(loop_body_local_var_defs.size()));
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
@@ -4269,14 +4269,14 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(flow_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(flow_local_var_defs.size()));
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->WriteInt32(loop_start_offset);
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(loop_body_local_var_defs);
+  cmds_code->WriteUint32(static_cast<uint32_t>(loop_body_local_var_defs.size()));
   int32_t loop_start_offset2 = static_cast<int32_t>(loop_start_address)
                                - (static_cast<int32_t>(cmds_code->GetPosition())
                                   + static_cast<int32_t>(sizeof(int32_t)));
@@ -4494,11 +4494,10 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
   uint32_t func_def_address = cmds_code->GetPosition();
-  // cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  // cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
-  // cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   // cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
+  cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
 
   vector<string> global_var_defs;
   vector<IdAddress> func_defs = {{"func", func_def_address}};

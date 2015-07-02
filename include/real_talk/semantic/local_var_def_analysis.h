@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <memory>
 #include "real_talk/semantic/data_type.h"
-#include "real_talk/semantic/data_storage.h"
 #include "real_talk/semantic/def_analysis.h"
 
 namespace real_talk {

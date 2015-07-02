@@ -203,7 +203,6 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
 
  private:
   enum class ScopeType: uint8_t;
-  struct OrderedDef;
   class AssigneeContext;
   class Scope;
   class SemanticErrorException;
@@ -222,7 +221,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
   class SubscriptDataTypeDeductor;
   class CallDataTypeDeductor;
 
-  typedef unordered_map<string, const OrderedDef> IdDefs;
+  typedef unordered_map<string, const DefNode*> IdDefs;
 
   virtual void VisitAnd(const AndNode &node) override;
   virtual void VisitArrayAllocWithoutInit(
@@ -368,7 +367,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
                        unique_ptr<DataType> casted_data_type,
                        ValueType value_type);
   bool CanCastTo(const DataType &dest_data_type, const DataType &src_data_type);
-  void AddError(unique_ptr<SemanticError> error);
+  void ThrowError(unique_ptr<SemanticError> error);
 
   const LitParser &lit_parser_;
   SemanticAnalysis::ProgramProblems problems_;
@@ -401,11 +400,6 @@ enum class SimpleSemanticAnalyzer::Impl::ScopeType: uint8_t {
   kGlobal = UINT8_C(2),
   kLoop = UINT8_C(3),
   kFunc = UINT8_C(4)
-};
-
-struct SimpleSemanticAnalyzer::Impl::OrderedDef {
-  const DefNode *def_node;
-  size_t index;
 };
 
 class SimpleSemanticAnalyzer::Impl::Scope {
@@ -443,6 +437,14 @@ class SimpleSemanticAnalyzer::Impl::Scope {
     return id_defs_;
   }
 
+  const vector<const VarDefNode*> &GetLocalVarDefs() const {
+    return local_var_defs_;
+  }
+
+  vector<const VarDefNode*> &GetLocalVarDefs() {
+    return local_var_defs_;
+  }
+
   const FuncDefNode *GetFuncDef() const {
     return func_def_;
   }
@@ -456,6 +458,7 @@ class SimpleSemanticAnalyzer::Impl::Scope {
   bool has_return_;
   const FuncDefNode *func_def_;
   IdDefs id_defs_;
+  vector<const VarDefNode*> local_var_defs_;
   vector<Scope*> &scopes_stack_;
 };
 
@@ -740,7 +743,7 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
           return_node,
           expected_data_type.Clone(),
           actual_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
   }
 
   if (expected_data_type != actual_data_type) {
@@ -752,7 +755,7 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
           return_node,
           expected_data_type.Clone(),
           actual_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
     }
 
     value_analysis.SetCastedDataType(expected_data_type.Clone());
@@ -775,7 +778,7 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnWithoutValue(
 
   if (func_def_return_data_type != VoidDataType()) {
     unique_ptr<SemanticError> error(new ReturnWithoutValueError(return_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   unique_ptr<NodeSemanticAnalysis> return_analysis(
@@ -791,7 +794,7 @@ const SimpleSemanticAnalyzer::Impl::Scope
 
   if (!is_within_func) {
     unique_ptr<SemanticError> error(new ReturnNotWithinFuncError(return_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   GetCurrentScope()->SetHasReturn(true);
@@ -817,18 +820,15 @@ void SimpleSemanticAnalyzer::Impl::VisitControlFlowTransfer(const TNode &node) {
 
   if (FindParentScope(ScopeType::kLoop) == nullptr) {
     unique_ptr<SemanticError> error(new TError(node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
-  uint32_t flow_local_vars_count = 0;
+  vector<const VarDefNode*> flow_local_var_defs;
 
   for (const Scope *scope: reverse(scopes_stack_)) {
-    assert(scope->GetIdDefs().size() <= numeric_limits<uint32_t>::max());
-    const uint32_t scope_local_vars_count =
-        static_cast<uint32_t>(scope->GetIdDefs().size());
-    assert(flow_local_vars_count + scope_local_vars_count
-           >= flow_local_vars_count);
-    flow_local_vars_count += scope_local_vars_count;
+    flow_local_var_defs.insert(flow_local_var_defs.cend(),
+                               scope->GetLocalVarDefs().cbegin(),
+                               scope->GetLocalVarDefs().cend());
 
     if (scope->GetType() == ScopeType::kLoop) {
       break;
@@ -836,7 +836,7 @@ void SimpleSemanticAnalyzer::Impl::VisitControlFlowTransfer(const TNode &node) {
   }
 
   unique_ptr<NodeSemanticAnalysis> analysis(new ControlFlowTransferAnalysis(
-      static_cast<uint32_t>(flow_local_vars_count)));
+      flow_local_var_defs));
   node_analyzes_.insert(make_pair(&node, move(analysis)));
 }
 
@@ -872,7 +872,7 @@ void SimpleSemanticAnalyzer::Impl::VisitVarDefWithInit(
         var_def_node,
         var_data_type.Clone(),
         value_data_type.Clone()));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   if (var_data_type != value_data_type) {
@@ -884,7 +884,7 @@ void SimpleSemanticAnalyzer::Impl::VisitVarDefWithInit(
           var_def_node,
           var_data_type.Clone(),
           value_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
     }
 
     value_analysis.SetCastedDataType(var_data_type.Clone());
@@ -901,6 +901,7 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
 
   if (IsCurrentScopeGlobal()) {
     def_analysis.reset(new GlobalVarDefAnalysis(move(data_type_ptr)));
+    AddDefAnalysis(var_def_node, move(def_analysis));
   } else {
     uint32_t index_within_func = UINT32_C(0);
 
@@ -909,11 +910,13 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
         break;
       }
 
-      assert(scope->GetIdDefs().size() <= numeric_limits<uint32_t>::max());
-      const uint32_t scope_local_vars_count =
-          static_cast<uint32_t>(scope->GetIdDefs().size());
-      assert(index_within_func + scope_local_vars_count >= index_within_func);
-      index_within_func += scope_local_vars_count;
+      assert(scope->GetLocalVarDefs().size()
+             <= numeric_limits<uint32_t>::max());
+      const uint32_t scope_local_var_defs_count =
+          static_cast<uint32_t>(scope->GetLocalVarDefs().size());
+      assert(index_within_func + scope_local_var_defs_count
+             >= index_within_func);
+      index_within_func += scope_local_var_defs_count;
 
       if (scope->GetType() == ScopeType::kFunc) {
         break;
@@ -921,10 +924,10 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
     }
 
     def_analysis.reset(new LocalVarDefAnalysis(
-        move(data_type_ptr), static_cast<uint32_t>(index_within_func)));
+        move(data_type_ptr), index_within_func));
+    AddDefAnalysis(var_def_node, move(def_analysis));
+    GetCurrentScope()->GetLocalVarDefs().push_back(&var_def_node);
   }
-
-  AddDefAnalysis(var_def_node, move(def_analysis));
 
   if (is_program_import_) {
     return data_type;
@@ -933,7 +936,7 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
   if (!IsDataTypeSupportedByVarDef().Check(data_type)) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
         var_def_node, data_type.Clone()));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   return data_type;
@@ -956,7 +959,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithBody(
   if (is_func_native) {
     unique_ptr<SemanticError> error(
         new FuncDefWithBodyIsNativeError(func_def_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   Scope scope(ScopeType::kFunc, &func_def_node, scopes_stack_);
@@ -970,7 +973,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithBody(
   if (*return_data_type != VoidDataType() && !scope.HasReturn()) {
     unique_ptr<SemanticError> error(
         new FuncDefWithoutReturnValueError(func_def_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   FuncDefAnalysis &def_analysis =
@@ -991,7 +994,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDefWithoutBody(
   if (!is_func_native) {
     unique_ptr<SemanticError> error(
         new FuncDefWithoutBodyNotNativeError(func_def_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   Scope scope(ScopeType::kFunc, &func_def_node, scopes_stack_);
@@ -1010,7 +1013,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
   if (!IsCurrentScopeGlobal()) {
     unique_ptr<SemanticError> error(
         new FuncDefWithinNonGlobalScopeError(func_def_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   return_data_type = CreateDataType(*(func_def_node.GetDataType()));
@@ -1020,7 +1023,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
   if (!is_return_data_type_supported) {
     unique_ptr<SemanticError> error(new DefWithUnsupportedTypeError(
         func_def_node, return_data_type->Clone()));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   vector< unique_ptr<DataType> > arg_data_types;
@@ -1070,7 +1073,7 @@ void SimpleSemanticAnalyzer::Impl::VisitPreTestLoop(
           loop_node,
           expected_cond_data_type.Clone(),
           actual_cond_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
     }
 
     cond_analysis.SetCastedDataType(expected_cond_data_type.Clone());
@@ -1123,7 +1126,7 @@ void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
             *(branch_node.GetIf()),
             expected_cond_data_type.Clone(),
             actual_cond_data_type.Clone()));
-        AddError(move(error));
+        ThrowError(move(error));
       }
 
       cond_analysis.SetCastedDataType(expected_cond_data_type.Clone());
@@ -1151,7 +1154,7 @@ void SimpleSemanticAnalyzer::Impl::VisitBranch(const BranchNode &branch_node) {
             *(else_if->GetIf()),
             expected_cond_data_type.Clone(),
             actual_cond_data_type.Clone()));
-        AddError(move(error));
+        ThrowError(move(error));
       }
 
       cond_analysis.SetCastedDataType(expected_cond_data_type.Clone());
@@ -1169,7 +1172,7 @@ void SimpleSemanticAnalyzer::Impl::VisitImport(const ImportNode &import_node) {
 
   if (has_non_import_stmts_) {
     unique_ptr<SemanticError> error(new ImportIsNotFirstStmtError(import_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   import_node.GetFilePath()->Accept(*this);
@@ -1200,7 +1203,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithoutInit(
                 alloc_node,
                 *size,
                 actual_size_data_type.Clone()));
-        AddError(move(error));
+        ThrowError(move(error));
       }
 
       size_value_analysis.SetCastedDataType(expected_size_data_type.Clone());
@@ -1247,7 +1250,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
               value_index,
               expected_value_data_type.Clone(),
               actual_value_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
     }
 
     if (expected_value_data_type != actual_value_data_type) {
@@ -1261,7 +1264,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayAllocWithInit(
                 value_index,
                 expected_value_data_type.Clone(),
                 actual_value_data_type.Clone()));
-        AddError(move(error));
+        ThrowError(move(error));
       }
 
       value_analysis.SetCastedDataType(expected_value_data_type.Clone());
@@ -1282,7 +1285,7 @@ unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
   if (dimensions_count > max_dimensions_count) {
     unique_ptr<SemanticError> error(new ArrayAllocWithTooManyDimensionsError(
         alloc_node, max_dimensions_count));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   unique_ptr<DataType> element_data_type =
@@ -1292,7 +1295,7 @@ unique_ptr<DataType> SimpleSemanticAnalyzer::Impl::VisitArrayAlloc(
     unique_ptr<SemanticError> error(
         new ArrayAllocWithUnsupportedElementTypeError(
             alloc_node, element_data_type->Clone()));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   return element_data_type;
@@ -1315,7 +1318,7 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
     unique_ptr<SemanticError> error(
         new SubscriptWithUnsupportedOperandTypeError(
             subscript_node, operand_data_type.Clone()));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   {
@@ -1336,7 +1339,7 @@ void SimpleSemanticAnalyzer::Impl::VisitSubscript(
       unique_ptr<SemanticError> error(
           new SubscriptWithUnsupportedIndexTypeError(
               subscript_node, actual_index_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
     }
 
     index_analysis.SetCastedDataType(expected_index_data_type.Clone());
@@ -1360,14 +1363,14 @@ void SimpleSemanticAnalyzer::Impl::VisitId(const IdNode &id_node) {
     const auto scope_id_defs_it = scope_id_defs.find(id);
 
     if (scope_id_defs_it != scope_id_defs.cend()) {
-      def_node = scope_id_defs_it->second.def_node;
+      def_node = scope_id_defs_it->second;
       break;
     }
   }
 
   if (def_node == nullptr) {
     unique_ptr<SemanticError> error(new IdWithoutDefError(id_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   const DefAnalysis &def_analysis =
@@ -1392,7 +1395,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
   if (!call_data_type) {
     unique_ptr<SemanticError> error(
         new CallWithUnsupportedTypeError(call_node, operand_data_type.Clone()));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   unique_ptr<DataType> call_casted_data_type;
@@ -1410,7 +1413,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
         call_node,
         expected_args_count,
         actual_args_count));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   assert(expected_args_count == actual_args_count);
@@ -1433,7 +1436,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
           arg_index,
           expected_arg_data_type.Clone(),
           actual_arg_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
     }
 
     if (actual_arg_data_type != expected_arg_data_type) {
@@ -1446,7 +1449,7 @@ void SimpleSemanticAnalyzer::Impl::VisitCall(const CallNode &call_node) {
             arg_index,
             expected_arg_data_type.Clone(),
             actual_arg_data_type.Clone()));
-        AddError(move(error));
+        ThrowError(move(error));
       }
 
       arg_analysis.SetCastedDataType(expected_arg_data_type.Clone());
@@ -1468,7 +1471,7 @@ void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
   if (assignee_analysis.GetValueType() == ValueType::kRight) {
     unique_ptr<SemanticError> error(
         new AssignWithRightValueAssigneeError(assign_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   assign_node.GetRightOperand()->Accept(*this);
@@ -1483,7 +1486,7 @@ void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
           assign_node,
           assignee_data_type.Clone(),
           value_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
   }
 
   if (assignee_data_type != value_data_type) {
@@ -1495,7 +1498,7 @@ void SimpleSemanticAnalyzer::Impl::VisitAssign(const AssignNode &assign_node) {
           assign_node,
           assignee_data_type.Clone(),
           value_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
     }
 
     value_analysis.SetCastedDataType(assignee_data_type.Clone());
@@ -1664,7 +1667,7 @@ void SimpleSemanticAnalyzer::Impl::VisitUnaryExpr(
   if (!data_type_support_query->Check(operand_data_type)) {
     unique_ptr<SemanticError> error(new UnaryExprWithUnsupportedTypeError(
         expr_node, operand_data_type.Clone()));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   if (!expr_data_type) {
@@ -1703,7 +1706,7 @@ void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
           expr_node,
           left_operand_data_type.Clone(),
           right_operand_data_type.Clone()));
-      AddError(move(error));
+      ThrowError(move(error));
     }
 
     final_operand_data_type = resolved_cast.GetFinalDataType();
@@ -1722,7 +1725,7 @@ void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
         expr_node,
         left_operand_data_type.Clone(),
         right_operand_data_type.Clone()));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   if (!expr_data_type) {
@@ -1754,7 +1757,7 @@ void SimpleSemanticAnalyzer::Impl::VisitInt(const IntNode &int_node) {
   } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(
         new IntWithOutOfRangeValueError(int_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   unique_ptr<DataType> data_type(new IntDataType());
@@ -1771,7 +1774,7 @@ void SimpleSemanticAnalyzer::Impl::VisitLong(const LongNode &long_node) {
   } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(
         new LongWithOutOfRangeValueError(long_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   unique_ptr<DataType> data_type(new LongDataType());
@@ -1789,7 +1792,7 @@ void SimpleSemanticAnalyzer::Impl::VisitDouble(const DoubleNode &double_node) {
   } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(
         new DoubleWithOutOfRangeValueError(double_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   unique_ptr<DataType> data_type(new DoubleDataType());
@@ -1807,15 +1810,15 @@ void SimpleSemanticAnalyzer::Impl::VisitChar(const CharNode &char_node) {
   } catch (const LitParser::EmptyHexValueError&) {
     unique_ptr<SemanticError> error(
         new CharWithEmptyHexValueError(char_node));
-    AddError(move(error));
+    ThrowError(move(error));
   } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(
         new CharWithOutOfRangeHexValueError(char_node));
-    AddError(move(error));
+    ThrowError(move(error));
   } catch (const LitParser::MultipleCharsError&) {
     unique_ptr<SemanticError> error(
         new CharWithMultipleCharsError(char_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   unique_ptr<DataType> data_type(new CharDataType());
@@ -1833,11 +1836,11 @@ void SimpleSemanticAnalyzer::Impl::VisitString(const StringNode &string_node) {
   } catch (const LitParser::EmptyHexValueError&) {
     unique_ptr<SemanticError> error(
         new StringWithEmptyHexValueError(string_node));
-    AddError(move(error));
+    ThrowError(move(error));
   } catch (const LitParser::OutOfRangeError&) {
     unique_ptr<SemanticError> error(
         new StringWithOutOfRangeHexValueError(string_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 
   unique_ptr<DataType> data_type(new StringDataType());
@@ -1852,15 +1855,8 @@ void SimpleSemanticAnalyzer::Impl::VisitScope(const ScopeNode &scope_node) {
     stmt->Accept(*this);
   }
 
-  vector<const VarDefNode*> local_var_defs;
-
-  for (const auto &id_def: GetCurrentScope()->GetIdDefs()) {
-    if (is_var_def) {
-      const OrderedDef &def = id_def.second;
-      local_var_defs[def.index](def.def_node);
-    }
-  }
-
+  const vector<const VarDefNode*> &local_var_defs =
+      GetCurrentScope()->GetLocalVarDefs();
   unique_ptr<NodeSemanticAnalysis> scope_analysis(
       new ScopeAnalysis(local_var_defs));
   node_analyzes_.insert(make_pair(&scope_node, move(scope_analysis)));
@@ -1913,7 +1909,7 @@ void SimpleSemanticAnalyzer::Impl::VisitArrayDataType(
   if (dimensions_count_of_current_array_type_ > max_dimensions_count) {
     unique_ptr<SemanticError> error(new ArrayTypeWithTooManyDimensionsError(
         data_type_node, max_dimensions_count));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 }
 
@@ -1971,13 +1967,12 @@ void SimpleSemanticAnalyzer::Impl::AddDefAnalysis(
   node_analyzes_.insert(make_pair(&def_node, move(def_analysis)));
   Scope *current_scope = GetCurrentScope();
   const string &id = def_node.GetNameToken().GetValue();
-  const size_t def_index = current_scope->GetIdDefs().size();
   const bool is_id_already_exists = !current_scope->GetIdDefs().insert(
-      make_pair(id, OrderedDef{&def_node, def_index})).second;
+      make_pair(id, &def_node)).second;
 
   if (is_id_already_exists) {
     unique_ptr<SemanticError> error(new DuplicateDefError(def_node));
-    AddError(move(error));
+    ThrowError(move(error));
   }
 }
 
@@ -2018,7 +2013,7 @@ bool SimpleSemanticAnalyzer::Impl::CanCastTo(
       && *(resolved_cast.GetFinalDataType()) == dest_data_type;
 }
 
-void SimpleSemanticAnalyzer::Impl::AddError(unique_ptr<SemanticError> error) {
+void SimpleSemanticAnalyzer::Impl::ThrowError(unique_ptr<SemanticError> error) {
   throw SemanticErrorException(move(error));
 }
 }
