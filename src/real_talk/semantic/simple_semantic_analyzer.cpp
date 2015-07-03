@@ -335,14 +335,21 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
   void VisitFuncDef(const FuncDefNode &func_def_node,
                     bool &is_func_native,
                     unique_ptr<DataType> &return_data_type);
-
-  /**
-   * @return Current function scope
-   */
-  const Scope *VisitReturn(const ReturnNode &return_node);
-
+  void VisitReturn(
+      const ReturnNode &return_node,
+      const Scope **output_current_func_scope,
+      vector<const VarDefNode*> *output_flow_local_var_defs);
   template<typename TError, typename TNode> void VisitControlFlowTransfer(
       const TNode &node);
+
+  /**
+   * @param output_scope Null if scope not found
+   */
+  void GetLocalVarDefsUpToScope(
+      ScopeType scope_type,
+      const Scope **output_scope,
+      vector<const VarDefNode*> *output_local_var_defs);
+
   unique_ptr<DataType> CreateDataType(const DataTypeNode &data_type_node);
   ExprAnalysis &GetExprAnalysis(const ExprNode *expr);
   NodeSemanticAnalysis &GetNodeAnalysis(const Node *node);
@@ -731,7 +738,9 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
     return;
   }
 
-  const Scope *current_func_scope = VisitReturn(return_node);
+  const Scope *current_func_scope;
+  vector<const VarDefNode*> flow_local_var_defs;
+  VisitReturn(return_node, &current_func_scope, &flow_local_var_defs);
   return_node.GetValue()->Accept(*this);
   const DataType &expected_data_type =
       GetFuncReturnDataType(current_func_scope->GetFuncDef());
@@ -761,8 +770,8 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnValue(
     value_analysis.SetCastedDataType(expected_data_type.Clone());
   }
 
-  unique_ptr<NodeSemanticAnalysis> return_analysis(
-      new ReturnAnalysis(current_func_scope->GetFuncDef()));
+  unique_ptr<NodeSemanticAnalysis> return_analysis(new ReturnAnalysis(
+      current_func_scope->GetFuncDef(), flow_local_var_defs));
   node_analyzes_.insert(make_pair(&return_node, move(return_analysis)));
 }
 
@@ -772,7 +781,9 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnWithoutValue(
     return;
   }
 
-  const Scope *current_func_scope = VisitReturn(return_node);
+  const Scope *current_func_scope;
+  vector<const VarDefNode*> flow_local_var_defs;
+  VisitReturn(return_node, &current_func_scope, &flow_local_var_defs);
   const DataType &func_def_return_data_type =
       GetFuncReturnDataType(current_func_scope->GetFuncDef());
 
@@ -781,16 +792,21 @@ void SimpleSemanticAnalyzer::Impl::VisitReturnWithoutValue(
     ThrowError(move(error));
   }
 
-  unique_ptr<NodeSemanticAnalysis> return_analysis(
-      new ReturnAnalysis(current_func_scope->GetFuncDef()));
+  unique_ptr<NodeSemanticAnalysis> return_analysis(new ReturnAnalysis(
+      current_func_scope->GetFuncDef(), flow_local_var_defs));
   node_analyzes_.insert(make_pair(&return_node, move(return_analysis)));
 }
 
-const SimpleSemanticAnalyzer::Impl::Scope
-*SimpleSemanticAnalyzer::Impl::VisitReturn(const ReturnNode &return_node) {
+void SimpleSemanticAnalyzer::Impl::VisitReturn(
+    const ReturnNode &return_node,
+    const SimpleSemanticAnalyzer::Impl::Scope **output_current_func_scope,
+    vector<const VarDefNode*> *output_flow_local_var_defs) {
+  assert(output_current_func_scope);
+  assert(output_flow_local_var_defs);
   has_non_import_stmts_ = true;
-  const Scope *current_func_scope = FindParentScope(ScopeType::kFunc);
-  const bool is_within_func = current_func_scope != nullptr;
+  GetLocalVarDefsUpToScope(
+      ScopeType::kFunc, output_current_func_scope, output_flow_local_var_defs);
+  const bool is_within_func = *output_current_func_scope != nullptr;
 
   if (!is_within_func) {
     unique_ptr<SemanticError> error(new ReturnNotWithinFuncError(return_node));
@@ -798,7 +814,6 @@ const SimpleSemanticAnalyzer::Impl::Scope
   }
 
   GetCurrentScope()->SetHasReturn(true);
-  return current_func_scope;
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitBreak(const BreakNode &break_node) {
@@ -818,26 +833,41 @@ void SimpleSemanticAnalyzer::Impl::VisitControlFlowTransfer(const TNode &node) {
     return;
   }
 
-  if (FindParentScope(ScopeType::kLoop) == nullptr) {
+  const Scope *loop_scope;
+  vector<const VarDefNode*> flow_local_var_defs;
+  GetLocalVarDefsUpToScope(ScopeType::kLoop, &loop_scope, &flow_local_var_defs);
+  const bool is_within_loop = loop_scope != nullptr;
+
+  if (!is_within_loop) {
     unique_ptr<SemanticError> error(new TError(node));
     ThrowError(move(error));
   }
 
-  vector<const VarDefNode*> flow_local_var_defs;
+  unique_ptr<NodeSemanticAnalysis> break_analysis(
+      new ControlFlowTransferAnalysis(flow_local_var_defs));
+  node_analyzes_.insert(make_pair(&node, move(break_analysis)));
+}
+
+void SimpleSemanticAnalyzer::Impl::GetLocalVarDefsUpToScope(
+    ScopeType scope_type,
+    const Scope **output_scope,
+    vector<const VarDefNode*> *output_local_var_defs) {
+  assert(output_scope);
+  assert(output_local_var_defs);
+  const auto output_local_var_defs_end_it = output_local_var_defs->cend();
 
   for (const Scope *scope: reverse(scopes_stack_)) {
-    flow_local_var_defs.insert(flow_local_var_defs.cend(),
-                               scope->GetLocalVarDefs().cbegin(),
-                               scope->GetLocalVarDefs().cend());
+    output_local_var_defs->insert(output_local_var_defs_end_it,
+                                  scope->GetLocalVarDefs().cbegin(),
+                                  scope->GetLocalVarDefs().cend());
 
-    if (scope->GetType() == ScopeType::kLoop) {
-      break;
+    if (scope->GetType() == scope_type) {
+      *output_scope = scope;
+      return;
     }
   }
 
-  unique_ptr<NodeSemanticAnalysis> analysis(new ControlFlowTransferAnalysis(
-      flow_local_var_defs));
-  node_analyzes_.insert(make_pair(&node, move(analysis)));
+  *output_scope = nullptr;
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitExprStmt(const ExprStmtNode& stmt) {
@@ -1926,7 +1956,7 @@ NodeSemanticAnalysis &SimpleSemanticAnalyzer::Impl::GetNodeAnalysis(
     const Node *node) {
   SemanticAnalysis::NodeAnalyzes::iterator node_analysis_it =
       node_analyzes_.find(node);
-  assert(node_analysis_it != node_analyzes_.end());
+  assert(node_analysis_it != node_analyzes_.cend());
   return *(node_analysis_it->second);
 }
 

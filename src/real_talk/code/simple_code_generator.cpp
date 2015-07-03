@@ -306,7 +306,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   void VisitUnaryExpr(
       const UnaryExprNode &node, ExprCmdGenerator *cmd_generator);
   void WriteCurrentCmdOffset(const vector<uint32_t> &offset_placeholders);
-  void GenerateJumpCmdStart(size_t local_vars_count);
+  void GenerateJumpCmdStart(size_t local_var_defs_count);
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
   const DataType &GetExprDataType(const ExprAnalysis &expr_analysis) const;
@@ -1778,7 +1778,7 @@ void SimpleCodeGenerator::Impl::VisitIfElseIfElse(
   const ScopeAnalysis &else_body_analysis = static_cast<const ScopeAnalysis&>(
       GetNodeAnalysis(*if_else_if_else.GetElseBody()));
 
-  if (else_body_analysis.GetLocalVarDefs().size() > 0) {
+  if (!else_body_analysis.GetLocalVarDefs().empty()) {
     code_->WriteCmdId(CmdId::kDestroyLocalVars);
     code_->WriteUint32(
         static_cast<uint32_t>(else_body_analysis.GetLocalVarDefs().size()));
@@ -1823,7 +1823,7 @@ void SimpleCodeGenerator::Impl::VisitIf(
       static_cast<const ScopeAnalysis&>(GetNodeAnalysis(*node.GetBody()));
 
   if (branch_end_offset_placeholder == nullptr) {
-    if (body_analysis.GetLocalVarDefs().size() > 0) {
+    if (!body_analysis.GetLocalVarDefs().empty()) {
       code_->WriteCmdId(CmdId::kDestroyLocalVars);
       code_->WriteUint32(
           static_cast<uint32_t>(body_analysis.GetLocalVarDefs().size()));
@@ -1878,12 +1878,30 @@ void SimpleCodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   node.GetValue()->Accept(*this);
   const ExprAnalysis &value_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
+  const ReturnAnalysis &return_analysis = static_cast<const ReturnAnalysis&>(
+      GetNodeAnalysis(node));
+
+  if (!return_analysis.GetFlowLocalVarDefs().empty()) {
+    code_->WriteCmdId(CmdId::kDestroyLocalVars);
+    code_->WriteUint32(
+        static_cast<uint32_t>(return_analysis.GetFlowLocalVarDefs().size()));
+  }
+
   ReturnValueCmdGenerator().Generate(
       GetExprDataType(value_analysis), code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitReturnWithoutValue(
-    const ReturnWithoutValueNode&) {
+    const ReturnWithoutValueNode &node) {
+  const ReturnAnalysis &analysis = static_cast<const ReturnAnalysis&>(
+      GetNodeAnalysis(node));
+
+  if (!analysis.GetFlowLocalVarDefs().empty()) {
+    code_->WriteCmdId(CmdId::kDestroyLocalVars);
+    code_->WriteUint32(
+        static_cast<uint32_t>(analysis.GetFlowLocalVarDefs().size()));
+  }
+
   code_->WriteCmdId(CmdId::kReturn);
 }
 
@@ -2234,10 +2252,11 @@ void SimpleCodeGenerator::Impl::WriteCurrentCmdOffset(
   code_->SetPosition(current_address);
 }
 
-void SimpleCodeGenerator::Impl::GenerateJumpCmdStart(size_t local_vars_count) {
-  if (local_vars_count > UINT32_C(0)) {
+void SimpleCodeGenerator::Impl::GenerateJumpCmdStart(
+    size_t local_var_defs_count) {
+  if (local_var_defs_count > UINT32_C(0)) {
     code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-    code_->WriteUint32(static_cast<uint32_t>(local_vars_count));
+    code_->WriteUint32(static_cast<uint32_t>(local_var_defs_count));
   } else {
     code_->WriteCmdId(CmdId::kDirectJump);
   }

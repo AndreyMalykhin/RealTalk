@@ -922,10 +922,19 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   unique_ptr<StmtNode> return_stmt_node(return_stmt_node_ptr);
   body_stmt_nodes.push_back(move(return_stmt_node));
 
+  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(10), UINT32_C(10))));
+  auto *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "name2", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  body_stmt_nodes.push_back(move(var_def_node));
+
   ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(6), UINT32_C(6)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(10), UINT32_C(10)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
   unique_ptr<ScopeNode> body_node(body_node_ptr);
 
   unique_ptr<DataTypeNode> func_data_type_node(new IntDataTypeNode(
@@ -944,11 +953,13 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  vector<const VarDefNode*> flow_local_var_defs = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> return_analysis(
-      new ReturnAnalysis(func_def_node_ptr));
+      new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs));
   node_analyzes.insert(make_pair(return_stmt_node_ptr, move(return_analysis)));
 
-  vector<const VarDefNode*> body_local_var_defs = {arg_def_node_ptr};
+  vector<const VarDefNode*> body_local_var_defs =
+      {arg_def_node_ptr, var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
@@ -971,6 +982,12 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
       new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
+
+  unique_ptr<DataType> var_data_type(new IntDataType());
+  uint32_t var_index_within_func2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(
+      new LocalVarDefAnalysis(move(var_data_type), var_index_within_func2));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   unique_ptr<DataType> return_expr_data_type(new CharDataType());
   unique_ptr<DataType> return_expr_casted_data_type(new IntDataType());
@@ -1370,8 +1387,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> return_analysis(
-      new ReturnAnalysis(func_def_node_ptr));
+      new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs));
   node_analyzes.insert(make_pair(return_node_ptr, move(return_analysis)));
 
   vector<const VarDefNode*> if_body_local_var_defs;
@@ -1995,16 +2013,32 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnValueNotWithinFuncIsInvalid) {
 TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
+  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
+  auto *var_def_node_ptr = new VarDefWithoutInitNode(
+      move(var_data_type_node),
+      TokenInfo(Token::kName, "var", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
+  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+  body_stmt_nodes.push_back(move(var_def_node));
   ReturnWithoutValueNode *return_stmt_node_ptr = new ReturnWithoutValueNode(
-      TokenInfo(Token::kReturn, "return", UINT32_C(5), UINT32_C(5)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6)));
+      TokenInfo(Token::kReturn, "return", UINT32_C(8), UINT32_C(8)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9)));
   unique_ptr<StmtNode> return_stmt_node(return_stmt_node_ptr);
   body_stmt_nodes.push_back(move(return_stmt_node));
+  unique_ptr<DataTypeNode> var_data_type_node2(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(10), UINT32_C(10))));
+  auto *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(var_data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  body_stmt_nodes.push_back(move(var_def_node2));
 
   ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
   unique_ptr<ScopeNode> body_node(body_node_ptr);
 
   unique_ptr<DataTypeNode> func_data_type_node(new VoidDataTypeNode(
@@ -2023,11 +2057,23 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
+  uint32_t var_index_within_func = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+
+  uint32_t var_index_within_func2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+
+  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> return_analysis(
-      new ReturnAnalysis(func_def_node_ptr));
+      new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs));
   node_analyzes.insert(make_pair(return_stmt_node_ptr, move(return_analysis)));
 
-  vector<const VarDefNode*> body_local_var_defs;
+  vector<const VarDefNode*> body_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
@@ -2058,7 +2104,7 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
 
 TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValueNotWithinFuncIsInvalid) {
   vector< unique_ptr<StmtNode> > stmt_nodes;
-  ReturnWithoutValueNode *return_stmt_node_ptr = new ReturnWithoutValueNode(
+  auto *return_stmt_node_ptr = new ReturnWithoutValueNode(
       TokenInfo(Token::kReturn, "return", UINT32_C(0), UINT32_C(0)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(1), UINT32_C(1)));
   unique_ptr<StmtNode> return_stmt_node(return_stmt_node_ptr);
