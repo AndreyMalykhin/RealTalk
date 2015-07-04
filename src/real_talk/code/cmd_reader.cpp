@@ -92,6 +92,13 @@ const DestroyLocalBoolVarCmd &kDestroyLocalBoolVarCmd =
     *new DestroyLocalBoolVarCmd();
 
 const UnloadCmd &kUnloadCmd = *new UnloadCmd();
+const UnloadIntCmd &kUnloadIntCmd = *new UnloadIntCmd();
+const UnloadArrayCmd &kUnloadArrayCmd = *new UnloadArrayCmd();
+const UnloadLongCmd &kUnloadLongCmd = *new UnloadLongCmd();
+const UnloadDoubleCmd &kUnloadDoubleCmd = *new UnloadDoubleCmd();
+const UnloadCharCmd &kUnloadCharCmd = *new UnloadCharCmd();
+const UnloadStringCmd &kUnloadStringCmd = *new UnloadStringCmd();
+const UnloadBoolCmd &kUnloadBoolCmd = *new UnloadBoolCmd();
 
 LoadIntValueCmd &kLoadIntValueCmd = *new LoadIntValueCmd(INT32_C(0));
 LoadLongValueCmd &kLoadLongValueCmd = *new LoadLongValueCmd(INT64_C(0));
@@ -431,6 +438,27 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       break;
     case CmdId::kUnload:
       cmd = &kUnloadCmd;
+      break;
+    case CmdId::kUnloadInt:
+      cmd = &kUnloadIntCmd;
+      break;
+    case CmdId::kUnloadArray:
+      cmd = &kUnloadArrayCmd;
+      break;
+    case CmdId::kUnloadLong:
+      cmd = &kUnloadLongCmd;
+      break;
+    case CmdId::kUnloadDouble:
+      cmd = &kUnloadDoubleCmd;
+      break;
+    case CmdId::kUnloadChar:
+      cmd = &kUnloadCharCmd;
+      break;
+    case CmdId::kUnloadString:
+      cmd = &kUnloadStringCmd;
+      break;
+    case CmdId::kUnloadBool:
+      cmd = &kUnloadBoolCmd;
       break;
     case CmdId::kLoadIntValue:
       kLoadIntValueCmd.SetValue(code_->ReadInt32());

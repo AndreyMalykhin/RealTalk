@@ -12,6 +12,20 @@ class UnloadCmd: public Cmd {
   virtual void Print(std::ostream&) const override {}
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };
+
+class UnloadIntCmd: public UnloadCmd {};
+
+class UnloadArrayCmd: public UnloadCmd {};
+
+class UnloadLongCmd: public UnloadCmd {};
+
+class UnloadDoubleCmd: public UnloadCmd {};
+
+class UnloadCharCmd: public UnloadCmd {};
+
+class UnloadStringCmd: public UnloadCmd {};
+
+class UnloadBoolCmd: public UnloadCmd {};
 }
 }
 #endif

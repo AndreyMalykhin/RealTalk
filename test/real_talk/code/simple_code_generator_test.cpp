@@ -495,7 +495,7 @@ class SimpleCodeGeneratorTest: public Test {
 
   void TestLit(unique_ptr<LitNode> lit_node,
                unique_ptr<LitAnalysis> lit_analysis,
-               const Code &expected_code) {
+               unique_ptr<Code> expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     LitNode *lit_node_ptr = lit_node.get();
     unique_ptr<StmtNode> int_stmt_node(new ExprStmtNode(
@@ -509,10 +509,7 @@ class SimpleCodeGeneratorTest: public Test {
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
-    unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
-    cmds_code->WriteCmdId(CmdId::kUnload);
-    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+    uint32_t main_cmds_code_size = expected_code->GetPosition();
 
     vector<string> global_var_defs;
     vector<IdAddress> func_defs;
@@ -522,7 +519,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
-                           move(cmds_code),
+                           move(expected_code),
                            main_cmds_code_size,
                            func_defs,
                            global_var_defs,
@@ -615,7 +612,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint8_t dimensions_count = UINT8_C(2);
     cmds_code->WriteUint8(dimensions_count);
-    cmds_code->WriteCmdId(CmdId::kUnload);
+    cmds_code->WriteCmdId(CmdId::kUnloadArray);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<TestCast> test_casts;
@@ -712,7 +709,7 @@ class SimpleCodeGeneratorTest: public Test {
     uint8_t dimensions_count = UINT8_C(1);
     cmds_code->WriteUint8(dimensions_count);
     cmds_code->WriteInt32(values_count);
-    cmds_code->WriteCmdId(CmdId::kUnload);
+    cmds_code->WriteCmdId(CmdId::kUnloadArray);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<string> global_var_defs;
@@ -747,32 +744,40 @@ class SimpleCodeGeneratorTest: public Test {
                        CmdId expected_cmd_id) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     vector< unique_ptr<StmtNode> > body_stmt_nodes;
-    unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
-        TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
+    unique_ptr<DataTypeNode> var_data_type_node(new BoolDataTypeNode(
+        TokenInfo(Token::kBoolType, "bool", UINT32_C(5), UINT32_C(5))));
     auto *var_def_node_ptr = new VarDefWithoutInitNode(
         move(var_data_type_node),
         TokenInfo(Token::kName, "var", UINT32_C(6), UINT32_C(6)),
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
     unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
     body_stmt_nodes.push_back(move(var_def_node));
-    ReturnValueNode *return_node_ptr = new ReturnValueNode(
-        TokenInfo(Token::kReturn, "return", UINT32_C(8), UINT32_C(8)),
-        move(value_node),
-        TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
-    unique_ptr<StmtNode> return_node(return_node_ptr);
-    body_stmt_nodes.push_back(move(return_node));
-    unique_ptr<DataTypeNode> var_data_type_node2(new LongDataTypeNode(
-        TokenInfo(Token::kLongType, "long", UINT32_C(11), UINT32_C(11))));
+    unique_ptr<DataTypeNode> var_data_type_node2(new IntDataTypeNode(
+        TokenInfo(Token::kIntType, "int", UINT32_C(8), UINT32_C(8))));
     auto *var_def_node_ptr2 = new VarDefWithoutInitNode(
         move(var_data_type_node2),
-        TokenInfo(Token::kName, "var2", UINT32_C(12), UINT32_C(12)),
-        TokenInfo(Token::kStmtEnd, ";", UINT32_C(13), UINT32_C(13)));
+        TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
     unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
     body_stmt_nodes.push_back(move(var_def_node2));
+    ReturnValueNode *return_node_ptr = new ReturnValueNode(
+        TokenInfo(Token::kReturn, "return", UINT32_C(11), UINT32_C(11)),
+        move(value_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+    unique_ptr<StmtNode> return_node(return_node_ptr);
+    body_stmt_nodes.push_back(move(return_node));
+    unique_ptr<DataTypeNode> var_data_type_node3(new LongDataTypeNode(
+        TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(13))));
+    auto *var_def_node_ptr3 = new VarDefWithoutInitNode(
+        move(var_data_type_node3),
+        TokenInfo(Token::kName, "var3", UINT32_C(14), UINT32_C(14)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(15), UINT32_C(15)));
+    unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+    body_stmt_nodes.push_back(move(var_def_node3));
     ScopeNode *body_node_ptr = new ScopeNode(
         TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
         move(body_stmt_nodes),
-        TokenInfo(Token::kScopeEnd, "}", UINT32_C(14), UINT32_C(14)));
+        TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16)));
     unique_ptr<ScopeNode> body_node(body_node_ptr);
 
     vector<TokenInfo> modifier_tokens;
@@ -793,14 +798,18 @@ class SimpleCodeGeneratorTest: public Test {
     SemanticAnalysis::NodeAnalyzes node_analyzes(move(value_analyzes));
     uint32_t var_index_within_func = UINT32_C(0);
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-        unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+        unique_ptr<DataType>(new BoolDataType()), var_index_within_func));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     uint32_t var_index_within_func2 = UINT32_C(1);
     unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-        unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+        unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
     node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+    uint32_t var_index_within_func3 = UINT32_C(2);
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
+        unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+    node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
     vector<const VarDefNode*> body_local_vars_defs =
-        {var_def_node_ptr, var_def_node_ptr2};
+        {var_def_node_ptr, var_def_node_ptr2, var_def_node_ptr3};
     unique_ptr<NodeSemanticAnalysis> body_analysis(
         new ScopeAnalysis(body_local_vars_defs));
     node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
@@ -812,7 +821,8 @@ class SimpleCodeGeneratorTest: public Test {
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
         move(func_data_type), is_func_has_return));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
-    vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
+    vector<const VarDefNode*> flow_local_var_defs =
+        {var_def_node_ptr, var_def_node_ptr2};
     unique_ptr<NodeSemanticAnalysis> return_analysis(
         new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs));
     node_analyzes.insert(make_pair(return_node_ptr, move(return_analysis)));
@@ -822,10 +832,11 @@ class SimpleCodeGeneratorTest: public Test {
     unique_ptr<Code> cmds_code(new Code());
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
     uint32_t func_def_address = cmds_code->GetPosition();
+    cmds_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
     cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
     cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
-    cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-    cmds_code->WriteUint32(static_cast<uint32_t>(flow_local_var_defs.size()));
+    cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+    cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
 
@@ -855,7 +866,8 @@ class SimpleCodeGeneratorTest: public Test {
   void TestIdAsNotAssigneeGlobalVar(unique_ptr<DataTypeNode> data_type_node,
                                     const DataType &data_type,
                                     CmdId create_var_cmd_id,
-                                    CmdId expected_cmd_id) {
+                                    CmdId expected_cmd_id,
+                                    CmdId unload_cmd_id) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
         move(data_type_node),
@@ -885,7 +897,6 @@ class SimpleCodeGeneratorTest: public Test {
         var_def_node_ptr,
         is_id_assignee));
     node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
-
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -897,7 +908,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
-    cmds_code->WriteCmdId(CmdId::kUnload);
+    cmds_code->WriteCmdId(unload_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<string> global_var_defs = {"var"};
@@ -926,8 +937,7 @@ class SimpleCodeGeneratorTest: public Test {
 
   void TestIdAsNotAssigneeLocalVar(unique_ptr<DataTypeNode> data_type_node,
                                    const DataType &data_type,
-                                   CmdId create_var_cmd_id,
-                                   CmdId expected_cmd_id) {
+                                   unique_ptr<Code> expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
         move(data_type_node),
@@ -958,16 +968,10 @@ class SimpleCodeGeneratorTest: public Test {
         var_def_node_ptr,
         is_id_assignee));
     node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
-
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
-    unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(create_var_cmd_id);
-    cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteUint32(var_index_within_func);
-    cmds_code->WriteCmdId(CmdId::kUnload);
-    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+    uint32_t main_cmds_code_size = expected_code->GetPosition();
 
     vector<string> global_var_defs;
     vector<IdAddress> func_defs;
@@ -977,7 +981,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
-                           move(cmds_code),
+                           move(expected_code),
                            main_cmds_code_size,
                            func_defs,
                            global_var_defs,
@@ -1173,7 +1177,7 @@ class SimpleCodeGeneratorTest: public Test {
   void TestNotAssigneeSubscriptWithArray(
       unique_ptr<DataTypeNode> element_data_type_node,
       const DataType &element_data_type,
-      CmdId expected_cmd_id) {
+      const Code &expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
         move(element_data_type_node),
@@ -1257,8 +1261,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
     uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
-    cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kUnload);
+    cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<string> global_var_defs = {"var"};
@@ -1426,8 +1429,7 @@ class SimpleCodeGeneratorTest: public Test {
                       unique_ptr<NodeSemanticAnalysis> right_operand_analysis,
                       unique_ptr<DataType> expr_data_type,
                       vector<TestCast> test_casts,
-                      const Code &operands_code,
-                      CmdId expected_cmd_id) {
+                      unique_ptr<Code> expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     ExprNode *expr_node_ptr = expr_node.get();
     unique_ptr<StmtNode> expr_stmt_node(new ExprStmtNode(
@@ -1450,11 +1452,7 @@ class SimpleCodeGeneratorTest: public Test {
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
-    unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteBytes(operands_code.GetData(), operands_code.GetSize());
-    cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kUnload);
-    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+    uint32_t main_cmds_code_size = expected_code->GetPosition();
 
     vector<string> global_var_defs;
     vector<IdAddress> func_defs;
@@ -1464,7 +1462,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
-                           move(cmds_code),
+                           move(expected_code),
                            main_cmds_code_size,
                            func_defs,
                            global_var_defs,
@@ -1484,8 +1482,7 @@ class SimpleCodeGeneratorTest: public Test {
                      unique_ptr<NodeSemanticAnalysis> operand_analysis,
                      unique_ptr<DataType> expr_data_type,
                      vector<TestCast> test_casts,
-                     const Code &operand_code,
-                     CmdId expected_cmd_id) {
+                     unique_ptr<Code> expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     ExprNode *expr_node_ptr = expr_node.get();
     unique_ptr<StmtNode> expr_stmt_node(new ExprStmtNode(
@@ -1505,11 +1502,7 @@ class SimpleCodeGeneratorTest: public Test {
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
-    unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteBytes(operand_code.GetData(), operand_code.GetSize());
-    cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(CmdId::kUnload);
-    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+    uint32_t main_cmds_code_size = expected_code->GetPosition();
 
     vector<string> global_var_defs;
     vector<IdAddress> func_defs;
@@ -1519,7 +1512,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<IdAddresses> native_func_refs;
     uint32_t version = UINT32_C(1);
     Module expected_module(version,
-                           move(cmds_code),
+                           move(expected_code),
                            main_cmds_code_size,
                            func_defs,
                            global_var_defs,
@@ -1702,7 +1695,7 @@ TEST_F(SimpleCodeGeneratorTest, ExprStmt) {
   unique_ptr<Code> cmds_code(new Code());
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(7));
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadInt);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<string> global_var_defs;
@@ -1737,10 +1730,11 @@ TEST_F(SimpleCodeGeneratorTest, Int) {
       move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(-7)))));
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadIntValue);
-  expected_code.WriteInt32(INT32_C(-7));
-  TestLit(move(lit_node), move(lit_analysis), expected_code);
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(-7));
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
+  TestLit(move(lit_node), move(lit_analysis), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, Long) {
@@ -1752,10 +1746,11 @@ TEST_F(SimpleCodeGeneratorTest, Long) {
       move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(-77)))));
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadLongValue);
-  expected_code.WriteInt64(INT64_C(-77));
-  TestLit(move(lit_node), move(lit_analysis), expected_code);
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(-77));
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
+  TestLit(move(lit_node), move(lit_analysis), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, Bool) {
@@ -1767,10 +1762,11 @@ TEST_F(SimpleCodeGeneratorTest, Bool) {
       move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadBoolValue);
-  expected_code.WriteBool(false);
-  TestLit(move(lit_node), move(lit_analysis), expected_code);
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadBoolValue);
+  expected_code->WriteBool(false);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
+  TestLit(move(lit_node), move(lit_analysis), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, String) {
@@ -1782,10 +1778,11 @@ TEST_F(SimpleCodeGeneratorTest, String) {
       move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new StringLit("swagger"))));
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadStringValue);
-  expected_code.WriteString("swagger");
-  TestLit(move(lit_node), move(lit_analysis), expected_code);
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadStringValue);
+  expected_code->WriteString("swagger");
+  expected_code->WriteCmdId(CmdId::kUnloadString);
+  TestLit(move(lit_node), move(lit_analysis), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, Double) {
@@ -1797,10 +1794,11 @@ TEST_F(SimpleCodeGeneratorTest, Double) {
       move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(7.77777777777))));
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  expected_code.WriteDouble(7.77777777777);
-  TestLit(move(lit_node), move(lit_analysis), expected_code);
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(7.77777777777);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
+  TestLit(move(lit_node), move(lit_analysis), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, Char) {
@@ -1812,10 +1810,11 @@ TEST_F(SimpleCodeGeneratorTest, Char) {
       move(lit_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('b'))));
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadCharValue);
-  expected_code.WriteChar('b');
-  TestLit(move(lit_node), move(lit_analysis), expected_code);
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
+  TestLit(move(lit_node), move(lit_analysis), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, Import) {
@@ -2909,7 +2908,6 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -2921,7 +2919,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadInt);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
@@ -2940,7 +2938,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(2));
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadInt);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
   uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
@@ -2954,7 +2952,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   cmds_code->SetPosition(else_address);
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(3));
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadInt);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3289,7 +3287,6 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -3301,7 +3298,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadInt);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
@@ -3320,7 +3317,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(2));
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadInt);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3544,7 +3541,6 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
       move(bool_node),
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
       move(if_body_node)));
-
   unique_ptr<StmtNode> if_else_if_node(new IfElseIfNode(
       move(if_node), vector< unique_ptr<ElseIfNode> >()));
   program_stmt_nodes.push_back(move(if_else_if_node));
@@ -3569,7 +3565,6 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -3581,12 +3576,13 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadInt);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
-                              - (static_cast<int32_t>(branch_end_offset_placeholder)
-                                 + static_cast<int32_t>(sizeof(int32_t)));
+  int32_t branch_end_offset =
+      static_cast<int32_t>(branch_end_address)
+      - (static_cast<int32_t>(branch_end_offset_placeholder)
+         + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->SetPosition(branch_end_offset_placeholder);
   cmds_code->WriteInt32(branch_end_offset);
   cmds_code->SetPosition(branch_end_address);
@@ -3754,7 +3750,6 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -3767,7 +3762,7 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kLoadIntValue);
   cmds_code->WriteInt32(INT32_C(1));
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadInt);
   cmds_code->WriteCmdId(CmdId::kDirectJump);
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
@@ -4420,8 +4415,8 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  // cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
-  // cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
   vector<string> global_var_defs;
@@ -4450,31 +4445,39 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
 TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > body_stmt_nodes;
-  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> var_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(5), UINT32_C(5))));
   auto *var_def_node_ptr = new VarDefWithoutInitNode(
       move(var_data_type_node),
       TokenInfo(Token::kName, "var", UINT32_C(6), UINT32_C(6)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   body_stmt_nodes.push_back(move(var_def_node));
-  auto *return_node_ptr = new ReturnWithoutValueNode(
-      TokenInfo(Token::kReturn, "return", UINT32_C(8), UINT32_C(8)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9)));
-  unique_ptr<StmtNode> return_node(return_node_ptr);
-  body_stmt_nodes.push_back(move(return_node));
-  unique_ptr<DataTypeNode> var_data_type_node2(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(10), UINT32_C(10))));
+  unique_ptr<DataTypeNode> var_data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(8), UINT32_C(8))));
   auto *var_def_node_ptr2 = new VarDefWithoutInitNode(
       move(var_data_type_node2),
-      TokenInfo(Token::kName, "var2", UINT32_C(11), UINT32_C(11)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
   unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
   body_stmt_nodes.push_back(move(var_def_node2));
+  auto *return_node_ptr = new ReturnWithoutValueNode(
+      TokenInfo(Token::kReturn, "return", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> return_node(return_node_ptr);
+  body_stmt_nodes.push_back(move(return_node));
+  unique_ptr<DataTypeNode> var_data_type_node3(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(13))));
+  auto *var_def_node_ptr3 = new VarDefWithoutInitNode(
+      move(var_data_type_node3),
+      TokenInfo(Token::kName, "var3", UINT32_C(14), UINT32_C(14)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(15), UINT32_C(15)));
+  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+  body_stmt_nodes.push_back(move(var_def_node3));
   ScopeNode *body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16)));
   unique_ptr<ScopeNode> body_node(body_node_ptr);
   unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
       TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
@@ -4496,18 +4499,23 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+      unique_ptr<DataType>(new BoolDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   uint32_t var_index_within_func2 = UINT32_C(1);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
+  uint32_t var_index_within_func3 = UINT32_C(2);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+  node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
+  vector<const VarDefNode*> flow_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> return_analysis(
       new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs));
   node_analyzes.insert(make_pair(return_node_ptr, move(return_analysis)));
   vector<const VarDefNode*> body_local_var_defs =
-      {var_def_node_ptr, var_def_node_ptr2};
+      {var_def_node_ptr, var_def_node_ptr2, var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
@@ -4526,9 +4534,10 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
   uint32_t func_def_address = cmds_code->GetPosition();
+  cmds_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(static_cast<uint32_t>(flow_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
 
@@ -4907,8 +4916,12 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalIntVar) {
   IntDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalIntVar;
   CmdId expected_cmd_id = CmdId::kLoadGlobalIntVarValue;
-  TestIdAsNotAssigneeGlobalVar(
-      move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
+  CmdId unload_cmd_id = CmdId::kUnloadInt;
+  TestIdAsNotAssigneeGlobalVar(move(data_type_node),
+                               data_type,
+                               create_var_cmd_id,
+                               expected_cmd_id,
+                               unload_cmd_id);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalLongVar) {
@@ -4917,8 +4930,12 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalLongVar) {
   LongDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalLongVar;
   CmdId expected_cmd_id = CmdId::kLoadGlobalLongVarValue;
-  TestIdAsNotAssigneeGlobalVar(
-      move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
+  CmdId unload_cmd_id = CmdId::kUnloadLong;
+  TestIdAsNotAssigneeGlobalVar(move(data_type_node),
+                               data_type,
+                               create_var_cmd_id,
+                               expected_cmd_id,
+                               unload_cmd_id);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalDoubleVar) {
@@ -4927,8 +4944,12 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalDoubleVar) {
   DoubleDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalDoubleVar;
   CmdId expected_cmd_id = CmdId::kLoadGlobalDoubleVarValue;
-  TestIdAsNotAssigneeGlobalVar(
-      move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
+  CmdId unload_cmd_id = CmdId::kUnloadDouble;
+  TestIdAsNotAssigneeGlobalVar(move(data_type_node),
+                               data_type,
+                               create_var_cmd_id,
+                               expected_cmd_id,
+                               unload_cmd_id);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalBoolVar) {
@@ -4937,8 +4958,12 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalBoolVar) {
   BoolDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalBoolVar;
   CmdId expected_cmd_id = CmdId::kLoadGlobalBoolVarValue;
-  TestIdAsNotAssigneeGlobalVar(
-      move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
+  CmdId unload_cmd_id = CmdId::kUnloadBool;
+  TestIdAsNotAssigneeGlobalVar(move(data_type_node),
+                               data_type,
+                               create_var_cmd_id,
+                               expected_cmd_id,
+                               unload_cmd_id);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalCharVar) {
@@ -4947,8 +4972,12 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalCharVar) {
   CharDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalCharVar;
   CmdId expected_cmd_id = CmdId::kLoadGlobalCharVarValue;
-  TestIdAsNotAssigneeGlobalVar(
-      move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
+  CmdId unload_cmd_id = CmdId::kUnloadChar;
+  TestIdAsNotAssigneeGlobalVar(move(data_type_node),
+                               data_type,
+                               create_var_cmd_id,
+                               expected_cmd_id,
+                               unload_cmd_id);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalStringVar) {
@@ -4957,8 +4986,12 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalStringVar) {
   StringDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalStringVar;
   CmdId expected_cmd_id = CmdId::kLoadGlobalStringVarValue;
-  TestIdAsNotAssigneeGlobalVar(
-      move(data_type_node), data_type, create_var_cmd_id, expected_cmd_id);
+  CmdId unload_cmd_id = CmdId::kUnloadString;
+  TestIdAsNotAssigneeGlobalVar(move(data_type_node),
+                               data_type,
+                               create_var_cmd_id,
+                               expected_cmd_id,
+                               unload_cmd_id);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
@@ -4971,68 +5004,86 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
   ArrayDataType data_type(unique_ptr<DataType>(new LongDataType()));
   CmdId create_var_cmd_id = CmdId::kCreateGlobalArrayVar;
   CmdId expected_cmd_id = CmdId::kLoadGlobalArrayVarValue;
+  CmdId unload_cmd_id = CmdId::kUnloadArray;
   TestIdAsNotAssigneeGlobalVar(move(array_data_type_node),
                                data_type,
                                create_var_cmd_id,
-                               expected_cmd_id);
+                               expected_cmd_id,
+                               unload_cmd_id);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalIntVar) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  CmdId create_var_cmd_id = CmdId::kCreateLocalIntVar;
-  CmdId expected_cmd_id = CmdId::kLoadLocalIntVarValue;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateLocalIntVar);
+  expected_code->WriteCmdId(CmdId::kLoadLocalIntVarValue);
+  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
   TestIdAsNotAssigneeLocalVar(
-      move(data_type_node), IntDataType(), create_var_cmd_id, expected_cmd_id);
+      move(data_type_node), IntDataType(), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalLongVar) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
-  CmdId create_var_cmd_id = CmdId::kCreateLocalLongVar;
-  CmdId expected_cmd_id = CmdId::kLoadLocalLongVarValue;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateLocalLongVar);
+  expected_code->WriteCmdId(CmdId::kLoadLocalLongVarValue);
+  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
   TestIdAsNotAssigneeLocalVar(
-      move(data_type_node), LongDataType(), create_var_cmd_id, expected_cmd_id);
+      move(data_type_node), LongDataType(), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalDoubleVar) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "long", UINT32_C(0), UINT32_C(0))));
-  CmdId create_var_cmd_id = CmdId::kCreateLocalDoubleVar;
-  CmdId expected_cmd_id = CmdId::kLoadLocalDoubleVarValue;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
+  expected_code->WriteCmdId(CmdId::kLoadLocalDoubleVarValue);
+  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               DoubleDataType(),
-                              create_var_cmd_id,
-                              expected_cmd_id);
+                              move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalBoolVar) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
-  CmdId create_var_cmd_id = CmdId::kCreateLocalBoolVar;
-  CmdId expected_cmd_id = CmdId::kLoadLocalBoolVarValue;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
+  expected_code->WriteCmdId(CmdId::kLoadLocalBoolVarValue);
+  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
   TestIdAsNotAssigneeLocalVar(
-      move(data_type_node), BoolDataType(), create_var_cmd_id, expected_cmd_id);
+      move(data_type_node), BoolDataType(), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalCharVar) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
-  CmdId create_var_cmd_id = CmdId::kCreateLocalCharVar;
-  CmdId expected_cmd_id = CmdId::kLoadLocalCharVarValue;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateLocalCharVar);
+  expected_code->WriteCmdId(CmdId::kLoadLocalCharVarValue);
+  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
   TestIdAsNotAssigneeLocalVar(
-      move(data_type_node), CharDataType(), create_var_cmd_id, expected_cmd_id);
+      move(data_type_node), CharDataType(), move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalStringVar) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
-  CmdId create_var_cmd_id = CmdId::kCreateLocalStringVar;
-  CmdId expected_cmd_id = CmdId::kLoadLocalStringVarValue;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateLocalStringVar);
+  expected_code->WriteCmdId(CmdId::kLoadLocalStringVarValue);
+  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteCmdId(CmdId::kUnloadString);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               StringDataType(),
-                              create_var_cmd_id,
-                              expected_cmd_id);
+                              move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalArrayVar) {
@@ -5042,13 +5093,15 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalArrayVar) {
       move(int_data_type_node),
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
-  CmdId create_var_cmd_id = CmdId::kCreateLocalArrayVar;
-  CmdId expected_cmd_id = CmdId::kLoadLocalArrayVarValue;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateLocalArrayVar);
+  expected_code->WriteCmdId(CmdId::kLoadLocalArrayVarValue);
+  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteCmdId(CmdId::kUnloadArray);
   TestIdAsNotAssigneeLocalVar(
       move(array_data_type_node),
       ArrayDataType(unique_ptr<DataType>(new IntDataType())),
-      create_var_cmd_id,
-      expected_cmd_id);
+      move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalIntVar) {
@@ -5729,8 +5782,8 @@ TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
   uint32_t func_def_address = cmds_code->GetPosition();
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
-  // cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
-  // cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
   vector<string> global_var_defs;
@@ -5929,60 +5982,72 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfInts) {
   unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   IntDataType element_data_type;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfIntsElementValue;
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfIntsElementValue);
+  expected_code.WriteCmdId(CmdId::kUnloadInt);
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
-                                    expected_cmd_id);
+                                    expected_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfLongs) {
   unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   LongDataType element_data_type;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfLongsElementValue;
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfLongsElementValue);
+  expected_code.WriteCmdId(CmdId::kUnloadLong);
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
-                                    expected_cmd_id);
+                                    expected_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfDoubles) {
   unique_ptr<DataTypeNode> element_data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   DoubleDataType element_data_type;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfDoublesElementValue;
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfDoublesElementValue);
+  expected_code.WriteCmdId(CmdId::kUnloadDouble);
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
-                                    expected_cmd_id);
+                                    expected_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfBools) {
   unique_ptr<DataTypeNode> element_data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   BoolDataType element_data_type;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfBoolsElementValue;
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfBoolsElementValue);
+  expected_code.WriteCmdId(CmdId::kUnloadBool);
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
-                                    expected_cmd_id);
+                                    expected_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfChars) {
   unique_ptr<DataTypeNode> element_data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   CharDataType element_data_type;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfCharsElementValue;
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfCharsElementValue);
+  expected_code.WriteCmdId(CmdId::kUnloadChar);
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
-                                    expected_cmd_id);
+                                    expected_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfStrings) {
   unique_ptr<DataTypeNode> element_data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   StringDataType element_data_type;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfStringsElementValue;
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfStringsElementValue);
+  expected_code.WriteCmdId(CmdId::kUnloadString);
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
-                                    expected_cmd_id);
+                                    expected_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
@@ -5993,10 +6058,12 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType element_data_type(unique_ptr<DataType>(new IntDataType()));
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfArraysElementValue;
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfArraysElementValue);
+  expected_code.WriteCmdId(CmdId::kUnloadArray);
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
-                                    expected_cmd_id);
+                                    expected_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfInts) {
@@ -6281,7 +6348,7 @@ TEST_F(SimpleCodeGeneratorTest, And) {
   cmds_code->SetPosition(expr_end_offset_placeholder);
   cmds_code->WriteInt32(expr_end_offset);
   cmds_code->SetPosition(expr_end_address);
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadBool);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<string> global_var_defs;
@@ -6369,7 +6436,7 @@ TEST_F(SimpleCodeGeneratorTest, Or) {
   cmds_code->SetPosition(expr_end_offset_placeholder);
   cmds_code->WriteInt32(expr_end_offset);
   cmds_code->SetPosition(expr_end_address);
-  cmds_code->WriteCmdId(CmdId::kUnload);
+  cmds_code->WriteCmdId(CmdId::kUnloadBool);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
   vector<string> global_var_defs;
@@ -6423,12 +6490,13 @@ TEST_F(SimpleCodeGeneratorTest, MulChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kMulChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kMulChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6437,8 +6505,7 @@ TEST_F(SimpleCodeGeneratorTest, MulChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, MulInt) {
@@ -6476,13 +6543,14 @@ TEST_F(SimpleCodeGeneratorTest, MulInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kMulInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kMulInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6491,8 +6559,7 @@ TEST_F(SimpleCodeGeneratorTest, MulInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, MulLong) {
@@ -6530,13 +6597,14 @@ TEST_F(SimpleCodeGeneratorTest, MulLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kMulLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kMulLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6545,8 +6613,7 @@ TEST_F(SimpleCodeGeneratorTest, MulLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, MulDouble) {
@@ -6584,13 +6651,14 @@ TEST_F(SimpleCodeGeneratorTest, MulDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kMulDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kMulDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6599,8 +6667,7 @@ TEST_F(SimpleCodeGeneratorTest, MulDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, DivChar) {
@@ -6631,12 +6698,13 @@ TEST_F(SimpleCodeGeneratorTest, DivChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kDivChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kDivChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6645,8 +6713,7 @@ TEST_F(SimpleCodeGeneratorTest, DivChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, DivInt) {
@@ -6684,13 +6751,14 @@ TEST_F(SimpleCodeGeneratorTest, DivInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kDivInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kDivInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6699,8 +6767,7 @@ TEST_F(SimpleCodeGeneratorTest, DivInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, DivLong) {
@@ -6738,13 +6805,14 @@ TEST_F(SimpleCodeGeneratorTest, DivLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kDivLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kDivLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6753,8 +6821,7 @@ TEST_F(SimpleCodeGeneratorTest, DivLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, DivDouble) {
@@ -6792,13 +6859,14 @@ TEST_F(SimpleCodeGeneratorTest, DivDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kDivDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kDivDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6807,8 +6875,7 @@ TEST_F(SimpleCodeGeneratorTest, DivDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SumChar) {
@@ -6839,12 +6906,13 @@ TEST_F(SimpleCodeGeneratorTest, SumChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kSumChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kSumChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6853,8 +6921,7 @@ TEST_F(SimpleCodeGeneratorTest, SumChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SumInt) {
@@ -6892,13 +6959,14 @@ TEST_F(SimpleCodeGeneratorTest, SumInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kSumInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kSumInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6907,8 +6975,7 @@ TEST_F(SimpleCodeGeneratorTest, SumInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SumLong) {
@@ -6946,13 +7013,14 @@ TEST_F(SimpleCodeGeneratorTest, SumLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kSumLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kSumLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -6961,8 +7029,7 @@ TEST_F(SimpleCodeGeneratorTest, SumLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SumDouble) {
@@ -7000,13 +7067,14 @@ TEST_F(SimpleCodeGeneratorTest, SumDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kSumDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kSumDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7015,8 +7083,7 @@ TEST_F(SimpleCodeGeneratorTest, SumDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SumString) {
@@ -7054,13 +7121,14 @@ TEST_F(SimpleCodeGeneratorTest, SumString) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToString};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToString);
-  operands_code.WriteCmdId(CmdId::kLoadStringValue);
-  operands_code.WriteString("bc");
-  CmdId expected_cmd_id = CmdId::kSumString;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToString);
+  expected_code->WriteCmdId(CmdId::kLoadStringValue);
+  expected_code->WriteString("bc");
+  expected_code->WriteCmdId(CmdId::kSumString);
+  expected_code->WriteCmdId(CmdId::kUnloadString);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7069,8 +7137,7 @@ TEST_F(SimpleCodeGeneratorTest, SumString) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SubChar) {
@@ -7101,12 +7168,13 @@ TEST_F(SimpleCodeGeneratorTest, SubChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kSubChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kSubChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7115,8 +7183,7 @@ TEST_F(SimpleCodeGeneratorTest, SubChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SubInt) {
@@ -7154,13 +7221,14 @@ TEST_F(SimpleCodeGeneratorTest, SubInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kSubInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kSubInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7169,8 +7237,7 @@ TEST_F(SimpleCodeGeneratorTest, SubInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SubLong) {
@@ -7208,13 +7275,14 @@ TEST_F(SimpleCodeGeneratorTest, SubLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kSubLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kSubLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7223,8 +7291,7 @@ TEST_F(SimpleCodeGeneratorTest, SubLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, SubDouble) {
@@ -7262,13 +7329,14 @@ TEST_F(SimpleCodeGeneratorTest, SubDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kSubDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kSubDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7277,8 +7345,7 @@ TEST_F(SimpleCodeGeneratorTest, SubDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, EqualChar) {
@@ -7309,12 +7376,13 @@ TEST_F(SimpleCodeGeneratorTest, EqualChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new BoolDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kEqualChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kEqualChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7323,8 +7391,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, EqualInt) {
@@ -7362,13 +7429,14 @@ TEST_F(SimpleCodeGeneratorTest, EqualInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kEqualInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kEqualInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7377,8 +7445,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, EqualLong) {
@@ -7416,13 +7483,14 @@ TEST_F(SimpleCodeGeneratorTest, EqualLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kEqualLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kEqualLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7431,8 +7499,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, EqualDouble) {
@@ -7470,13 +7537,14 @@ TEST_F(SimpleCodeGeneratorTest, EqualDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kEqualDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kEqualDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7485,8 +7553,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, EqualString) {
@@ -7524,13 +7591,14 @@ TEST_F(SimpleCodeGeneratorTest, EqualString) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToString};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToString);
-  operands_code.WriteCmdId(CmdId::kLoadStringValue);
-  operands_code.WriteString("bc");
-  CmdId expected_cmd_id = CmdId::kEqualString;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToString);
+  expected_code->WriteCmdId(CmdId::kLoadStringValue);
+  expected_code->WriteString("bc");
+  expected_code->WriteCmdId(CmdId::kEqualString);
+  expected_code->WriteCmdId(CmdId::kUnloadString);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7539,8 +7607,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualString) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, EqualBool) {
@@ -7571,12 +7638,13 @@ TEST_F(SimpleCodeGeneratorTest, EqualBool) {
       unique_ptr<Lit>(new BoolLit(true))));
   unique_ptr<DataType> expr_data_type(new BoolDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadBoolValue);
-  operands_code.WriteBool(false);
-  operands_code.WriteCmdId(CmdId::kLoadBoolValue);
-  operands_code.WriteBool(true);
-  CmdId expected_cmd_id = CmdId::kEqualBool;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadBoolValue);
+  expected_code->WriteBool(false);
+  expected_code->WriteCmdId(CmdId::kLoadBoolValue);
+  expected_code->WriteBool(true);
+  expected_code->WriteCmdId(CmdId::kEqualBool);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7585,8 +7653,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualBool) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, EqualArray) {
@@ -7650,16 +7717,17 @@ TEST_F(SimpleCodeGeneratorTest, EqualArray) {
           ValueType::kRight));
   unique_ptr<DataType> expr_data_type(new BoolDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kCreateAndInitIntArray);
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateAndInitIntArray);
   uint8_t dimensions_count = UINT8_C(1);
-  operands_code.WriteUint8(dimensions_count);
+  expected_code->WriteUint8(dimensions_count);
   int32_t values_count = INT32_C(0);
-  operands_code.WriteInt32(values_count);
-  operands_code.WriteCmdId(CmdId::kCreateAndInitIntArray);
-  operands_code.WriteUint8(dimensions_count);
-  operands_code.WriteInt32(values_count);
-  CmdId expected_cmd_id = CmdId::kEqualArray;
+  expected_code->WriteInt32(values_count);
+  expected_code->WriteCmdId(CmdId::kCreateAndInitIntArray);
+  expected_code->WriteUint8(dimensions_count);
+  expected_code->WriteInt32(values_count);
+  expected_code->WriteCmdId(CmdId::kEqualArray);
+  expected_code->WriteCmdId(CmdId::kUnloadArray);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7668,8 +7736,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualArray) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotEqualChar) {
@@ -7700,12 +7767,13 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new BoolDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kNotEqualChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kNotEqualChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7714,8 +7782,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotEqualInt) {
@@ -7753,13 +7820,14 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kNotEqualInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kNotEqualInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7768,8 +7836,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotEqualLong) {
@@ -7807,13 +7874,14 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kNotEqualLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kNotEqualLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7822,8 +7890,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotEqualDouble) {
@@ -7861,13 +7928,14 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kNotEqualDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kNotEqualDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7876,8 +7944,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotEqualString) {
@@ -7915,13 +7982,14 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualString) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToString};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToString);
-  operands_code.WriteCmdId(CmdId::kLoadStringValue);
-  operands_code.WriteString("bc");
-  CmdId expected_cmd_id = CmdId::kNotEqualString;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToString);
+  expected_code->WriteCmdId(CmdId::kLoadStringValue);
+  expected_code->WriteString("bc");
+  expected_code->WriteCmdId(CmdId::kNotEqualString);
+  expected_code->WriteCmdId(CmdId::kUnloadString);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7930,8 +7998,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualString) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotEqualBool) {
@@ -7962,12 +8029,13 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualBool) {
       unique_ptr<Lit>(new BoolLit(true))));
   unique_ptr<DataType> expr_data_type(new BoolDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadBoolValue);
-  operands_code.WriteBool(false);
-  operands_code.WriteCmdId(CmdId::kLoadBoolValue);
-  operands_code.WriteBool(true);
-  CmdId expected_cmd_id = CmdId::kNotEqualBool;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadBoolValue);
+  expected_code->WriteBool(false);
+  expected_code->WriteCmdId(CmdId::kLoadBoolValue);
+  expected_code->WriteBool(true);
+  expected_code->WriteCmdId(CmdId::kNotEqualBool);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7976,8 +8044,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualBool) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotEqualArray) {
@@ -8041,16 +8108,17 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualArray) {
           ValueType::kRight));
   unique_ptr<DataType> expr_data_type(new BoolDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kCreateAndInitIntArray);
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kCreateAndInitIntArray);
   uint8_t dimensions_count = UINT8_C(1);
-  operands_code.WriteUint8(dimensions_count);
+  expected_code->WriteUint8(dimensions_count);
   int32_t values_count = INT32_C(0);
-  operands_code.WriteInt32(values_count);
-  operands_code.WriteCmdId(CmdId::kCreateAndInitIntArray);
-  operands_code.WriteUint8(dimensions_count);
-  operands_code.WriteInt32(values_count);
-  CmdId expected_cmd_id = CmdId::kNotEqualArray;
+  expected_code->WriteInt32(values_count);
+  expected_code->WriteCmdId(CmdId::kCreateAndInitIntArray);
+  expected_code->WriteUint8(dimensions_count);
+  expected_code->WriteInt32(values_count);
+  expected_code->WriteCmdId(CmdId::kNotEqualArray);
+  expected_code->WriteCmdId(CmdId::kUnloadArray);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8059,8 +8127,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualArray) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterChar) {
@@ -8091,12 +8158,13 @@ TEST_F(SimpleCodeGeneratorTest, GreaterChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kGreaterChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kGreaterChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8105,8 +8173,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterInt) {
@@ -8144,13 +8211,14 @@ TEST_F(SimpleCodeGeneratorTest, GreaterInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kGreaterInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kGreaterInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8159,8 +8227,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterLong) {
@@ -8198,13 +8265,14 @@ TEST_F(SimpleCodeGeneratorTest, GreaterLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kGreaterLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kGreaterLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8213,8 +8281,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterDouble) {
@@ -8252,13 +8319,14 @@ TEST_F(SimpleCodeGeneratorTest, GreaterDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kGreaterDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kGreaterDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8267,8 +8335,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualChar) {
@@ -8299,12 +8366,13 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kGreaterOrEqualChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kGreaterOrEqualChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8313,8 +8381,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualInt) {
@@ -8352,13 +8419,14 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kGreaterOrEqualInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kGreaterOrEqualInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8367,8 +8435,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualLong) {
@@ -8406,13 +8473,14 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kGreaterOrEqualLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kGreaterOrEqualLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8421,8 +8489,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualDouble) {
@@ -8460,13 +8527,14 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kGreaterOrEqualDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kGreaterOrEqualDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8475,8 +8543,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LessChar) {
@@ -8507,12 +8574,13 @@ TEST_F(SimpleCodeGeneratorTest, LessChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kLessChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kLessChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8521,8 +8589,7 @@ TEST_F(SimpleCodeGeneratorTest, LessChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LessInt) {
@@ -8560,13 +8627,14 @@ TEST_F(SimpleCodeGeneratorTest, LessInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kLessInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kLessInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8575,8 +8643,7 @@ TEST_F(SimpleCodeGeneratorTest, LessInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LessLong) {
@@ -8614,13 +8681,14 @@ TEST_F(SimpleCodeGeneratorTest, LessLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kLessLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kLessLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8629,8 +8697,7 @@ TEST_F(SimpleCodeGeneratorTest, LessLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LessDouble) {
@@ -8668,13 +8735,14 @@ TEST_F(SimpleCodeGeneratorTest, LessDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kLessDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kLessDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8683,8 +8751,7 @@ TEST_F(SimpleCodeGeneratorTest, LessDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LessOrEqualChar) {
@@ -8715,12 +8782,13 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualChar) {
       unique_ptr<Lit>(new CharLit('b'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('b');
-  CmdId expected_cmd_id = CmdId::kLessOrEqualChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('b');
+  expected_code->WriteCmdId(CmdId::kLessOrEqualChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8729,8 +8797,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualChar) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  vector<TestCast>(),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LessOrEqualInt) {
@@ -8768,13 +8835,14 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualInt) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastCharToInt};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadCharValue);
-  operands_code.WriteChar('a');
-  operands_code.WriteCmdId(CmdId::kCastCharToInt);
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(2));
-  CmdId expected_cmd_id = CmdId::kLessOrEqualInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kCastCharToInt);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(2));
+  expected_code->WriteCmdId(CmdId::kLessOrEqualInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8783,8 +8851,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualInt) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LessOrEqualLong) {
@@ -8822,13 +8889,14 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualLong) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToLong};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToLong);
-  operands_code.WriteCmdId(CmdId::kLoadLongValue);
-  operands_code.WriteInt64(INT64_C(2));
-  CmdId expected_cmd_id = CmdId::kLessOrEqualLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToLong);
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(2));
+  expected_code->WriteCmdId(CmdId::kLessOrEqualLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8837,8 +8905,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualLong) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LessOrEqualDouble) {
@@ -8876,13 +8943,14 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualDouble) {
       {move(dest_data_type), move(src_data_type), CmdId::kCastIntToDouble};
   test_casts.push_back(move(test_cast));
 
-  Code operands_code;
-  operands_code.WriteCmdId(CmdId::kLoadIntValue);
-  operands_code.WriteInt32(INT32_C(1));
-  operands_code.WriteCmdId(CmdId::kCastIntToDouble);
-  operands_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operands_code.WriteDouble(2.2);
-  CmdId expected_cmd_id = CmdId::kLessOrEqualDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(1));
+  expected_code->WriteCmdId(CmdId::kCastIntToDouble);
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(2.2);
+  expected_code->WriteCmdId(CmdId::kLessOrEqualDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8891,8 +8959,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualDouble) {
                  move(right_operand_analysis),
                  move(expr_data_type),
                  move(test_casts),
-                 operands_code,
-                 expected_cmd_id);
+                 move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, LogicalNegateBool) {
@@ -8912,18 +8979,18 @@ TEST_F(SimpleCodeGeneratorTest, LogicalNegateBool) {
       unique_ptr<Lit>(new BoolLit(false))));
   unique_ptr<DataType> expr_data_type(new BoolDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadBoolValue);
-  operand_code.WriteBool(false);
-  CmdId expected_cmd_id = CmdId::kLogicalNegateBool;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadBoolValue);
+  expected_code->WriteBool(false);
+  expected_code->WriteCmdId(CmdId::kLogicalNegateBool);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreDecChar) {
@@ -8943,18 +9010,18 @@ TEST_F(SimpleCodeGeneratorTest, PreDecChar) {
       unique_ptr<Lit>(new CharLit('a'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadCharValue);
-  operand_code.WriteChar('a');
-  CmdId expected_cmd_id = CmdId::kPreDecChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kPreDecChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreDecInt) {
@@ -8974,18 +9041,18 @@ TEST_F(SimpleCodeGeneratorTest, PreDecInt) {
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   unique_ptr<DataType> expr_data_type(new IntDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadIntValue);
-  operand_code.WriteInt32(INT32_C(7));
-  CmdId expected_cmd_id = CmdId::kPreDecInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(7));
+  expected_code->WriteCmdId(CmdId::kPreDecInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreDecLong) {
@@ -9005,18 +9072,18 @@ TEST_F(SimpleCodeGeneratorTest, PreDecLong) {
       unique_ptr<Lit>(new LongLit(INT64_C(7)))));
   unique_ptr<DataType> expr_data_type(new LongDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadLongValue);
-  operand_code.WriteInt64(INT64_C(7));
-  CmdId expected_cmd_id = CmdId::kPreDecLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(7));
+  expected_code->WriteCmdId(CmdId::kPreDecLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreDecDouble) {
@@ -9036,18 +9103,18 @@ TEST_F(SimpleCodeGeneratorTest, PreDecDouble) {
       unique_ptr<Lit>(new DoubleLit(7.7))));
   unique_ptr<DataType> expr_data_type(new DoubleDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operand_code.WriteDouble(7.7);
-  CmdId expected_cmd_id = CmdId::kPreDecDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(7.7);
+  expected_code->WriteCmdId(CmdId::kPreDecDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreIncChar) {
@@ -9067,18 +9134,18 @@ TEST_F(SimpleCodeGeneratorTest, PreIncChar) {
       unique_ptr<Lit>(new CharLit('a'))));
   unique_ptr<DataType> expr_data_type(new CharDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadCharValue);
-  operand_code.WriteChar('a');
-  CmdId expected_cmd_id = CmdId::kPreIncChar;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteChar('a');
+  expected_code->WriteCmdId(CmdId::kPreIncChar);
+  expected_code->WriteCmdId(CmdId::kUnloadChar);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreIncInt) {
@@ -9098,18 +9165,18 @@ TEST_F(SimpleCodeGeneratorTest, PreIncInt) {
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   unique_ptr<DataType> expr_data_type(new IntDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadIntValue);
-  operand_code.WriteInt32(INT32_C(7));
-  CmdId expected_cmd_id = CmdId::kPreIncInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(7));
+  expected_code->WriteCmdId(CmdId::kPreIncInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreIncLong) {
@@ -9129,18 +9196,18 @@ TEST_F(SimpleCodeGeneratorTest, PreIncLong) {
       unique_ptr<Lit>(new LongLit(INT64_C(7)))));
   unique_ptr<DataType> expr_data_type(new LongDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadLongValue);
-  operand_code.WriteInt64(INT64_C(7));
-  CmdId expected_cmd_id = CmdId::kPreIncLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(7));
+  expected_code->WriteCmdId(CmdId::kPreIncLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreIncDouble) {
@@ -9160,18 +9227,18 @@ TEST_F(SimpleCodeGeneratorTest, PreIncDouble) {
       unique_ptr<Lit>(new DoubleLit(7.7))));
   unique_ptr<DataType> expr_data_type(new DoubleDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operand_code.WriteDouble(7.7);
-  CmdId expected_cmd_id = CmdId::kPreIncDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(7.7);
+  expected_code->WriteCmdId(CmdId::kPreIncDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateInt) {
@@ -9191,18 +9258,18 @@ TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateInt) {
       unique_ptr<Lit>(new IntLit(INT32_C(7)))));
   unique_ptr<DataType> expr_data_type(new IntDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadIntValue);
-  operand_code.WriteInt32(INT32_C(7));
-  CmdId expected_cmd_id = CmdId::kArithmeticNegateInt;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
+  expected_code->WriteInt32(INT32_C(7));
+  expected_code->WriteCmdId(CmdId::kArithmeticNegateInt);
+  expected_code->WriteCmdId(CmdId::kUnloadInt);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateLong) {
@@ -9222,18 +9289,18 @@ TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateLong) {
       unique_ptr<Lit>(new LongLit(INT64_C(7)))));
   unique_ptr<DataType> expr_data_type(new LongDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadLongValue);
-  operand_code.WriteInt64(INT64_C(7));
-  CmdId expected_cmd_id = CmdId::kArithmeticNegateLong;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadLongValue);
+  expected_code->WriteInt64(INT64_C(7));
+  expected_code->WriteCmdId(CmdId::kArithmeticNegateLong);
+  expected_code->WriteCmdId(CmdId::kUnloadLong);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateDouble) {
@@ -9253,18 +9320,18 @@ TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateDouble) {
       unique_ptr<Lit>(new DoubleLit(7.7))));
   unique_ptr<DataType> expr_data_type(new DoubleDataType());
 
-  Code operand_code;
-  operand_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  operand_code.WriteDouble(7.7);
-  CmdId expected_cmd_id = CmdId::kArithmeticNegateDouble;
+  unique_ptr<Code> expected_code(new Code());
+  expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
+  expected_code->WriteDouble(7.7);
+  expected_code->WriteCmdId(CmdId::kArithmeticNegateDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadDouble);
 
   TestUnaryExpr(operand_node_ptr,
                 move(expr_node),
                 move(operand_analysis),
                 move(expr_data_type),
                 vector<TestCast>(),
-                operand_code,
-                expected_cmd_id);
+                move(expected_code));
 }
 }
 }

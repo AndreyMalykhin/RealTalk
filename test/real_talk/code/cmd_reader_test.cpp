@@ -261,10 +261,52 @@ TEST_F(CmdReaderTest, DestroyLocalArrayVarCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, UnloadCmd) {
-  UnloadCmd expected_cmd;
+TEST_F(CmdReaderTest, UnloadBoolCmd) {
+  UnloadBoolCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kUnload);
+  code.WriteCmdId(CmdId::kUnloadBool);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadCharCmd) {
+  UnloadCharCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kUnloadChar);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadIntCmd) {
+  UnloadIntCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kUnloadInt);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadLongCmd) {
+  UnloadLongCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kUnloadLong);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadDoubleCmd) {
+  UnloadDoubleCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kUnloadDouble);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadStringCmd) {
+  UnloadStringCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kUnloadString);
+  TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadArrayCmd) {
+  UnloadArrayCmd expected_cmd;
+  Code code;
+  code.WriteCmdId(CmdId::kUnloadArray);
   TestGetNextCmd(code, expected_cmd);
 }
 

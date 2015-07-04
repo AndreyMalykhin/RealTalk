@@ -206,6 +206,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class CreateAndInitLocalVarCmdGenerator;
   class CreateArrayCmdGenerator;
   class CreateAndInitArrayCmdGenerator;
+  class DestroyLocalVarCmdGenerator;
   class ReturnValueCmdGenerator;
   class LoadGlobalVarValueCmdGenerator;
   class LoadLocalVarValueCmdGenerator;
@@ -308,6 +309,9 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   void WriteCurrentCmdOffset(const vector<uint32_t> &offset_placeholders);
   void GenerateJumpCmdStart(size_t local_var_defs_count);
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
+  void GenerateDestroyLocalVarCmds(
+      const vector<const VarDefNode*> &local_var_defs);
+  void GenerateReturnCmd(const vector<const VarDefNode*> &flow_local_var_defs);
   const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const;
   const DataType &GetExprDataType(const ExprAnalysis &expr_analysis) const;
   Scope *GetCurrentScope();
@@ -652,6 +656,49 @@ class SimpleCodeGenerator::Impl::CreateLocalVarCmdGenerator
 
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kCreateLocalStringVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class SimpleCodeGenerator::Impl::DestroyLocalVarCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalArrayVar);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalDoubleVar);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalCharVar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalStringVar);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -1854,7 +1901,9 @@ void SimpleCodeGenerator::Impl::VisitFuncDefWithBody(
 
   if (func_analysis.GetDataType().GetReturnDataType() == VoidDataType()
       && !func_analysis.HasReturn()) {
-    code_->WriteCmdId(CmdId::kReturn);
+    const auto &body_analysis =
+        static_cast<const ScopeAnalysis&>(GetNodeAnalysis(*(node.GetBody())));
+    GenerateReturnCmd(body_analysis.GetLocalVarDefs());
   }
 
   const string &id = node.GetNameToken().GetValue();
@@ -1880,13 +1929,7 @@ void SimpleCodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
   const ReturnAnalysis &return_analysis = static_cast<const ReturnAnalysis&>(
       GetNodeAnalysis(node));
-
-  if (!return_analysis.GetFlowLocalVarDefs().empty()) {
-    code_->WriteCmdId(CmdId::kDestroyLocalVars);
-    code_->WriteUint32(
-        static_cast<uint32_t>(return_analysis.GetFlowLocalVarDefs().size()));
-  }
-
+  GenerateDestroyLocalVarCmds(return_analysis.GetFlowLocalVarDefs());
   ReturnValueCmdGenerator().Generate(
       GetExprDataType(value_analysis), code_.get());
 }
@@ -1895,14 +1938,7 @@ void SimpleCodeGenerator::Impl::VisitReturnWithoutValue(
     const ReturnWithoutValueNode &node) {
   const ReturnAnalysis &analysis = static_cast<const ReturnAnalysis&>(
       GetNodeAnalysis(node));
-
-  if (!analysis.GetFlowLocalVarDefs().empty()) {
-    code_->WriteCmdId(CmdId::kDestroyLocalVars);
-    code_->WriteUint32(
-        static_cast<uint32_t>(analysis.GetFlowLocalVarDefs().size()));
-  }
-
-  code_->WriteCmdId(CmdId::kReturn);
+  GenerateReturnCmd(analysis.GetFlowLocalVarDefs());
 }
 
 void SimpleCodeGenerator::Impl::VisitScope(const ScopeNode &node) {
@@ -2276,6 +2312,24 @@ void SimpleCodeGenerator::Impl::GenerateCastCmdIfNeeded(
   CmdId cmd_id = cast_cmd_generator_.Generate(
       *(expr_analysis.GetCastedDataType()), expr_analysis.GetDataType());
   code_->WriteCmdId(cmd_id);
+}
+
+void SimpleCodeGenerator::Impl::GenerateDestroyLocalVarCmds(
+    const vector<const VarDefNode*> &local_var_defs) {
+  DestroyLocalVarCmdGenerator cmd_generator;
+
+  for (const VarDefNode *var_def: reverse(local_var_defs)) {
+    assert(var_def);
+    const auto &def_analysis =
+        static_cast<const DefAnalysis&>(GetNodeAnalysis(*var_def));
+    cmd_generator.Generate(def_analysis.GetDataType(), code_.get());
+  }
+}
+
+void SimpleCodeGenerator::Impl::GenerateReturnCmd(
+    const vector<const VarDefNode*> &flow_local_var_defs) {
+  GenerateDestroyLocalVarCmds(flow_local_var_defs);
+  code_->WriteCmdId(CmdId::kReturn);
 }
 
 const DataType &SimpleCodeGenerator::Impl::GetExprDataType(
