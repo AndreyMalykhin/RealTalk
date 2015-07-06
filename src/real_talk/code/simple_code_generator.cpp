@@ -214,6 +214,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class LoadArrayElementValueCmdGenerator;
   class LoadElementAddressCmdGenerator;
   class LoadArrayElementAddressCmdGenerator;
+  class UnloadCmdGenerator;
   class StoreCmdGenerator;
   class CallCmdGenerator;
   class ExprCmdGenerator;
@@ -307,7 +308,8 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   void VisitUnaryExpr(
       const UnaryExprNode &node, ExprCmdGenerator *cmd_generator);
   void WriteCurrentCmdOffset(const vector<uint32_t> &offset_placeholders);
-  void GenerateJumpCmdStart(size_t local_var_defs_count);
+  void GenerateJumpCmdStart(
+      const vector<const VarDefNode*> &flow_local_var_defs);
   void GenerateCastCmdIfNeeded(const ExprAnalysis &expr_analysis);
   void GenerateDestroyLocalVarCmds(
       const vector<const VarDefNode*> &local_var_defs);
@@ -931,6 +933,49 @@ class SimpleCodeGenerator::Impl::LoadLocalVarValueCmdGenerator
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
+class SimpleCodeGenerator::Impl::UnloadCmdGenerator: private DataTypeVisitor {
+ public:
+  void Generate(const DataType &data_type, Code *code) {
+    assert(code);
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    code_->WriteCmdId(CmdId::kUnloadArray);
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kUnloadBool);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kUnloadInt);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kUnloadLong);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kUnloadDouble);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kUnloadChar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kUnloadString);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {}
   virtual void VisitFunc(const FuncDataType&) override {assert(false);}
 
   Code *code_;
@@ -1759,10 +1804,7 @@ void SimpleCodeGenerator::Impl::VisitExprStmt(const ExprStmtNode &node) {
   node.GetExpr()->Accept(*this);
   const ExprAnalysis &analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetExpr())));
-
-  if (analysis.GetDataType() != VoidDataType()) {
-    code_->WriteCmdId(CmdId::kUnload);
-  }
+  UnloadCmdGenerator().Generate(analysis.GetDataType(), code_.get());
 }
 
 void SimpleCodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
@@ -1776,7 +1818,7 @@ void SimpleCodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
   node.GetBody()->Accept(*this);
   const ScopeAnalysis &body_analysis = static_cast<const ScopeAnalysis&>(
       GetNodeAnalysis(*(node.GetBody())));
-  GenerateJumpCmdStart(body_analysis.GetLocalVarDefs().size());
+  GenerateJumpCmdStart(body_analysis.GetLocalVarDefs());
   const int64_t start_offset = static_cast<int64_t>(start_address)
                                - (static_cast<int64_t>(code_->GetPosition())
                                   + static_cast<int64_t>(sizeof(int32_t)));
@@ -1789,7 +1831,7 @@ void SimpleCodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
 void SimpleCodeGenerator::Impl::VisitBreak(const BreakNode &node) {
   const ControlFlowTransferAnalysis &break_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
-  GenerateJumpCmdStart(break_analysis.GetFlowLocalVarDefs().size());
+  GenerateJumpCmdStart(break_analysis.GetFlowLocalVarDefs());
   const uint32_t flow_end_address_placeholder = code_->GetPosition();
   GetCurrentScope()->GetEndAddressPlaceholders().push_back(
       flow_end_address_placeholder);
@@ -1799,7 +1841,7 @@ void SimpleCodeGenerator::Impl::VisitBreak(const BreakNode &node) {
 void SimpleCodeGenerator::Impl::VisitContinue(const ContinueNode &node) {
   const ControlFlowTransferAnalysis &continue_analysis =
       static_cast<const ControlFlowTransferAnalysis&>(GetNodeAnalysis(node));
-  GenerateJumpCmdStart(continue_analysis.GetFlowLocalVarDefs().size());
+  GenerateJumpCmdStart(continue_analysis.GetFlowLocalVarDefs());
   const int64_t scope_start_offset =
       static_cast<int64_t>(GetCurrentScope()->GetStartAddress())
       - (static_cast<int64_t>(code_->GetPosition())
@@ -1824,13 +1866,7 @@ void SimpleCodeGenerator::Impl::VisitIfElseIfElse(
   if_else_if_else.GetElseBody()->Accept(*this);
   const ScopeAnalysis &else_body_analysis = static_cast<const ScopeAnalysis&>(
       GetNodeAnalysis(*if_else_if_else.GetElseBody()));
-
-  if (!else_body_analysis.GetLocalVarDefs().empty()) {
-    code_->WriteCmdId(CmdId::kDestroyLocalVars);
-    code_->WriteUint32(
-        static_cast<uint32_t>(else_body_analysis.GetLocalVarDefs().size()));
-  }
-
+  GenerateDestroyLocalVarCmds(else_body_analysis.GetLocalVarDefs());
   WriteCurrentCmdOffset(branch_end_offset_placeholders);
 }
 
@@ -1870,13 +1906,9 @@ void SimpleCodeGenerator::Impl::VisitIf(
       static_cast<const ScopeAnalysis&>(GetNodeAnalysis(*node.GetBody()));
 
   if (branch_end_offset_placeholder == nullptr) {
-    if (!body_analysis.GetLocalVarDefs().empty()) {
-      code_->WriteCmdId(CmdId::kDestroyLocalVars);
-      code_->WriteUint32(
-          static_cast<uint32_t>(body_analysis.GetLocalVarDefs().size()));
-    }
+    GenerateDestroyLocalVarCmds(body_analysis.GetLocalVarDefs());
   } else {
-    GenerateJumpCmdStart(body_analysis.GetLocalVarDefs().size());
+    GenerateJumpCmdStart(body_analysis.GetLocalVarDefs());
     *branch_end_offset_placeholder = code_->GetPosition();
     code_->Skip(sizeof(int32_t));
   }
@@ -2289,13 +2321,9 @@ void SimpleCodeGenerator::Impl::WriteCurrentCmdOffset(
 }
 
 void SimpleCodeGenerator::Impl::GenerateJumpCmdStart(
-    size_t local_var_defs_count) {
-  if (local_var_defs_count > UINT32_C(0)) {
-    code_->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-    code_->WriteUint32(static_cast<uint32_t>(local_var_defs_count));
-  } else {
-    code_->WriteCmdId(CmdId::kDirectJump);
-  }
+    const vector<const VarDefNode*> &flow_local_var_defs) {
+  GenerateDestroyLocalVarCmds(flow_local_var_defs);
+  code_->WriteCmdId(CmdId::kDirectJump);
 }
 
 SimpleCodeGenerator::Impl::Scope *SimpleCodeGenerator::Impl::GetCurrentScope() {

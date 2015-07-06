@@ -264,7 +264,7 @@ class SimpleCodeGeneratorTest: public Test {
     ASSERT_TRUE(actual_module.get());
     ASSERT_EQ(expected_module, *actual_module)
         << "[expected]\n" << PrintModule(expected_module)
-        << "[actual]\n" << PrintModule(*actual_module);
+        << "\n[actual]\n" << PrintModule(*actual_module);
   }
 
   void TestGlobalVarDefWithoutInit(unique_ptr<DataTypeNode> data_type_node,
@@ -2991,7 +2991,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
                expected_module);
 }
 
-TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithLocalVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3002,10 +3002,18 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   if_body_stmt_nodes.push_back(move(var_def_node));
+  unique_ptr<DataTypeNode> data_type_node2(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(8), UINT32_C(8))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  if_body_stmt_nodes.push_back(move(var_def_node2));
   ScopeNode *if_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(8), UINT32_C(8)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11)));
   unique_ptr<ScopeNode> if_body_node(if_body_node_ptr);
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
@@ -3019,67 +3027,85 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
 
   vector< unique_ptr<ElseIfNode> > else_if_nodes;
   vector< unique_ptr<StmtNode> > else_if_body_stmt_nodes;
-  unique_ptr<DataTypeNode> data_type_node2(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(15), UINT32_C(15))));
-  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
-      move(data_type_node2),
-      TokenInfo(Token::kName, "var2", UINT32_C(16), UINT32_C(16)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(17), UINT32_C(17)));
-  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
-  else_if_body_stmt_nodes.push_back(move(var_def_node2));
+  unique_ptr<DataTypeNode> data_type_node3(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(18), UINT32_C(18))));
+  VarDefWithoutInitNode *var_def_node_ptr3 = new VarDefWithoutInitNode(
+      move(data_type_node3),
+      TokenInfo(Token::kName, "var3", UINT32_C(19), UINT32_C(19)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(20), UINT32_C(20)));
+  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+  else_if_body_stmt_nodes.push_back(move(var_def_node3));
+  unique_ptr<DataTypeNode> data_type_node4(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(21), UINT32_C(21))));
+  VarDefWithoutInitNode *var_def_node_ptr4 = new VarDefWithoutInitNode(
+      move(data_type_node4),
+      TokenInfo(Token::kName, "var4", UINT32_C(22), UINT32_C(22)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(23), UINT32_C(23)));
+  unique_ptr<StmtNode> var_def_node4(var_def_node_ptr4);
+  else_if_body_stmt_nodes.push_back(move(var_def_node4));
   ScopeNode *else_if_body_node_ptr = new ScopeNode(
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(14), UINT32_C(14)),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(17), UINT32_C(17)),
       move(else_if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(18), UINT32_C(18)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(24), UINT32_C(24)));
   unique_ptr<ScopeNode> else_if_body_node(else_if_body_node_ptr);
   BoolNode *bool_node_ptr2 = new BoolNode(
-      TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(12), UINT32_C(12)));
+      TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(15), UINT32_C(15)));
   unique_ptr<ExprNode> bool_node2(bool_node_ptr2);
   unique_ptr<IfNode> if_node2(new IfNode(
-      TokenInfo(Token::kIf, "if", UINT32_C(10), UINT32_C(10)),
-      TokenInfo(Token::kGroupStart, "(", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kIf, "if", UINT32_C(13), UINT32_C(13)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(14), UINT32_C(14)),
       move(bool_node2),
-      TokenInfo(Token::kGroupEnd, ")", UINT32_C(13), UINT32_C(13)),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(16), UINT32_C(16)),
       move(else_if_body_node)));
   unique_ptr<ElseIfNode> else_if_node(new ElseIfNode(
-      TokenInfo(Token::kElse, "else", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kElse, "else", UINT32_C(12), UINT32_C(12)),
       move(if_node2)));
   else_if_nodes.push_back(move(else_if_node));
 
   vector< unique_ptr<StmtNode> > else_body_stmt_nodes;
-  unique_ptr<DataTypeNode> data_type_node3(new DoubleDataTypeNode(
-      TokenInfo(Token::kDoubleType, "double", UINT32_C(21), UINT32_C(21))));
-  VarDefWithoutInitNode *var_def_node_ptr3 = new VarDefWithoutInitNode(
-      move(data_type_node3),
-      TokenInfo(Token::kName, "var3", UINT32_C(22), UINT32_C(22)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(23), UINT32_C(23)));
-  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
-  else_body_stmt_nodes.push_back(move(var_def_node3));
+  unique_ptr<DataTypeNode> data_type_node5(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(27), UINT32_C(27))));
+  VarDefWithoutInitNode *var_def_node_ptr5 = new VarDefWithoutInitNode(
+      move(data_type_node5),
+      TokenInfo(Token::kName, "var5", UINT32_C(28), UINT32_C(28)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(29), UINT32_C(29)));
+  unique_ptr<StmtNode> var_def_node5(var_def_node_ptr5);
+  else_body_stmt_nodes.push_back(move(var_def_node5));
+  unique_ptr<DataTypeNode> data_type_node6(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(30), UINT32_C(30))));
+  VarDefWithoutInitNode *var_def_node_ptr6 = new VarDefWithoutInitNode(
+      move(data_type_node6),
+      TokenInfo(Token::kName, "var6", UINT32_C(31), UINT32_C(31)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(32), UINT32_C(32)));
+  unique_ptr<StmtNode> var_def_node6(var_def_node_ptr6);
+  else_body_stmt_nodes.push_back(move(var_def_node6));
   ScopeNode *else_body_node_ptr = new ScopeNode(
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(20), UINT32_C(20)),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(26), UINT32_C(26)),
       move(else_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(24), UINT32_C(24)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(33), UINT32_C(33)));
   unique_ptr<ScopeNode> else_body_node(else_body_node_ptr);
-
   unique_ptr<StmtNode> if_else_if_else_node(new IfElseIfElseNode(
       move(if_node),
       move(else_if_nodes),
-      TokenInfo(Token::kElse, "else", UINT32_C(19), UINT32_C(19)),
+      TokenInfo(Token::kElse, "else", UINT32_C(25), UINT32_C(25)),
       move(else_body_node)));
   program_stmt_nodes.push_back(move(if_else_if_else_node));
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  vector<const VarDefNode*> if_body_local_var_defs = {var_def_node_ptr};
+  vector<const VarDefNode*> if_body_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
       new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
-  vector<const VarDefNode*> else_if_body_local_var_defs = {var_def_node_ptr2};
+  vector<const VarDefNode*> else_if_body_local_var_defs =
+      {var_def_node_ptr3, var_def_node_ptr4};
   unique_ptr<NodeSemanticAnalysis> else_if_body_analysis(
       new ScopeAnalysis(else_if_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
-  vector<const VarDefNode*> else_body_local_var_defs = {var_def_node_ptr3};
+  vector<const VarDefNode*> else_body_local_var_defs =
+      {var_def_node_ptr5, var_def_node_ptr6};
   unique_ptr<NodeSemanticAnalysis> else_body_analysis(
       new ScopeAnalysis(else_body_local_var_defs));
   node_analyzes.insert(
@@ -3088,14 +3114,26 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(0);
+  uint32_t var_index_within_func2 = UINT32_C(1);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new BoolDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   uint32_t var_index_within_func3 = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new DoubleDataType()), var_index_within_func3));
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
+  uint32_t var_index_within_func4 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis4(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new CharDataType()), var_index_within_func4));
+  node_analyzes.insert(make_pair(var_def_node_ptr4, move(var_def_analysis4)));
+  uint32_t var_index_within_func5 = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis5(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new DoubleDataType()), var_index_within_func5));
+  node_analyzes.insert(make_pair(var_def_node_ptr5, move(var_def_analysis5)));
+  uint32_t var_index_within_func6 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis6(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new StringDataType()), var_index_within_func6));
+  node_analyzes.insert(make_pair(var_def_node_ptr6, move(var_def_analysis6)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -3120,8 +3158,10 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   uint32_t else_if_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(static_cast<uint32_t>(if_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3138,8 +3178,10 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   uint32_t else_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(static_cast<uint32_t>(else_if_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalCharVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalCharVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
   uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3151,18 +3193,21 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithVarDefs) {
   cmds_code->WriteInt32(else_offset);
   cmds_code->SetPosition(else_address);
   cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(static_cast<uint32_t>(else_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalStringVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalStringVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalDoubleVar);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
-                              - (static_cast<int32_t>(branch_end_offset_placeholder)
-                                 + static_cast<int32_t>(sizeof(int32_t)));
+  int32_t branch_end_offset =
+      static_cast<int32_t>(branch_end_address)
+      - (static_cast<int32_t>(branch_end_offset_placeholder)
+         + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->SetPosition(branch_end_offset_placeholder);
   cmds_code->WriteInt32(branch_end_offset);
-  int32_t branch_end_offset2 = static_cast<int32_t>(branch_end_address)
-                               - (static_cast<int32_t>(branch_end_offset_placeholder2)
-                                  + static_cast<int32_t>(sizeof(int32_t)));
+  int32_t branch_end_offset2 =
+      static_cast<int32_t>(branch_end_address)
+      - (static_cast<int32_t>(branch_end_offset_placeholder2)
+         + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->SetPosition(branch_end_offset_placeholder2);
   cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
@@ -3356,7 +3401,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
                expected_module);
 }
 
-TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfElseIfWithLocalVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3367,10 +3412,18 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   if_body_stmt_nodes.push_back(move(var_def_node));
+  unique_ptr<DataTypeNode> data_type_node2(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(8), UINT32_C(8))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  if_body_stmt_nodes.push_back(move(var_def_node2));
   ScopeNode *if_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(8), UINT32_C(8)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11)));
   unique_ptr<ScopeNode> if_body_node(if_body_node_ptr);
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
@@ -3384,44 +3437,53 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
 
   vector< unique_ptr<ElseIfNode> > else_if_nodes;
   vector< unique_ptr<StmtNode> > else_if_body_stmt_nodes;
-  unique_ptr<DataTypeNode> data_type_node2(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(15), UINT32_C(15))));
-  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
-      move(data_type_node2),
-      TokenInfo(Token::kName, "var2", UINT32_C(16), UINT32_C(16)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(17), UINT32_C(17)));
-  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
-  else_if_body_stmt_nodes.push_back(move(var_def_node2));
+  unique_ptr<DataTypeNode> data_type_node3(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(18), UINT32_C(18))));
+  VarDefWithoutInitNode *var_def_node_ptr3 = new VarDefWithoutInitNode(
+      move(data_type_node3),
+      TokenInfo(Token::kName, "var3", UINT32_C(19), UINT32_C(19)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(20), UINT32_C(20)));
+  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+  else_if_body_stmt_nodes.push_back(move(var_def_node3));
+  unique_ptr<DataTypeNode> data_type_node4(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(21), UINT32_C(21))));
+  VarDefWithoutInitNode *var_def_node_ptr4 = new VarDefWithoutInitNode(
+      move(data_type_node4),
+      TokenInfo(Token::kName, "var4", UINT32_C(22), UINT32_C(22)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(23), UINT32_C(23)));
+  unique_ptr<StmtNode> var_def_node4(var_def_node_ptr4);
+  else_if_body_stmt_nodes.push_back(move(var_def_node4));
   ScopeNode *else_if_body_node_ptr = new ScopeNode(
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(14), UINT32_C(14)),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(17), UINT32_C(17)),
       move(else_if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(18), UINT32_C(18)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(24), UINT32_C(24)));
   unique_ptr<ScopeNode> else_if_body_node(else_if_body_node_ptr);
   BoolNode *bool_node_ptr2 = new BoolNode(
-      TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(12), UINT32_C(12)));
+      TokenInfo(Token::kBoolFalseLit, "false", UINT32_C(15), UINT32_C(15)));
   unique_ptr<ExprNode> bool_node2(bool_node_ptr2);
   unique_ptr<IfNode> if_node2(new IfNode(
-      TokenInfo(Token::kIf, "if", UINT32_C(10), UINT32_C(10)),
-      TokenInfo(Token::kGroupStart, "(", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kIf, "if", UINT32_C(13), UINT32_C(13)),
+      TokenInfo(Token::kGroupStart, "(", UINT32_C(14), UINT32_C(14)),
       move(bool_node2),
-      TokenInfo(Token::kGroupEnd, ")", UINT32_C(13), UINT32_C(13)),
+      TokenInfo(Token::kGroupEnd, ")", UINT32_C(16), UINT32_C(16)),
       move(else_if_body_node)));
   unique_ptr<ElseIfNode> else_if_node(new ElseIfNode(
-      TokenInfo(Token::kElse, "else", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kElse, "else", UINT32_C(12), UINT32_C(12)),
       move(if_node2)));
   else_if_nodes.push_back(move(else_if_node));
-
   unique_ptr<StmtNode> if_else_if_node(new IfElseIfNode(
       move(if_node), move(else_if_nodes)));
   program_stmt_nodes.push_back(move(if_else_if_node));
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  vector<const VarDefNode*> if_body_local_var_defs = {var_def_node_ptr};
+  vector<const VarDefNode*> if_body_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
       new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
-  vector<const VarDefNode*> else_if_body_local_var_defs = {var_def_node_ptr2};
+  vector<const VarDefNode*> else_if_body_local_var_defs =
+      {var_def_node_ptr3, var_def_node_ptr4};
   unique_ptr<NodeSemanticAnalysis> else_if_body_analysis(
       new ScopeAnalysis(else_if_body_local_var_defs));
   node_analyzes.insert(
@@ -3430,10 +3492,18 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(0);
+  uint32_t var_index_within_func2 = UINT32_C(1);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new BoolDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  uint32_t var_index_within_func3 = UINT32_C(0);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+  node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
+  uint32_t var_index_within_func4 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis4(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new DoubleDataType()), var_index_within_func4));
+  node_analyzes.insert(make_pair(var_def_node_ptr4, move(var_def_analysis4)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -3448,7 +3518,6 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(false))));
   node_analyzes.insert(make_pair(bool_node_ptr2, move(bool_analysis2)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -3459,8 +3528,10 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   uint32_t else_if_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(static_cast<uint32_t>(if_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
 
@@ -3477,18 +3548,21 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithVarDefs) {
   uint32_t branch_end_offset_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(static_cast<uint32_t>(else_if_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalDoubleVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
-  int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
-                              - (static_cast<int32_t>(branch_end_offset_placeholder)
-                                 + static_cast<int32_t>(sizeof(int32_t)));
+  int32_t branch_end_offset =
+      static_cast<int32_t>(branch_end_address)
+      - (static_cast<int32_t>(branch_end_offset_placeholder)
+         + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->SetPosition(branch_end_offset_placeholder);
   cmds_code->WriteInt32(branch_end_offset);
-  int32_t branch_end_offset2 = static_cast<int32_t>(branch_end_address)
-                               - (static_cast<int32_t>(branch_end_offset_placeholder2)
-                                  + static_cast<int32_t>(sizeof(int32_t)));
+  int32_t branch_end_offset2 =
+      static_cast<int32_t>(branch_end_address)
+      - (static_cast<int32_t>(branch_end_offset_placeholder2)
+         + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->SetPosition(branch_end_offset_placeholder2);
   cmds_code->WriteInt32(branch_end_offset2);
   cmds_code->SetPosition(branch_end_address);
@@ -3611,7 +3685,7 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
                expected_module);
 }
 
-TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, IfWithLocalVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > if_body_stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3622,10 +3696,18 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   if_body_stmt_nodes.push_back(move(var_def_node));
+  unique_ptr<DataTypeNode> data_type_node2(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(8), UINT32_C(8))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  if_body_stmt_nodes.push_back(move(var_def_node2));
   ScopeNode *if_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(if_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(8), UINT32_C(8)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11)));
   unique_ptr<ScopeNode> if_body_node(if_body_node_ptr);
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
@@ -3636,14 +3718,14 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
       move(bool_node),
       TokenInfo(Token::kGroupEnd, ")", UINT32_C(3), UINT32_C(3)),
       move(if_body_node)));
-
   unique_ptr<StmtNode> if_else_if_node(new IfElseIfNode(
       move(if_node), vector< unique_ptr<ElseIfNode> >()));
   program_stmt_nodes.push_back(move(if_else_if_node));
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  vector<const VarDefNode*> if_body_local_var_defs = {var_def_node_ptr};
+  vector<const VarDefNode*> if_body_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
       new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
@@ -3651,6 +3733,10 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  uint32_t var_index_within_func2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -3658,7 +3744,6 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -3669,8 +3754,9 @@ TEST_F(SimpleCodeGeneratorTest, IfWithVarDefs) {
   uint32_t branch_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVars);
-  cmds_code->WriteUint32(static_cast<uint32_t>(if_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
 
   uint32_t branch_end_address = cmds_code->GetPosition();
   int32_t branch_end_offset = static_cast<int32_t>(branch_end_address)
@@ -3801,7 +3887,7 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
                expected_module);
 }
 
-TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithLocalVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
@@ -3812,10 +3898,18 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   loop_body_stmt_nodes.push_back(move(var_def_node));
+  unique_ptr<DataTypeNode> data_type_node2(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(8), UINT32_C(8))));
+  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+      move(data_type_node2),
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
+  unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+  loop_body_stmt_nodes.push_back(move(var_def_node2));
   ScopeNode *loop_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(loop_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(11), UINT32_C(11)));
   unique_ptr<ScopeNode> loop_body_node(loop_body_node_ptr);
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
@@ -3830,7 +3924,8 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  vector<const VarDefNode*> loop_body_local_var_defs = {var_def_node_ptr};
+  vector<const VarDefNode*> loop_body_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
       new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
@@ -3838,6 +3933,10 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
       unique_ptr<DataType>(new IntDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+  uint32_t var_index_within_func2 = UINT32_C(1);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+  node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -3845,7 +3944,6 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -3857,8 +3955,10 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithVarDefs) {
   uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(static_cast<uint32_t>(loop_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
@@ -3994,34 +4094,42 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
                expected_module);
 }
 
-TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithLocalVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
-  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> var_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(5), UINT32_C(5))));
   VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
       move(var_data_type_node),
       TokenInfo(Token::kName, "var", UINT32_C(6), UINT32_C(6)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   loop_body_stmt_nodes.push_back(move(var_def_node));
-  BreakNode *break_node_ptr = new BreakNode(
-      TokenInfo(Token::kBreak, "break", UINT32_C(8), UINT32_C(8)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9)));
-  unique_ptr<StmtNode> break_node(break_node_ptr);
-  loop_body_stmt_nodes.push_back(move(break_node));
-  unique_ptr<DataTypeNode> var_data_type_node2(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(10), UINT32_C(10))));
+  unique_ptr<DataTypeNode> var_data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(8), UINT32_C(8))));
   VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
       move(var_data_type_node2),
-      TokenInfo(Token::kName, "var2", UINT32_C(11), UINT32_C(11)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
   unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
   loop_body_stmt_nodes.push_back(move(var_def_node2));
+  BreakNode *break_node_ptr = new BreakNode(
+      TokenInfo(Token::kBreak, "break", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> break_node(break_node_ptr);
+  loop_body_stmt_nodes.push_back(move(break_node));
+  unique_ptr<DataTypeNode> var_data_type_node3(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(13))));
+  VarDefWithoutInitNode *var_def_node_ptr3 = new VarDefWithoutInitNode(
+      move(var_data_type_node3),
+      TokenInfo(Token::kName, "var3", UINT32_C(14), UINT32_C(14)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(15), UINT32_C(15)));
+  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+  loop_body_stmt_nodes.push_back(move(var_def_node3));
   ScopeNode *loop_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(loop_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16)));
   unique_ptr<ScopeNode> loop_body_node(loop_body_node_ptr);
   BoolNode *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
@@ -4037,22 +4145,27 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   vector<const VarDefNode*> loop_body_local_var_defs =
-      {var_def_node_ptr, var_def_node_ptr2};
+      {var_def_node_ptr, var_def_node_ptr2, var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
       new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
-  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
+  vector<const VarDefNode*> flow_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> break_analysis(
       new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+      unique_ptr<DataType>(new BoolDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   uint32_t var_index_within_func2 = UINT32_C(1);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  uint32_t var_index_within_func3 = UINT32_C(2);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+  node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -4060,7 +4173,6 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -4071,14 +4183,18 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithVarDefs) {
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
   uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(static_cast<uint32_t>(flow_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
   uint32_t loop_end_offset_placeholder2 = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(static_cast<uint32_t>(loop_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
@@ -4162,7 +4278,6 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -4216,36 +4331,44 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
                expected_module);
 }
 
-TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
+TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithLocalVarDefs) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<StmtNode> > loop_body_stmt_nodes;
-  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
-  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+    unique_ptr<DataTypeNode> var_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(5), UINT32_C(5))));
+  auto *var_def_node_ptr = new VarDefWithoutInitNode(
       move(var_data_type_node),
       TokenInfo(Token::kName, "var", UINT32_C(6), UINT32_C(6)),
       TokenInfo(Token::kStmtEnd, ";", UINT32_C(7), UINT32_C(7)));
   unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
   loop_body_stmt_nodes.push_back(move(var_def_node));
-  ContinueNode *continue_node_ptr = new ContinueNode(
-      TokenInfo(Token::kContinue, "continue", UINT32_C(8), UINT32_C(8)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(9), UINT32_C(9)));
-  unique_ptr<StmtNode> continue_node(continue_node_ptr);
-  loop_body_stmt_nodes.push_back(move(continue_node));
-  unique_ptr<DataTypeNode> var_data_type_node2(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(10), UINT32_C(10))));
-  VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+  unique_ptr<DataTypeNode> var_data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(8), UINT32_C(8))));
+  auto *var_def_node_ptr2 = new VarDefWithoutInitNode(
       move(var_data_type_node2),
-      TokenInfo(Token::kName, "var2", UINT32_C(11), UINT32_C(11)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+      TokenInfo(Token::kName, "var2", UINT32_C(9), UINT32_C(9)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10)));
   unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
   loop_body_stmt_nodes.push_back(move(var_def_node2));
-  ScopeNode *loop_body_node_ptr = new ScopeNode(
+  auto *continue_node_ptr = new ContinueNode(
+      TokenInfo(Token::kContinue, "continue", UINT32_C(11), UINT32_C(11)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+  unique_ptr<StmtNode> continue_node(continue_node_ptr);
+  loop_body_stmt_nodes.push_back(move(continue_node));
+  unique_ptr<DataTypeNode> var_data_type_node3(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(13), UINT32_C(13))));
+  auto *var_def_node_ptr3 = new VarDefWithoutInitNode(
+      move(var_data_type_node3),
+      TokenInfo(Token::kName, "var3", UINT32_C(14), UINT32_C(14)),
+      TokenInfo(Token::kStmtEnd, ";", UINT32_C(15), UINT32_C(15)));
+  unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+  loop_body_stmt_nodes.push_back(move(var_def_node3));
+  auto *loop_body_node_ptr = new ScopeNode(
       TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
       move(loop_body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16)));
   unique_ptr<ScopeNode> loop_body_node(loop_body_node_ptr);
-  BoolNode *bool_node_ptr = new BoolNode(
+  auto *bool_node_ptr = new BoolNode(
       TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(2), UINT32_C(2)));
   unique_ptr<ExprNode> bool_node(bool_node_ptr);
   unique_ptr<StmtNode> loop_node(new PreTestLoopNode(
@@ -4259,22 +4382,27 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
   vector<const VarDefNode*> loop_body_local_var_defs =
-      {var_def_node_ptr, var_def_node_ptr2};
+      {var_def_node_ptr, var_def_node_ptr2, var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
       new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
-  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
+  vector<const VarDefNode*> flow_local_var_defs =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> continue_analysis(
       new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(continue_node_ptr, move(continue_analysis)));
   uint32_t var_index_within_func = UINT32_C(0);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+      unique_ptr<DataType>(new BoolDataType()), var_index_within_func));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   uint32_t var_index_within_func2 = UINT32_C(1);
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+  uint32_t var_index_within_func3 = UINT32_C(2);
+  unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
+      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+  node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
       unique_ptr<DataType>(new BoolDataType()),
@@ -4282,7 +4410,6 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
       ValueType::kRight,
       unique_ptr<Lit>(new BoolLit(true))));
   node_analyzes.insert(make_pair(bool_node_ptr, move(bool_analysis)));
-
   SemanticAnalysis semantic_analysis(
       SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
@@ -4293,16 +4420,20 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithVarDefs) {
   cmds_code->WriteCmdId(CmdId::kJumpIfNot);
   uint32_t loop_end_offset_placeholder = cmds_code->GetPosition();
   cmds_code->Skip(sizeof(int32_t));
+  cmds_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
   cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(static_cast<uint32_t>(flow_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
   int32_t loop_start_offset = static_cast<int32_t>(loop_start_address)
                               - (static_cast<int32_t>(cmds_code->GetPosition())
                                  + static_cast<int32_t>(sizeof(int32_t)));
   cmds_code->WriteInt32(loop_start_offset);
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  cmds_code->WriteUint32(static_cast<uint32_t>(loop_body_local_var_defs.size()));
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+  cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  cmds_code->WriteCmdId(CmdId::kDirectJump);
   int32_t loop_start_offset2 = static_cast<int32_t>(loop_start_address)
                                - (static_cast<int32_t>(cmds_code->GetPosition())
                                   + static_cast<int32_t>(sizeof(int32_t)));
@@ -7382,7 +7513,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualChar) {
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
   expected_code->WriteChar('b');
   expected_code->WriteCmdId(CmdId::kEqualChar);
-  expected_code->WriteCmdId(CmdId::kUnloadChar);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7433,10 +7564,10 @@ TEST_F(SimpleCodeGeneratorTest, EqualInt) {
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
   expected_code->WriteChar('a');
   expected_code->WriteCmdId(CmdId::kCastCharToInt);
-  expected_code->WriteCmdId(CmdId::kLoadCharValue);
+  expected_code->WriteCmdId(CmdId::kLoadIntValue);
   expected_code->WriteInt32(INT32_C(2));
   expected_code->WriteCmdId(CmdId::kEqualInt);
-  expected_code->WriteCmdId(CmdId::kUnloadInt);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7490,7 +7621,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualLong) {
   expected_code->WriteCmdId(CmdId::kLoadLongValue);
   expected_code->WriteInt64(INT64_C(2));
   expected_code->WriteCmdId(CmdId::kEqualLong);
-  expected_code->WriteCmdId(CmdId::kUnloadLong);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7544,7 +7675,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualDouble) {
   expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
   expected_code->WriteDouble(2.2);
   expected_code->WriteCmdId(CmdId::kEqualDouble);
-  expected_code->WriteCmdId(CmdId::kUnloadDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7598,7 +7729,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualString) {
   expected_code->WriteCmdId(CmdId::kLoadStringValue);
   expected_code->WriteString("bc");
   expected_code->WriteCmdId(CmdId::kEqualString);
-  expected_code->WriteCmdId(CmdId::kUnloadString);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7727,7 +7858,7 @@ TEST_F(SimpleCodeGeneratorTest, EqualArray) {
   expected_code->WriteUint8(dimensions_count);
   expected_code->WriteInt32(values_count);
   expected_code->WriteCmdId(CmdId::kEqualArray);
-  expected_code->WriteCmdId(CmdId::kUnloadArray);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7773,7 +7904,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualChar) {
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
   expected_code->WriteChar('b');
   expected_code->WriteCmdId(CmdId::kNotEqualChar);
-  expected_code->WriteCmdId(CmdId::kUnloadChar);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7827,7 +7958,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualInt) {
   expected_code->WriteCmdId(CmdId::kLoadIntValue);
   expected_code->WriteInt32(INT32_C(2));
   expected_code->WriteCmdId(CmdId::kNotEqualInt);
-  expected_code->WriteCmdId(CmdId::kUnloadInt);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7881,7 +8012,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualLong) {
   expected_code->WriteCmdId(CmdId::kLoadLongValue);
   expected_code->WriteInt64(INT64_C(2));
   expected_code->WriteCmdId(CmdId::kNotEqualLong);
-  expected_code->WriteCmdId(CmdId::kUnloadLong);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7935,7 +8066,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualDouble) {
   expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
   expected_code->WriteDouble(2.2);
   expected_code->WriteCmdId(CmdId::kNotEqualDouble);
-  expected_code->WriteCmdId(CmdId::kUnloadDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -7989,7 +8120,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualString) {
   expected_code->WriteCmdId(CmdId::kLoadStringValue);
   expected_code->WriteString("bc");
   expected_code->WriteCmdId(CmdId::kNotEqualString);
-  expected_code->WriteCmdId(CmdId::kUnloadString);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8118,7 +8249,7 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualArray) {
   expected_code->WriteUint8(dimensions_count);
   expected_code->WriteInt32(values_count);
   expected_code->WriteCmdId(CmdId::kNotEqualArray);
-  expected_code->WriteCmdId(CmdId::kUnloadArray);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8156,7 +8287,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterChar) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('b'))));
-  unique_ptr<DataType> expr_data_type(new CharDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
@@ -8164,7 +8295,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterChar) {
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
   expected_code->WriteChar('b');
   expected_code->WriteCmdId(CmdId::kGreaterChar);
-  expected_code->WriteCmdId(CmdId::kUnloadChar);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8202,7 +8333,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterInt) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(2)))));
-  unique_ptr<DataType> expr_data_type(new IntDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new IntDataType());
@@ -8218,7 +8349,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterInt) {
   expected_code->WriteCmdId(CmdId::kLoadIntValue);
   expected_code->WriteInt32(INT32_C(2));
   expected_code->WriteCmdId(CmdId::kGreaterInt);
-  expected_code->WriteCmdId(CmdId::kUnloadInt);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8256,7 +8387,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterLong) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(2)))));
-  unique_ptr<DataType> expr_data_type(new LongDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new LongDataType());
@@ -8272,7 +8403,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterLong) {
   expected_code->WriteCmdId(CmdId::kLoadLongValue);
   expected_code->WriteInt64(INT64_C(2));
   expected_code->WriteCmdId(CmdId::kGreaterLong);
-  expected_code->WriteCmdId(CmdId::kUnloadLong);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8310,7 +8441,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterDouble) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(2.2))));
-  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new DoubleDataType());
@@ -8326,7 +8457,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterDouble) {
   expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
   expected_code->WriteDouble(2.2);
   expected_code->WriteCmdId(CmdId::kGreaterDouble);
-  expected_code->WriteCmdId(CmdId::kUnloadDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8364,7 +8495,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualChar) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('b'))));
-  unique_ptr<DataType> expr_data_type(new CharDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
@@ -8372,7 +8503,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualChar) {
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
   expected_code->WriteChar('b');
   expected_code->WriteCmdId(CmdId::kGreaterOrEqualChar);
-  expected_code->WriteCmdId(CmdId::kUnloadChar);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8410,7 +8541,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualInt) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(2)))));
-  unique_ptr<DataType> expr_data_type(new IntDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new IntDataType());
@@ -8426,7 +8557,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualInt) {
   expected_code->WriteCmdId(CmdId::kLoadIntValue);
   expected_code->WriteInt32(INT32_C(2));
   expected_code->WriteCmdId(CmdId::kGreaterOrEqualInt);
-  expected_code->WriteCmdId(CmdId::kUnloadInt);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8464,7 +8595,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualLong) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(2)))));
-  unique_ptr<DataType> expr_data_type(new LongDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new LongDataType());
@@ -8480,7 +8611,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualLong) {
   expected_code->WriteCmdId(CmdId::kLoadLongValue);
   expected_code->WriteInt64(INT64_C(2));
   expected_code->WriteCmdId(CmdId::kGreaterOrEqualLong);
-  expected_code->WriteCmdId(CmdId::kUnloadLong);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8518,7 +8649,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualDouble) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(2.2))));
-  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new DoubleDataType());
@@ -8534,7 +8665,7 @@ TEST_F(SimpleCodeGeneratorTest, GreaterOrEqualDouble) {
   expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
   expected_code->WriteDouble(2.2);
   expected_code->WriteCmdId(CmdId::kGreaterOrEqualDouble);
-  expected_code->WriteCmdId(CmdId::kUnloadDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8572,7 +8703,7 @@ TEST_F(SimpleCodeGeneratorTest, LessChar) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('b'))));
-  unique_ptr<DataType> expr_data_type(new CharDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
@@ -8580,7 +8711,7 @@ TEST_F(SimpleCodeGeneratorTest, LessChar) {
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
   expected_code->WriteChar('b');
   expected_code->WriteCmdId(CmdId::kLessChar);
-  expected_code->WriteCmdId(CmdId::kUnloadChar);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8618,7 +8749,7 @@ TEST_F(SimpleCodeGeneratorTest, LessInt) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(2)))));
-  unique_ptr<DataType> expr_data_type(new IntDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new IntDataType());
@@ -8634,7 +8765,7 @@ TEST_F(SimpleCodeGeneratorTest, LessInt) {
   expected_code->WriteCmdId(CmdId::kLoadIntValue);
   expected_code->WriteInt32(INT32_C(2));
   expected_code->WriteCmdId(CmdId::kLessInt);
-  expected_code->WriteCmdId(CmdId::kUnloadInt);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8672,7 +8803,7 @@ TEST_F(SimpleCodeGeneratorTest, LessLong) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(2)))));
-  unique_ptr<DataType> expr_data_type(new LongDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new LongDataType());
@@ -8688,7 +8819,7 @@ TEST_F(SimpleCodeGeneratorTest, LessLong) {
   expected_code->WriteCmdId(CmdId::kLoadLongValue);
   expected_code->WriteInt64(INT64_C(2));
   expected_code->WriteCmdId(CmdId::kLessLong);
-  expected_code->WriteCmdId(CmdId::kUnloadLong);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8726,7 +8857,7 @@ TEST_F(SimpleCodeGeneratorTest, LessDouble) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(2.2))));
-  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new DoubleDataType());
@@ -8742,7 +8873,7 @@ TEST_F(SimpleCodeGeneratorTest, LessDouble) {
   expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
   expected_code->WriteDouble(2.2);
   expected_code->WriteCmdId(CmdId::kLessDouble);
-  expected_code->WriteCmdId(CmdId::kUnloadDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8780,7 +8911,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualChar) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new CharLit('b'))));
-  unique_ptr<DataType> expr_data_type(new CharDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
@@ -8788,7 +8919,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualChar) {
   expected_code->WriteCmdId(CmdId::kLoadCharValue);
   expected_code->WriteChar('b');
   expected_code->WriteCmdId(CmdId::kLessOrEqualChar);
-  expected_code->WriteCmdId(CmdId::kUnloadChar);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8826,7 +8957,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualInt) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new IntLit(INT32_C(2)))));
-  unique_ptr<DataType> expr_data_type(new IntDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new IntDataType());
@@ -8842,7 +8973,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualInt) {
   expected_code->WriteCmdId(CmdId::kLoadIntValue);
   expected_code->WriteInt32(INT32_C(2));
   expected_code->WriteCmdId(CmdId::kLessOrEqualInt);
-  expected_code->WriteCmdId(CmdId::kUnloadInt);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8880,7 +9011,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualLong) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new LongLit(INT64_C(2)))));
-  unique_ptr<DataType> expr_data_type(new LongDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new LongDataType());
@@ -8896,7 +9027,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualLong) {
   expected_code->WriteCmdId(CmdId::kLoadLongValue);
   expected_code->WriteInt64(INT64_C(2));
   expected_code->WriteCmdId(CmdId::kLessOrEqualLong);
-  expected_code->WriteCmdId(CmdId::kUnloadLong);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,
@@ -8934,7 +9065,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualDouble) {
       move(right_operand_casted_data_type),
       ValueType::kRight,
       unique_ptr<Lit>(new DoubleLit(2.2))));
-  unique_ptr<DataType> expr_data_type(new DoubleDataType());
+  unique_ptr<DataType> expr_data_type(new BoolDataType());
 
   vector<TestCast> test_casts;
   unique_ptr<DataType> dest_data_type(new DoubleDataType());
@@ -8950,7 +9081,7 @@ TEST_F(SimpleCodeGeneratorTest, LessOrEqualDouble) {
   expected_code->WriteCmdId(CmdId::kLoadDoubleValue);
   expected_code->WriteDouble(2.2);
   expected_code->WriteCmdId(CmdId::kLessOrEqualDouble);
-  expected_code->WriteCmdId(CmdId::kUnloadDouble);
+  expected_code->WriteCmdId(CmdId::kUnloadBool);
 
   TestBinaryExpr(left_operand_node_ptr,
                  right_operand_node_ptr,

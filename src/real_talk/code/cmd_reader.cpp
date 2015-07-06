@@ -10,8 +10,6 @@
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/create_and_init_array_cmd.h"
 #include "real_talk/code/jump_cmd.h"
-#include "real_talk/code/destroy_local_vars_and_jump_cmd.h"
-#include "real_talk/code/destroy_local_vars_cmd.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/return_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
@@ -91,7 +89,6 @@ const DestroyLocalStringVarCmd &kDestroyLocalStringVarCmd =
 const DestroyLocalBoolVarCmd &kDestroyLocalBoolVarCmd =
     *new DestroyLocalBoolVarCmd();
 
-const UnloadCmd &kUnloadCmd = *new UnloadCmd();
 const UnloadIntCmd &kUnloadIntCmd = *new UnloadIntCmd();
 const UnloadArrayCmd &kUnloadArrayCmd = *new UnloadArrayCmd();
 const UnloadLongCmd &kUnloadLongCmd = *new UnloadLongCmd();
@@ -168,11 +165,6 @@ ImplicitJumpIfNotCmd &kImplicitJumpIfNotCmd =
 ImplicitJumpIfCmd &kImplicitJumpIfCmd =
     *new ImplicitJumpIfCmd(INT32_C(0));
 DirectJumpCmd &kDirectJumpCmd = *new DirectJumpCmd(INT32_C(0));
-
-DestroyLocalVarsAndJumpCmd &kDestroyLocalVarsAndJumpCmd =
-    *new DestroyLocalVarsAndJumpCmd(UINT32_C(1), INT32_C(0));
-DestroyLocalVarsCmd &kDestroyLocalVarsCmd =
-    *new DestroyLocalVarsCmd(UINT32_C(1));
 
 const ReturnCmd &kReturnCmd = *new ReturnCmd();
 const ReturnIntValueCmd &kReturnIntValueCmd = *new ReturnIntValueCmd();
@@ -436,9 +428,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kDestroyLocalBoolVar:
       cmd = &kDestroyLocalBoolVarCmd;
       break;
-    case CmdId::kUnload:
-      cmd = &kUnloadCmd;
-      break;
     case CmdId::kUnloadInt:
       cmd = &kUnloadIntCmd;
       break;
@@ -596,15 +585,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kDirectJump:
       ReadJumpCmd(kDirectJumpCmd);
       cmd = &kDirectJumpCmd;
-      break;
-    case CmdId::kDestroyLocalVarsAndJump:
-      kDestroyLocalVarsAndJumpCmd.SetVarsCount(code_->ReadUint32());
-      kDestroyLocalVarsAndJumpCmd.SetOffset(code_->ReadInt32());
-      cmd = &kDestroyLocalVarsAndJumpCmd;
-      break;
-    case CmdId::kDestroyLocalVars:
-      kDestroyLocalVarsCmd.SetVarsCount(code_->ReadUint32());
-      cmd = &kDestroyLocalVarsCmd;
       break;
     case CmdId::kReturn:
       cmd = &kReturnCmd;

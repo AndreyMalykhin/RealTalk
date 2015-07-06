@@ -13,8 +13,6 @@
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/create_and_init_array_cmd.h"
 #include "real_talk/code/jump_cmd.h"
-#include "real_talk/code/destroy_local_vars_and_jump_cmd.h"
-#include "real_talk/code/destroy_local_vars_cmd.h"
 #include "real_talk/code/return_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
@@ -555,26 +553,6 @@ TEST_F(CmdReaderTest, ImplicitJumpIfCmd) {
   int32_t offset = INT32_C(7);
   ImplicitJumpIfCmd expected_cmd(offset);
   TestJumpCmd(CmdId::kImplicitJumpIf, expected_cmd);
-}
-
-TEST_F(CmdReaderTest, DestroyLocalVarsAndJumpCmd) {
-  uint32_t vars_count = UINT32_C(1);
-  int32_t offset = INT32_C(2);
-  DestroyLocalVarsAndJumpCmd expected_cmd(vars_count, offset);
-  Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalVarsAndJump);
-  code.WriteUint32(vars_count);
-  code.WriteInt32(offset);
-  TestGetNextCmd(code, expected_cmd);
-}
-
-TEST_F(CmdReaderTest, DestroyLocalVarsCmd) {
-  uint32_t vars_count = UINT32_C(1);
-  DestroyLocalVarsCmd expected_cmd(vars_count);
-  Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalVars);
-  code.WriteUint32(vars_count);
-  TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, ReturnCmd) {
