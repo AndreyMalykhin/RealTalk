@@ -694,7 +694,7 @@ unique_ptr<SemanticAnalysis> SimpleSemanticAnalyzer::Impl::Analyze(
   assert(assignee_contexts_stack_.empty());
 
   {
-    Scope scope(ScopeType::kGlobal, nullptr, scopes_stack_);
+    Scope global_scope(ScopeType::kGlobal, nullptr, scopes_stack_);
 
     for (const unique_ptr<ProgramNode> &import_program
              : reverse(import_programs)) {
@@ -704,6 +704,7 @@ unique_ptr<SemanticAnalysis> SimpleSemanticAnalyzer::Impl::Analyze(
 
     is_program_import_ = false;
     main_program.Accept(*this);
+    assert(global_scope.GetLocalVarDefs().empty());
   }
 
   assert(scopes_stack_.empty());
@@ -933,28 +934,12 @@ const DataType &SimpleSemanticAnalyzer::Impl::VisitVarDef(
     def_analysis.reset(new GlobalVarDefAnalysis(move(data_type_ptr)));
     AddDefAnalysis(var_def_node, move(def_analysis));
   } else {
-    uint32_t index_within_func = UINT32_C(0);
-
-    for (const Scope *scope: reverse(scopes_stack_)) {
-      if (scope->GetType() == ScopeType::kGlobal) {
-        break;
-      }
-
-      assert(scope->GetLocalVarDefs().size()
-             <= numeric_limits<uint32_t>::max());
-      const uint32_t scope_local_var_defs_count =
-          static_cast<uint32_t>(scope->GetLocalVarDefs().size());
-      assert(index_within_func + scope_local_var_defs_count
-             >= index_within_func);
-      index_within_func += scope_local_var_defs_count;
-
-      if (scope->GetType() == ScopeType::kFunc) {
-        break;
-      }
-    }
-
+    vector<const VarDefNode*> flow_local_var_defs;
+    const Scope *func_scope;
+    GetLocalVarDefsUpToScope(
+        ScopeType::kFunc, &func_scope, &flow_local_var_defs);
     def_analysis.reset(new LocalVarDefAnalysis(
-        move(data_type_ptr), index_within_func));
+        move(data_type_ptr), flow_local_var_defs));
     AddDefAnalysis(var_def_node, move(def_analysis));
     GetCurrentScope()->GetLocalVarDefs().push_back(&var_def_node);
   }

@@ -446,15 +446,15 @@ TEST_F(SimpleSemanticAnalyzerTest,
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
     unique_ptr<DataType> arg_data_type(new IntDataType());
-    uint32_t var_index_within_func = UINT32_C(0);
+    vector<const VarDefNode*> flow_local_var_defs;
     unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
-        move(arg_data_type), var_index_within_func));
+        move(arg_data_type), flow_local_var_defs));
     node_analyzes.insert(
         make_pair(arg_def_node_ptr, move(arg_def_analysis)));
     unique_ptr<DataType> var_data_type(new IntDataType());
-    uint32_t var_index_within_func2 = UINT32_C(1);
+    vector<const VarDefNode*> flow_local_var_defs2 = {arg_def_node_ptr};
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-        move(var_data_type), var_index_within_func2));
+        move(var_data_type), flow_local_var_defs2));
     node_analyzes.insert(
         make_pair(var_def_node_ptr, move(var_def_analysis)));
 
@@ -978,15 +978,15 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithBodyAndArgsAndReturnValue) {
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> arg_data_type(new CharDataType());
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs2;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
+      new LocalVarDefAnalysis(move(arg_data_type), flow_local_var_defs2));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   unique_ptr<DataType> var_data_type(new IntDataType());
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs3 = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(
-      new LocalVarDefAnalysis(move(var_data_type), var_index_within_func2));
+      new LocalVarDefAnalysis(move(var_data_type), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
   unique_ptr<DataType> return_expr_data_type(new CharDataType());
@@ -1490,9 +1490,9 @@ TEST_F(SimpleSemanticAnalyzerTest, FuncDefWithoutBodyWithArgsAndReturnValue) {
   node_analyzes.insert(
       make_pair(func_def_node_ptr, move(func_def_analysis)));
   unique_ptr<DataType> arg_data_type(new IntDataType());
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
+      new LocalVarDefAnalysis(move(arg_data_type), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   SemanticAnalysis::ProgramProblems problems;
@@ -1869,9 +1869,9 @@ TEST_F(SimpleSemanticAnalyzerTest, ArgDefWithUnsupportedDataTypeIsInvalid) {
         new FuncDefAnalysis(move(func_data_type), is_func_has_return));
     node_analyzes.insert(
         make_pair(func_def_node_ptr, move(func_def_analysis)));
-    uint32_t var_index_within_func = UINT32_C(0);
+    vector<const VarDefNode*> flow_local_var_defs;
     unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
-        test_data.arg_data_type->Clone(), var_index_within_func));
+        test_data.arg_data_type->Clone(), flow_local_var_defs));
     node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
     SemanticAnalysis::ProgramProblems problems;
@@ -1949,9 +1949,9 @@ TEST_F(SimpleSemanticAnalyzerTest,
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> arg_data_type(new StringDataType());
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
+      new LocalVarDefAnalysis(move(arg_data_type), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   StringDataType *return_expr_data_type_ptr = new StringDataType();
@@ -2057,19 +2057,19 @@ TEST_F(SimpleSemanticAnalyzerTest, ReturnWithoutValue) {
   unique_ptr<ProgramNode> program_node(new ProgramNode(move(stmt_nodes)));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
 
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
 
-  vector<const VarDefNode*> flow_local_var_defs = {var_def_node_ptr};
+  vector<const VarDefNode*> flow_local_var_defs3 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> return_analysis(
-      new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs));
+      new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs3));
   node_analyzes.insert(make_pair(return_stmt_node_ptr, move(return_analysis)));
 
   vector<const VarDefNode*> body_local_var_defs =
@@ -2259,9 +2259,9 @@ TEST_F(SimpleSemanticAnalyzerTest, Call) {
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> arg_data_type(new IntDataType());
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
+      new LocalVarDefAnalysis(move(arg_data_type), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -2387,9 +2387,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithIncompatibleArgDataTypeIsInvalid) {
 
   IntDataType *arg_def_data_type_ptr = new IntDataType();
   unique_ptr<DataType> arg_def_data_type(arg_def_data_type_ptr);
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new LocalVarDefAnalysis(move(arg_def_data_type), var_index_within_func));
+      new LocalVarDefAnalysis(move(arg_def_data_type), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -2523,9 +2523,9 @@ TEST_F(SimpleSemanticAnalyzerTest, CallWithNotMatchingArgsCountIsInvalid) {
       make_pair(func_def_node_ptr, move(func_def_analysis)));
 
   unique_ptr<DataType> arg_data_type(new IntDataType());
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(
-      new LocalVarDefAnalysis(move(arg_data_type), var_index_within_func));
+      new LocalVarDefAnalysis(move(arg_data_type), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
 
   unique_ptr<DataType> func_return_data_type(new VoidDataType());
@@ -2717,15 +2717,15 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIf) {
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
   unique_ptr<DataType> var_data_type2(new BoolDataType());
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(
-      new LocalVarDefAnalysis(move(var_data_type2), var_index_within_func));
+      new LocalVarDefAnalysis(move(var_data_type2), flow_local_var_defs));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
 
   unique_ptr<DataType> var_data_type3(new BoolDataType());
-  uint32_t var_index_within_func2 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs2;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(
-      new LocalVarDefAnalysis(move(var_data_type3), var_index_within_func2));
+      new LocalVarDefAnalysis(move(var_data_type3), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> if_cond_data_type1(new BoolDataType());
@@ -3116,21 +3116,21 @@ TEST_F(SimpleSemanticAnalyzerTest, IfElseIfElse) {
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
   unique_ptr<DataType> var_data_type2(new BoolDataType());
-  uint32_t var_index_within_func2 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs2;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(
-      new LocalVarDefAnalysis(move(var_data_type2), var_index_within_func2));
+      new LocalVarDefAnalysis(move(var_data_type2), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
 
   unique_ptr<DataType> var_data_type3(new BoolDataType());
-  uint32_t var_index_within_func3 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs3;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(
-      new LocalVarDefAnalysis(move(var_data_type3), var_index_within_func3));
+      new LocalVarDefAnalysis(move(var_data_type3), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> var_data_type4(new BoolDataType());
-  uint32_t var_index_within_func4 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs4;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis4(
-      new LocalVarDefAnalysis(move(var_data_type4), var_index_within_func4));
+      new LocalVarDefAnalysis(move(var_data_type4), flow_local_var_defs4));
   node_analyzes.insert(make_pair(var_def_node_ptr4, move(var_def_analysis4)));
 
   unique_ptr<DataType> if_cond_data_type1(new BoolDataType());
@@ -3651,9 +3651,9 @@ TEST_F(SimpleSemanticAnalyzerTest, PreTestLoop) {
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
   unique_ptr<DataType> var_def_data_type2(new BoolDataType());
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      move(var_def_data_type2), var_index_within_func));
+      move(var_def_data_type2), flow_local_var_defs));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
 
   unique_ptr<DataType> id_data_type(new BoolDataType());
@@ -3841,15 +3841,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Continue) {
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
   unique_ptr<DataType> var_def_data_type2(new IntDataType());
-  uint32_t var_index_within_func2 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs2;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      move(var_def_data_type2), var_index_within_func2));
+      move(var_def_data_type2), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
 
   unique_ptr<DataType> var_def_data_type3(new LongDataType());
-  uint32_t var_index_within_func3 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs3 = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-      move(var_def_data_type3), var_index_within_func3));
+      move(var_def_data_type3), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> id_data_type(new BoolDataType());
@@ -3971,15 +3971,15 @@ TEST_F(SimpleSemanticAnalyzerTest, Break) {
   node_analyzes.insert(make_pair(var_def_node_ptr1, move(var_def_analysis1)));
 
   unique_ptr<DataType> var_def_data_type2(new IntDataType());
-  uint32_t var_index_within_func2 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs2;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      move(var_def_data_type2), var_index_within_func2));
+      move(var_def_data_type2), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
 
   unique_ptr<DataType> var_def_data_type3(new LongDataType());
-  uint32_t var_index_within_func3 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs3 = {var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-      move(var_def_data_type3), var_index_within_func3));
+      move(var_def_data_type3), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
 
   unique_ptr<DataType> id_data_type(new BoolDataType());

@@ -404,9 +404,9 @@ class SimpleCodeGeneratorTest: public Test {
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     node_analyzes.insert(make_move_iterator(value_node_analyzes.begin()),
                          make_move_iterator(value_node_analyzes.end()));
-    uint32_t var_index_within_func = UINT32_C(0);
+    vector<const VarDefNode*> flow_local_var_defs;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(
-        new LocalVarDefAnalysis(move(data_type), var_index_within_func));
+        new LocalVarDefAnalysis(move(data_type), flow_local_var_defs));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
@@ -459,9 +459,9 @@ class SimpleCodeGeneratorTest: public Test {
     ProgramNode program_node(move(program_stmt_nodes));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    uint32_t var_index_within_func = UINT32_C(0);
+    vector<const VarDefNode*> flow_local_var_defs;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(
-        new LocalVarDefAnalysis(move(data_type), var_index_within_func));
+        new LocalVarDefAnalysis(move(data_type), flow_local_var_defs));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
@@ -796,17 +796,18 @@ class SimpleCodeGeneratorTest: public Test {
     ProgramNode program_node(move(program_stmt_nodes));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes(move(value_analyzes));
-    uint32_t var_index_within_func = UINT32_C(0);
+    vector<const VarDefNode*> flow_local_var_defs;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-        unique_ptr<DataType>(new BoolDataType()), var_index_within_func));
+        unique_ptr<DataType>(new BoolDataType()), flow_local_var_defs));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-    uint32_t var_index_within_func2 = UINT32_C(1);
+    vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
     unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-        unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
+        unique_ptr<DataType>(new IntDataType()), flow_local_var_defs2));
     node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-    uint32_t var_index_within_func3 = UINT32_C(2);
+    vector<const VarDefNode*> flow_local_var_defs3 =
+        {var_def_node_ptr, var_def_node_ptr2};
     unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-        unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+        unique_ptr<DataType>(new LongDataType()), flow_local_var_defs3));
     node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
     vector<const VarDefNode*> body_local_vars_defs =
         {var_def_node_ptr, var_def_node_ptr2, var_def_node_ptr3};
@@ -821,10 +822,10 @@ class SimpleCodeGeneratorTest: public Test {
     unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
         move(func_data_type), is_func_has_return));
     node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
-    vector<const VarDefNode*> flow_local_var_defs =
+    vector<const VarDefNode*> flow_local_var_defs4 =
         {var_def_node_ptr, var_def_node_ptr2};
     unique_ptr<NodeSemanticAnalysis> return_analysis(
-        new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs));
+        new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs4));
     node_analyzes.insert(make_pair(return_node_ptr, move(return_analysis)));
     SemanticAnalysis semantic_analysis(
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
@@ -936,36 +937,47 @@ class SimpleCodeGeneratorTest: public Test {
   }
 
   void TestIdAsNotAssigneeLocalVar(unique_ptr<DataTypeNode> data_type_node,
+                                   unique_ptr<DataTypeNode> data_type_node2,
                                    const DataType &data_type,
                                    unique_ptr<Code> expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
         move(data_type_node),
-        TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
-        TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+        TokenInfo(Token::kName, "var", UINT32_C(2), UINT32_C(2)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(3), UINT32_C(3)));
     unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
     program_stmt_nodes.push_back(move(var_def_node));
+    VarDefWithoutInitNode *var_def_node_ptr2 = new VarDefWithoutInitNode(
+        move(data_type_node2),
+        TokenInfo(Token::kName, "var2", UINT32_C(5), UINT32_C(5)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6)));
+    unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
+    program_stmt_nodes.push_back(move(var_def_node2));
     IdNode *id_node_ptr = new IdNode(
-        TokenInfo(Token::kName, "var", UINT32_C(3), UINT32_C(3)));
+        TokenInfo(Token::kName, "var2", UINT32_C(7), UINT32_C(7)));
     unique_ptr<ExprNode> id_node(id_node_ptr);
     unique_ptr<StmtNode> id_stmt_node(new ExprStmtNode(
         move(id_node),
-        TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4))));
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8))));
     program_stmt_nodes.push_back(move(id_stmt_node));
     ProgramNode program_node(move(program_stmt_nodes));
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
-    uint32_t var_index_within_func = UINT32_C(0);
+    vector<const VarDefNode*> flow_local_var_defs;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-        data_type.Clone(), var_index_within_func));
+        data_type.Clone(), flow_local_var_defs));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+    vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
+        data_type.Clone(), flow_local_var_defs2));
+    node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
     bool is_id_assignee = false;
     unique_ptr<DataType> casted_data_type;
     unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
         data_type.Clone(),
         move(casted_data_type),
         ValueType::kLeft,
-        var_def_node_ptr,
+        var_def_node_ptr2,
         is_id_assignee));
     node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
     SemanticAnalysis semantic_analysis(
@@ -1120,9 +1132,9 @@ class SimpleCodeGeneratorTest: public Test {
 
     SemanticAnalysis::NodeAnalyzes node_analyzes;
     node_analyzes.insert(make_pair(value_node_ptr, move(value_analysis)));
-    uint32_t var_index_within_func = UINT32_C(0);
+    vector<const VarDefNode*> flow_local_var_defs;
     unique_ptr<NodeSemanticAnalysis> var_def_analysis(
-        new LocalVarDefAnalysis(data_type.Clone(), var_index_within_func));
+        new LocalVarDefAnalysis(data_type.Clone(), flow_local_var_defs));
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     bool is_id_assignee = true;
     unique_ptr<DataType> id_casted_data_type;
@@ -1147,7 +1159,8 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(create_var_cmd_id);
     cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
     cmds_code->WriteCmdId(CmdId::kLoadLocalVarAddress);
-    cmds_code->WriteUint32(var_index_within_func);
+    uint32_t var_index = UINT32_C(0);
+    cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
@@ -3110,29 +3123,29 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithLocalVarDefs) {
       new ScopeAnalysis(else_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_body_node_ptr, move(else_body_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new BoolDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new BoolDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-  uint32_t var_index_within_func3 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs3;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
-  uint32_t var_index_within_func4 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs4 = {var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis4(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new CharDataType()), var_index_within_func4));
+      unique_ptr<DataType>(new CharDataType()), flow_local_var_defs4));
   node_analyzes.insert(make_pair(var_def_node_ptr4, move(var_def_analysis4)));
-  uint32_t var_index_within_func5 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs5;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis5(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new DoubleDataType()), var_index_within_func5));
+      unique_ptr<DataType>(new DoubleDataType()), flow_local_var_defs5));
   node_analyzes.insert(make_pair(var_def_node_ptr5, move(var_def_analysis5)));
-  uint32_t var_index_within_func6 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs6 = {var_def_node_ptr5};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis6(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new StringDataType()), var_index_within_func6));
+      unique_ptr<DataType>(new StringDataType()), flow_local_var_defs6));
   node_analyzes.insert(make_pair(var_def_node_ptr6, move(var_def_analysis6)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
@@ -3488,21 +3501,21 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithLocalVarDefs) {
       new ScopeAnalysis(else_if_body_local_var_defs));
   node_analyzes.insert(
       make_pair(else_if_body_node_ptr, move(else_if_body_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new BoolDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new BoolDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-  uint32_t var_index_within_func3 = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs3;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
-  uint32_t var_index_within_func4 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs4 = {var_def_node_ptr3};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis4(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new DoubleDataType()), var_index_within_func4));
+      unique_ptr<DataType>(new DoubleDataType()), flow_local_var_defs4));
   node_analyzes.insert(make_pair(var_def_node_ptr4, move(var_def_analysis4)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
@@ -3729,13 +3742,13 @@ TEST_F(SimpleCodeGeneratorTest, IfWithLocalVarDefs) {
   unique_ptr<NodeSemanticAnalysis> if_body_analysis(
       new ScopeAnalysis(if_body_local_var_defs));
   node_analyzes.insert(make_pair(if_body_node_ptr, move(if_body_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
@@ -3929,13 +3942,13 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithLocalVarDefs) {
   unique_ptr<NodeSemanticAnalysis> loop_body_analysis(
       new ScopeAnalysis(loop_body_local_var_defs));
   node_analyzes.insert(make_pair(loop_body_node_ptr, move(loop_body_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
@@ -4154,17 +4167,18 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithLocalVarDefs) {
   unique_ptr<NodeSemanticAnalysis> break_analysis(
       new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(break_node_ptr, move(break_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs2;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new BoolDataType()), var_index_within_func));
+      unique_ptr<DataType>(new BoolDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs3 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-  uint32_t var_index_within_func3 = UINT32_C(2);
+  vector<const VarDefNode*> flow_local_var_defs4 =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs4));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
@@ -4391,17 +4405,18 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithLocalVarDefs) {
   unique_ptr<NodeSemanticAnalysis> continue_analysis(
       new ControlFlowTransferAnalysis(flow_local_var_defs));
   node_analyzes.insert(make_pair(continue_node_ptr, move(continue_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs2;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new BoolDataType()), var_index_within_func));
+      unique_ptr<DataType>(new BoolDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs3 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-  uint32_t var_index_within_func3 = UINT32_C(2);
+  vector<const VarDefNode*> flow_local_var_defs4 =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs4));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
   unique_ptr<DataType> bool_casted_data_type;
   unique_ptr<NodeSemanticAnalysis> bool_analysis(new LitAnalysis(
@@ -4520,13 +4535,13 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   unique_ptr<NodeSemanticAnalysis> body_analysis(
       new ScopeAnalysis(body_local_var_defs));
   node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
   unique_ptr<DataType> return_data_type(new VoidDataType());
   vector< unique_ptr<DataType> > arg_data_types;
@@ -4628,22 +4643,23 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new BoolDataType()), var_index_within_func));
+      unique_ptr<DataType>(new BoolDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
-  uint32_t var_index_within_func3 = UINT32_C(2);
+  vector<const VarDefNode*> flow_local_var_defs3 =
+      {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func3));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs3));
   node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
-  vector<const VarDefNode*> flow_local_var_defs =
+  vector<const VarDefNode*> flow_local_var_defs4 =
       {var_def_node_ptr, var_def_node_ptr2};
   unique_ptr<NodeSemanticAnalysis> return_analysis(
-      new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs));
+      new ReturnAnalysis(func_def_node_ptr, flow_local_var_defs4));
   node_analyzes.insert(make_pair(return_node_ptr, move(return_analysis)));
   vector<const VarDefNode*> body_local_var_defs =
       {var_def_node_ptr, var_def_node_ptr2, var_def_node_ptr3};
@@ -4997,9 +5013,9 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithoutBody) {
   ProgramNode program_node(move(program_stmt_nodes));
 
   SemanticAnalysis::NodeAnalyzes node_analyzes;
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
   unique_ptr<DataType> return_data_type(new IntDataType());
   vector< unique_ptr<DataType> > arg_data_types;
@@ -5146,36 +5162,50 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalIntVar) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(4), UINT32_C(4))));
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kCreateLocalIntVar);
+  expected_code->WriteCmdId(CmdId::kCreateLocalIntVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalIntVarValue);
-  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteUint32(UINT32_C(1));
   expected_code->WriteCmdId(CmdId::kUnloadInt);
-  TestIdAsNotAssigneeLocalVar(
-      move(data_type_node), IntDataType(), move(expected_code));
+  TestIdAsNotAssigneeLocalVar(move(data_type_node),
+                              move(data_type_node2),
+                              IntDataType(),
+                              move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalLongVar) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node2(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(4), UINT32_C(4))));
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kCreateLocalLongVar);
+  expected_code->WriteCmdId(CmdId::kCreateLocalLongVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalLongVarValue);
-  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteUint32(UINT32_C(2));
   expected_code->WriteCmdId(CmdId::kUnloadLong);
-  TestIdAsNotAssigneeLocalVar(
-      move(data_type_node), LongDataType(), move(expected_code));
+  TestIdAsNotAssigneeLocalVar(move(data_type_node),
+                              move(data_type_node2),
+                              LongDataType(),
+                              move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalDoubleVar) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
-      TokenInfo(Token::kDoubleType, "long", UINT32_C(0), UINT32_C(0))));
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node2(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(4), UINT32_C(4))));
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
+  expected_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalDoubleVarValue);
-  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteUint32(UINT32_C(2));
   expected_code->WriteCmdId(CmdId::kUnloadDouble);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
+                              move(data_type_node2),
                               DoubleDataType(),
                               move(expected_code));
 }
@@ -5183,36 +5213,50 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalDoubleVar) {
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalBoolVar) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node2(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(4), UINT32_C(4))));
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
+  expected_code->WriteCmdId(CmdId::kCreateLocalBoolVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalBoolVarValue);
-  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteUint32(UINT32_C(1));
   expected_code->WriteCmdId(CmdId::kUnloadBool);
-  TestIdAsNotAssigneeLocalVar(
-      move(data_type_node), BoolDataType(), move(expected_code));
+  TestIdAsNotAssigneeLocalVar(move(data_type_node),
+                              move(data_type_node2),
+                              BoolDataType(),
+                              move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalCharVar) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node2(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(4), UINT32_C(4))));
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kCreateLocalCharVar);
+  expected_code->WriteCmdId(CmdId::kCreateLocalCharVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalCharVarValue);
-  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteUint32(UINT32_C(1));
   expected_code->WriteCmdId(CmdId::kUnloadChar);
-  TestIdAsNotAssigneeLocalVar(
-      move(data_type_node), CharDataType(), move(expected_code));
+  TestIdAsNotAssigneeLocalVar(move(data_type_node),
+                              move(data_type_node2),
+                              CharDataType(),
+                              move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalStringVar) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node2(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(4), UINT32_C(4))));
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kCreateLocalStringVar);
+  expected_code->WriteCmdId(CmdId::kCreateLocalStringVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalStringVarValue);
-  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteUint32(UINT32_C(4));
   expected_code->WriteCmdId(CmdId::kUnloadString);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
+                              move(data_type_node2),
                               StringDataType(),
                               move(expected_code));
 }
@@ -5224,13 +5268,21 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalArrayVar) {
       move(int_data_type_node),
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  unique_ptr<DataTypeNode> int_data_type_node2(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(4), UINT32_C(4))));
+  unique_ptr<DataTypeNode> array_data_type_node2(new ArrayDataTypeNode(
+      move(int_data_type_node2),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(5), UINT32_C(5)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(6), UINT32_C(6))));
   unique_ptr<Code> expected_code(new Code());
   expected_code->WriteCmdId(CmdId::kCreateLocalArrayVar);
+  expected_code->WriteCmdId(CmdId::kCreateLocalArrayVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalArrayVarValue);
-  expected_code->WriteUint32(UINT32_C(0));
+  expected_code->WriteUint32(UINT32_C(4));
   expected_code->WriteCmdId(CmdId::kUnloadArray);
   TestIdAsNotAssigneeLocalVar(
       move(array_data_type_node),
+      move(array_data_type_node2),
       ArrayDataType(unique_ptr<DataType>(new IntDataType())),
       move(expected_code));
 }
@@ -5840,13 +5892,13 @@ TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
       is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(arg_def_node_ptr2, move(arg_def_analysis2)));
   vector<const VarDefNode*> body_local_var_defs =
       {arg_def_node_ptr, arg_def_node_ptr2};
@@ -6019,13 +6071,13 @@ TEST_F(SimpleCodeGeneratorTest, NativeCall) {
           static_cast<FuncDataType*>(func_data_type.Clone().release())),
       is_func_has_return));
   node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
-  uint32_t var_index_within_func = UINT32_C(0);
+  vector<const VarDefNode*> flow_local_var_defs;
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), var_index_within_func));
+      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs));
   node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
-  uint32_t var_index_within_func2 = UINT32_C(1);
+  vector<const VarDefNode*> flow_local_var_defs2 = {arg_def_node_ptr};
   unique_ptr<NodeSemanticAnalysis> arg_def_analysis2(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), var_index_within_func2));
+      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs2));
   node_analyzes.insert(make_pair(arg_def_node_ptr2, move(arg_def_analysis2)));
   unique_ptr<DataType> id_casted_data_type;
   bool is_id_assignee = false;

@@ -1,19 +1,23 @@
 
 #include <cassert>
+#include <vector>
+#include "real_talk/parser/var_def_node.h"
 #include "real_talk/semantic/def_analysis_visitor.h"
 #include "real_talk/semantic/local_var_def_analysis.h"
 
 using std::unique_ptr;
 using std::ostream;
+using std::vector;
+using real_talk::parser::VarDefNode;
 
 namespace real_talk {
 namespace semantic {
 
 LocalVarDefAnalysis::LocalVarDefAnalysis(
     unique_ptr<DataType> data_type,
-    uint32_t index_within_func)
+    const vector<const VarDefNode*> &flow_local_var_defs)
     : data_type_(move(data_type)),
-      index_within_func_(index_within_func) {
+      flow_local_var_defs_(flow_local_var_defs) {
   assert(data_type_);
 }
 
@@ -29,20 +33,25 @@ const DataType &LocalVarDefAnalysis::GetDataType() const {
   return *data_type_;
 }
 
-uint32_t LocalVarDefAnalysis::GetIndexWithinFunc() const {
-  return index_within_func_;
+const vector<const VarDefNode*> &LocalVarDefAnalysis::GetFlowLocalVarDefs()
+    const {
+  return flow_local_var_defs_;
 }
 
 bool LocalVarDefAnalysis::IsEqual(const NodeSemanticAnalysis &analysis) const {
   const LocalVarDefAnalysis &rhs =
       static_cast<const LocalVarDefAnalysis&>(analysis);
   return *data_type_ == *(rhs.data_type_)
-      && index_within_func_ == rhs.index_within_func_;
+      && flow_local_var_defs_ == rhs.flow_local_var_defs_;
 }
 
 void LocalVarDefAnalysis::Print(ostream &stream) const {
-  stream << "index_within_func=" << index_within_func_ << "; data_type="
-         << *data_type_;
+  stream << "data_type=" << *data_type_ << "; flow_local_var_defs=\n";
+
+  for (const VarDefNode *var_def: flow_local_var_defs_) {
+    assert(var_def);
+    stream << *var_def << '\n';
+  }
 }
 }
 }

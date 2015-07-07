@@ -75,6 +75,7 @@
 #include "real_talk/code/cast_cmd_generator.h"
 #include "real_talk/code/code.h"
 #include "real_talk/code/module.h"
+#include "real_talk/code/data_type_size.h"
 
 using std::unique_ptr;
 using std::string;
@@ -196,6 +197,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
 
  private:
   class StmtGrouper;
+  class DataTypeSizeResolver;
   class Scope;
   class IdNodeProcessor;
   template<typename TCreateLocalVarCmdGenerator,
@@ -480,6 +482,48 @@ class SimpleCodeGenerator::Impl::StmtGrouper: private NodeVisitor {
 
   vector<const StmtNode*> non_func_defs_;
   vector<const FuncDefNode*> func_defs_;
+};
+
+class SimpleCodeGenerator::Impl::DataTypeSizeResolver: private DataTypeVisitor {
+ public:
+  DataTypeSize Resolve(const DataType &data_type) {
+    data_type.Accept(*this);
+    return result_;
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType&) override {
+    result_ = DataTypeSize::kArray;
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    result_ = DataTypeSize::kBool;
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    result_ = DataTypeSize::kInt;
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    result_ = DataTypeSize::kLong;
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    result_ = DataTypeSize::kDouble;
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    result_ = DataTypeSize::kChar;
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    result_ = DataTypeSize::kString;
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  DataTypeSize result_;
 };
 
 class SimpleCodeGenerator::Impl::CreateGlobalVarCmdGenerator
@@ -1002,14 +1046,24 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
  private:
   virtual void VisitLocalVarDef(const LocalVarDefAnalysis &var_def_analysis)
       override {
+    uint32_t var_index = UINT32_C(0);
+    DataTypeSizeResolver data_type_size_resolver;
+
+    for (const VarDefNode *local_var_def
+             : var_def_analysis.GetFlowLocalVarDefs()) {
+      assert(local_var_def);
+      const uint8_t var_size = static_cast<uint8_t>(
+          data_type_size_resolver.Resolve(var_def_analysis.GetDataType()));
+      assert(var_index + var_size > var_index);
+      var_index += var_size;
+    }
+
     if (id_analysis_->IsAssignee()) {
       code_->WriteCmdId(CmdId::kLoadLocalVarAddress);
-      code_->WriteUint32(var_def_analysis.GetIndexWithinFunc());
+      code_->WriteUint32(var_index);
     } else {
       LoadLocalVarValueCmdGenerator().Generate(
-          var_def_analysis.GetDataType(),
-          var_def_analysis.GetIndexWithinFunc(),
-          code_);
+          var_def_analysis.GetDataType(), var_index, code_);
     }
   }
 
