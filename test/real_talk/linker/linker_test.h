@@ -7,6 +7,7 @@
 #include <limits>
 #include <vector>
 #include <string>
+#include "real_talk/code/data_type_size.h"
 #include "real_talk/code/code.h"
 #include "real_talk/code/module.h"
 #include "real_talk/linker/linker.h"
@@ -44,7 +45,8 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> global_var_defs = {expected_id};
+      std::vector<real_talk::code::IdSize> global_var_defs =
+          {{expected_id, real_talk::code::DataTypeSize::kInt}};
       std::vector<real_talk::code::IdAddress> func_defs;
       std::vector<std::string> native_func_defs;
       std::vector<real_talk::code::IdAddresses> global_var_refs;
@@ -68,7 +70,8 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> global_var_defs = {expected_id};
+      std::vector<real_talk::code::IdSize> global_var_defs =
+          {{expected_id, real_talk::code::DataTypeSize::kInt}};
       std::vector<real_talk::code::IdAddress> func_defs;
       std::vector<std::string> native_func_defs;
       std::vector<real_talk::code::IdAddresses> global_var_refs;
@@ -99,7 +102,7 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> global_var_defs;
+      std::vector<real_talk::code::IdSize> global_var_defs;
       std::vector<real_talk::code::IdAddress> func_defs =
           {{expected_id, UINT32_C(0)}};
       std::vector<std::string> native_func_defs;
@@ -124,7 +127,7 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> global_var_defs;
+      std::vector<real_talk::code::IdSize> global_var_defs;
       std::vector<real_talk::code::IdAddress> func_defs =
           {{expected_id, UINT32_C(1)}};
       std::vector<std::string> native_func_defs;
@@ -156,7 +159,7 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> global_var_defs;
+      std::vector<real_talk::code::IdSize> global_var_defs;
       std::vector<real_talk::code::IdAddress> func_defs;
       std::vector<std::string> native_func_defs = {expected_id};
       std::vector<real_talk::code::IdAddresses> global_var_refs;
@@ -180,7 +183,7 @@ class LinkerTest: public testing::Test {
     {
       std::unique_ptr<real_talk::code::Code> cmds_code(
           new real_talk::code::Code());
-      std::vector<std::string> global_var_defs;
+      std::vector<real_talk::code::IdSize> global_var_defs;
       std::vector<real_talk::code::IdAddress> func_defs;
       std::vector<std::string> native_func_defs = {expected_id};
       std::vector<real_talk::code::IdAddresses> global_var_refs;

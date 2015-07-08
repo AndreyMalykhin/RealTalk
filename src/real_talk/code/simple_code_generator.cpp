@@ -325,7 +325,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   const CastCmdGenerator &cast_cmd_generator_;
   const SemanticAnalysis *semantic_analysis_;
   unique_ptr<Code> code_;
-  vector<string> global_var_defs_;
+  vector<IdSize> global_var_defs_;
   vector<string> native_func_defs_;
   vector<IdAddress> func_defs_;
   Impl::IdAddresses global_var_refs_;
@@ -1120,7 +1120,7 @@ class SimpleCodeGenerator::Impl::VarDefNodeProcessor
  public:
   void Process(const VarDefNode *var_def_node,
                const DefAnalysis *var_def_analysis,
-               vector<string> *global_var_defs,
+               vector<IdSize> *global_var_defs,
                Impl::IdAddresses *global_var_refs,
                Code *code) {
     assert(var_def_node);
@@ -1146,14 +1146,16 @@ class SimpleCodeGenerator::Impl::VarDefNodeProcessor
     TCreateGlobalVarCmdGenerator().Generate(
         analysis.GetDataType(), &var_index_placeholder, code_);
     const string &id = var_def_node_->GetNameToken().GetValue();
-    global_var_defs_->push_back(id);
+    const DataTypeSize var_size =
+        DataTypeSizeResolver().Resolve(analysis.GetDataType());
+    global_var_defs_->push_back(IdSize(id, var_size));
     (*global_var_refs_)[id].push_back(var_index_placeholder);
   }
 
   virtual void VisitFuncDef(const FuncDefAnalysis&) override {assert(false);}
 
   const VarDefNode *var_def_node_;
-  vector<string> *global_var_defs_;
+  vector<IdSize> *global_var_defs_;
   Impl::IdAddresses *global_var_refs_;
   Code *code_;
 };

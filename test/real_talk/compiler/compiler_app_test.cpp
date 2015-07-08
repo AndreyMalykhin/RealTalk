@@ -74,6 +74,7 @@ using real_talk::semantic::SemanticProblemVisitor;
 using real_talk::semantic::SemanticAnalyzer;
 using real_talk::semantic::LitParser;
 using real_talk::code::Code;
+using real_talk::code::IdSize;
 using real_talk::code::IdAddress;
 using real_talk::code::IdAddresses;
 using real_talk::code::CodeGenerator;
@@ -773,7 +774,7 @@ TEST_F(CompilerAppTest, IOErrorWhileWritingFile) {
   config.SetModuleFileExtension("rtm2");
   Code module_code;
   unique_ptr<Code> cmds_code(new Code());
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -882,7 +883,7 @@ TEST_F(CompilerAppTest, IOErrorWhileCreatingDir) {
   config.SetBinDirPath("build2/bin2");
   Code module_code;
   unique_ptr<Code> cmds_code(new Code());
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -1076,7 +1077,7 @@ TEST_F(CompilerAppTest, CodeSizeOverflowErrorWhileWritingModule) {
   config.SetSrcDirPath("src2");
   Code module_code;
   unique_ptr<Code> cmds_code(new Code());
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;

@@ -15,6 +15,7 @@
 #include "real_talk/code/module.h"
 #include "real_talk/code/id_address.h"
 #include "real_talk/code/id_addresses.h"
+#include "real_talk/code/data_type_size.h"
 #include "real_talk/code/code.h"
 
 using std::numeric_limits;
@@ -65,11 +66,12 @@ class SimpleModuleReaderTest: public Test {
     {
       unique_ptr<Code> cmds_code(new Code());
       cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
-      uint32_t main_cmds_code_size = cmds_code->GetPosition();
       cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
-      cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
+      uint32_t main_cmds_code_size = cmds_code->GetPosition();
+      cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
       cmds_code->SetPosition(UINT32_C(0));
-      vector<string> global_var_defs = {"var", "var2"};
+      vector<IdSize> global_var_defs =
+          {{"var", DataTypeSize::kInt}, {"var2", DataTypeSize::kLong}};
       vector<IdAddress> func_defs =
           {{"func", UINT32_C(1)}, {"func2", UINT32_C(2)}};
       vector<string> native_func_defs = {"native_func", "native_func2"};
@@ -98,7 +100,7 @@ class SimpleModuleReaderTest: public Test {
 
     {
       unique_ptr<Code> cmds_code(new Code());
-      vector<string> global_var_defs;
+      vector<IdSize> global_var_defs;
       vector<IdAddress> func_defs;
       vector<string> native_func_defs;
       vector<IdAddresses> global_var_refs;

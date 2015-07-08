@@ -11,6 +11,7 @@
 #include "real_talk/code/cmd.h"
 #include "real_talk/code/id_addresses.h"
 #include "real_talk/code/id_address.h"
+#include "real_talk/code/id_size.h"
 
 namespace real_talk {
 namespace code {
@@ -50,6 +51,7 @@ class Code {
   CmdId ReadCmdId() noexcept;
   IdAddresses ReadIdAddresses();
   IdAddress ReadIdAddress();
+  IdSize ReadIdSize();
   friend bool operator==(const Code &lhs, const Code &rhs);
 
   /**
@@ -121,6 +123,11 @@ class Code {
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
   void WriteIdAddress(const IdAddress &id_address);
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
+  void WriteIdSize(const IdSize &id_size);
 
  private:
   bool HasEnoughCapacity(uint32_t bytes_count) const noexcept;

@@ -37,9 +37,10 @@ class BaseLinker: public Linker {
       const std::vector<real_talk::code::IdAddresses> &input_refs,
       std::unordered_map<std::string, size_t> *output_id_indexes,
       std::vector<real_talk::code::IdAddresses> *output_refs);
-  static void CollectDefs(const std::vector<std::string> &input_defs,
-                          std::unordered_set<std::string> *output_unique_defs,
-                          std::vector<std::string> *output_ordered_defs);
+  static void CollectNativeFuncDefs(
+      const std::vector<std::string> &input_defs,
+      std::unordered_set<std::string> *output_unique_defs,
+      std::vector<std::string> *output_ordered_defs);
   static void WriteModuleCmds(const real_talk::code::Module &module,
                               uint32_t main_cmds_start_address,
                               uint32_t func_cmds_start_address,

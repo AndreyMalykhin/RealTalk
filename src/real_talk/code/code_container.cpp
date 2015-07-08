@@ -75,16 +75,14 @@ ostream &operator<<(ostream &stream, CodeContainer &container) {
   stream << typeid(container).name() << "; version=" << container.version_
          << "\nnative_func_defs=\n";
 
-  for (const string &id_of_native_func_def
-           : container.native_func_defs_) {
-    stream << id_of_native_func_def << "\n";
+  for (const string &native_func_def: container.native_func_defs_) {
+    stream << native_func_def << "\n";
   }
 
   stream << "native_func_refs=\n";
 
-  for (const IdAddresses &id_addresses_of_native_func_ref
-           : container.native_func_refs_) {
-    stream << id_addresses_of_native_func_ref << "\n";
+  for (const IdAddresses &native_func_ref: container.native_func_refs_) {
+    stream << native_func_ref << "\n";
   }
 
   Code &cmds_code = *(container.cmds_code_);

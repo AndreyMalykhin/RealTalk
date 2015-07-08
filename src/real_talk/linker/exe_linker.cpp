@@ -27,6 +27,7 @@ using real_talk::code::Code;
 using real_talk::code::Module;
 using real_talk::code::Exe;
 using real_talk::code::CmdId;
+using real_talk::code::IdSize;
 using real_talk::code::IdAddress;
 using real_talk::code::IdAddresses;
 
@@ -34,19 +35,21 @@ namespace real_talk {
 namespace linker {
 
 void ExeLinker::CollectGlobalVarDefs(
-    const vector<string> &var_defs,
+    const vector<IdSize> &var_defs,
     unordered_map<string, uint32_t> *output_var_indexes,
     uint32_t *next_var_index) {
-  for (const string &id: var_defs) {
+  for (const IdSize &var_def: var_defs) {
     if (*next_var_index + 1 < *next_var_index) {
       ThrowDefsCountOverflowError();
     }
 
     const bool is_duplicate_id = !output_var_indexes->insert(
-        make_pair(id, (*next_var_index)++)).second;
+        make_pair(var_def.GetId(), *next_var_index)).second;
+    const uint8_t var_size = static_cast<uint8_t>(var_def.GetSize());
+    *next_var_index += var_size;
 
     if (is_duplicate_id) {
-      ThrowDuplicateDefError(id);
+      ThrowDuplicateDefError(var_def.GetId());
     }
   }
 }
@@ -89,11 +92,11 @@ void ExeLinker::FillAddressPlaceholders(
     uint32_t func_cmds_start_address,
     Code *cmds) {
   for (const IdAddresses &placeholder: placeholders) {
-    const string &id = placeholder.GetId();
-    const auto addresses_it = addresses.find(id);
+    const string &var_def = placeholder.GetId();
+    const auto addresses_it = addresses.find(var_def);
 
     if (addresses_it == addresses.cend()) {
-      ThrowMissingDefError(id);
+      ThrowMissingDefError(var_def);
     }
 
     const uint32_t address = addresses_it->second;
@@ -157,9 +160,9 @@ unique_ptr<CodeContainer> ExeLinker::Link(
                             main_cmds_current_address,
                             func_cmds_current_address,
                             cmds.get());
-    CollectDefs(module->GetNativeFuncDefs(),
-                &unique_native_func_defs,
-                &ordered_native_func_defs);
+    CollectNativeFuncDefs(module->GetNativeFuncDefs(),
+                          &unique_native_func_defs,
+                          &ordered_native_func_defs);
     CollectRefs(module_main_cmds_size,
                 main_cmds_current_address,
                 func_cmds_current_address,
@@ -171,11 +174,11 @@ unique_ptr<CodeContainer> ExeLinker::Link(
   }
 
   for (IdAddresses &native_func_refs_item: native_func_refs) {
-    const string &id = native_func_refs_item.GetId();
-    const bool is_id_defined = unique_native_func_defs.count(id) == 1;
+    const string &var_def = native_func_refs_item.GetId();
+    const bool is_id_defined = unique_native_func_defs.count(var_def) == 1;
 
     if (!is_id_defined) {
-      ThrowMissingDefError(id);
+      ThrowMissingDefError(var_def);
     }
 
     sort(native_func_refs_item.GetAddresses().begin(),

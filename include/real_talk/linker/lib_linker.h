@@ -7,6 +7,11 @@
 #include "real_talk/linker/base_linker.h"
 
 namespace real_talk {
+namespace code {
+
+class IdSize;
+}
+
 namespace linker {
 
 class LibLinker: public BaseLinker {
@@ -16,6 +21,10 @@ class LibLinker: public BaseLinker {
       uint32_t output_version) const override;
 
  private:
+  static void CollectGlobalVarDefs(
+      const std::vector<real_talk::code::IdSize> &input_defs,
+      std::unordered_set<std::string> *output_unique_defs,
+      std::vector<real_talk::code::IdSize> *output_ordered_defs);
   static void CollectFuncDefs(
       const std::vector<real_talk::code::IdAddress> &input_defs,
       uint32_t main_cmds_size,

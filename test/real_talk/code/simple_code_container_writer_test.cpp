@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <vector>
 #include <string>
+#include "real_talk/code/data_type_size.h"
 #include "real_talk/code/code.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/exe.h"
@@ -33,11 +34,12 @@ class SimpleCodeContainerWriterTest: public Test {
   TestData GetDataForModuleTest() {
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
-    uint32_t main_cmds_code_size = cmds_code->GetPosition();
     cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
-    cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+    cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
     cmds_code->SetPosition(UINT32_C(0));
-    vector<string> global_var_defs = {"var", "var2"};
+    vector<IdSize> global_var_defs =
+        {{"var", DataTypeSize::kInt}, {"var2", DataTypeSize::kLong}};
     vector<IdAddress> func_defs =
         {{"func", UINT32_C(1)}, {"func2", UINT32_C(2)}};
     vector<string> native_func_defs = {"native_func", "native_func2"};
@@ -68,8 +70,8 @@ class SimpleCodeContainerWriterTest: public Test {
     expected_code.WriteBytes(
         module->GetCmdsCode().GetData(), module->GetCmdsCode().GetSize());
     uint32_t global_var_defs_metadata_address = expected_code.GetPosition();
-    expected_code.WriteString("var");
-    expected_code.WriteString("var2");
+    expected_code.WriteIdSize(IdSize("var", DataTypeSize::kInt));
+    expected_code.WriteIdSize(IdSize("var2", DataTypeSize::kLong));
     uint32_t global_var_defs_metadata_size =
         expected_code.GetPosition() - global_var_defs_metadata_address;
     uint32_t func_defs_metadata_address = expected_code.GetPosition();
@@ -125,9 +127,9 @@ class SimpleCodeContainerWriterTest: public Test {
   TestData GetDataForExeTest() {
     unique_ptr<Code> cmds_code(new Code());
     cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
-    uint32_t main_cmds_code_size = cmds_code->GetPosition();
     cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
-    cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+    cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
     cmds_code->SetPosition(UINT32_C(0));
     vector<string> native_func_defs = {"native_func", "native_func2"};
     vector<IdAddresses> native_func_refs =

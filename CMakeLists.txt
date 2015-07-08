@@ -3,11 +3,11 @@ project(REAL_TALK)
 include_directories(include)
 include_directories(SYSTEM thirdparty/gmock-1.7.0/include thirdparty/gmock-1.7.0/gtest/include)
 find_library(gmock_lib NAMES gmock PATHS thirdparty/gmock-1.7.0/build)
-set(Boost_USE_STATIC_LIBS ON) 
+set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED OFF)
 find_package(Boost 1.56.0 REQUIRED COMPONENTS system filesystem program_options)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-weak-vtables -Wno-padded -Wno-missing-noreturn -Wno-switch-enum -Wno-used-but-marked-unused -Wno-tautological-constant-out-of-range-compare")
-add_library(real_talk_lib STATIC
+add_library(real_talk_lib SHARED
   src/real_talk/lexer/token_info.cpp
   src/real_talk/lexer/simple_lexer.cpp
   src/real_talk/lexer/lexer.cpp
@@ -61,6 +61,7 @@ add_library(real_talk_lib STATIC
   src/real_talk/code/simple_code_container_writer.cpp
   src/real_talk/code/id_addresses.cpp
   src/real_talk/code/id_address.cpp
+  src/real_talk/code/id_size.cpp
   src/real_talk/code/code.cpp
   src/real_talk/code/simple_cast_cmd_generator.cpp
   src/real_talk/compiler/simple_msg_printer.cpp
@@ -80,6 +81,7 @@ add_library(real_talk_lib STATIC
   src/real_talk/util/simple_file.cpp
   src/real_talk/util/simple_file_searcher.cpp
   )
+target_link_libraries(real_talk_lib ${Boost_LIBRARIES})
 SET_TARGET_PROPERTIES(real_talk_lib PROPERTIES OUTPUT_NAME realtalk)
 add_executable(real_talk_tests_exe
   test/main.cpp
@@ -109,16 +111,16 @@ add_executable(real_talk_tests_exe
   test/real_talk/util/endianness_test.cpp
 )
 target_include_directories(real_talk_tests_exe PRIVATE test)
-target_link_libraries(real_talk_tests_exe ${gmock_lib} ${Boost_LIBRARIES} real_talk_lib)
+target_link_libraries(real_talk_tests_exe ${gmock_lib} real_talk_lib)
 SET_TARGET_PROPERTIES(real_talk_tests_exe PROPERTIES OUTPUT_NAME realtalktests)
 add_executable(real_talk_compiler_exe
   src/real_talk/compiler/main.cpp
 )
-target_link_libraries(real_talk_compiler_exe ${Boost_LIBRARIES} real_talk_lib)
+target_link_libraries(real_talk_compiler_exe real_talk_lib)
 SET_TARGET_PROPERTIES(real_talk_compiler_exe PROPERTIES OUTPUT_NAME realtalkc)
 add_executable(real_talk_linker_exe
   src/real_talk/linker/main.cpp
 )
-target_link_libraries(real_talk_linker_exe ${Boost_LIBRARIES} real_talk_lib)
+target_link_libraries(real_talk_linker_exe real_talk_lib)
 SET_TARGET_PROPERTIES(real_talk_linker_exe PROPERTIES OUTPUT_NAME realtalkl)
 file(COPY test/test_resources DESTINATION .)

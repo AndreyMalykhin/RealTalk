@@ -18,14 +18,12 @@ static_assert(sizeof(double) == 8, "Size of 'double' must be 8 bytes");
 Code::Code(): size_(UINT32_C(0)),
               capacity_(UINT32_C(0)),
               bytes_(new unsigned char[capacity_]),
-              current_byte_(bytes_.get()) {
-}
+              current_byte_(bytes_.get()) {}
 
 Code::Code(uint32_t size): size_(size),
                            capacity_(size),
                            bytes_(new unsigned char[size]),
-                           current_byte_(bytes_.get()) {
-}
+                           current_byte_(bytes_.get()) {}
 
 Code::Code(const unsigned char *bytes, uint32_t size)
     : size_(size),
@@ -245,6 +243,17 @@ void Code::WriteIdAddresses(const IdAddresses &id_addresses) {
   for (const uint32_t address: id_addresses.GetAddresses()) {
     WriteUint32(address);
   }
+}
+
+IdSize Code::ReadIdSize() {
+  const std::string &id = ReadString();
+  const DataTypeSize size = static_cast<DataTypeSize>(ReadUint8());
+  return IdSize(id, size);
+}
+
+void Code::WriteIdSize(const IdSize &id_size) {
+  WriteString(id_size.GetId());
+  WriteUint8(static_cast<uint8_t>(id_size.GetSize()));
 }
 
 IdAddress Code::ReadIdAddress() {

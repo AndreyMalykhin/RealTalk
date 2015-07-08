@@ -7,6 +7,11 @@
 #include "real_talk/linker/base_linker.h"
 
 namespace real_talk {
+namespace code {
+
+class IdSize;
+}
+
 namespace linker {
 
 class ExeLinker: public BaseLinker {
@@ -17,7 +22,7 @@ class ExeLinker: public BaseLinker {
 
  private:
   static void CollectGlobalVarDefs(
-      const std::vector<std::string> &var_defs,
+      const std::vector<real_talk::code::IdSize> &var_defs,
       std::unordered_map<std::string, uint32_t> *output_var_indexes,
       uint32_t *next_var_index);
   static void FillAddressPlaceholders(

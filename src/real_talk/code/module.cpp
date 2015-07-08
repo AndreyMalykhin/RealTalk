@@ -23,7 +23,7 @@ Module::Module(
     unique_ptr<Code> cmds_code,
     uint32_t main_cmds_code_size,
     const vector<IdAddress> &func_defs,
-    const vector<string> &global_var_defs,
+    const vector<IdSize> &global_var_defs,
     const vector<string> &native_func_defs,
     const vector<IdAddresses> &func_refs,
     const vector<IdAddresses> &native_func_refs,
@@ -50,7 +50,7 @@ const vector<IdAddresses> &Module::GetFuncRefs() const {
   return func_refs_;
 }
 
-const vector<string> &Module::GetGlobalVarDefs() const {
+const vector<IdSize> &Module::GetGlobalVarDefs() const {
   return global_var_defs_;
 }
 
@@ -70,28 +70,26 @@ bool Module::IsEqual(const CodeContainer &container) const {
 void Module::Print(ostream &stream) {
   stream << "func_defs=\n";
 
-  for (const IdAddress &id_address_of_func_def: func_defs_) {
-    stream << id_address_of_func_def << "\n";
+  for (const IdAddress &func_def: func_defs_) {
+    stream << func_def << "\n";
   }
 
   stream << "func_refs=\n";
 
-  for (const IdAddresses &id_addresses_of_func_ref
-           : func_refs_) {
-    stream << id_addresses_of_func_ref << "\n";
+  for (const IdAddresses &func_ref: func_refs_) {
+    stream << func_ref << "\n";
   }
 
   stream << "global_var_defs=\n";
 
-  for (const string &id_of_global_var_def: global_var_defs_) {
-    stream << id_of_global_var_def << "\n";
+  for (const IdSize &global_var_def: global_var_defs_) {
+    stream << global_var_def << "\n";
   }
 
   stream << "global_var_refs=\n";
 
-  for (const IdAddresses &id_addresses_of_global_var_ref
-           : global_var_refs_) {
-    stream << id_addresses_of_global_var_ref << "\n";
+  for (const IdAddresses &global_var_ref: global_var_refs_) {
+    stream << global_var_ref << "\n";
   }
 }
 }

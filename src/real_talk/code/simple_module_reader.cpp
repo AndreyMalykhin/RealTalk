@@ -40,12 +40,12 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition(), main_cmds_size + func_cmds_size));
 
   code->SetPosition(global_var_defs_metadata_address);
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   const unsigned char * const global_var_defs_metadata_end =
       code->GetDataAtPosition() + global_var_defs_metadata_size;
 
   while (code->GetDataAtPosition() != global_var_defs_metadata_end) {
-    global_var_defs.push_back(code->ReadString());
+    global_var_defs.push_back(code->ReadIdSize());
   }
 
   code->SetPosition(func_defs_metadata_address);

@@ -87,9 +87,10 @@ void BaseLinker::CollectRefs(
   }
 }
 
-void BaseLinker::CollectDefs(const vector<string> &input_defs,
-                             unordered_set<string> *output_unique_defs,
-                             vector<string> *output_ordered_defs) {
+void BaseLinker::CollectNativeFuncDefs(
+    const vector<string> &input_defs,
+    unordered_set<string> *output_unique_defs,
+    vector<string> *output_ordered_defs) {
   for (const string &id: input_defs) {
     const bool is_duplicate_id = !output_unique_defs->insert(id).second;
 

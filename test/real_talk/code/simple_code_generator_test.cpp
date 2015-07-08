@@ -93,6 +93,7 @@
 #include "real_talk/code/simple_code_generator.h"
 #include "real_talk/code/code.h"
 #include "real_talk/code/cast_cmd_generator.h"
+#include "real_talk/code/data_type_size.h"
 
 using std::make_move_iterator;
 using std::move;
@@ -269,6 +270,7 @@ class SimpleCodeGeneratorTest: public Test {
 
   void TestGlobalVarDefWithoutInit(unique_ptr<DataTypeNode> data_type_node,
                                    unique_ptr<DataType> data_type,
+                                   DataTypeSize expected_var_size,
                                    CmdId expected_cmd_id) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
@@ -293,7 +295,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs = {"var"};
+    vector<IdSize> global_var_defs = {{"var", expected_var_size}};
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs = {{"var", {var_index_placeholder}}};
@@ -321,8 +323,9 @@ class SimpleCodeGeneratorTest: public Test {
       unique_ptr<DataType> data_type,
       unique_ptr<ExprNode> value_node,
       SemanticAnalysis::NodeAnalyzes value_node_analyzes,
-      const Code &value_code,
+      const Code &expected_value_code,
       unique_ptr<TestCast> test_cast,
+      DataTypeSize expected_var_size,
       CmdId expected_cmd_id) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithInitNode *var_def_node_ptr = new VarDefWithInitNode(
@@ -346,7 +349,7 @@ class SimpleCodeGeneratorTest: public Test {
     vector<TestCast> test_casts;
 
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
+    cmds_code->WriteBytes(expected_value_code.GetData(), expected_value_code.GetSize());
 
     if (test_cast) {
       cmds_code->WriteCmdId(test_cast->cmd_id);
@@ -359,7 +362,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs = {"var"};
+    vector<IdSize> global_var_defs = {{"var", expected_var_size}};
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs = {{"var", {var_index_placeholder}}};
@@ -423,7 +426,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -470,7 +473,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -511,7 +514,7 @@ class SimpleCodeGeneratorTest: public Test {
 
     uint32_t main_cmds_code_size = expected_code->GetPosition();
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -627,7 +630,7 @@ class SimpleCodeGeneratorTest: public Test {
         {move(dest_data_type2), move(src_data_type2), CmdId::kCastCharToInt};
     test_casts.push_back(move(test_cast2));
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -712,7 +715,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kUnloadArray);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -841,7 +844,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs = {{"func", func_def_address}};
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -866,9 +869,10 @@ class SimpleCodeGeneratorTest: public Test {
 
   void TestIdAsNotAssigneeGlobalVar(unique_ptr<DataTypeNode> data_type_node,
                                     const DataType &data_type,
-                                    CmdId create_var_cmd_id,
-                                    CmdId expected_cmd_id,
-                                    CmdId unload_cmd_id) {
+                                    DataTypeSize expected_var_size,
+                                    CmdId expected_create_var_cmd_id,
+                                    CmdId expected_load_cmd_id,
+                                    CmdId expected_unload_cmd_id) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
         move(data_type_node),
@@ -902,17 +906,17 @@ class SimpleCodeGeneratorTest: public Test {
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(create_var_cmd_id);
+    cmds_code->WriteCmdId(expected_create_var_cmd_id);
     uint32_t var_index_placeholder = cmds_code->GetPosition();
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
-    cmds_code->WriteCmdId(expected_cmd_id);
+    cmds_code->WriteCmdId(expected_load_cmd_id);
     uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
-    cmds_code->WriteCmdId(unload_cmd_id);
+    cmds_code->WriteCmdId(expected_unload_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs = {"var"};
+    vector<IdSize> global_var_defs = {{"var", expected_var_size}};
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs =
@@ -985,7 +989,7 @@ class SimpleCodeGeneratorTest: public Test {
 
     uint32_t main_cmds_code_size = expected_code->GetPosition();
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -1012,9 +1016,10 @@ class SimpleCodeGeneratorTest: public Test {
                                  unique_ptr<ExprNode> value_node,
                                  const DataType &data_type,
                                  unique_ptr<ExprAnalysis> value_analysis,
-                                 CmdId create_var_cmd_id,
-                                 const Code &value_code,
                                  vector<TestCast> test_casts,
+                                 DataTypeSize expected_var_size,
+                                 CmdId expected_create_var_cmd_id,
+                                 const Code &expected_value_code,
                                  CmdId expected_cmd_id) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
@@ -1064,18 +1069,18 @@ class SimpleCodeGeneratorTest: public Test {
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(create_var_cmd_id);
+    cmds_code->WriteCmdId(expected_create_var_cmd_id);
     uint32_t var_index_placeholder = cmds_code->GetPosition();
     uint32_t var_index = numeric_limits<uint32_t>::max();
     cmds_code->WriteUint32(var_index);
-    cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
+    cmds_code->WriteBytes(expected_value_code.GetData(), expected_value_code.GetSize());
     cmds_code->WriteCmdId(CmdId::kLoadGlobalVarAddress);
     uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs = {"var"};
+    vector<IdSize> global_var_defs = {{"var", expected_var_size}};
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs =
@@ -1164,7 +1169,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(expected_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -1277,7 +1282,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs = {"var"};
+    vector<IdSize> global_var_defs = {{"var", DataTypeSize::kArray}};
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs =
@@ -1411,7 +1416,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(store_cmd_id);
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-    vector<string> global_var_defs = {"var"};
+    vector<IdSize> global_var_defs = {{"var", DataTypeSize::kArray}};
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs =
@@ -1467,7 +1472,7 @@ class SimpleCodeGeneratorTest: public Test {
 
     uint32_t main_cmds_code_size = expected_code->GetPosition();
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -1517,7 +1522,7 @@ class SimpleCodeGeneratorTest: public Test {
 
     uint32_t main_cmds_code_size = expected_code->GetPosition();
 
-    vector<string> global_var_defs;
+    vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
     vector<IdAddresses> global_var_refs;
@@ -1545,8 +1550,10 @@ TEST_F(SimpleCodeGeneratorTest, GlobalIntVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new IntDataType());
-  TestGlobalVarDefWithoutInit(
-      move(data_type_node), move(data_type), CmdId::kCreateGlobalIntVar);
+  TestGlobalVarDefWithoutInit(move(data_type_node),
+                              move(data_type),
+                              DataTypeSize::kInt,
+                              CmdId::kCreateGlobalIntVar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, GlobalArrayVarDefWithoutInit) {
@@ -1569,6 +1576,7 @@ TEST_F(SimpleCodeGeneratorTest, GlobalArrayVarDefWithoutInit) {
 
   TestGlobalVarDefWithoutInit(move(array_data_type_node2),
                               move(array_data_type2),
+                              DataTypeSize::kArray,
                               CmdId::kCreateGlobalArrayVar);
 }
 
@@ -1576,40 +1584,50 @@ TEST_F(SimpleCodeGeneratorTest, GlobalLongVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new LongDataType());
-  TestGlobalVarDefWithoutInit(
-      move(data_type_node), move(data_type), CmdId::kCreateGlobalLongVar);
+  TestGlobalVarDefWithoutInit(move(data_type_node),
+                              move(data_type),
+                              DataTypeSize::kLong,
+                              CmdId::kCreateGlobalLongVar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, GlobalDoubleVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new DoubleDataType());
-  TestGlobalVarDefWithoutInit(
-      move(data_type_node), move(data_type), CmdId::kCreateGlobalDoubleVar);
+  TestGlobalVarDefWithoutInit(move(data_type_node),
+                              move(data_type),
+                              DataTypeSize::kDouble,
+                              CmdId::kCreateGlobalDoubleVar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, GlobalCharVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
       TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new CharDataType());
-  TestGlobalVarDefWithoutInit(
-      move(data_type_node), move(data_type), CmdId::kCreateGlobalCharVar);
+  TestGlobalVarDefWithoutInit(move(data_type_node),
+                              move(data_type),
+                              DataTypeSize::kChar,
+                              CmdId::kCreateGlobalCharVar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, GlobalStringVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new StringDataType());
-  TestGlobalVarDefWithoutInit(
-      move(data_type_node), move(data_type), CmdId::kCreateGlobalStringVar);
+  TestGlobalVarDefWithoutInit(move(data_type_node),
+                              move(data_type),
+                              DataTypeSize::kString,
+                              CmdId::kCreateGlobalStringVar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, GlobalBoolVarDefWithoutInit) {
   unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataType> data_type(new BoolDataType());
-  TestGlobalVarDefWithoutInit(
-      move(data_type_node), move(data_type), CmdId::kCreateGlobalBoolVar);
+  TestGlobalVarDefWithoutInit(move(data_type_node),
+                              move(data_type),
+                              DataTypeSize::kBool,
+                              CmdId::kCreateGlobalBoolVar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, LocalIntVarDefWithoutInit) {
@@ -1711,7 +1729,7 @@ TEST_F(SimpleCodeGeneratorTest, ExprStmt) {
   cmds_code->WriteCmdId(CmdId::kUnloadInt);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -1857,7 +1875,7 @@ TEST_F(SimpleCodeGeneratorTest, Import) {
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -1909,6 +1927,7 @@ TEST_F(SimpleCodeGeneratorTest, GlobalIntVarDefWithInit) {
                            move(value_node_analyzes),
                            move(value_code),
                            move(test_cast),
+                           DataTypeSize::kInt,
                            CmdId::kCreateAndInitGlobalIntVar);
 }
 
@@ -1994,6 +2013,7 @@ TEST_F(SimpleCodeGeneratorTest, GlobalArrayVarDefWithInit) {
                            move(value_node_analyzes),
                            move(value_code),
                            unique_ptr<TestCast>(),
+                           DataTypeSize::kArray,
                            CmdId::kCreateAndInitGlobalArrayVar);
 }
 
@@ -2027,6 +2047,7 @@ TEST_F(SimpleCodeGeneratorTest, GlobalLongVarDefWithInit) {
                            move(value_node_analyzes),
                            move(value_code),
                            move(test_cast),
+                           DataTypeSize::kLong,
                            CmdId::kCreateAndInitGlobalLongVar);
 }
 
@@ -2060,6 +2081,7 @@ TEST_F(SimpleCodeGeneratorTest, GlobalDoubleVarDefWithInit) {
                            move(value_node_analyzes),
                            move(value_code),
                            move(test_cast),
+                           DataTypeSize::kDouble,
                            CmdId::kCreateAndInitGlobalDoubleVar);
 }
 
@@ -2086,6 +2108,7 @@ TEST_F(SimpleCodeGeneratorTest, GlobalCharVarDefWithInit) {
                            move(value_node_analyzes),
                            move(value_code),
                            unique_ptr<TestCast>(),
+                           DataTypeSize::kChar,
                            CmdId::kCreateAndInitGlobalCharVar);
 }
 
@@ -2119,6 +2142,7 @@ TEST_F(SimpleCodeGeneratorTest, GlobalStringVarDefWithInit) {
                            move(value_node_analyzes),
                            move(value_code),
                            move(test_cast),
+                           DataTypeSize::kString,
                            CmdId::kCreateAndInitGlobalStringVar);
 }
 
@@ -2145,6 +2169,7 @@ TEST_F(SimpleCodeGeneratorTest, GlobalBoolVarDefWithInit) {
                            move(value_node_analyzes),
                            move(value_code),
                            unique_ptr<TestCast>(),
+                           DataTypeSize::kBool,
                            CmdId::kCreateAndInitGlobalBoolVar);
 }
 
@@ -2981,7 +3006,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -3226,7 +3251,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfElseWithLocalVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -3391,7 +3416,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -3581,7 +3606,7 @@ TEST_F(SimpleCodeGeneratorTest, IfElseIfWithLocalVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -3675,7 +3700,7 @@ TEST_F(SimpleCodeGeneratorTest, IfWithoutVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -3780,7 +3805,7 @@ TEST_F(SimpleCodeGeneratorTest, IfWithLocalVarDefs) {
   cmds_code->SetPosition(branch_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -3877,7 +3902,7 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -3986,7 +4011,7 @@ TEST_F(SimpleCodeGeneratorTest, PreTestLoopWithLocalVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -4084,7 +4109,7 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -4228,7 +4253,7 @@ TEST_F(SimpleCodeGeneratorTest, BreakWithinLoopWithLocalVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -4322,7 +4347,7 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithoutVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -4463,7 +4488,7 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithLocalVarDefs) {
   cmds_code->SetPosition(loop_end_address);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -4565,7 +4590,7 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
   cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs = {{"func", func_def_address}};
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -4688,7 +4713,7 @@ TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {
   cmds_code->WriteCmdId(CmdId::kReturn);
   cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs = {{"func", func_def_address}};
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -5034,7 +5059,7 @@ TEST_F(SimpleCodeGeneratorTest, FuncDefWithoutBody) {
   unique_ptr<Code> cmds_code(new Code());
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs = {{"func"}};
   vector<IdAddresses> global_var_refs;
@@ -5062,12 +5087,13 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalIntVar) {
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   IntDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalIntVar;
-  CmdId expected_cmd_id = CmdId::kLoadGlobalIntVarValue;
+  CmdId expected_load_cmd_id = CmdId::kLoadGlobalIntVarValue;
   CmdId unload_cmd_id = CmdId::kUnloadInt;
   TestIdAsNotAssigneeGlobalVar(move(data_type_node),
                                data_type,
+                               DataTypeSize::kInt,
                                create_var_cmd_id,
-                               expected_cmd_id,
+                               expected_load_cmd_id,
                                unload_cmd_id);
 }
 
@@ -5076,12 +5102,13 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalLongVar) {
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   LongDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalLongVar;
-  CmdId expected_cmd_id = CmdId::kLoadGlobalLongVarValue;
+  CmdId expected_load_cmd_id = CmdId::kLoadGlobalLongVarValue;
   CmdId unload_cmd_id = CmdId::kUnloadLong;
   TestIdAsNotAssigneeGlobalVar(move(data_type_node),
                                data_type,
+                               DataTypeSize::kLong,
                                create_var_cmd_id,
-                               expected_cmd_id,
+                               expected_load_cmd_id,
                                unload_cmd_id);
 }
 
@@ -5090,12 +5117,13 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalDoubleVar) {
       TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
   DoubleDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalDoubleVar;
-  CmdId expected_cmd_id = CmdId::kLoadGlobalDoubleVarValue;
+  CmdId expected_load_cmd_id = CmdId::kLoadGlobalDoubleVarValue;
   CmdId unload_cmd_id = CmdId::kUnloadDouble;
   TestIdAsNotAssigneeGlobalVar(move(data_type_node),
                                data_type,
+                               DataTypeSize::kDouble,
                                create_var_cmd_id,
-                               expected_cmd_id,
+                               expected_load_cmd_id,
                                unload_cmd_id);
 }
 
@@ -5104,26 +5132,28 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalBoolVar) {
       TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
   BoolDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalBoolVar;
-  CmdId expected_cmd_id = CmdId::kLoadGlobalBoolVarValue;
+  CmdId expected_load_cmd_id = CmdId::kLoadGlobalBoolVarValue;
   CmdId unload_cmd_id = CmdId::kUnloadBool;
   TestIdAsNotAssigneeGlobalVar(move(data_type_node),
                                data_type,
+                               DataTypeSize::kBool,
                                create_var_cmd_id,
-                               expected_cmd_id,
+                               expected_load_cmd_id,
                                unload_cmd_id);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalCharVar) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
-      TokenInfo(Token::kCharType, "bool", UINT32_C(0), UINT32_C(0))));
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
   CharDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalCharVar;
-  CmdId expected_cmd_id = CmdId::kLoadGlobalCharVarValue;
+  CmdId expected_load_cmd_id = CmdId::kLoadGlobalCharVarValue;
   CmdId unload_cmd_id = CmdId::kUnloadChar;
   TestIdAsNotAssigneeGlobalVar(move(data_type_node),
                                data_type,
+                               DataTypeSize::kChar,
                                create_var_cmd_id,
-                               expected_cmd_id,
+                               expected_load_cmd_id,
                                unload_cmd_id);
 }
 
@@ -5132,12 +5162,13 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalStringVar) {
       TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
   StringDataType data_type;
   CmdId create_var_cmd_id = CmdId::kCreateGlobalStringVar;
-  CmdId expected_cmd_id = CmdId::kLoadGlobalStringVarValue;
+  CmdId expected_load_cmd_id = CmdId::kLoadGlobalStringVarValue;
   CmdId unload_cmd_id = CmdId::kUnloadString;
   TestIdAsNotAssigneeGlobalVar(move(data_type_node),
                                data_type,
+                               DataTypeSize::kString,
                                create_var_cmd_id,
-                               expected_cmd_id,
+                               expected_load_cmd_id,
                                unload_cmd_id);
 }
 
@@ -5150,12 +5181,13 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalArrayVar) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType data_type(unique_ptr<DataType>(new LongDataType()));
   CmdId create_var_cmd_id = CmdId::kCreateGlobalArrayVar;
-  CmdId expected_cmd_id = CmdId::kLoadGlobalArrayVarValue;
+  CmdId expected_load_cmd_id = CmdId::kLoadGlobalArrayVarValue;
   CmdId unload_cmd_id = CmdId::kUnloadArray;
   TestIdAsNotAssigneeGlobalVar(move(array_data_type_node),
                                data_type,
+                               DataTypeSize::kArray,
                                create_var_cmd_id,
-                               expected_cmd_id,
+                               expected_load_cmd_id,
                                unload_cmd_id);
 }
 
@@ -5320,9 +5352,10 @@ TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalIntVar) {
                             move(value_node),
                             id_data_type,
                             move(value_analysis),
+                            move(test_casts),
+                            DataTypeSize::kInt,
                             create_var_cmd_id,
                             value_code,
-                            move(test_casts),
                             expected_cmd_id);
 }
 
@@ -5359,9 +5392,10 @@ TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalLongVar) {
                             move(value_node),
                             id_data_type,
                             move(value_analysis),
+                            move(test_casts),
+                            DataTypeSize::kLong,
                             create_var_cmd_id,
                             value_code,
-                            move(test_casts),
                             expected_cmd_id);
 }
 
@@ -5398,9 +5432,10 @@ TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalDoubleVar) {
                             move(value_node),
                             data_type,
                             move(value_analysis),
+                            move(test_casts),
+                            DataTypeSize::kDouble,
                             create_var_cmd_id,
                             value_code,
-                            move(test_casts),
                             expected_cmd_id);
 }
 
@@ -5425,9 +5460,10 @@ TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalBoolVar) {
                             move(value_node),
                             data_type,
                             move(value_analysis),
+                            vector<TestCast>(),
+                            DataTypeSize::kBool,
                             create_var_cmd_id,
                             value_code,
-                            vector<TestCast>(),
                             expected_cmd_id);
 }
 
@@ -5452,9 +5488,10 @@ TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalCharVar) {
                             move(value_node),
                             data_type,
                             move(value_analysis),
+                            vector<TestCast>(),
+                            DataTypeSize::kChar,
                             create_var_cmd_id,
                             value_code,
-                            vector<TestCast>(),
                             expected_cmd_id);
 }
 
@@ -5491,9 +5528,10 @@ TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalStringVar) {
                             move(value_node),
                             data_type,
                             move(value_analysis),
+                            move(test_casts),
+                            DataTypeSize::kString,
                             create_var_cmd_id,
                             value_code,
-                            move(test_casts),
                             expected_cmd_id);
 }
 
@@ -5541,9 +5579,10 @@ TEST_F(SimpleCodeGeneratorTest, IdAsAssigneeGlobalArrayVar) {
                             move(value_node),
                             data_type,
                             move(value_analysis),
+                            vector<TestCast>(),
+                            DataTypeSize::kArray,
                             create_var_cmd_id,
                             value_code,
-                            vector<TestCast>(),
                             expected_cmd_id);
 }
 
@@ -5969,7 +6008,7 @@ TEST_F(SimpleCodeGeneratorTest, NotNativeCall) {
   cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
   cmds_code->WriteCmdId(CmdId::kReturn);
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs = {{"func", func_def_address}};
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -6137,7 +6176,7 @@ TEST_F(SimpleCodeGeneratorTest, NativeCall) {
   cmds_code->WriteCmdId(CmdId::kCallNative);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs = {"func"};
   vector<IdAddresses> global_var_refs;
@@ -6534,7 +6573,7 @@ TEST_F(SimpleCodeGeneratorTest, And) {
   cmds_code->WriteCmdId(CmdId::kUnloadBool);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;
@@ -6622,7 +6661,7 @@ TEST_F(SimpleCodeGeneratorTest, Or) {
   cmds_code->WriteCmdId(CmdId::kUnloadBool);
   uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
-  vector<string> global_var_defs;
+  vector<IdSize> global_var_defs;
   vector<IdAddress> func_defs;
   vector<string> native_func_defs;
   vector<IdAddresses> global_var_refs;

@@ -25,11 +25,32 @@ using real_talk::code::CodeContainer;
 using real_talk::code::Code;
 using real_talk::code::Module;
 using real_talk::code::CmdId;
+using real_talk::code::IdSize;
 using real_talk::code::IdAddress;
 using real_talk::code::IdAddresses;
 
 namespace real_talk {
 namespace linker {
+
+void LibLinker::CollectGlobalVarDefs(
+    const vector<IdSize> &input_defs,
+    unordered_set<string> *output_unique_defs,
+    vector<IdSize> *output_ordered_defs) {
+  for (const IdSize &input_def: input_defs) {
+    const bool is_duplicate_id =
+        !output_unique_defs->insert(input_def.GetId()).second;
+
+    if (is_duplicate_id) {
+      ThrowDuplicateDefError(input_def.GetId());
+    }
+
+    if (output_ordered_defs->size() + 1 < output_ordered_defs->size()) {
+      ThrowDefsCountOverflowError();
+    }
+
+    output_ordered_defs->push_back(input_def);
+  }
+}
 
 void LibLinker::CollectFuncDefs(
     const vector<IdAddress> &input_defs,
@@ -76,7 +97,7 @@ unique_ptr<CodeContainer> LibLinker::Link(
   vector<IdAddresses> native_func_refs;
   IdIndexes id_indexes_of_native_func_refs;
   unordered_set<string> unique_global_var_defs;
-  vector<string> ordered_global_var_defs;
+  vector<IdSize> ordered_global_var_defs;
   unordered_set<string> unique_native_func_defs;
   vector<string> ordered_native_func_defs;
   unordered_set<string> unique_func_defs;
@@ -88,12 +109,12 @@ unique_ptr<CodeContainer> LibLinker::Link(
                     func_cmds_current_address,
                     cmds.get());
     const uint32_t module_main_cmds_size = module->GetMainCmdsCodeSize();
-    CollectDefs(module->GetGlobalVarDefs(),
-                &unique_global_var_defs,
-                &ordered_global_var_defs);
-    CollectDefs(module->GetNativeFuncDefs(),
-                &unique_native_func_defs,
-                &ordered_native_func_defs);
+    CollectGlobalVarDefs(module->GetGlobalVarDefs(),
+                         &unique_global_var_defs,
+                         &ordered_global_var_defs);
+    CollectNativeFuncDefs(module->GetNativeFuncDefs(),
+                          &unique_native_func_defs,
+                          &ordered_native_func_defs);
     CollectFuncDefs(module->GetFuncDefs(),
                     module_main_cmds_size,
                     main_cmds_current_address,

@@ -14,6 +14,8 @@ using testing::Test;
 using real_talk::code::Code;
 using real_talk::code::CodeContainer;
 using real_talk::code::CmdId;
+using real_talk::code::DataTypeSize;
+using real_talk::code::IdSize;
 using real_talk::code::IdAddress;
 using real_talk::code::IdAddresses;
 using real_talk::code::Module;
@@ -36,7 +38,7 @@ TEST_F(LibLinkerTest, Link) {
 
   {
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
+    cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
     vector<uint32_t> var_index_placeholders;
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
@@ -64,7 +66,7 @@ TEST_F(LibLinkerTest, Link) {
     native_func_index_placeholders2.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kReturn);
-    vector<string> global_var_defs = {"var"};
+    vector<IdSize> global_var_defs = {{"var", DataTypeSize::kDouble}};
     vector<IdAddress> func_defs = {{"func", func_def_address}};
     vector<string> native_func_defs = {"native_func"};
     vector<IdAddresses> global_var_refs =
@@ -92,7 +94,7 @@ TEST_F(LibLinkerTest, Link) {
     vector<uint32_t> var_index_placeholders2;
     var_index_placeholders2.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
-    cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
     vector<uint32_t> var_index_placeholders;
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
@@ -106,7 +108,7 @@ TEST_F(LibLinkerTest, Link) {
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
     uint32_t func_def_address2 = cmds_code->GetPosition();
-    cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
@@ -116,7 +118,7 @@ TEST_F(LibLinkerTest, Link) {
     native_func_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kReturn);
-    vector<string> global_var_defs = {"var2"};
+    vector<IdSize> global_var_defs = {{"var2", DataTypeSize::kLong}};
     vector<IdAddress> func_defs =
         {{"func2", func_def_address2}};
     vector<string> native_func_defs = {"native_func2"};
@@ -140,7 +142,7 @@ TEST_F(LibLinkerTest, Link) {
   }
 
   unique_ptr<Code> cmds_code(new Code());
-  cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
+  cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
   vector<uint32_t> var_index_placeholders;
   var_index_placeholders.push_back(cmds_code->GetPosition());
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
@@ -159,7 +161,7 @@ TEST_F(LibLinkerTest, Link) {
   cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
   var_index_placeholders2.push_back(cmds_code->GetPosition());
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
   var_index_placeholders.push_back(cmds_code->GetPosition());
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
@@ -183,7 +185,7 @@ TEST_F(LibLinkerTest, Link) {
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kReturn);
   uint32_t func_def_address2 = cmds_code->GetPosition();
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
   var_index_placeholders.push_back(cmds_code->GetPosition());
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
@@ -194,7 +196,8 @@ TEST_F(LibLinkerTest, Link) {
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kReturn);
   cmds_code->SetPosition(UINT32_C(0));
-  vector<string> global_var_defs = {"var", "var2"};
+  vector<IdSize> global_var_defs =
+      {{"var", DataTypeSize::kDouble}, {"var2", DataTypeSize::kLong}};
   vector<IdAddress> func_defs =
       {{"func", func_def_address}, {"func2", func_def_address2}};
   vector<string> native_func_defs = {"native_func", "native_func2"};

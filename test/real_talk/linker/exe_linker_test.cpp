@@ -15,6 +15,8 @@ using testing::Test;
 using real_talk::code::Code;
 using real_talk::code::CodeContainer;
 using real_talk::code::CmdId;
+using real_talk::code::DataTypeSize;
+using real_talk::code::IdSize;
 using real_talk::code::IdAddress;
 using real_talk::code::IdAddresses;
 using real_talk::code::Exe;
@@ -51,7 +53,7 @@ TEST_F(ExeLinkerTest, Link) {
 
   {
     unique_ptr<Code> cmds_code(new Code());
-    cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
+    cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
     vector<uint32_t> var_index_placeholders;
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
@@ -79,7 +81,7 @@ TEST_F(ExeLinkerTest, Link) {
     native_func_index_placeholders2.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kReturn);
-    vector<string> global_var_defs = {"var"};
+    vector<IdSize> global_var_defs = {{"var", DataTypeSize::kDouble}};
     vector<IdAddress> func_defs = {{"func", func_def_address}};
     vector<string> native_func_defs = {"native_func"};
     vector<IdAddresses> global_var_refs =
@@ -107,7 +109,7 @@ TEST_F(ExeLinkerTest, Link) {
     vector<uint32_t> var_index_placeholders2;
     var_index_placeholders2.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
-    cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
     vector<uint32_t> var_index_placeholders;
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
@@ -121,7 +123,7 @@ TEST_F(ExeLinkerTest, Link) {
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
     uint32_t func_def_address2 = cmds_code->GetPosition();
-    cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+    cmds_code->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
     var_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
@@ -131,7 +133,7 @@ TEST_F(ExeLinkerTest, Link) {
     native_func_index_placeholders.push_back(cmds_code->GetPosition());
     cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
     cmds_code->WriteCmdId(CmdId::kReturn);
-    vector<string> global_var_defs = {"var2"};
+    vector<IdSize> global_var_defs = {{"var2", DataTypeSize::kLong}};
     vector<IdAddress> func_defs =
         {{"func2", func_def_address2}};
     vector<string> native_func_defs = {"native_func2"};
@@ -155,11 +157,11 @@ TEST_F(ExeLinkerTest, Link) {
   }
 
   unique_ptr<Code> cmds_code(new Code());
-  cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
+  cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
   uint32_t var_index = UINT32_C(0);
   cmds_code->WriteUint32(var_index);
   cmds_code->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
-  uint32_t var_index2 = UINT32_C(1);
+  uint32_t var_index2 = UINT32_C(2);
   cmds_code->WriteUint32(var_index2);
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
   vector<uint32_t> func_address_placeholders2;
@@ -171,7 +173,7 @@ TEST_F(ExeLinkerTest, Link) {
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
   cmds_code->WriteUint32(var_index2);
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
   cmds_code->WriteUint32(var_index);
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
   vector<uint32_t> func_address_placeholders;
@@ -193,7 +195,7 @@ TEST_F(ExeLinkerTest, Link) {
   cmds_code->WriteUint32(numeric_limits<uint32_t>::max());
   cmds_code->WriteCmdId(CmdId::kReturn);
   uint32_t func_def_address2 = cmds_code->GetPosition();
-  cmds_code->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+  cmds_code->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
   cmds_code->WriteUint32(var_index);
   cmds_code->WriteCmdId(CmdId::kLoadFuncValue);
   func_address_placeholders.push_back(cmds_code->GetPosition());
@@ -236,7 +238,7 @@ TEST_F(ExeLinkerTest, GlobalVarMissingDefError) {
   {
     std::unique_ptr<real_talk::code::Code> cmds_code(
         new real_talk::code::Code());
-    std::vector<std::string> global_var_defs;
+    std::vector<real_talk::code::IdSize> global_var_defs;
     std::vector<real_talk::code::IdAddress> func_defs;
     std::vector<std::string> native_func_defs;
     std::vector<real_talk::code::IdAddresses> global_var_refs =
@@ -261,7 +263,7 @@ TEST_F(ExeLinkerTest, GlobalVarMissingDefError) {
   {
     std::unique_ptr<real_talk::code::Code> cmds_code(
         new real_talk::code::Code());
-    std::vector<std::string> global_var_defs;
+    std::vector<real_talk::code::IdSize> global_var_defs;
     std::vector<real_talk::code::IdAddress> func_defs;
     std::vector<std::string> native_func_defs;
     std::vector<real_talk::code::IdAddresses> global_var_refs =
@@ -293,7 +295,7 @@ TEST_F(ExeLinkerTest, FuncMissingDefError) {
   {
     std::unique_ptr<real_talk::code::Code> cmds_code(
         new real_talk::code::Code());
-    std::vector<std::string> global_var_defs;
+    std::vector<real_talk::code::IdSize> global_var_defs;
     std::vector<real_talk::code::IdAddress> func_defs;
     std::vector<std::string> native_func_defs;
     std::vector<real_talk::code::IdAddresses> global_var_refs;
@@ -318,7 +320,7 @@ TEST_F(ExeLinkerTest, FuncMissingDefError) {
   {
     std::unique_ptr<real_talk::code::Code> cmds_code(
         new real_talk::code::Code());
-    std::vector<std::string> global_var_defs;
+    std::vector<real_talk::code::IdSize> global_var_defs;
     std::vector<real_talk::code::IdAddress> func_defs;
     std::vector<std::string> native_func_defs;
     std::vector<real_talk::code::IdAddresses> global_var_refs;
@@ -350,7 +352,7 @@ TEST_F(ExeLinkerTest, NativeFuncMissingDefError) {
   {
     std::unique_ptr<real_talk::code::Code> cmds_code(
         new real_talk::code::Code());
-    std::vector<std::string> global_var_defs;
+    std::vector<real_talk::code::IdSize> global_var_defs;
     std::vector<real_talk::code::IdAddress> func_defs;
     std::vector<std::string> native_func_defs;
     std::vector<real_talk::code::IdAddresses> global_var_refs;
@@ -375,7 +377,7 @@ TEST_F(ExeLinkerTest, NativeFuncMissingDefError) {
   {
     std::unique_ptr<real_talk::code::Code> cmds_code(
         new real_talk::code::Code());
-    std::vector<std::string> global_var_defs;
+    std::vector<real_talk::code::IdSize> global_var_defs;
     std::vector<real_talk::code::IdAddress> func_defs;
     std::vector<std::string> native_func_defs;
     std::vector<real_talk::code::IdAddresses> global_var_refs;

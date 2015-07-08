@@ -72,7 +72,11 @@ void SimpleCodeContainerWriter::Write(
   output_code->WriteBytes(
       module.GetCmdsCode().GetData(), module.GetCmdsCode().GetSize());
   const uint32_t global_var_defs_metadata_address = output_code->GetPosition();
-  WriteIds(module.GetGlobalVarDefs(), output_code);
+
+  for (const IdSize &global_var_def: module.GetGlobalVarDefs()) {
+    output_code->WriteIdSize(global_var_def);
+  }
+
   const uint32_t global_var_defs_metadata_size =
       output_code->GetPosition() - global_var_defs_metadata_address;
   const uint32_t func_defs_metadata_address = output_code->GetPosition();
