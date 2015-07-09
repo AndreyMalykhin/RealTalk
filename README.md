@@ -46,7 +46,7 @@ Educational-purpose programming language with:
             semantic // program semantic analyzer
             code // bytecode generator
             compiler
-            linker // executable and library maker (TODO)
+            linker // executable and library maker
             vm // virtual machine (TODO)
 
 ###Dependencies

@@ -240,7 +240,7 @@ class CompilerAppTest: public Test {
   virtual void TearDown() override {}
 };
 
-TEST_F(CompilerAppTest, Run) {
+TEST_F(CompilerAppTest, Compile) {
   struct TestImportFileParse {
     ImportNode *import_stmt;
     istream *import_file_stream;
