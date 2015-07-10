@@ -19,6 +19,7 @@ class VMConfigParser;
 class NativeFuncStorage;
 class NativeFuncLinker;
 class VMFactory;
+class VMConfig;
 
 class VMApp {
  public:
@@ -27,7 +28,8 @@ class VMApp {
         const real_talk::code::ExeReader &exe_reader,
         const NativeFuncStorage &native_func_storage,
         const NativeFuncLinker &native_func_linker,
-        const VMFactory &vm_factory);
+        const VMFactory &vm_factory,
+        VMConfig *config);
   void Run(int argc, const char *argv[]);
 
  private:
@@ -37,6 +39,7 @@ class VMApp {
   const NativeFuncStorage &native_func_storage_;
   const NativeFuncLinker &native_func_linker_;
   const VMFactory &vm_factory_;
+  VMConfig *config_;
 };
 }
 }

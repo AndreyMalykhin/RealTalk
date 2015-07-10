@@ -3,20 +3,34 @@
 #include <gmock/gmock.h>
 #include <vector>
 #include <string>
-#include "real_talk/vm/native_func_storage.h";
-#include "real_talk/vm/native_func_linker.h";
+#include "real_talk/code/code.h"
+#include "real_talk/code/exe_reader.h"
+#include "real_talk/code/exe.h"
+#include "real_talk/util/file.h"
+#include "real_talk/vm/native_func_storage.h"
+#include "real_talk/vm/native_func_linker.h"
 #include "real_talk/vm/vm.h"
+#include "real_talk/vm/vm_cmd.h"
 #include "real_talk/vm/vm_factory.h"
 #include "real_talk/vm/vm_config_parser.h"
+#include "real_talk/vm/vm_config.h"
 #include "real_talk/vm/vm_app.h"
 
 using std::istream;
 using std::stringstream;
 using std::vector;
 using std::string;
+using std::move;
 using std::unique_ptr;
 using std::unordered_map;
+using boost::filesystem::path;
 using testing::Test;
+using testing::Ref;
+using testing::Return;
+using testing::ReturnRef;
+using testing::SetArgPointee;
+using testing::NotNull;
+using testing::_;
 using real_talk::code::Code;
 using real_talk::code::ExeReader;
 using real_talk::code::Exe;
@@ -38,13 +52,21 @@ class FileMock: public File {
     return unique_ptr<istream>(Read_(file_path.string()));
   }
 
+  virtual void Write(const path&, const Code&) const override {
+    assert(false);
+  }
+
   MOCK_CONST_METHOD1(Read_, istream*(const string&));
 };
 
 class ExeReaderMock: public ExeReader {
  public:
   virtual unique_ptr<Exe> ReadFromStream(istream *code) const override {
-    return unique_ptr<Exe>(ReadFromCode_(code));
+    return unique_ptr<Exe>(ReadFromStream_(code));
+  }
+
+  virtual unique_ptr<Exe> ReadFromCode(Code*) const override {
+    assert(false);
   }
 
   MOCK_CONST_METHOD1(ReadFromStream_, Exe*(istream*));
@@ -52,7 +74,7 @@ class ExeReaderMock: public ExeReader {
 
 class NativeFuncStorageMock: public NativeFuncStorage {
  public:
-  MOCK_CONST_METHOD0(GetAll, unordered_map<string, NativeFunc>());
+  MOCK_CONST_METHOD0(GetAll, const unordered_map<string, NativeFunc>&());
 };
 
 class NativeFuncLinkerMock: public NativeFuncLinker {
@@ -101,7 +123,7 @@ TEST_F(VMAppTest, Execute) {
   vector<string> native_func_defs;
   vector<IdAddresses> native_func_refs;
   auto *exe = new Exe(exe_version,
-                      cmds,
+                      move(cmds),
                       main_cmds_code_size,
                       native_func_defs,
                       native_func_refs);
@@ -119,11 +141,11 @@ TEST_F(VMAppTest, Execute) {
       .WillOnce(Return(exe));
   EXPECT_CALL(native_func_storage, GetAll())
       .Times(1)
-      .WillOnce(Return(available_native_funcs));
+      .WillOnce(ReturnRef(available_native_funcs));
   EXPECT_CALL(native_func_linker,
-              Link(Ref(available_native_funcs), &used_native_funcs, exe))
+              Link(Ref(available_native_funcs), NotNull(), exe))
       .Times(1);
-  EXPECT_CALL(vm_factory, Create_(exe, Ref(used_native_funcs)))
+  EXPECT_CALL(vm_factory, Create_(exe, used_native_funcs))
       .Times(1)
       .WillOnce(Return(vm));
   EXPECT_CALL(*vm, Execute())
@@ -133,7 +155,8 @@ TEST_F(VMAppTest, Execute) {
             exe_reader,
             native_func_storage,
             native_func_linker,
-            vm_factory);
+            vm_factory,
+            &config);
   app.Run(argc, argv);
 }
 }
