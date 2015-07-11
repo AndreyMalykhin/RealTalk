@@ -1,4 +1,5 @@
 
+#include <boost/format.hpp>
 #include <unordered_map>
 #include <cassert>
 #include <string>
@@ -12,6 +13,7 @@
 #include "real_talk/vm/vm_config_parser.h"
 #include "real_talk/vm/vm_cmd.h"
 #include "real_talk/vm/vm_factory.h"
+#include "real_talk/vm/msg_printer.h"
 #include "real_talk/vm/vm.h"
 #include "real_talk/vm/vm_app.h"
 
@@ -20,6 +22,7 @@ using std::unordered_map;
 using std::unique_ptr;
 using std::istream;
 using std::string;
+using boost::format;
 using real_talk::util::File;
 using real_talk::code::ExeReader;
 using real_talk::code::Exe;
@@ -33,6 +36,7 @@ VMApp::VMApp(const VMConfigParser &config_parser,
              const NativeFuncStorage &native_func_storage,
              const NativeFuncLinker &native_func_linker,
              const VMFactory &vm_factory,
+             const MsgPrinter &msg_printer,
              VMConfig *config)
     : config_parser_(config_parser),
       file_(file),
@@ -40,6 +44,7 @@ VMApp::VMApp(const VMConfigParser &config_parser,
       native_func_storage_(native_func_storage),
       native_func_linker_(native_func_linker),
       vm_factory_(vm_factory),
+      msg_printer_(msg_printer),
       config_(config) {
   assert(config_);
 }
@@ -49,6 +54,7 @@ void VMApp::Run(int argc, const char *argv[]) {
   config_parser_.Parse(argc, argv, config_, &cmd);
 
   if (cmd == VMCmd::kHelp) {
+    msg_printer_.PrintHelp(config_parser_.GetHelp());
     return;
   }
 
@@ -57,8 +63,16 @@ void VMApp::Run(int argc, const char *argv[]) {
   const unordered_map<string, NativeFunc> &available_native_funcs =
       native_func_storage_.GetAll();
   vector<NativeFunc> used_native_funcs;
-  native_func_linker_.Link(
-      available_native_funcs, &used_native_funcs, exe.get());
+
+  try {
+    native_func_linker_.Link(
+        available_native_funcs, &used_native_funcs, exe.get());
+  } catch (const NativeFuncLinker::MissingFuncError &error) {
+    msg_printer_.PrintError(
+        (format("Function \"%1%\" is not exists") % error.GetFuncId()).str());
+    return;
+  }
+
   unique_ptr<VM> vm = vm_factory_.Create(exe.get(), used_native_funcs);
   vm->Execute();
 }

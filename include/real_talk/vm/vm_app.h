@@ -20,6 +20,7 @@ class NativeFuncStorage;
 class NativeFuncLinker;
 class VMFactory;
 class VMConfig;
+class MsgPrinter;
 
 class VMApp {
  public:
@@ -29,6 +30,7 @@ class VMApp {
         const NativeFuncStorage &native_func_storage,
         const NativeFuncLinker &native_func_linker,
         const VMFactory &vm_factory,
+        const MsgPrinter &msg_printer,
         VMConfig *config);
   void Run(int argc, const char *argv[]);
 
@@ -39,6 +41,7 @@ class VMApp {
   const NativeFuncStorage &native_func_storage_;
   const NativeFuncLinker &native_func_linker_;
   const VMFactory &vm_factory_;
+  const MsgPrinter &msg_printer_;
   VMConfig *config_;
 };
 }

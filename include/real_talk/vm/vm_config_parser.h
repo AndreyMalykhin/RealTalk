@@ -2,6 +2,8 @@
 #ifndef _REAL_TALK_VM_VM_CONFIG_PARSER_H_
 #define _REAL_TALK_VM_VM_CONFIG_PARSER_H_
 
+#include <string>
+
 namespace real_talk {
 namespace vm {
 
@@ -11,6 +13,7 @@ enum class VMCmd: uint8_t;
 class VMConfigParser {
  public:
   virtual ~VMConfigParser() {}
+  virtual std::string GetHelp() const = 0;
   virtual void Parse(
       int argc, const char *argv[], VMConfig *config, VMCmd *cmd) const = 0;
 };
