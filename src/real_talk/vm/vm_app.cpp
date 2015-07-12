@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "real_talk/util/file.h"
+#include "real_talk/util/errors.h"
 #include "real_talk/code/exe.h"
 #include "real_talk/code/exe_reader.h"
 #include "real_talk/vm/native_func_storage.h"
@@ -24,8 +25,10 @@ using std::istream;
 using std::string;
 using boost::format;
 using real_talk::util::File;
+using real_talk::util::IOError;
 using real_talk::code::ExeReader;
 using real_talk::code::Exe;
+using real_talk::code::Code;
 
 namespace real_talk {
 namespace vm {
@@ -51,15 +54,34 @@ VMApp::VMApp(const VMConfigParser &config_parser,
 
 void VMApp::Run(int argc, const char *argv[]) {
   VMCmd cmd;
-  config_parser_.Parse(argc, argv, config_, &cmd);
+
+  try {
+    config_parser_.Parse(argc, argv, config_, &cmd);
+  } catch (const VMConfigParser::BadArgsError&) {
+    msg_printer_.PrintError("Invalid arguments");
+    return;
+  }
 
   if (cmd == VMCmd::kHelp) {
     msg_printer_.PrintHelp(config_parser_.GetHelp());
     return;
   }
 
-  unique_ptr<istream> exe_stream = file_.Read(config_->GetInputFilePath());
-  unique_ptr<Exe> exe = exe_reader_.ReadFromStream(exe_stream.get());
+  unique_ptr<Exe> exe;
+
+  try {
+    unique_ptr<istream> exe_stream = file_.Read(config_->GetInputFilePath());
+    exe = exe_reader_.ReadFromStream(exe_stream.get());
+  } catch (const IOError&) {
+    const string msg = (format("Failed to read file %1%")
+                        % config_->GetInputFilePath().string()).str();
+    msg_printer_.PrintError(msg);
+    return;
+  } catch (const Code::CodeSizeOverflowError&) {
+    msg_printer_.PrintError("Code size exceeds 32 bits");
+    return;
+  }
+
   const unordered_map<string, NativeFunc> &available_native_funcs =
       native_func_storage_.GetAll();
   vector<NativeFunc> used_native_funcs;

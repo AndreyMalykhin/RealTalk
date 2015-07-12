@@ -1,4 +1,5 @@
 
+#include <boost/format.hpp>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <vector>
@@ -7,6 +8,7 @@
 #include "real_talk/code/exe_reader.h"
 #include "real_talk/code/exe.h"
 #include "real_talk/util/file.h"
+#include "real_talk/util/errors.h"
 #include "real_talk/vm/native_func_storage.h"
 #include "real_talk/vm/native_func_linker.h"
 #include "real_talk/vm/vm.h"
@@ -25,6 +27,7 @@ using std::move;
 using std::unique_ptr;
 using std::unordered_map;
 using boost::filesystem::path;
+using boost::format;
 using testing::Test;
 using testing::Throw;
 using testing::Eq;
@@ -39,6 +42,7 @@ using real_talk::code::ExeReader;
 using real_talk::code::Exe;
 using real_talk::code::IdAddresses;
 using real_talk::util::File;
+using real_talk::util::IOError;
 
 namespace real_talk {
 namespace vm {
@@ -257,6 +261,174 @@ TEST_F(VMAppTest, MissingFuncErrorWhileLinkingNativeFuncs) {
       .WillOnce(Throw(error));
   EXPECT_CALL(msg_printer, PrintError(msg))
       .Times(1);
+  EXPECT_CALL(vm_factory, Create_(_, _))
+      .Times(0);
+  VMApp app(config_parser,
+            file,
+            exe_reader,
+            native_func_storage,
+            native_func_linker,
+            vm_factory,
+            msg_printer,
+            &config);
+  app.Run(argc, argv);
+}
+
+TEST_F(VMAppTest, IOErrorWhileReadingExeStream) {
+  VMFactoryMock vm_factory;
+  NativeFuncLinkerMock native_func_linker;
+  NativeFuncStorageMock native_func_storage;
+  ExeReaderMock exe_reader;
+  FileMock file;
+  VMConfigParserMock config_parser;
+  MsgPrinterMock msg_printer;
+  int argc = 1;
+  const char *argv[] = {"realtalkvm"};
+  VMConfig config;
+  config.SetInputFilePath("/myproject/myapp.rte");
+  auto *exe_stream = new stringstream();
+  IOError error("msg");
+  string msg = (format("Failed to read file %1%")
+                % config.GetInputFilePath().string()).str();
+  EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+      .Times(1)
+      .WillOnce(SetArgPointee<3>(VMCmd::kExecute));
+  EXPECT_CALL(file, Read_(config.GetInputFilePath().string()))
+      .Times(1)
+      .WillOnce(Return(exe_stream));
+  EXPECT_CALL(exe_reader, ReadFromStream_(exe_stream))
+      .Times(1)
+      .WillOnce(Throw(error));
+  EXPECT_CALL(msg_printer, PrintError(msg))
+      .Times(1);
+  EXPECT_CALL(native_func_storage, GetAll())
+      .Times(0);
+  EXPECT_CALL(native_func_linker, Link(_, _, _))
+      .Times(0);
+  EXPECT_CALL(vm_factory, Create_(_, _))
+      .Times(0);
+  VMApp app(config_parser,
+            file,
+            exe_reader,
+            native_func_storage,
+            native_func_linker,
+            vm_factory,
+            msg_printer,
+            &config);
+  app.Run(argc, argv);
+}
+
+TEST_F(VMAppTest, CodeSizeOverflowErrorWhileReadingExe) {
+  VMFactoryMock vm_factory;
+  NativeFuncLinkerMock native_func_linker;
+  NativeFuncStorageMock native_func_storage;
+  ExeReaderMock exe_reader;
+  FileMock file;
+  VMConfigParserMock config_parser;
+  MsgPrinterMock msg_printer;
+  int argc = 1;
+  const char *argv[] = {"realtalkvm"};
+  VMConfig config;
+  config.SetInputFilePath("/myproject/myapp.rte");
+  auto *exe_stream = new stringstream();
+  Code::CodeSizeOverflowError error("msg");
+  string msg = "Code size exceeds 32 bits";
+  EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+      .Times(1)
+      .WillOnce(SetArgPointee<3>(VMCmd::kExecute));
+  EXPECT_CALL(file, Read_(config.GetInputFilePath().string()))
+      .Times(1)
+      .WillOnce(Return(exe_stream));
+  EXPECT_CALL(exe_reader, ReadFromStream_(exe_stream))
+      .Times(1)
+      .WillOnce(Throw(error));
+  EXPECT_CALL(msg_printer, PrintError(msg))
+      .Times(1);
+  EXPECT_CALL(native_func_storage, GetAll())
+      .Times(0);
+  EXPECT_CALL(native_func_linker, Link(_, _, _))
+      .Times(0);
+  EXPECT_CALL(vm_factory, Create_(_, _))
+      .Times(0);
+  VMApp app(config_parser,
+            file,
+            exe_reader,
+            native_func_storage,
+            native_func_linker,
+            vm_factory,
+            msg_printer,
+            &config);
+  app.Run(argc, argv);
+}
+
+TEST_F(VMAppTest, IOErrorWhileReadingExeFile) {
+  VMFactoryMock vm_factory;
+  NativeFuncLinkerMock native_func_linker;
+  NativeFuncStorageMock native_func_storage;
+  ExeReaderMock exe_reader;
+  FileMock file;
+  VMConfigParserMock config_parser;
+  MsgPrinterMock msg_printer;
+  int argc = 1;
+  const char *argv[] = {"realtalkvm"};
+  VMConfig config;
+  config.SetInputFilePath("/myproject/myapp.rte");
+  IOError error("msg");
+  string msg = (format("Failed to read file %1%")
+                % config.GetInputFilePath().string()).str();
+  EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+      .Times(1)
+      .WillOnce(SetArgPointee<3>(VMCmd::kExecute));
+  EXPECT_CALL(file, Read_(config.GetInputFilePath().string()))
+      .Times(1)
+      .WillOnce(Throw(error));
+  EXPECT_CALL(msg_printer, PrintError(msg))
+      .Times(1);
+  EXPECT_CALL(exe_reader, ReadFromStream_(_))
+      .Times(0);
+  EXPECT_CALL(native_func_storage, GetAll())
+      .Times(0);
+  EXPECT_CALL(native_func_linker, Link(_, _, _))
+      .Times(0);
+  EXPECT_CALL(vm_factory, Create_(_, _))
+      .Times(0);
+  VMApp app(config_parser,
+            file,
+            exe_reader,
+            native_func_storage,
+            native_func_linker,
+            vm_factory,
+            msg_printer,
+            &config);
+  app.Run(argc, argv);
+}
+
+TEST_F(VMAppTest, BadArgsErrorWhileParsingConfig) {
+  VMFactoryMock vm_factory;
+  NativeFuncLinkerMock native_func_linker;
+  NativeFuncStorageMock native_func_storage;
+  ExeReaderMock exe_reader;
+  FileMock file;
+  VMConfigParserMock config_parser;
+  MsgPrinterMock msg_printer;
+  int argc = 1;
+  const char *argv[] = {"realtalkvm"};
+  VMConfig config;
+  VMConfigParser::BadArgsError error("msg");
+  string msg = "Invalid arguments";
+  EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
+      .Times(1)
+      .WillOnce(Throw(error));
+  EXPECT_CALL(msg_printer, PrintError(msg))
+      .Times(1);
+  EXPECT_CALL(file, Read_(_))
+      .Times(0);
+  EXPECT_CALL(exe_reader, ReadFromStream_(_))
+      .Times(0);
+  EXPECT_CALL(native_func_storage, GetAll())
+      .Times(0);
+  EXPECT_CALL(native_func_linker, Link(_, _, _))
+      .Times(0);
   EXPECT_CALL(vm_factory, Create_(_, _))
       .Times(0);
   VMApp app(config_parser,
