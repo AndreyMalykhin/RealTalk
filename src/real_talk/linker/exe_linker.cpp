@@ -187,10 +187,12 @@ unique_ptr<CodeContainer> ExeLinker::Link(
 
   cmds->SetPosition(UINT32_C(0));
   const uint32_t main_cmds_size = main_cmds_current_address;
+  const uint32_t global_vars_size = next_global_var_index;
   return unique_ptr<CodeContainer>(new Exe(
       output_version,
       move(cmds),
       main_cmds_size,
+      global_vars_size,
       ordered_native_func_defs,
       native_func_refs));
 }

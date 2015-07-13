@@ -5285,7 +5285,7 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalStringVar) {
   expected_code->WriteCmdId(CmdId::kCreateLocalStringVar);
   expected_code->WriteCmdId(CmdId::kCreateLocalStringVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalStringVarValue);
-  expected_code->WriteUint32(UINT32_C(4));
+  expected_code->WriteUint32(UINT32_C(1));
   expected_code->WriteCmdId(CmdId::kUnloadString);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               move(data_type_node2),
@@ -5310,7 +5310,7 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalArrayVar) {
   expected_code->WriteCmdId(CmdId::kCreateLocalArrayVar);
   expected_code->WriteCmdId(CmdId::kCreateLocalArrayVar);
   expected_code->WriteCmdId(CmdId::kLoadLocalArrayVarValue);
-  expected_code->WriteUint32(UINT32_C(4));
+  expected_code->WriteUint32(UINT32_C(1));
   expected_code->WriteCmdId(CmdId::kUnloadArray);
   TestIdAsNotAssigneeLocalVar(
       move(array_data_type_node),

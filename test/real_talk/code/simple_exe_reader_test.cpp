@@ -65,18 +65,20 @@ class SimpleExeReaderTest: public Test {
     {
       unique_ptr<Code> cmds_code(new Code());
       cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
-      uint32_t main_cmds_code_size = cmds_code->GetPosition();
       cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
-      cmds_code->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
+      uint32_t main_cmds_code_size = cmds_code->GetPosition();
+      cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
       cmds_code->SetPosition(UINT32_C(0));
       vector<string> native_func_defs = {"native_func", "native_func2"};
       vector<IdAddresses> native_func_refs =
           {{"func3", {UINT32_C(1), UINT32_C(2)}},
            {"func4", {UINT32_C(3), UINT32_C(4)}}};
       uint32_t version = UINT32_C(1);
+      uint32_t global_vars_size = UINT32_C(7);
       Exe expected_exe(version,
                        move(cmds_code),
                        main_cmds_code_size,
+                       global_vars_size,
                        native_func_defs,
                        native_func_refs);
       TestExe test_data = {move(expected_exe)};
@@ -89,9 +91,11 @@ class SimpleExeReaderTest: public Test {
       vector<IdAddresses> native_func_refs;
       uint32_t version = UINT32_C(1);
       uint32_t main_cmds_code_size = UINT32_C(0);
+      uint32_t global_vars_size = UINT32_C(0);
       Exe expected_exe(version,
                        move(cmds_code),
                        main_cmds_code_size,
+                       global_vars_size,
                        native_func_defs,
                        native_func_refs);
       TestExe test_data = {move(expected_exe)};

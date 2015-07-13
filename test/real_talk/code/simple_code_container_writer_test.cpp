@@ -136,13 +136,16 @@ class SimpleCodeContainerWriterTest: public Test {
         {{"func3", {UINT32_C(1), UINT32_C(2)}},
          {"func4", {UINT32_C(3), UINT32_C(4)}}};
     uint32_t version = UINT32_C(1);
+    uint32_t global_vars_size = UINT32_C(7);
     unique_ptr<CodeContainer> exe(new Exe(version,
                                           move(cmds_code),
                                           main_cmds_code_size,
+                                          global_vars_size,
                                           native_func_defs,
                                           native_func_refs));
     Code expected_code;
     expected_code.WriteUint32(exe->GetVersion());
+    expected_code.WriteUint32(global_vars_size);
     uint32_t segments_metadata_address = expected_code.GetPosition();
     expected_code.Skip(7 * sizeof(uint32_t));
     uint32_t cmds_address = expected_code.GetPosition();

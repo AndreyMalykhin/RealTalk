@@ -19,6 +19,7 @@ namespace code {
 unique_ptr<Exe> SimpleExeReader::ReadFromCode(Code *code) const {
   assert(code);
   const uint32_t version = code->ReadUint32();
+  const uint32_t global_vars_size = code->ReadUint32();
   const uint32_t cmds_address = code->ReadUint32();
   const uint32_t main_cmds_size = code->ReadUint32();
   const uint32_t func_cmds_size = code->ReadUint32();
@@ -52,6 +53,7 @@ unique_ptr<Exe> SimpleExeReader::ReadFromCode(Code *code) const {
   return unique_ptr<Exe>(new Exe(version,
                                  move(cmds_code),
                                  main_cmds_size,
+                                 global_vars_size,
                                  native_func_defs,
                                  native_func_refs));
 }

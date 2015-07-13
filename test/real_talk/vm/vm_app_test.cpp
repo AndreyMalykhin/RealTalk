@@ -137,9 +137,11 @@ TEST_F(VMAppTest, Execute) {
   unique_ptr<Code> cmds(new Code());
   vector<string> native_func_defs;
   vector<IdAddresses> native_func_refs;
+  uint32_t global_vars_size = UINT32_C(0);
   auto *exe = new Exe(exe_version,
                       move(cmds),
                       main_cmds_code_size,
+                      global_vars_size,
                       native_func_defs,
                       native_func_refs);
   auto *exe_stream = new stringstream();
@@ -234,9 +236,11 @@ TEST_F(VMAppTest, MissingFuncErrorWhileLinkingNativeFuncs) {
   unique_ptr<Code> cmds(new Code());
   vector<string> native_func_defs;
   vector<IdAddresses> native_func_refs;
+  uint32_t global_vars_size = UINT32_C(0);
   auto *exe = new Exe(exe_version,
                       move(cmds),
                       main_cmds_code_size,
+                      global_vars_size,
                       native_func_defs,
                       native_func_refs);
   auto *exe_stream = new stringstream();

@@ -108,6 +108,7 @@ add_executable(real_talk_tests_exe
   test/real_talk/linker/simple_msg_printer_test.cpp
   test/real_talk/linker/simple_linker_config_parser_test.cpp
   test/real_talk/vm/vm_app_test.cpp
+  test/real_talk/vm/simple_vm_test.cpp
   test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/simple_file_test.cpp
   test/real_talk/util/simple_file_searcher_test.cpp

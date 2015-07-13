@@ -38,6 +38,7 @@ void SimpleCodeContainerWriter::Write(const Exe &exe, Code *output_code) const {
   assert(output_code);
   output_code_ = output_code;
   output_code->WriteUint32(exe.GetVersion());
+  output_code->WriteUint32(exe.GetGlobalVarsSize());
   const uint32_t segments_metadata_address = output_code->GetPosition();
   output_code->Skip(7 * sizeof(uint32_t));
   const uint32_t cmds_address = output_code->GetPosition();

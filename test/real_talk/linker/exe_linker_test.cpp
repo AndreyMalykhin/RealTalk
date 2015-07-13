@@ -218,9 +218,11 @@ TEST_F(ExeLinkerTest, Link) {
       {{"native_func2", native_func_index_placeholders2},
        {"native_func", native_func_index_placeholders}};
   uint32_t exe_version = UINT32_C(1);
+  uint32_t global_vars_size = UINT32_C(4);
   Exe expected_exe(exe_version,
                    move(cmds_code),
                    main_cmds_code_size,
+                   global_vars_size,
                    native_func_defs,
                    native_func_refs);
   unique_ptr<CodeContainer> actual_exe =
