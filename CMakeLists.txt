@@ -76,6 +76,7 @@ add_library(real_talk_lib SHARED
   src/real_talk/linker/simple_linker_factory.cpp
   src/real_talk/linker/simple_msg_printer.cpp
   src/real_talk/linker/simple_linker_config_parser.cpp
+  src/real_talk/vm/data_storage.cpp
   src/real_talk/vm/vm_config.cpp
   src/real_talk/vm/vm_app.cpp
   src/real_talk/util/errors.cpp

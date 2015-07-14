@@ -3,6 +3,8 @@
 #include <gmock/gmock.h>
 #include <vector>
 #include <string>
+#include "real_talk/code/exe.h"
+#include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
 using std::vector;
@@ -40,17 +42,17 @@ TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
           global_vars_size,
           native_func_defs,
           native_func_refs);
-  vector<NativeFunc> native_funcs;
   DataStorage expected_global_vars(global_vars_size);
   expected_global_vars.GetInt(var_index) = IntValue();
   DataStorage expected_local_vars;
   DataStorage expected_operands;
-  FuncFrames expected_func_frames;
+  SimpleVM::FuncFrames expected_func_frames;
   size_t local_vars_start_index = 0;
   uint32_t return_address = cmds->GetSize();
   FuncFrame func_frame(local_vars_start_index, return_address);
   expected_func_frames.push_back(func_frame);
-  uint32_t expected_cmds_position = cmds->Size();
+  uint32_t expected_cmds_position = cmds->GetSize();
+  vector<NativeFunc> native_funcs;
   SimpleVM vm(&exe, native_funcs);
   vm.Execute();
   uint32_t actual_cmds_position = cmds->GetPosition();
