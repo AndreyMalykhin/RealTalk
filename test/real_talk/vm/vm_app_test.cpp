@@ -99,7 +99,7 @@ class NativeFuncLinkerMock: public NativeFuncLinker {
 
 class VMMock: public VM {
  public:
-  MOCK_CONST_METHOD0(Execute, void());
+  MOCK_METHOD0(Execute, void());
 };
 
 class VMFactoryMock: public VMFactory {

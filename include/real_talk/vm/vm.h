@@ -8,7 +8,7 @@ namespace vm {
 class VM {
  public:
   virtual ~VM() {}
-  virtual void Execute() const = 0;
+  virtual void Execute() = 0;
 };
 }
 }

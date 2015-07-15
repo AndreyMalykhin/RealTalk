@@ -48,10 +48,10 @@ TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
   DataStorage expected_operands;
   SimpleVM::FuncFrames expected_func_frames;
   size_t local_vars_start_index = 0;
-  uint32_t return_address = cmds->GetSize();
+  uint32_t return_address = UINT32_C(0);
   FuncFrame func_frame(local_vars_start_index, return_address);
   expected_func_frames.push_back(func_frame);
-  uint32_t expected_cmds_position = cmds->GetSize();
+  uint32_t expected_cmds_position = main_cmds_code_size;
   vector<NativeFunc> native_funcs;
   SimpleVM vm(&exe, native_funcs);
   vm.Execute();

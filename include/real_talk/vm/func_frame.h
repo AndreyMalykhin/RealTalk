@@ -10,7 +10,9 @@ namespace vm {
 
 class FuncFrame {
  public:
-  FuncFrame(size_t local_vars_start_index, uint32_t return_address) noexcept
+  inline FuncFrame(
+      size_t local_vars_start_index,
+      uint32_t return_address) noexcept
       : local_vars_start_index_(local_vars_start_index),
         return_address_(return_address) {}
 

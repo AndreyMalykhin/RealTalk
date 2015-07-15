@@ -25,7 +25,7 @@ class SimpleVM: public VM {
   SimpleVM(real_talk::code::Exe *exe,
            const std::vector<NativeFunc> &native_funcs);
   ~SimpleVM();
-  virtual void Execute() const override;
+  virtual void Execute() override;
   const DataStorage &GetGlobalVars() const;
   const DataStorage &GetLocalVars() const;
   const DataStorage &GetOperands() const;

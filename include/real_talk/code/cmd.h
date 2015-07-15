@@ -193,9 +193,12 @@ enum class CmdId: uint8_t {
   kArithmeticNegateDouble
 };
 
+class CmdVisitor;
+
 class Cmd {
  public:
   virtual ~Cmd() {}
+  virtual void Accept(CmdVisitor *visitor) const = 0;
 
   friend std::ostream &operator<<(std::ostream &stream, const Cmd &cmd) {
     stream << typeid(cmd).name() << "; ";
