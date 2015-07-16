@@ -2,51 +2,65 @@
 #ifndef _REAL_TALK_CODE_NOT_EQUAL_CMD_H_
 #define _REAL_TALK_CODE_NOT_EQUAL_CMD_H_
 
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
 namespace code {
 
-class NotEqualIntCmd: public Cmd {
+class NotEqualCmd: public Cmd {
  private:
   virtual void Print(std::ostream&) const override {}
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };
 
-class NotEqualLongCmd: public Cmd {
- private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+class NotEqualIntCmd: public NotEqualCmd {
+ public:
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitNotEqualInt(*this);
+  }
 };
 
-class NotEqualDoubleCmd: public Cmd {
- private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+class NotEqualLongCmd: public NotEqualCmd {
+ public:
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitNotEqualLong(*this);
+  }
 };
 
-class NotEqualBoolCmd: public Cmd {
- private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+class NotEqualDoubleCmd: public NotEqualCmd {
+ public:
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitNotEqualDouble(*this);
+  }
 };
 
-class NotEqualCharCmd: public Cmd {
- private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+class NotEqualBoolCmd: public NotEqualCmd {
+ public:
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitNotEqualBool(*this);
+  }
 };
 
-class NotEqualStringCmd: public Cmd {
- private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+class NotEqualCharCmd: public NotEqualCmd {
+ public:
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitNotEqualChar(*this);
+  }
 };
 
-class NotEqualArrayCmd: public Cmd {
- private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+class NotEqualStringCmd: public NotEqualCmd {
+ public:
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitNotEqualString(*this);
+  }
+};
+
+class NotEqualArrayCmd: public NotEqualCmd {
+ public:
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitNotEqualArray(*this);
+  }
 };
 }
 }

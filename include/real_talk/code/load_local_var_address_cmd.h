@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_CODE_LOAD_LOCAL_VAR_ADDRESS_CMD_H_
 #define _REAL_TALK_CODE_LOAD_LOCAL_VAR_ADDRESS_CMD_H_
 
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
@@ -11,6 +12,10 @@ class LoadLocalVarAddressCmd: public Cmd {
  public:
   inline explicit LoadLocalVarAddressCmd(uint32_t var_index) noexcept
       : var_index_(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalVarAddress(*this);
+  }
 
   inline void SetVarIndex(uint32_t var_index) noexcept {var_index_ = var_index;}
   inline uint32_t GetVarIndex() const noexcept {return var_index_;}

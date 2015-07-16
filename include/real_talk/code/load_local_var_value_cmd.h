@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_CODE_LOAD_LOCAL_VAR_VALUE_CMD_H_
 #define _REAL_TALK_CODE_LOAD_LOCAL_VAR_VALUE_CMD_H_
 
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
@@ -33,42 +34,70 @@ class LoadLocalIntVarValueCmd: public LoadLocalVarValueCmd {
  public:
   inline explicit LoadLocalIntVarValueCmd(uint32_t var_index) noexcept
       : LoadLocalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalIntVarValue(*this);
+  }
 };
 
 class LoadLocalArrayVarValueCmd: public LoadLocalVarValueCmd {
  public:
   inline explicit LoadLocalArrayVarValueCmd(uint32_t var_index) noexcept
       : LoadLocalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalArrayVarValue(*this);
+  }
 };
 
 class LoadLocalLongVarValueCmd: public LoadLocalVarValueCmd {
  public:
   inline explicit LoadLocalLongVarValueCmd(uint32_t var_index) noexcept
       : LoadLocalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalLongVarValue(*this);
+  }
 };
 
 class LoadLocalDoubleVarValueCmd: public LoadLocalVarValueCmd {
  public:
   inline explicit LoadLocalDoubleVarValueCmd(uint32_t var_index) noexcept
       : LoadLocalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalDoubleVarValue(*this);
+  }
 };
 
 class LoadLocalCharVarValueCmd: public LoadLocalVarValueCmd {
  public:
   inline explicit LoadLocalCharVarValueCmd(uint32_t var_index) noexcept
       : LoadLocalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalCharVarValue(*this);
+  }
 };
 
 class LoadLocalStringVarValueCmd: public LoadLocalVarValueCmd {
  public:
   inline explicit LoadLocalStringVarValueCmd(uint32_t var_index) noexcept
       : LoadLocalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalStringVarValue(*this);
+  }
 };
 
 class LoadLocalBoolVarValueCmd: public LoadLocalVarValueCmd {
  public:
   inline explicit LoadLocalBoolVarValueCmd(uint32_t var_index) noexcept
       : LoadLocalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalBoolVarValue(*this);
+  }
 };
 }
 }

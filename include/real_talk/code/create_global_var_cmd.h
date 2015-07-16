@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_CODE_CREATE_GLOBAL_VAR_CMD_H_
 #define _REAL_TALK_CODE_CREATE_GLOBAL_VAR_CMD_H_
 
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
@@ -33,42 +34,70 @@ class CreateGlobalIntVarCmd: public CreateGlobalVarCmd {
  public:
   inline explicit CreateGlobalIntVarCmd(uint32_t var_index) noexcept
       : CreateGlobalVarCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateGlobalIntVar(*this);
+  }
 };
 
 class CreateGlobalArrayVarCmd: public CreateGlobalVarCmd {
  public:
   inline explicit CreateGlobalArrayVarCmd(uint32_t var_index) noexcept
       : CreateGlobalVarCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateGlobalArrayVar(*this);
+  }
 };
 
 class CreateGlobalLongVarCmd: public CreateGlobalVarCmd {
  public:
   inline explicit CreateGlobalLongVarCmd(uint32_t var_index) noexcept
       : CreateGlobalVarCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateGlobalLongVar(*this);
+  }
 };
 
 class CreateGlobalDoubleVarCmd: public CreateGlobalVarCmd {
  public:
   inline explicit CreateGlobalDoubleVarCmd(uint32_t var_index) noexcept
       : CreateGlobalVarCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateGlobalDoubleVar(*this);
+  }
 };
 
 class CreateGlobalCharVarCmd: public CreateGlobalVarCmd {
  public:
   inline explicit CreateGlobalCharVarCmd(uint32_t var_index) noexcept
       : CreateGlobalVarCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateGlobalCharVar(*this);
+  }
 };
 
 class CreateGlobalStringVarCmd: public CreateGlobalVarCmd {
  public:
   inline explicit CreateGlobalStringVarCmd(uint32_t var_index) noexcept
       : CreateGlobalVarCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateGlobalStringVar(*this);
+  }
 };
 
 class CreateGlobalBoolVarCmd: public CreateGlobalVarCmd {
  public:
   inline explicit CreateGlobalBoolVarCmd(uint32_t var_index) noexcept
       : CreateGlobalVarCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateGlobalBoolVar(*this);
+  }
 };
 }
 }

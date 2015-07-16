@@ -3,6 +3,7 @@
 #define _REAL_TALK_CODE_CREATE_ARRAY_CMD_H_
 
 #include <cassert>
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
@@ -40,36 +41,60 @@ class CreateIntArrayCmd: public CreateArrayCmd {
  public:
   inline explicit CreateIntArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateIntArray(*this);
+  }
 };
 
 class CreateLongArrayCmd: public CreateArrayCmd {
  public:
   inline explicit CreateLongArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateLongArray(*this);
+  }
 };
 
 class CreateDoubleArrayCmd: public CreateArrayCmd {
  public:
   inline explicit CreateDoubleArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateDoubleArray(*this);
+  }
 };
 
 class CreateBoolArrayCmd: public CreateArrayCmd {
  public:
   inline explicit CreateBoolArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateBoolArray(*this);
+  }
 };
 
 class CreateCharArrayCmd: public CreateArrayCmd {
  public:
   inline explicit CreateCharArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateCharArray(*this);
+  }
 };
 
 class CreateStringArrayCmd: public CreateArrayCmd {
  public:
   inline explicit CreateStringArrayCmd(uint8_t dimensions_count) noexcept
       : CreateArrayCmd(dimensions_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateStringArray(*this);
+  }
 };
 }
 }

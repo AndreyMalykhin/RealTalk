@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_CODE_JUMP_CMD_H_
 #define _REAL_TALK_CODE_JUMP_CMD_H_
 
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
@@ -29,23 +30,39 @@ class JumpCmd: public Cmd {
 class JumpIfNotCmd: public JumpCmd {
  public:
   inline explicit JumpIfNotCmd(int32_t offset) noexcept: JumpCmd(offset) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitJumpIfNot(*this);
+  }
 };
 
 class DirectJumpCmd: public JumpCmd {
  public:
   inline explicit DirectJumpCmd(int32_t offset) noexcept: JumpCmd(offset) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitDirectJump(*this);
+  }
 };
 
 class ImplicitJumpIfNotCmd: public JumpCmd {
  public:
   inline explicit ImplicitJumpIfNotCmd(int32_t offset) noexcept
       : JumpCmd(offset) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitImplicitJumpIfNot(*this);
+  }
 };
 
 class ImplicitJumpIfCmd: public JumpCmd {
  public:
   inline explicit ImplicitJumpIfCmd(int32_t offset) noexcept
       : JumpCmd(offset) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitImplicitJumpIf(*this);
+  }
 };
 }
 }

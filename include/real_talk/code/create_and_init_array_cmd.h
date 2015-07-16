@@ -3,6 +3,7 @@
 #define _REAL_TALK_CODE_CREATE_AND_INIT_ARRAY_CMD_H_
 
 #include <cassert>
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
@@ -54,6 +55,10 @@ class CreateAndInitIntArrayCmd: public CreateAndInitArrayCmd {
   inline explicit CreateAndInitIntArrayCmd(
       uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateAndInitIntArray(*this);
+  }
 };
 
 class CreateAndInitLongArrayCmd: public CreateAndInitArrayCmd {
@@ -61,6 +66,10 @@ class CreateAndInitLongArrayCmd: public CreateAndInitArrayCmd {
   inline explicit CreateAndInitLongArrayCmd(
       uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateAndInitLongArray(*this);
+  }
 };
 
 class CreateAndInitDoubleArrayCmd: public CreateAndInitArrayCmd {
@@ -68,6 +77,10 @@ class CreateAndInitDoubleArrayCmd: public CreateAndInitArrayCmd {
   inline explicit CreateAndInitDoubleArrayCmd(
       uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateAndInitDoubleArray(*this);
+  }
 };
 
 class CreateAndInitBoolArrayCmd: public CreateAndInitArrayCmd {
@@ -75,6 +88,10 @@ class CreateAndInitBoolArrayCmd: public CreateAndInitArrayCmd {
   inline explicit CreateAndInitBoolArrayCmd(
       uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateAndInitBoolArray(*this);
+  }
 };
 
 class CreateAndInitCharArrayCmd: public CreateAndInitArrayCmd {
@@ -82,6 +99,10 @@ class CreateAndInitCharArrayCmd: public CreateAndInitArrayCmd {
   inline explicit CreateAndInitCharArrayCmd(
       uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateAndInitCharArray(*this);
+  }
 };
 
 class CreateAndInitStringArrayCmd: public CreateAndInitArrayCmd {
@@ -89,6 +110,10 @@ class CreateAndInitStringArrayCmd: public CreateAndInitArrayCmd {
   inline explicit CreateAndInitStringArrayCmd(
       uint8_t dimensions_count, int32_t values_count) noexcept
       : CreateAndInitArrayCmd(dimensions_count, values_count) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCreateAndInitStringArray(*this);
+  }
 };
 }
 }

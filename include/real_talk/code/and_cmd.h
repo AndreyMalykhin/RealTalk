@@ -9,11 +9,12 @@ namespace real_talk {
 namespace code {
 
 class AndCmd: public Cmd {
- private:
+ public:
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitAnd(*this);
   }
 
+ private:
   virtual void Print(std::ostream&) const override {}
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };

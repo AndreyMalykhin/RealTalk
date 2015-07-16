@@ -5,6 +5,7 @@
 #include <string>
 #include <cmath>
 #include <limits>
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
@@ -14,6 +15,10 @@ class LoadIntValueCmd: public Cmd {
  public:
   inline explicit LoadIntValueCmd(int32_t value) noexcept: value_(value) {}
   inline void SetValue(int32_t value) noexcept {value_ = value;}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadIntValue(*this);
+  }
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -33,6 +38,10 @@ class LoadLongValueCmd: public Cmd {
   inline explicit LoadLongValueCmd(int64_t value) noexcept: value_(value) {}
   inline void SetValue(int64_t value) noexcept {value_ = value;}
 
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLongValue(*this);
+  }
+
  private:
   virtual void Print(std::ostream &stream) const override {
     stream << "value=" << value_;
@@ -50,6 +59,10 @@ class LoadBoolValueCmd: public Cmd {
  public:
   inline explicit LoadBoolValueCmd(bool value) noexcept: value_(value) {}
   inline void SetValue(bool value) noexcept {value_ = value;}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadBoolValue(*this);
+  }
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -69,6 +82,10 @@ class LoadCharValueCmd: public Cmd {
   inline explicit LoadCharValueCmd(char value) noexcept: value_(value) {}
   inline void SetValue(char value) noexcept {value_ = value;}
 
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadCharValue(*this);
+  }
+
  private:
   virtual void Print(std::ostream &stream) const override {
     stream << "value=" << value_;
@@ -87,6 +104,10 @@ class LoadStringValueCmd: public Cmd {
   explicit LoadStringValueCmd(const std::string &value): value_(value) {}
   inline void SetValue(const std::string &value) {value_ = value;}
 
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadStringValue(*this);
+  }
+
  private:
   virtual void Print(std::ostream &stream) const override {
     stream << "value=" << value_;
@@ -104,6 +125,10 @@ class LoadDoubleValueCmd: public Cmd {
  public:
   inline explicit LoadDoubleValueCmd(double value) noexcept: value_(value) {}
   inline void SetValue(double value) noexcept {value_ = value;}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadDoubleValue(*this);
+  }
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -126,6 +151,10 @@ class LoadFuncValueCmd: public Cmd {
 
   inline void SetAddress(uint32_t address) noexcept {address_ = address;}
   inline uint32_t GetAddress() const noexcept {return address_;}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadFuncValue(*this);
+  }
 
  private:
   virtual void Print(std::ostream &stream) const override {
@@ -151,6 +180,10 @@ class LoadNativeFuncValueCmd: public Cmd {
   }
 
   inline uint32_t GetFuncIndex() const noexcept {return func_index_;}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadNativeFuncValue(*this);
+  }
 
  private:
   virtual void Print(std::ostream &stream) const override {

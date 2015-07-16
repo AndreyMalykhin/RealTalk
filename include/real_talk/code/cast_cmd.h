@@ -2,51 +2,65 @@
 #ifndef _REAL_TALK_CODE_CAST_CMD_H_
 #define _REAL_TALK_CODE_CAST_CMD_H_
 
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
 namespace code {
 
-class CastCharToIntCmd: public Cmd {
+class CastCmd: public Cmd {
  private:
   virtual void Print(std::ostream&) const override {}
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };
 
-class CastCharToLongCmd: public Cmd {
+class CastCharToIntCmd: public CastCmd {
  private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCastCharToInt(*this);
+  }
 };
 
-class CastCharToDoubleCmd: public Cmd {
+class CastCharToLongCmd: public CastCmd {
  private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCastCharToLong(*this);
+  }
 };
 
-class CastCharToStringCmd: public Cmd {
+class CastCharToDoubleCmd: public CastCmd {
  private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCastCharToDouble(*this);
+  }
 };
 
-class CastIntToLongCmd: public Cmd {
+class CastCharToStringCmd: public CastCmd {
  private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCastCharToString(*this);
+  }
 };
 
-class CastIntToDoubleCmd: public Cmd {
+class CastIntToLongCmd: public CastCmd {
  private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCastIntToLong(*this);
+  }
 };
 
-class CastLongToDoubleCmd: public Cmd {
+class CastIntToDoubleCmd: public CastCmd {
  private:
-  virtual void Print(std::ostream&) const override {}
-  virtual bool IsEqual(const Cmd&) const override {return true;}
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCastIntToDouble(*this);
+  }
+};
+
+class CastLongToDoubleCmd: public CastCmd {
+ private:
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitCastLongToDouble(*this);
+  }
 };
 }
 }

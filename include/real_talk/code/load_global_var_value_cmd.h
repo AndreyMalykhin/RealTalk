@@ -2,6 +2,7 @@
 #ifndef _REAL_TALK_CODE_LOAD_GLOBAL_VAR_VALUE_CMD_H_
 #define _REAL_TALK_CODE_LOAD_GLOBAL_VAR_VALUE_CMD_H_
 
+#include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
 
 namespace real_talk {
@@ -33,42 +34,70 @@ class LoadGlobalIntVarValueCmd: public LoadGlobalVarValueCmd {
  public:
   inline explicit LoadGlobalIntVarValueCmd(uint32_t var_index) noexcept
       : LoadGlobalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalIntVarValue(*this);
+  }
 };
 
 class LoadGlobalArrayVarValueCmd: public LoadGlobalVarValueCmd {
  public:
   inline explicit LoadGlobalArrayVarValueCmd(uint32_t var_index) noexcept
       : LoadGlobalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalArrayVarValue(*this);
+  }
 };
 
 class LoadGlobalLongVarValueCmd: public LoadGlobalVarValueCmd {
  public:
   inline explicit LoadGlobalLongVarValueCmd(uint32_t var_index) noexcept
       : LoadGlobalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalLongVarValue(*this);
+  }
 };
 
 class LoadGlobalDoubleVarValueCmd: public LoadGlobalVarValueCmd {
  public:
   inline explicit LoadGlobalDoubleVarValueCmd(uint32_t var_index) noexcept
       : LoadGlobalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalDoubleVarValue(*this);
+  }
 };
 
 class LoadGlobalCharVarValueCmd: public LoadGlobalVarValueCmd {
  public:
   inline explicit LoadGlobalCharVarValueCmd(uint32_t var_index) noexcept
       : LoadGlobalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalCharVarValue(*this);
+  }
 };
 
 class LoadGlobalStringVarValueCmd: public LoadGlobalVarValueCmd {
  public:
   inline explicit LoadGlobalStringVarValueCmd(uint32_t var_index) noexcept
       : LoadGlobalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalStringVarValue(*this);
+  }
 };
 
 class LoadGlobalBoolVarValueCmd: public LoadGlobalVarValueCmd {
  public:
   inline explicit LoadGlobalBoolVarValueCmd(uint32_t var_index) noexcept
       : LoadGlobalVarValueCmd(var_index) {}
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalBoolVarValue(*this);
+  }
 };
 }
 }
