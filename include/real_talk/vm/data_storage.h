@@ -3,7 +3,7 @@
 #define _REAL_TALK_VM_DATA_STORAGE_H_
 
 #include <iostream>
-#include <vector>
+#include <memory>
 #include "real_talk/vm/values.h"
 
 namespace real_talk {
@@ -23,7 +23,9 @@ class DataStorage {
       std::ostream &stream, const DataStorage &storage);
 
  private:
-  std::vector<Slot> data_;
+  size_t capacity_;
+  std::unique_ptr<Slot[]> data_;
+  Slot *current_slot_;
 };
 }
 }

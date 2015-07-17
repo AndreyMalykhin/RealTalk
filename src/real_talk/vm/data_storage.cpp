@@ -10,34 +10,70 @@ namespace vm {
 
 static_assert(sizeof(IntValue) <= sizeof(DataStorage::Slot), "Int is too big");
 
-DataStorage::DataStorage() {}
+DataStorage::DataStorage(size_t size): capacity_(size * 2),
+                                       data_(new Slot[capacity_]()),
+                                       current_slot_(data_.get() + size) {}
 
-DataStorage::DataStorage(size_t size): data_(size) {}
+DataStorage::DataStorage(): DataStorage(0) {}
 
 void DataStorage::PushInt(IntValue value) {
-  assert(data_.size() + 1 > data_.size());
-  data_.push_back(Slot(0));
-  *(reinterpret_cast<IntValue*>(&(data_.back()))) = value;
+  const size_t size = DataTypeSize::kInt;
+  EnsureCapacity(size);
+  *(reinterpret_cast<IntValue*>(current_slot_)) = value;
+  AfterPush(size);
 }
 
 void DataStorage::PopInt() {
-  assert(!data_.empty());
-  data_.pop_back();
+  const size_t size = DataTypeSize::kInt;
+  assert(HasSlots(size));
+  current_slot_ -= size;
+  AfterPop(size);
 }
 
 IntValue &DataStorage::GetInt(size_t index) {
-  assert(index < data_.size());
-  return *(reinterpret_cast<IntValue*>(&(data_[index])));
+  return *(reinterpret_cast<IntValue*>(GetSlot(index)));
+}
+
+void DataStorage::EnsureCapacity(size_t capacity) {
+  assert(false);
+}
+
+void DataStorage::AfterPush(size_t pushed_slots_count) {
+  current_slot_ += pushed_slots_count;
+}
+
+void DataStorage::AfterPop(size_t popped_slots_count) {
+  current_slot_ -= popped_slots_count;
+}
+
+Slot *DataStorage::GetSlot(size_t index) const {
+  assert(index < GetSize());
+  return data_.get() + index;
+}
+
+bool DataStorage::HasSlots(size_t count) const {
+  return GetSize() >= count;
+}
+
+size_t DataStorage::GetSize() const {
+  assert(current_slot_ >= data_.get());
+  return current_slot_ - data_.get();
 }
 
 bool operator==(const DataStorage &lhs, const DataStorage &rhs) {
-  return lhs.data_ == rhs.data_;
+  return lhs.capacity_ == rhs.capacity_
+      && lhs.GetSize() == rhs.GetSize()
+      && memcmp(lhs.data_.get(), rhs.data_.get(), lhs.GetSize());
 }
 
 ostream &operator<<(
     ostream &stream, const DataStorage &storage) {
-  for (const DataStorage::Slot slot: storage.data_) {
-    stream << hex << slot << ' ';
+  stream << "size=" << storage.GetSize() << "; capacity=" << storage.capacity_;
+
+  for (const Slot *data_it = storage.data_.get();
+       data_it != storage.data_.get() + storage.GetSize();
+       ++data_it) {
+    stream << hex << *data_it << ' ';
   }
 
   return stream;
