@@ -4,6 +4,7 @@
 #include "real_talk/code/exe.h"
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd_reader.h"
+#include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
@@ -627,11 +628,13 @@ const SimpleVM::FuncFrames &SimpleVM::Impl::GetFuncFrames() const {
 
 void SimpleVM::Impl::VisitCreateGlobalIntVar(
     const CreateGlobalIntVarCmd &cmd) {
-  
+  global_vars_.GetInt(cmd.GetVarIndex()) = IntValue();
 }
 
 void SimpleVM::Impl::VisitCreateGlobalArrayVar(
-    const CreateGlobalArrayVarCmd&) {assert(false);}
+    const CreateGlobalArrayVarCmd &cmd) {
+  global_vars_.GetArray(cmd.GetVarIndex()) = ArrayValue();
+}
 
 void SimpleVM::Impl::VisitCreateGlobalLongVar(
     const CreateGlobalLongVarCmd&) {assert(false);}

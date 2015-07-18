@@ -8,6 +8,19 @@ namespace real_talk {
 namespace vm {
 
 typedef int32_t IntValue;
+
+class Array {};
+
+class ArrayValue {
+ public:
+  ArrayValue();
+  ~ArrayValue();
+  ArrayValue(const ArrayValue &value);
+  ArrayValue &operator=(const ArrayValue &value);
+
+ private:
+  Array *array_;
+};
 }
 }
 #endif
