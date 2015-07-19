@@ -167,13 +167,6 @@ ImplicitJumpIfCmd &kImplicitJumpIfCmd =
 DirectJumpCmd &kDirectJumpCmd = *new DirectJumpCmd(INT32_C(0));
 
 const ReturnCmd &kReturnCmd = *new ReturnCmd();
-const ReturnIntValueCmd &kReturnIntValueCmd = *new ReturnIntValueCmd();
-const ReturnLongValueCmd &kReturnLongValueCmd = *new ReturnLongValueCmd();
-const ReturnDoubleValueCmd &kReturnDoubleValueCmd = *new ReturnDoubleValueCmd();
-const ReturnCharValueCmd &kReturnCharValueCmd = *new ReturnCharValueCmd();
-const ReturnStringValueCmd &kReturnStringValueCmd = *new ReturnStringValueCmd();
-const ReturnBoolValueCmd &kReturnBoolValueCmd = *new ReturnBoolValueCmd();
-const ReturnArrayValueCmd &kReturnArrayValueCmd = *new ReturnArrayValueCmd();
 
 LoadGlobalIntVarValueCmd &kLoadGlobalIntVarValueCmd =
     *new LoadGlobalIntVarValueCmd(UINT32_C(0));
@@ -588,27 +581,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       break;
     case CmdId::kReturn:
       cmd = &kReturnCmd;
-      break;
-    case CmdId::kReturnIntValue:
-      cmd = &kReturnIntValueCmd;
-      break;
-    case CmdId::kReturnLongValue:
-      cmd = &kReturnLongValueCmd;
-      break;
-    case CmdId::kReturnDoubleValue:
-      cmd = &kReturnDoubleValueCmd;
-      break;
-    case CmdId::kReturnCharValue:
-      cmd = &kReturnCharValueCmd;
-      break;
-    case CmdId::kReturnStringValue:
-      cmd = &kReturnStringValueCmd;
-      break;
-    case CmdId::kReturnBoolValue:
-      cmd = &kReturnBoolValueCmd;
-      break;
-    case CmdId::kReturnArrayValue:
-      cmd = &kReturnArrayValueCmd;
       break;
     case CmdId::kLoadGlobalIntVarValue:
       ReadLoadGlobalVarValueCmd(kLoadGlobalIntVarValueCmd);

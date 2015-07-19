@@ -743,8 +743,7 @@ class SimpleCodeGeneratorTest: public Test {
                        unique_ptr<DataType> return_data_type,
                        SemanticAnalysis::NodeAnalyzes value_analyzes,
                        vector<TestCast> test_casts,
-                       const Code &value_code,
-                       CmdId expected_cmd_id) {
+                       const Code &value_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     vector< unique_ptr<StmtNode> > body_stmt_nodes;
     unique_ptr<DataTypeNode> var_data_type_node(new BoolDataTypeNode(
@@ -841,7 +840,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteBytes(value_code.GetData(), value_code.GetSize());
     cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
     cmds_code->WriteCmdId(CmdId::kDestroyLocalBoolVar);
-    cmds_code->WriteCmdId(expected_cmd_id);
+    cmds_code->WriteCmdId(CmdId::kReturn);
     cmds_code->WriteCmdId(CmdId::kCreateLocalLongVar);
 
     vector<IdSize> global_var_defs;
@@ -4764,15 +4763,13 @@ TEST_F(SimpleCodeGeneratorTest, ReturnIntValue) {
   value_code.WriteCmdId(CmdId::kLoadCharValue);
   value_code.WriteChar('a');
   value_code.WriteCmdId(CmdId::kCastCharToInt);
-  CmdId expected_cmd_id = CmdId::kReturnIntValue;
 
   TestReturnValue(move(value_node),
                   move(return_data_type_node),
                   move(return_data_type),
                   move(value_analyzes),
                   move(test_casts),
-                  value_code,
-                  expected_cmd_id);
+                  value_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, ReturnLongValue) {
@@ -4803,15 +4800,13 @@ TEST_F(SimpleCodeGeneratorTest, ReturnLongValue) {
   value_code.WriteCmdId(CmdId::kLoadIntValue);
   value_code.WriteInt32(INT32_C(7));
   value_code.WriteCmdId(CmdId::kCastIntToLong);
-  CmdId expected_cmd_id = CmdId::kReturnLongValue;
 
   TestReturnValue(move(value_node),
                   move(return_data_type_node),
                   move(return_data_type),
                   move(value_analyzes),
                   move(test_casts),
-                  value_code,
-                  expected_cmd_id);
+                  value_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, ReturnDoubleValue) {
@@ -4842,15 +4837,13 @@ TEST_F(SimpleCodeGeneratorTest, ReturnDoubleValue) {
   value_code.WriteCmdId(CmdId::kLoadIntValue);
   value_code.WriteInt32(INT32_C(7));
   value_code.WriteCmdId(CmdId::kCastIntToDouble);
-  CmdId expected_cmd_id = CmdId::kReturnDoubleValue;
 
   TestReturnValue(move(value_node),
                   move(return_data_type_node),
                   move(return_data_type),
                   move(value_analyzes),
                   move(test_casts),
-                  value_code,
-                  expected_cmd_id);
+                  value_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, ReturnBoolValue) {
@@ -4873,15 +4866,13 @@ TEST_F(SimpleCodeGeneratorTest, ReturnBoolValue) {
   Code value_code;
   value_code.WriteCmdId(CmdId::kLoadBoolValue);
   value_code.WriteBool(true);
-  CmdId expected_cmd_id = CmdId::kReturnBoolValue;
 
   TestReturnValue(move(value_node),
                   move(return_data_type_node),
                   move(return_data_type),
                   move(value_analyzes),
                   vector<TestCast>(),
-                  value_code,
-                  expected_cmd_id);
+                  value_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, ReturnCharValue) {
@@ -4904,15 +4895,13 @@ TEST_F(SimpleCodeGeneratorTest, ReturnCharValue) {
   Code value_code;
   value_code.WriteCmdId(CmdId::kLoadCharValue);
   value_code.WriteChar('a');
-  CmdId expected_cmd_id = CmdId::kReturnCharValue;
 
   TestReturnValue(move(value_node),
                   move(return_data_type_node),
                   move(return_data_type),
                   move(value_analyzes),
                   vector<TestCast>(),
-                  value_code,
-                  expected_cmd_id);
+                  value_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, ReturnStringValue) {
@@ -4943,15 +4932,13 @@ TEST_F(SimpleCodeGeneratorTest, ReturnStringValue) {
   value_code.WriteCmdId(CmdId::kLoadCharValue);
   value_code.WriteChar('a');
   value_code.WriteCmdId(CmdId::kCastCharToString);
-  CmdId expected_cmd_id = CmdId::kReturnStringValue;
 
   TestReturnValue(move(value_node),
                   move(return_data_type_node),
                   move(return_data_type),
                   move(value_analyzes),
                   move(test_casts),
-                  value_code,
-                  expected_cmd_id);
+                  value_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, ReturnArrayValue) {
@@ -4997,15 +4984,13 @@ TEST_F(SimpleCodeGeneratorTest, ReturnArrayValue) {
   int32_t values_count = INT32_C(0);
   value_code.WriteUint8(dimensions_count);
   value_code.WriteInt32(values_count);
-  CmdId expected_cmd_id = CmdId::kReturnArrayValue;
 
   TestReturnValue(move(value_node),
                   move(return_data_type_node),
                   move(return_data_type),
                   move(value_analyzes),
                   vector<TestCast>(),
-                  value_code,
-                  expected_cmd_id);
+                  value_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, FuncDefWithoutBody) {

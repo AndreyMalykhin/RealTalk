@@ -82,13 +82,6 @@ using real_talk::code::ImplicitJumpIfCmd;
 using real_talk::code::JumpIfNotCmd;
 using real_talk::code::ImplicitJumpIfNotCmd;
 using real_talk::code::ReturnCmd;
-using real_talk::code::ReturnIntValueCmd;
-using real_talk::code::ReturnLongValueCmd;
-using real_talk::code::ReturnCharValueCmd;
-using real_talk::code::ReturnStringValueCmd;
-using real_talk::code::ReturnArrayValueCmd;
-using real_talk::code::ReturnDoubleValueCmd;
-using real_talk::code::ReturnBoolValueCmd;
 using real_talk::code::LoadGlobalIntVarValueCmd;
 using real_talk::code::LoadGlobalArrayVarValueCmd;
 using real_talk::code::LoadGlobalLongVarValueCmd;
@@ -342,20 +335,6 @@ class SimpleVM::Impl: private CmdVisitor {
       const ImplicitJumpIfNotCmd &cmd) override;
   virtual void VisitReturn(
       const ReturnCmd &cmd) override;
-  virtual void VisitReturnIntValue(
-      const ReturnIntValueCmd &cmd) override;
-  virtual void VisitReturnLongValue(
-      const ReturnLongValueCmd &cmd) override;
-  virtual void VisitReturnCharValue(
-      const ReturnCharValueCmd &cmd) override;
-  virtual void VisitReturnStringValue(
-      const ReturnStringValueCmd &cmd) override;
-  virtual void VisitReturnArrayValue(
-      const ReturnArrayValueCmd &cmd) override;
-  virtual void VisitReturnDoubleValue(
-      const ReturnDoubleValueCmd &cmd) override;
-  virtual void VisitReturnBoolValue(
-      const ReturnBoolValueCmd &cmd) override;
   virtual void VisitLoadGlobalIntVarValue(
       const LoadGlobalIntVarValueCmd &cmd) override;
   virtual void VisitLoadGlobalArrayVarValue(
@@ -830,27 +809,6 @@ void SimpleVM::Impl::VisitImplicitJumpIfNot(
 
 void SimpleVM::Impl::VisitReturn(
     const ReturnCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitReturnIntValue(
-    const ReturnIntValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitReturnLongValue(
-    const ReturnLongValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitReturnCharValue(
-    const ReturnCharValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitReturnStringValue(
-    const ReturnStringValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitReturnArrayValue(
-    const ReturnArrayValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitReturnDoubleValue(
-    const ReturnDoubleValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitReturnBoolValue(
-    const ReturnBoolValueCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadGlobalIntVarValue(
     const LoadGlobalIntVarValueCmd&) {assert(false);}

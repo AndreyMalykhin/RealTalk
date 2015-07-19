@@ -209,7 +209,6 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class CreateArrayCmdGenerator;
   class CreateAndInitArrayCmdGenerator;
   class DestroyLocalVarCmdGenerator;
-  class ReturnValueCmdGenerator;
   class LoadGlobalVarValueCmdGenerator;
   class LoadLocalVarValueCmdGenerator;
   class LoadElementValueCmdGenerator;
@@ -838,49 +837,6 @@ class SimpleCodeGenerator::Impl::CreateAndInitArrayCmdGenerator
 
   virtual void VisitArray(const ArrayDataType &data_type) override {
     data_type.GetElementDataType().Accept(*this);
-  }
-
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-
-  Code *code_;
-};
-
-class SimpleCodeGenerator::Impl::ReturnValueCmdGenerator
-    : private DataTypeVisitor {
- public:
-  void Generate(const DataType &data_type, Code *code) {
-    code_ = code;
-    data_type.Accept(*this);
-  }
-
- private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kReturnArrayValue);
-  }
-
-  virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kReturnBoolValue);
-  }
-
-  virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kReturnIntValue);
-  }
-
-  virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kReturnLongValue);
-  }
-
-  virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kReturnDoubleValue);
-  }
-
-  virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kReturnCharValue);
-  }
-
-  virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kReturnStringValue);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -2013,13 +1969,9 @@ void SimpleCodeGenerator::Impl::VisitArgDef(const ArgDefNode &node) {
 
 void SimpleCodeGenerator::Impl::VisitReturnValue(const ReturnValueNode &node) {
   node.GetValue()->Accept(*this);
-  const ExprAnalysis &value_analysis =
-      static_cast<const ExprAnalysis&>(GetNodeAnalysis(*(node.GetValue())));
   const ReturnAnalysis &return_analysis = static_cast<const ReturnAnalysis&>(
       GetNodeAnalysis(node));
-  GenerateDestroyLocalVarCmds(return_analysis.GetFlowLocalVarDefs());
-  ReturnValueCmdGenerator().Generate(
-      GetExprDataType(value_analysis), code_.get());
+  GenerateReturnCmd(return_analysis.GetFlowLocalVarDefs());
 }
 
 void SimpleCodeGenerator::Impl::VisitReturnWithoutValue(

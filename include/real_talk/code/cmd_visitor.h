@@ -74,13 +74,6 @@ class ImplicitJumpIfCmd;
 class JumpIfNotCmd;
 class ImplicitJumpIfNotCmd;
 class ReturnCmd;
-class ReturnIntValueCmd;
-class ReturnLongValueCmd;
-class ReturnCharValueCmd;
-class ReturnStringValueCmd;
-class ReturnArrayValueCmd;
-class ReturnDoubleValueCmd;
-class ReturnBoolValueCmd;
 class LoadGlobalIntVarValueCmd;
 class LoadGlobalArrayVarValueCmd;
 class LoadGlobalLongVarValueCmd;
@@ -324,20 +317,6 @@ class CmdVisitor {
       const ImplicitJumpIfNotCmd &cmd) = 0;
   virtual void VisitReturn(
       const ReturnCmd &cmd) = 0;
-  virtual void VisitReturnIntValue(
-      const ReturnIntValueCmd &cmd) = 0;
-  virtual void VisitReturnLongValue(
-      const ReturnLongValueCmd &cmd) = 0;
-  virtual void VisitReturnCharValue(
-      const ReturnCharValueCmd &cmd) = 0;
-  virtual void VisitReturnStringValue(
-      const ReturnStringValueCmd &cmd) = 0;
-  virtual void VisitReturnArrayValue(
-      const ReturnArrayValueCmd &cmd) = 0;
-  virtual void VisitReturnDoubleValue(
-      const ReturnDoubleValueCmd &cmd) = 0;
-  virtual void VisitReturnBoolValue(
-      const ReturnBoolValueCmd &cmd) = 0;
   virtual void VisitLoadGlobalIntVarValue(
       const LoadGlobalIntVarValueCmd &cmd) = 0;
   virtual void VisitLoadGlobalArrayVarValue(
