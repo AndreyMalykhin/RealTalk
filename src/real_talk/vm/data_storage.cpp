@@ -29,32 +29,6 @@ DataStorage::DataStorage(size_t size): capacity_(size * 2),
 
 DataStorage::DataStorage(): DataStorage(0) {}
 
-void DataStorage::PushInt(IntValue value) {
-  const size_t size = static_cast<size_t>(DataTypeSize::kInt);
-  EnsureCapacity(size);
-  *(reinterpret_cast<IntValue*>(current_slot_)) = value;
-  AfterPush(size);
-}
-
-void DataStorage::PushArray(ArrayValue value) {
-  const size_t size = static_cast<size_t>(DataTypeSize::kArray);
-  EnsureCapacity(size);
-  *(reinterpret_cast<ArrayValue*>(current_slot_)) = value;
-  AfterPush(size);
-}
-
-void DataStorage::PopInt() noexcept {
-  const size_t size = static_cast<size_t>(DataTypeSize::kInt);
-  assert(HasSlots(size));
-  AfterPop(size);
-}
-
-void DataStorage::PopArray() noexcept {
-  const size_t size = static_cast<size_t>(DataTypeSize::kArray);
-  assert(HasSlots(size));
-  AfterPop(size);
-}
-
 IntValue &DataStorage::GetInt(size_t index) noexcept {
   return *(reinterpret_cast<IntValue*>(GetSlot(index)));
 }

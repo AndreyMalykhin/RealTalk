@@ -22,19 +22,6 @@ class DataStorage {
 
   DataStorage();
   explicit DataStorage(size_t size);
-
-  /**
-   * @throws real_talk::vm::DataStorage::MemorySizeOverflowError
-   */
-  void PushInt(IntValue value);
-
-  /**
-   * @throws real_talk::vm::DataStorage::MemorySizeOverflowError
-   */
-  void PushArray(ArrayValue value);
-
-  void PopInt() noexcept;
-  void PopArray() noexcept;
   IntValue &GetInt(size_t index) noexcept;
   ArrayValue &GetArray(size_t index) noexcept;
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
