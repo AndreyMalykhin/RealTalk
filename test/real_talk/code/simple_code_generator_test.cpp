@@ -1311,8 +1311,7 @@ class SimpleCodeGeneratorTest: public Test {
       const DataType &element_data_type,
       unique_ptr<NodeSemanticAnalysis> value_analysis,
       const Code &value_code,
-      CmdId store_cmd_id,
-      CmdId expected_cmd_id) {
+      const Code &expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
         move(element_data_type_node),
@@ -1411,8 +1410,7 @@ class SimpleCodeGeneratorTest: public Test {
     cmds_code->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
     uint32_t var_index_placeholder2 = cmds_code->GetPosition();
     cmds_code->WriteUint32(var_index);
-    cmds_code->WriteCmdId(expected_cmd_id);
-    cmds_code->WriteCmdId(store_cmd_id);
+    cmds_code->WriteBytes(expected_code.GetData(), expected_code.GetSize());
     uint32_t main_cmds_code_size = cmds_code->GetPosition();
 
     vector<IdSize> global_var_defs = {{"var", DataTypeSize::kArray}};
@@ -6186,78 +6184,6 @@ TEST_F(SimpleCodeGeneratorTest, NativeCall) {
 }
 
 TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfInts) {
-  unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  IntDataType element_data_type;
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfIntsElementValue);
-  expected_code.WriteCmdId(CmdId::kUnloadInt);
-  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
-                                    element_data_type,
-                                    expected_code);
-}
-
-TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfLongs) {
-  unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
-  LongDataType element_data_type;
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfLongsElementValue);
-  expected_code.WriteCmdId(CmdId::kUnloadLong);
-  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
-                                    element_data_type,
-                                    expected_code);
-}
-
-TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfDoubles) {
-  unique_ptr<DataTypeNode> element_data_type_node(new DoubleDataTypeNode(
-      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
-  DoubleDataType element_data_type;
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfDoublesElementValue);
-  expected_code.WriteCmdId(CmdId::kUnloadDouble);
-  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
-                                    element_data_type,
-                                    expected_code);
-}
-
-TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfBools) {
-  unique_ptr<DataTypeNode> element_data_type_node(new BoolDataTypeNode(
-      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
-  BoolDataType element_data_type;
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfBoolsElementValue);
-  expected_code.WriteCmdId(CmdId::kUnloadBool);
-  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
-                                    element_data_type,
-                                    expected_code);
-}
-
-TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfChars) {
-  unique_ptr<DataTypeNode> element_data_type_node(new CharDataTypeNode(
-      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
-  CharDataType element_data_type;
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfCharsElementValue);
-  expected_code.WriteCmdId(CmdId::kUnloadChar);
-  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
-                                    element_data_type,
-                                    expected_code);
-}
-
-TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfStrings) {
-  unique_ptr<DataTypeNode> element_data_type_node(new StringDataTypeNode(
-      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
-  StringDataType element_data_type;
-  Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfStringsElementValue);
-  expected_code.WriteCmdId(CmdId::kUnloadString);
-  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
-                                    element_data_type,
-                                    expected_code);
-}
-
-TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
@@ -6266,7 +6192,99 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType element_data_type(unique_ptr<DataType>(new IntDataType()));
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfArraysElementValue);
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfIntsElementValue);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count);
+  expected_code.WriteCmdId(CmdId::kUnloadArray);
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfLongs) {
+  unique_ptr<DataTypeNode> long_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(long_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  ArrayDataType element_data_type(unique_ptr<DataType>(new LongDataType()));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfLongsElementValue);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count);
+  expected_code.WriteCmdId(CmdId::kUnloadArray);
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfDoubles) {
+  unique_ptr<DataTypeNode> double_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(double_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  ArrayDataType element_data_type(unique_ptr<DataType>(new DoubleDataType()));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfDoublesElementValue);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count);
+  expected_code.WriteCmdId(CmdId::kUnloadArray);
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfBools) {
+  unique_ptr<DataTypeNode> bool_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(bool_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  ArrayDataType element_data_type(unique_ptr<DataType>(new BoolDataType()));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfBoolsElementValue);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count);
+  expected_code.WriteCmdId(CmdId::kUnloadArray);
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfChars) {
+  unique_ptr<DataTypeNode> char_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(char_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  ArrayDataType element_data_type(unique_ptr<DataType>(new CharDataType()));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfCharsElementValue);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count);
+  expected_code.WriteCmdId(CmdId::kUnloadArray);
+  TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
+                                    element_data_type,
+                                    expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfStrings) {
+  unique_ptr<DataTypeNode> string_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(string_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  ArrayDataType element_data_type(unique_ptr<DataType>(new StringDataType()));
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfStringsElementValue);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count);
   expected_code.WriteCmdId(CmdId::kUnloadArray);
   TestNotAssigneeSubscriptWithArray(move(element_data_type_node),
                                     element_data_type,
@@ -6274,180 +6292,13 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithArrayOfArrays) {
 }
 
 TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfInts) {
-  unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  IntNode *value_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(10), UINT32_C(10)));
-  unique_ptr<ExprNode> value_node(value_node_ptr);
-  IntDataType element_data_type;
-  unique_ptr<DataType> value_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
-      unique_ptr<DataType>(new IntDataType()),
-      move(value_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
-  Code value_code;
-  value_code.WriteCmdId(CmdId::kLoadIntValue);
-  value_code.WriteInt32(INT32_C(7));
-  CmdId store_cmd_id = CmdId::kStoreInt;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfIntsElementAddress;
-  TestAssigneeSubscriptWithArray(
-      move(element_data_type_node),
-      move(value_node),
-      element_data_type,
-      move(value_analysis),
-      value_code,
-      store_cmd_id,
-      expected_cmd_id);
-}
-
-TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfLongs) {
-  unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
-  LongNode *value_node_ptr = new LongNode(
-      TokenInfo(Token::kLongLit, "7L", UINT32_C(10), UINT32_C(10)));
-  unique_ptr<ExprNode> value_node(value_node_ptr);
-  LongDataType element_data_type;
-  unique_ptr<DataType> value_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
-      unique_ptr<DataType>(new LongDataType()),
-      move(value_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
-  Code value_code;
-  value_code.WriteCmdId(CmdId::kLoadLongValue);
-  value_code.WriteInt64(INT64_C(7));
-  CmdId store_cmd_id = CmdId::kStoreLong;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfLongsElementAddress;
-  TestAssigneeSubscriptWithArray(
-      move(element_data_type_node),
-      move(value_node),
-      element_data_type,
-      move(value_analysis),
-      value_code,
-      store_cmd_id,
-      expected_cmd_id);
-}
-
-TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfDoubles) {
-  unique_ptr<DataTypeNode> element_data_type_node(new DoubleDataTypeNode(
-      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
-  DoubleNode *value_node_ptr = new DoubleNode(
-      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(10), UINT32_C(10)));
-  unique_ptr<ExprNode> value_node(value_node_ptr);
-  DoubleDataType element_data_type;
-  unique_ptr<DataType> value_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
-      unique_ptr<DataType>(new DoubleDataType()),
-      move(value_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new DoubleLit(7.7))));
-  Code value_code;
-  value_code.WriteCmdId(CmdId::kLoadDoubleValue);
-  value_code.WriteDouble(7.7);
-  CmdId store_cmd_id = CmdId::kStoreDouble;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfDoublesElementAddress;
-  TestAssigneeSubscriptWithArray(
-      move(element_data_type_node),
-      move(value_node),
-      element_data_type,
-      move(value_analysis),
-      value_code,
-      store_cmd_id,
-      expected_cmd_id);
-}
-
-TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfBools) {
-  unique_ptr<DataTypeNode> element_data_type_node(new BoolDataTypeNode(
-      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
-  BoolNode *value_node_ptr = new BoolNode(
-      TokenInfo(Token::kBoolTrueLit, "yeah", UINT32_C(10), UINT32_C(10)));
-  unique_ptr<ExprNode> value_node(value_node_ptr);
-  BoolDataType element_data_type;
-  unique_ptr<DataType> value_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
-      unique_ptr<DataType>(new BoolDataType()),
-      move(value_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new BoolLit(true))));
-  Code value_code;
-  value_code.WriteCmdId(CmdId::kLoadBoolValue);
-  value_code.WriteBool(true);
-  CmdId store_cmd_id = CmdId::kStoreBool;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfBoolsElementAddress;
-  TestAssigneeSubscriptWithArray(
-      move(element_data_type_node),
-      move(value_node),
-      element_data_type,
-      move(value_analysis),
-      value_code,
-      store_cmd_id,
-      expected_cmd_id);
-}
-
-TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfChars) {
-  unique_ptr<DataTypeNode> element_data_type_node(new CharDataTypeNode(
-      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
-  CharNode *value_node_ptr = new CharNode(
-      TokenInfo(Token::kCharLit, "'a'", UINT32_C(10), UINT32_C(10)));
-  unique_ptr<ExprNode> value_node(value_node_ptr);
-  CharDataType element_data_type;
-  unique_ptr<DataType> value_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
-      unique_ptr<DataType>(new CharDataType()),
-      move(value_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new CharLit('a'))));
-  Code value_code;
-  value_code.WriteCmdId(CmdId::kLoadCharValue);
-  value_code.WriteChar('a');
-  CmdId store_cmd_id = CmdId::kStoreChar;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfCharsElementAddress;
-  TestAssigneeSubscriptWithArray(
-      move(element_data_type_node),
-      move(value_node),
-      element_data_type,
-      move(value_analysis),
-      value_code,
-      store_cmd_id,
-      expected_cmd_id);
-}
-
-TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfStrings) {
-  unique_ptr<DataTypeNode> element_data_type_node(new StringDataTypeNode(
-      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
-  StringNode *value_node_ptr = new StringNode(
-      TokenInfo(Token::kStringLit, "\"ab\"", UINT32_C(10), UINT32_C(10)));
-  unique_ptr<ExprNode> value_node(value_node_ptr);
-  StringDataType element_data_type;
-  unique_ptr<DataType> value_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> value_analysis(new LitAnalysis(
-      unique_ptr<DataType>(new StringDataType()),
-      move(value_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new StringLit("ab"))));
-  Code value_code;
-  value_code.WriteCmdId(CmdId::kLoadStringValue);
-  value_code.WriteString("ab");
-  CmdId store_cmd_id = CmdId::kStoreString;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfStringsElementAddress;
-  TestAssigneeSubscriptWithArray(
-      move(element_data_type_node),
-      move(value_node),
-      element_data_type,
-      move(value_analysis),
-      value_code,
-      store_cmd_id,
-      expected_cmd_id);
-}
-
-TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfArrays) {
   unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
       move(int_data_type_node),
       TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+
   unique_ptr<PrimitiveDataTypeNode> int_data_type_node2(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
@@ -6481,16 +6332,301 @@ TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfArrays) {
   int32_t values_count = INT32_C(0);
   value_code.WriteInt32(values_count);
 
-  CmdId store_cmd_id = CmdId::kStoreArray;
-  CmdId expected_cmd_id = CmdId::kLoadArrayOfArraysElementAddress;
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfIntsElementAddress);
+  uint8_t dimensions_count2 = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count2);
+  expected_code.WriteCmdId(CmdId::kStoreArray);
+
   TestAssigneeSubscriptWithArray(
       move(element_data_type_node),
       move(value_node),
       element_data_type,
       move(value_analysis),
       value_code,
-      store_cmd_id,
-      expected_cmd_id);
+      expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfLongs) {
+  unique_ptr<DataTypeNode> long_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(long_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+
+  unique_ptr<PrimitiveDataTypeNode> long_data_type_node2(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
+  unique_ptr<UnboundedArraySizeNode> array_size_node(new UnboundedArraySizeNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  array_size_nodes.push_back(move(array_size_node));
+  vector< unique_ptr<ExprNode> > array_value_nodes;
+  vector<TokenInfo> array_value_separator_tokens;
+  ArrayAllocWithInitNode *value_node_ptr = new ArrayAllocWithInitNode(
+      TokenInfo(Token::kNew, "new", UINT32_C(10), UINT32_C(10)),
+      move(long_data_type_node2),
+      move(array_size_nodes),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(1), UINT32_C(1)),
+      move(array_value_nodes),
+      array_value_separator_tokens,
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+
+  ArrayDataType element_data_type(unique_ptr<DataType>(new LongDataType()));
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      element_data_type.Clone(),
+      move(value_casted_data_type),
+      ValueType::kRight));
+
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kCreateAndInitLongArray);
+  uint8_t dimensions_count = UINT8_C(1);
+  value_code.WriteUint8(dimensions_count);
+  int32_t values_count = INT32_C(0);
+  value_code.WriteInt32(values_count);
+
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfLongsElementAddress);
+  uint8_t dimensions_count2 = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count2);
+  expected_code.WriteCmdId(CmdId::kStoreArray);
+
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfDoubles) {
+  unique_ptr<DataTypeNode> double_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(double_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+
+  unique_ptr<PrimitiveDataTypeNode> double_data_type_node2(
+      new DoubleDataTypeNode(
+          TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
+  unique_ptr<UnboundedArraySizeNode> array_size_node(new UnboundedArraySizeNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  array_size_nodes.push_back(move(array_size_node));
+  vector< unique_ptr<ExprNode> > array_value_nodes;
+  vector<TokenInfo> array_value_separator_tokens;
+  ArrayAllocWithInitNode *value_node_ptr = new ArrayAllocWithInitNode(
+      TokenInfo(Token::kNew, "new", UINT32_C(10), UINT32_C(10)),
+      move(double_data_type_node2),
+      move(array_size_nodes),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(1), UINT32_C(1)),
+      move(array_value_nodes),
+      array_value_separator_tokens,
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+
+  ArrayDataType element_data_type(unique_ptr<DataType>(new DoubleDataType()));
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      element_data_type.Clone(),
+      move(value_casted_data_type),
+      ValueType::kRight));
+
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kCreateAndInitDoubleArray);
+  uint8_t dimensions_count = UINT8_C(1);
+  value_code.WriteUint8(dimensions_count);
+  int32_t values_count = INT32_C(0);
+  value_code.WriteInt32(values_count);
+
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfDoublesElementAddress);
+  uint8_t dimensions_count2 = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count2);
+  expected_code.WriteCmdId(CmdId::kStoreArray);
+
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfBools) {
+  unique_ptr<DataTypeNode> bool_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(bool_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+
+  unique_ptr<PrimitiveDataTypeNode> bool_data_type_node2(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
+  unique_ptr<UnboundedArraySizeNode> array_size_node(new UnboundedArraySizeNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  array_size_nodes.push_back(move(array_size_node));
+  vector< unique_ptr<ExprNode> > array_value_nodes;
+  vector<TokenInfo> array_value_separator_tokens;
+  ArrayAllocWithInitNode *value_node_ptr = new ArrayAllocWithInitNode(
+      TokenInfo(Token::kNew, "new", UINT32_C(10), UINT32_C(10)),
+      move(bool_data_type_node2),
+      move(array_size_nodes),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(1), UINT32_C(1)),
+      move(array_value_nodes),
+      array_value_separator_tokens,
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+
+  ArrayDataType element_data_type(unique_ptr<DataType>(new BoolDataType()));
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      element_data_type.Clone(),
+      move(value_casted_data_type),
+      ValueType::kRight));
+
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kCreateAndInitBoolArray);
+  uint8_t dimensions_count = UINT8_C(1);
+  value_code.WriteUint8(dimensions_count);
+  int32_t values_count = INT32_C(0);
+  value_code.WriteInt32(values_count);
+
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfBoolsElementAddress);
+  uint8_t dimensions_count2 = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count2);
+  expected_code.WriteCmdId(CmdId::kStoreArray);
+
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfChars) {
+  unique_ptr<DataTypeNode> char_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(char_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+
+  unique_ptr<PrimitiveDataTypeNode> char_data_type_node2(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
+  unique_ptr<UnboundedArraySizeNode> array_size_node(new UnboundedArraySizeNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  array_size_nodes.push_back(move(array_size_node));
+  vector< unique_ptr<ExprNode> > array_value_nodes;
+  vector<TokenInfo> array_value_separator_tokens;
+  ArrayAllocWithInitNode *value_node_ptr = new ArrayAllocWithInitNode(
+      TokenInfo(Token::kNew, "new", UINT32_C(10), UINT32_C(10)),
+      move(char_data_type_node2),
+      move(array_size_nodes),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(1), UINT32_C(1)),
+      move(array_value_nodes),
+      array_value_separator_tokens,
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+
+  ArrayDataType element_data_type(unique_ptr<DataType>(new CharDataType()));
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      element_data_type.Clone(),
+      move(value_casted_data_type),
+      ValueType::kRight));
+
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kCreateAndInitCharArray);
+  uint8_t dimensions_count = UINT8_C(1);
+  value_code.WriteUint8(dimensions_count);
+  int32_t values_count = INT32_C(0);
+  value_code.WriteInt32(values_count);
+
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfCharsElementAddress);
+  uint8_t dimensions_count2 = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count2);
+  expected_code.WriteCmdId(CmdId::kStoreArray);
+
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      expected_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithArrayOfStrings) {
+  unique_ptr<DataTypeNode> string_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> element_data_type_node(new ArrayDataTypeNode(
+      move(string_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+
+  unique_ptr<PrimitiveDataTypeNode> string_data_type_node2(
+      new StringDataTypeNode(
+          TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
+  unique_ptr<UnboundedArraySizeNode> array_size_node(new UnboundedArraySizeNode(
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+  array_size_nodes.push_back(move(array_size_node));
+  vector< unique_ptr<ExprNode> > array_value_nodes;
+  vector<TokenInfo> array_value_separator_tokens;
+  ArrayAllocWithInitNode *value_node_ptr = new ArrayAllocWithInitNode(
+      TokenInfo(Token::kNew, "new", UINT32_C(10), UINT32_C(10)),
+      move(string_data_type_node2),
+      move(array_size_nodes),
+      TokenInfo(Token::kScopeStart, "{", UINT32_C(1), UINT32_C(1)),
+      move(array_value_nodes),
+      array_value_separator_tokens,
+      TokenInfo(Token::kScopeEnd, "}", UINT32_C(1), UINT32_C(1)));
+  unique_ptr<ExprNode> value_node(value_node_ptr);
+
+  ArrayDataType element_data_type(unique_ptr<DataType>(new StringDataType()));
+  unique_ptr<DataType> value_casted_data_type;
+  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+      element_data_type.Clone(),
+      move(value_casted_data_type),
+      ValueType::kRight));
+
+  Code value_code;
+  value_code.WriteCmdId(CmdId::kCreateAndInitStringArray);
+  uint8_t dimensions_count = UINT8_C(1);
+  value_code.WriteUint8(dimensions_count);
+  int32_t values_count = INT32_C(0);
+  value_code.WriteInt32(values_count);
+
+  Code expected_code;
+  expected_code.WriteCmdId(CmdId::kLoadArrayOfStringsElementAddress);
+  uint8_t dimensions_count2 = UINT8_C(2);
+  expected_code.WriteUint8(dimensions_count2);
+  expected_code.WriteCmdId(CmdId::kStoreArray);
+
+  TestAssigneeSubscriptWithArray(
+      move(element_data_type_node),
+      move(value_node),
+      element_data_type,
+      move(value_analysis),
+      value_code,
+      expected_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, And) {

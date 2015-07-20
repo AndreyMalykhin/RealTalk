@@ -96,7 +96,6 @@ class LoadArrayOfDoublesElementValueCmd;
 class LoadArrayOfCharsElementValueCmd;
 class LoadArrayOfStringsElementValueCmd;
 class LoadArrayOfBoolsElementValueCmd;
-class LoadArrayOfArraysElementValueCmd;
 class LoadArrayOfIntsElementAddressCmd;
 class LoadArrayOfDoublesElementAddressCmd;
 class LoadArrayOfBoolsElementAddressCmd;
@@ -361,8 +360,6 @@ class CmdVisitor {
       const LoadArrayOfStringsElementValueCmd &cmd) = 0;
   virtual void VisitLoadArrayOfBoolsElementValue(
       const LoadArrayOfBoolsElementValueCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfArraysElementValue(
-      const LoadArrayOfArraysElementValueCmd &cmd) = 0;
   virtual void VisitLoadArrayOfIntsElementAddress(
       const LoadArrayOfIntsElementAddressCmd &cmd) = 0;
   virtual void VisitLoadArrayOfDoublesElementAddress(

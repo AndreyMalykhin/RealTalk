@@ -104,7 +104,6 @@ using real_talk::code::LoadArrayOfDoublesElementValueCmd;
 using real_talk::code::LoadArrayOfCharsElementValueCmd;
 using real_talk::code::LoadArrayOfStringsElementValueCmd;
 using real_talk::code::LoadArrayOfBoolsElementValueCmd;
-using real_talk::code::LoadArrayOfArraysElementValueCmd;
 using real_talk::code::LoadArrayOfIntsElementAddressCmd;
 using real_talk::code::LoadArrayOfDoublesElementAddressCmd;
 using real_talk::code::LoadArrayOfBoolsElementAddressCmd;
@@ -379,8 +378,6 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadArrayOfStringsElementValueCmd &cmd) override;
   virtual void VisitLoadArrayOfBoolsElementValue(
       const LoadArrayOfBoolsElementValueCmd &cmd) override;
-  virtual void VisitLoadArrayOfArraysElementValue(
-      const LoadArrayOfArraysElementValueCmd &cmd) override;
   virtual void VisitLoadArrayOfIntsElementAddress(
       const LoadArrayOfIntsElementAddressCmd &cmd) override;
   virtual void VisitLoadArrayOfDoublesElementAddress(
@@ -875,9 +872,6 @@ void SimpleVM::Impl::VisitLoadArrayOfStringsElementValue(
 
 void SimpleVM::Impl::VisitLoadArrayOfBoolsElementValue(
     const LoadArrayOfBoolsElementValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitLoadArrayOfArraysElementValue(
-    const LoadArrayOfArraysElementValueCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadArrayOfIntsElementAddress(
     const LoadArrayOfIntsElementAddressCmd&) {assert(false);}
