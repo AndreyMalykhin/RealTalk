@@ -48,8 +48,13 @@ class CreateAndInitGlobalStringVarCmd;
 class CreateAndInitGlobalCharVarCmd;
 class CreateAndInitGlobalDoubleVarCmd;
 class CreateAndInitGlobalLongVarCmd;
-class CreateAndInitGlobalArrayVarCmd;
 class CreateAndInitGlobalIntVarCmd;
+class CreateAndInitGlobalBoolArrayVarCmd;
+class CreateAndInitGlobalStringArrayVarCmd;
+class CreateAndInitGlobalCharArrayVarCmd;
+class CreateAndInitGlobalDoubleArrayVarCmd;
+class CreateAndInitGlobalLongArrayVarCmd;
+class CreateAndInitGlobalIntArrayVarCmd;
 class CreateAndInitLocalIntVarCmd;
 class CreateAndInitLocalCharVarCmd;
 class CreateAndInitLocalStringVarCmd;
@@ -264,10 +269,20 @@ class CmdVisitor {
       const CreateAndInitGlobalDoubleVarCmd &cmd) = 0;
   virtual void VisitCreateAndInitGlobalLongVar(
       const CreateAndInitGlobalLongVarCmd &cmd) = 0;
-  virtual void VisitCreateAndInitGlobalArrayVar(
-      const CreateAndInitGlobalArrayVarCmd &cmd) = 0;
   virtual void VisitCreateAndInitGlobalIntVar(
       const CreateAndInitGlobalIntVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitGlobalBoolArrayVar(
+      const CreateAndInitGlobalBoolArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitGlobalStringArrayVar(
+      const CreateAndInitGlobalStringArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitGlobalCharArrayVar(
+      const CreateAndInitGlobalCharArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitGlobalDoubleArrayVar(
+      const CreateAndInitGlobalDoubleArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitGlobalLongArrayVar(
+      const CreateAndInitGlobalLongArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitGlobalIntArrayVar(
+      const CreateAndInitGlobalIntArrayVarCmd &cmd) = 0;
   virtual void VisitCreateAndInitLocalIntVar(
       const CreateAndInitLocalIntVarCmd &cmd) = 0;
   virtual void VisitCreateAndInitLocalCharVar(

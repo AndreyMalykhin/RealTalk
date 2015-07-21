@@ -12,6 +12,7 @@ class CreateAndInitArrayCmd;
 class JumpCmd;
 class LoadGlobalVarValueCmd;
 class LoadLocalVarValueCmd;
+class CreateAndInitGlobalArrayVarCmd;
 
 class CmdReader {
  public:
@@ -25,6 +26,8 @@ class CmdReader {
   void ReadCreateAndInitArrayCmd(CreateAndInitArrayCmd &cmd) noexcept;
   void ReadLoadGlobalVarValueCmd(LoadGlobalVarValueCmd &cmd) noexcept;
   void ReadLoadLocalVarValueCmd(LoadLocalVarValueCmd &cmd) noexcept;
+  void ReadCreateAndInitGlobalArrayVarCmd(
+      CreateAndInitGlobalArrayVarCmd &cmd) noexcept;
 
   Code *code_;
 };

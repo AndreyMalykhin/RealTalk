@@ -79,6 +79,15 @@ class CmdReaderTest: public Test {
     TestGetNextCmd(code, expected_cmd);
   }
 
+  void TestCreateAndInitGlobalArrayVarCmd(
+      CmdId cmd_id, const CreateAndInitGlobalArrayVarCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint32(expected_cmd.GetVarIndex());
+    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    TestGetNextCmd(code, expected_cmd);
+  }
+
   void TestCreateArrayCmd(CmdId cmd_id, const CreateArrayCmd &expected_cmd) {
     Code code;
     code.WriteCmdId(cmd_id);
@@ -385,13 +394,6 @@ TEST_F(CmdReaderTest, CreateAndInitGlobalIntVarCmd) {
       CmdId::kCreateAndInitGlobalIntVar, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, CreateAndInitGlobalArrayVarCmd) {
-  uint32_t var_index = UINT32_C(7);
-  CreateAndInitGlobalArrayVarCmd expected_cmd(var_index);
-  TestCreateAndInitGlobalVarCmd(
-      CmdId::kCreateAndInitGlobalArrayVar, expected_cmd);
-}
-
 TEST_F(CmdReaderTest, CreateAndInitGlobalLongVarCmd) {
   uint32_t var_index = UINT32_C(7);
   CreateAndInitGlobalLongVarCmd expected_cmd(var_index);
@@ -425,6 +427,56 @@ TEST_F(CmdReaderTest, CreateAndInitGlobalBoolVarCmd) {
   CreateAndInitGlobalBoolVarCmd expected_cmd(var_index);
   TestCreateAndInitGlobalVarCmd(
       CmdId::kCreateAndInitGlobalBoolVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitGlobalIntArrayVarCmd) {
+  uint32_t var_index = UINT32_C(1);
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateAndInitGlobalIntArrayVarCmd expected_cmd(var_index, dimensions_count);
+  TestCreateAndInitGlobalArrayVarCmd(
+      CmdId::kCreateAndInitGlobalIntArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitGlobalLongArrayVarCmd) {
+  uint32_t var_index = UINT32_C(1);
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateAndInitGlobalLongArrayVarCmd expected_cmd(var_index, dimensions_count);
+  TestCreateAndInitGlobalArrayVarCmd(
+      CmdId::kCreateAndInitGlobalLongArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitGlobalDoubleArrayVarCmd) {
+  uint32_t var_index = UINT32_C(1);
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateAndInitGlobalDoubleArrayVarCmd expected_cmd(
+      var_index, dimensions_count);
+  TestCreateAndInitGlobalArrayVarCmd(
+      CmdId::kCreateAndInitGlobalDoubleArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitGlobalCharArrayVarCmd) {
+  uint32_t var_index = UINT32_C(1);
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateAndInitGlobalCharArrayVarCmd expected_cmd(var_index, dimensions_count);
+  TestCreateAndInitGlobalArrayVarCmd(
+      CmdId::kCreateAndInitGlobalCharArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitGlobalStringArrayVarCmd) {
+  uint32_t var_index = UINT32_C(1);
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateAndInitGlobalStringArrayVarCmd expected_cmd(
+      var_index, dimensions_count);
+  TestCreateAndInitGlobalArrayVarCmd(
+      CmdId::kCreateAndInitGlobalStringArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitGlobalBoolArrayVarCmd) {
+  uint32_t var_index = UINT32_C(1);
+  uint8_t dimensions_count = UINT8_C(2);
+  CreateAndInitGlobalBoolArrayVarCmd expected_cmd(var_index, dimensions_count);
+  TestCreateAndInitGlobalArrayVarCmd(
+      CmdId::kCreateAndInitGlobalBoolArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalIntVarCmd) {

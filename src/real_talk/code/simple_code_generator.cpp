@@ -205,6 +205,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class CreateGlobalVarCmdGenerator;
   class CreateLocalVarCmdGenerator;
   class CreateAndInitGlobalVarCmdGenerator;
+  class CreateAndInitGlobalArrayVarCmdGenerator;
   class CreateAndInitLocalVarCmdGenerator;
   class CreateArrayCmdGenerator;
   class CreateAndInitArrayCmdGenerator;
@@ -574,6 +575,60 @@ class SimpleCodeGenerator::Impl::CreateGlobalVarCmdGenerator
   Code *code_;
 };
 
+class SimpleCodeGenerator::Impl::CreateAndInitGlobalArrayVarCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const ArrayDataType &data_type,
+                uint32_t *var_index_placeholder,
+                Code *code) {
+    assert(var_index_placeholder);
+    assert(code);
+    code_ = code;
+    dimensions_count_ = UINT8_C(0);
+    data_type.Accept(*this);
+    *var_index_placeholder = code->GetPosition();
+    const uint32_t var_index = numeric_limits<uint32_t>::max();
+    code->WriteUint32(var_index);
+    code->WriteUint8(dimensions_count_);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+    ++dimensions_count_;
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalBoolArrayVar);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalIntArrayVar);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalLongArrayVar);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalDoubleArrayVar);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalCharArrayVar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitGlobalStringArrayVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  uint8_t dimensions_count_;
+  Code *code_;
+};
+
 class SimpleCodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
     : private DataTypeVisitor {
  public:
@@ -581,45 +636,52 @@ class SimpleCodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
       const DataType &data_type, uint32_t *var_index_placeholder, Code *code) {
     assert(var_index_placeholder);
     assert(code);
+    var_index_placeholder_ = var_index_placeholder;
     code_ = code;
     data_type.Accept(*this);
-    *var_index_placeholder = code->GetPosition();
-    const uint32_t var_index = numeric_limits<uint32_t>::max();
-    code->WriteUint32(var_index);
   }
 
  private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalArrayVar);
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    CreateAndInitGlobalArrayVarCmdGenerator().Generate(
+        data_type, var_index_placeholder_, code_);
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalBoolVar);
+    VisitNonArray(CmdId::kCreateAndInitGlobalBoolVar);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalIntVar);
+    VisitNonArray(CmdId::kCreateAndInitGlobalIntVar);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalLongVar);
+    VisitNonArray(CmdId::kCreateAndInitGlobalLongVar);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalDoubleVar);
+    VisitNonArray(CmdId::kCreateAndInitGlobalDoubleVar);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalCharVar);
+    VisitNonArray(CmdId::kCreateAndInitGlobalCharVar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalStringVar);
+    VisitNonArray(CmdId::kCreateAndInitGlobalStringVar);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
   virtual void VisitFunc(const FuncDataType&) override {assert(false);}
 
+  void VisitNonArray(CmdId cmd_id) {
+    code_->WriteCmdId(cmd_id);
+    *var_index_placeholder_ = code_->GetPosition();
+    const uint32_t var_index = numeric_limits<uint32_t>::max();
+    code_->WriteUint32(var_index);
+  }
+
+  uint32_t *var_index_placeholder_;
   Code *code_;
 };
 

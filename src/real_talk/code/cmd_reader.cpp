@@ -109,8 +109,6 @@ LoadNativeFuncValueCmd &kLoadNativeFuncValueCmd =
 
 CreateAndInitGlobalIntVarCmd &kCreateAndInitGlobalIntVarCmd =
     *new CreateAndInitGlobalIntVarCmd(UINT32_C(0));
-CreateAndInitGlobalArrayVarCmd &kCreateAndInitGlobalArrayVarCmd =
-    *new CreateAndInitGlobalArrayVarCmd(UINT32_C(0));
 CreateAndInitGlobalLongVarCmd &kCreateAndInitGlobalLongVarCmd =
     *new CreateAndInitGlobalLongVarCmd(UINT32_C(0));
 CreateAndInitGlobalDoubleVarCmd &kCreateAndInitGlobalDoubleVarCmd =
@@ -121,6 +119,19 @@ CreateAndInitGlobalStringVarCmd &kCreateAndInitGlobalStringVarCmd =
     *new CreateAndInitGlobalStringVarCmd(UINT32_C(0));
 CreateAndInitGlobalBoolVarCmd &kCreateAndInitGlobalBoolVarCmd =
     *new CreateAndInitGlobalBoolVarCmd(UINT32_C(0));
+
+CreateAndInitGlobalIntArrayVarCmd &kCreateAndInitGlobalIntArrayVarCmd =
+    *new CreateAndInitGlobalIntArrayVarCmd(UINT32_C(0), UINT8_C(1));
+CreateAndInitGlobalLongArrayVarCmd &kCreateAndInitGlobalLongArrayVarCmd =
+    *new CreateAndInitGlobalLongArrayVarCmd(UINT32_C(0), UINT8_C(1));
+CreateAndInitGlobalDoubleArrayVarCmd &kCreateAndInitGlobalDoubleArrayVarCmd =
+    *new CreateAndInitGlobalDoubleArrayVarCmd(UINT32_C(0), UINT8_C(1));
+CreateAndInitGlobalCharArrayVarCmd &kCreateAndInitGlobalCharArrayVarCmd =
+    *new CreateAndInitGlobalCharArrayVarCmd(UINT32_C(0), UINT8_C(1));
+CreateAndInitGlobalStringArrayVarCmd &kCreateAndInitGlobalStringArrayVarCmd =
+    *new CreateAndInitGlobalStringArrayVarCmd(UINT32_C(0), UINT8_C(1));
+CreateAndInitGlobalBoolArrayVarCmd &kCreateAndInitGlobalBoolArrayVarCmd =
+    *new CreateAndInitGlobalBoolArrayVarCmd(UINT32_C(0), UINT8_C(1));
 
 CreateIntArrayCmd &kCreateIntArrayCmd = *new CreateIntArrayCmd(UINT8_C(1));
 CreateLongArrayCmd &kCreateLongArrayCmd = *new CreateLongArrayCmd(UINT8_C(1));
@@ -466,10 +477,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       kCreateAndInitGlobalIntVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalIntVarCmd;
       break;
-    case CmdId::kCreateAndInitGlobalArrayVar:
-      kCreateAndInitGlobalArrayVarCmd.SetVarIndex(code_->ReadUint32());
-      cmd = &kCreateAndInitGlobalArrayVarCmd;
-      break;
     case CmdId::kCreateAndInitGlobalLongVar:
       kCreateAndInitGlobalLongVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalLongVarCmd;
@@ -489,6 +496,30 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kCreateAndInitGlobalBoolVar:
       kCreateAndInitGlobalBoolVarCmd.SetVarIndex(code_->ReadUint32());
       cmd = &kCreateAndInitGlobalBoolVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalIntArrayVar:
+      ReadCreateAndInitGlobalArrayVarCmd(kCreateAndInitGlobalIntArrayVarCmd);
+      cmd = &kCreateAndInitGlobalIntArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalLongArrayVar:
+      ReadCreateAndInitGlobalArrayVarCmd(kCreateAndInitGlobalLongArrayVarCmd);
+      cmd = &kCreateAndInitGlobalLongArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalDoubleArrayVar:
+      ReadCreateAndInitGlobalArrayVarCmd(kCreateAndInitGlobalDoubleArrayVarCmd);
+      cmd = &kCreateAndInitGlobalDoubleArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalCharArrayVar:
+      ReadCreateAndInitGlobalArrayVarCmd(kCreateAndInitGlobalCharArrayVarCmd);
+      cmd = &kCreateAndInitGlobalCharArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalStringArrayVar:
+      ReadCreateAndInitGlobalArrayVarCmd(kCreateAndInitGlobalStringArrayVarCmd);
+      cmd = &kCreateAndInitGlobalStringArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitGlobalBoolArrayVar:
+      ReadCreateAndInitGlobalArrayVarCmd(kCreateAndInitGlobalBoolArrayVarCmd);
+      cmd = &kCreateAndInitGlobalBoolArrayVarCmd;
       break;
     case CmdId::kCreateAndInitLocalIntVar:
       cmd = &kCreateAndInitLocalIntVarCmd;
@@ -959,6 +990,12 @@ inline void CmdReader::ReadLoadGlobalVarValueCmd(
 inline void CmdReader::ReadLoadLocalVarValueCmd(
     LoadLocalVarValueCmd &cmd) noexcept {
   cmd.SetVarIndex(code_->ReadUint32());
+}
+
+inline void CmdReader::ReadCreateAndInitGlobalArrayVarCmd(
+    CreateAndInitGlobalArrayVarCmd &cmd) noexcept {
+  cmd.SetVarIndex(code_->ReadUint32());
+  cmd.SetDimensionsCount(code_->ReadUint8());
 }
 }
 }
