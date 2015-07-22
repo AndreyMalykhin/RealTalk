@@ -67,9 +67,14 @@ using real_talk::code::CreateAndInitLocalIntVarCmd;
 using real_talk::code::CreateAndInitLocalCharVarCmd;
 using real_talk::code::CreateAndInitLocalStringVarCmd;
 using real_talk::code::CreateAndInitLocalBoolVarCmd;
-using real_talk::code::CreateAndInitLocalArrayVarCmd;
 using real_talk::code::CreateAndInitLocalLongVarCmd;
 using real_talk::code::CreateAndInitLocalDoubleVarCmd;
+using real_talk::code::CreateAndInitLocalIntArrayVarCmd;
+using real_talk::code::CreateAndInitLocalCharArrayVarCmd;
+using real_talk::code::CreateAndInitLocalStringArrayVarCmd;
+using real_talk::code::CreateAndInitLocalBoolArrayVarCmd;
+using real_talk::code::CreateAndInitLocalLongArrayVarCmd;
+using real_talk::code::CreateAndInitLocalDoubleArrayVarCmd;
 using real_talk::code::CreateIntArrayCmd;
 using real_talk::code::CreateLongArrayCmd;
 using real_talk::code::CreateBoolArrayCmd;
@@ -309,12 +314,22 @@ class SimpleVM::Impl: private CmdVisitor {
       const CreateAndInitLocalStringVarCmd &cmd) override;
   virtual void VisitCreateAndInitLocalBoolVar(
       const CreateAndInitLocalBoolVarCmd &cmd) override;
-  virtual void VisitCreateAndInitLocalArrayVar(
-      const CreateAndInitLocalArrayVarCmd &cmd) override;
   virtual void VisitCreateAndInitLocalLongVar(
       const CreateAndInitLocalLongVarCmd &cmd) override;
   virtual void VisitCreateAndInitLocalDoubleVar(
       const CreateAndInitLocalDoubleVarCmd &cmd) override;
+  virtual void VisitCreateAndInitLocalIntArrayVar(
+      const CreateAndInitLocalIntArrayVarCmd &cmd) override;
+  virtual void VisitCreateAndInitLocalCharArrayVar(
+      const CreateAndInitLocalCharArrayVarCmd &cmd) override;
+  virtual void VisitCreateAndInitLocalStringArrayVar(
+      const CreateAndInitLocalStringArrayVarCmd &cmd) override;
+  virtual void VisitCreateAndInitLocalBoolArrayVar(
+      const CreateAndInitLocalBoolArrayVarCmd &cmd) override;
+  virtual void VisitCreateAndInitLocalLongArrayVar(
+      const CreateAndInitLocalLongArrayVarCmd &cmd) override;
+  virtual void VisitCreateAndInitLocalDoubleArrayVar(
+      const CreateAndInitLocalDoubleArrayVarCmd &cmd) override;
   virtual void VisitCreateIntArray(
       const CreateIntArrayCmd &cmd) override;
   virtual void VisitCreateLongArray(
@@ -777,14 +792,29 @@ void SimpleVM::Impl::VisitCreateAndInitLocalStringVar(
 void SimpleVM::Impl::VisitCreateAndInitLocalBoolVar(
     const CreateAndInitLocalBoolVarCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCreateAndInitLocalArrayVar(
-    const CreateAndInitLocalArrayVarCmd&) {assert(false);}
-
 void SimpleVM::Impl::VisitCreateAndInitLocalLongVar(
     const CreateAndInitLocalLongVarCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalDoubleVar(
     const CreateAndInitLocalDoubleVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitCreateAndInitLocalIntArrayVar(
+    const CreateAndInitLocalIntArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitCreateAndInitLocalCharArrayVar(
+    const CreateAndInitLocalCharArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitCreateAndInitLocalStringArrayVar(
+    const CreateAndInitLocalStringArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitCreateAndInitLocalBoolArrayVar(
+    const CreateAndInitLocalBoolArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitCreateAndInitLocalLongArrayVar(
+    const CreateAndInitLocalLongArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitCreateAndInitLocalDoubleArrayVar(
+    const CreateAndInitLocalDoubleArrayVarCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCreateIntArray(
     const CreateIntArrayCmd&) {assert(false);}

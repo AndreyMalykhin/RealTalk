@@ -506,6 +506,125 @@ class SimpleCodeGeneratorTest: public Test {
                  expected_module);
   }
 
+  void TestLocalArrayVarDefWithInit(
+      unique_ptr<DataTypeNode> def_data_type_node,
+      unique_ptr<PrimitiveDataTypeNode> value_data_type_node,
+      unique_ptr<DataType> data_type,
+      CmdId create_array_cmd_id,
+      CmdId expected_cmd_id) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    vector< unique_ptr<BoundedArraySizeNode> > size_nodes;
+    IntNode *size_expr_node_ptr1 = new IntNode(
+        TokenInfo(Token::kIntLit, "1", UINT32_C(9), UINT32_C(9)));
+    unique_ptr<ExprNode> size_expr_node1(size_expr_node_ptr1);
+    unique_ptr<BoundedArraySizeNode> size_node1(new BoundedArraySizeNode(
+        TokenInfo(Token::kSubscriptStart, "[", UINT32_C(8), UINT32_C(8)),
+        move(size_expr_node1),
+        TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(10), UINT32_C(10))));
+    size_nodes.push_back(move(size_node1));
+    IntNode *size_expr_node_ptr2 = new IntNode(
+        TokenInfo(Token::kIntLit, "2", UINT32_C(12), UINT32_C(12)));
+    unique_ptr<ExprNode> size_expr_node2(size_expr_node_ptr2);
+    unique_ptr<BoundedArraySizeNode> size_node2(new BoundedArraySizeNode(
+        TokenInfo(Token::kSubscriptStart, "[", UINT32_C(11), UINT32_C(11)),
+        move(size_expr_node2),
+        TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(13), UINT32_C(13))));
+    size_nodes.push_back(move(size_node2));
+    ArrayAllocWithoutInitNode *value_node_ptr(
+        new ArrayAllocWithoutInitNode(
+            TokenInfo(Token::kNew, "fresh", UINT32_C(6), UINT32_C(6)),
+            move(value_data_type_node),
+            move(size_nodes)));
+    unique_ptr<ExprNode> value_node(value_node_ptr);
+
+    unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+        move(def_data_type_node),
+        TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
+        TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
+    unique_ptr<DataTypeNode> array_data_type_node2(new ArrayDataTypeNode(
+        move(array_data_type_node),
+        TokenInfo(Token::kSubscriptStart, "[", UINT32_C(3), UINT32_C(3)),
+        TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
+    VarDefWithInitNode *var_def_node_ptr = new VarDefWithInitNode(
+        move(array_data_type_node2),
+        TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+        TokenInfo(Token::kAssignOp, "=", UINT32_C(2), UINT32_C(2)),
+        move(value_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(4), UINT32_C(4)));
+    unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+    program_stmt_nodes.push_back(move(var_def_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    unique_ptr<DataType> array_data_type1(
+        new ArrayDataType(move(data_type)));
+    unique_ptr<DataType> array_data_type2(
+        new ArrayDataType(move(array_data_type1)));
+    vector<const VarDefNode*> flow_local_var_defs;
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+        array_data_type2->Clone(), flow_local_var_defs));
+    node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+    unique_ptr<DataType> size_lit_casted_data_type1;
+    unique_ptr<NodeSemanticAnalysis> size_lit_analysis1(new LitAnalysis(
+        unique_ptr<DataType>(new IntDataType()),
+        move(size_lit_casted_data_type1),
+        ValueType::kRight,
+        unique_ptr<Lit>(new IntLit(INT32_C(1)))));
+    node_analyzes.insert(
+        make_pair(size_expr_node_ptr1, move(size_lit_analysis1)));
+    unique_ptr<DataType> size_lit_casted_data_type2;
+    unique_ptr<NodeSemanticAnalysis> size_lit_analysis2(new LitAnalysis(
+        unique_ptr<DataType>(new IntDataType()),
+        move(size_lit_casted_data_type2),
+        ValueType::kRight,
+        unique_ptr<Lit>(new IntLit(INT32_C(2)))));
+    node_analyzes.insert(
+        make_pair(size_expr_node_ptr2, move(size_lit_analysis2)));
+    unique_ptr<DataType> value_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
+        array_data_type2->Clone(),
+        move(value_casted_data_type),
+        ValueType::kRight));
+    node_analyzes.insert(
+        make_pair(value_node_ptr, move(value_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::ProgramProblems(), move(node_analyzes));
+
+    unique_ptr<Code> cmds_code(new Code());
+    cmds_code->WriteCmdId(CmdId::kLoadIntValue);
+    cmds_code->WriteInt32(INT32_C(2));
+    cmds_code->WriteCmdId(CmdId::kLoadIntValue);
+    cmds_code->WriteInt32(INT32_C(1));
+    cmds_code->WriteCmdId(create_array_cmd_id);
+    uint8_t dimensions_count = UINT8_C(2);
+    cmds_code->WriteUint8(dimensions_count);
+    cmds_code->WriteCmdId(expected_cmd_id);
+    cmds_code->WriteUint8(dimensions_count);
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+
+    vector<IdSize> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module expected_module(version,
+                           move(cmds_code),
+                           main_cmds_code_size,
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
+    TestGenerate(vector<TestCast>(),
+                 program_node,
+                 semantic_analysis,
+                 version,
+                 expected_module);
+  }
+
   void TestLocalVarDefWithInit(
       unique_ptr<DataTypeNode> data_type_node,
       unique_ptr<DataType> data_type,
@@ -2309,91 +2428,6 @@ TEST_F(SimpleCodeGeneratorTest, LocalIntVarDefWithInit) {
                           CmdId::kCreateAndInitLocalIntVar);
 }
 
-TEST_F(SimpleCodeGeneratorTest, LocalArrayVarDefWithInit) {
-  unique_ptr<DataTypeNode> int_data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
-  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
-      move(int_data_type_node),
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
-  unique_ptr<DataTypeNode> var_data_type_node(new ArrayDataTypeNode(
-      move(array_data_type_node),
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(3), UINT32_C(3)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
-
-  unique_ptr<PrimitiveDataTypeNode> value_data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(7), UINT32_C(7))));
-  vector< unique_ptr<BoundedArraySizeNode> > size_nodes;
-  IntNode *size_expr_node_ptr1 = new IntNode(
-      TokenInfo(Token::kIntLit, "1", UINT32_C(9), UINT32_C(9)));
-  unique_ptr<ExprNode> size_expr_node1(size_expr_node_ptr1);
-  unique_ptr<BoundedArraySizeNode> size_node1(new BoundedArraySizeNode(
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(8), UINT32_C(8)),
-      move(size_expr_node1),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(10), UINT32_C(10))));
-  size_nodes.push_back(move(size_node1));
-  IntNode *size_expr_node_ptr2 = new IntNode(
-      TokenInfo(Token::kIntLit, "2", UINT32_C(12), UINT32_C(12)));
-  unique_ptr<ExprNode> size_expr_node2(size_expr_node_ptr2);
-  unique_ptr<BoundedArraySizeNode> size_node2(new BoundedArraySizeNode(
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(11), UINT32_C(11)),
-      move(size_expr_node2),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(13), UINT32_C(13))));
-  size_nodes.push_back(move(size_node2));
-  ArrayAllocWithoutInitNode *value_node_ptr(
-      new ArrayAllocWithoutInitNode(
-          TokenInfo(Token::kNew, "fresh", UINT32_C(6), UINT32_C(6)),
-          move(value_data_type_node),
-          move(size_nodes)));
-  unique_ptr<ExprNode> value_node(value_node_ptr);
-
-  unique_ptr<DataType> int_data_type(new IntDataType());
-  unique_ptr<DataType> array_data_type1(
-      new ArrayDataType(move(int_data_type)));
-  unique_ptr<DataType> var_data_type(
-      new ArrayDataType(move(array_data_type1)));
-
-  SemanticAnalysis::NodeAnalyzes value_node_analyzes;
-  unique_ptr<DataType> size_lit_casted_data_type1;
-  unique_ptr<NodeSemanticAnalysis> size_lit_analysis1(new LitAnalysis(
-      unique_ptr<DataType>(new IntDataType()),
-      move(size_lit_casted_data_type1),
-      ValueType::kRight,
-      unique_ptr<Lit>(new IntLit(INT32_C(1)))));
-  value_node_analyzes.insert(
-      make_pair(size_expr_node_ptr1, move(size_lit_analysis1)));
-  unique_ptr<DataType> size_lit_casted_data_type2;
-  unique_ptr<NodeSemanticAnalysis> size_lit_analysis2(new LitAnalysis(
-      unique_ptr<DataType>(new IntDataType()),
-      move(size_lit_casted_data_type2),
-      ValueType::kRight,
-      unique_ptr<Lit>(new IntLit(INT32_C(2)))));
-  value_node_analyzes.insert(
-      make_pair(size_expr_node_ptr2, move(size_lit_analysis2)));
-  unique_ptr<DataType> value_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> value_analysis(new CommonExprAnalysis(
-      var_data_type->Clone(), move(value_casted_data_type), ValueType::kRight));
-  value_node_analyzes.insert(
-      make_pair(value_node_ptr, move(value_analysis)));
-
-  Code value_code;
-  value_code.WriteCmdId(CmdId::kLoadIntValue);
-  value_code.WriteInt32(INT32_C(2));
-  value_code.WriteCmdId(CmdId::kLoadIntValue);
-  value_code.WriteInt32(INT32_C(1));
-  value_code.WriteCmdId(CmdId::kCreateIntArray);
-  uint8_t dimensions_count = UINT8_C(2);
-  value_code.WriteUint8(dimensions_count);
-
-  TestLocalVarDefWithInit(move(var_data_type_node),
-                          move(var_data_type),
-                          move(value_node),
-                          move(value_node_analyzes),
-                          move(value_code),
-                          unique_ptr<TestCast>(),
-                          CmdId::kCreateAndInitLocalArrayVar);
-}
-
 TEST_F(SimpleCodeGeneratorTest, LocalLongVarDefWithInit) {
   unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
@@ -2543,6 +2577,78 @@ TEST_F(SimpleCodeGeneratorTest, LocalBoolVarDefWithInit) {
                           move(value_code),
                           unique_ptr<TestCast>(),
                           CmdId::kCreateAndInitLocalBoolVar);
+}
+
+TEST_F(SimpleCodeGeneratorTest, LocalIntArrayVarDefWithInit) {
+  unique_ptr<DataTypeNode> def_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<PrimitiveDataTypeNode> value_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(7), UINT32_C(7))));
+  TestLocalArrayVarDefWithInit(move(def_data_type_node),
+                               move(value_data_type_node),
+                               unique_ptr<DataType>(new IntDataType()),
+                               CmdId::kCreateIntArray,
+                               CmdId::kCreateAndInitLocalIntArrayVar);
+}
+
+TEST_F(SimpleCodeGeneratorTest, LocalLongArrayVarDefWithInit) {
+  unique_ptr<DataTypeNode> def_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<PrimitiveDataTypeNode> value_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(7), UINT32_C(7))));
+  TestLocalArrayVarDefWithInit(move(def_data_type_node),
+                               move(value_data_type_node),
+                               unique_ptr<DataType>(new LongDataType()),
+                               CmdId::kCreateLongArray,
+                               CmdId::kCreateAndInitLocalLongArrayVar);
+}
+
+TEST_F(SimpleCodeGeneratorTest, LocalDoubleArrayVarDefWithInit) {
+  unique_ptr<DataTypeNode> def_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<PrimitiveDataTypeNode> value_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(7), UINT32_C(7))));
+  TestLocalArrayVarDefWithInit(move(def_data_type_node),
+                               move(value_data_type_node),
+                               unique_ptr<DataType>(new DoubleDataType()),
+                               CmdId::kCreateDoubleArray,
+                               CmdId::kCreateAndInitLocalDoubleArrayVar);
+}
+
+TEST_F(SimpleCodeGeneratorTest, LocalCharArrayVarDefWithInit) {
+  unique_ptr<DataTypeNode> def_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<PrimitiveDataTypeNode> value_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(7), UINT32_C(7))));
+  TestLocalArrayVarDefWithInit(move(def_data_type_node),
+                               move(value_data_type_node),
+                               unique_ptr<DataType>(new CharDataType()),
+                               CmdId::kCreateCharArray,
+                               CmdId::kCreateAndInitLocalCharArrayVar);
+}
+
+TEST_F(SimpleCodeGeneratorTest, LocalBoolArrayVarDefWithInit) {
+  unique_ptr<DataTypeNode> def_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<PrimitiveDataTypeNode> value_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(7), UINT32_C(7))));
+  TestLocalArrayVarDefWithInit(move(def_data_type_node),
+                               move(value_data_type_node),
+                               unique_ptr<DataType>(new BoolDataType()),
+                               CmdId::kCreateBoolArray,
+                               CmdId::kCreateAndInitLocalBoolArrayVar);
+}
+
+TEST_F(SimpleCodeGeneratorTest, LocalStringArrayVarDefWithInit) {
+  unique_ptr<DataTypeNode> def_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<PrimitiveDataTypeNode> value_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(7), UINT32_C(7))));
+  TestLocalArrayVarDefWithInit(move(def_data_type_node),
+                               move(value_data_type_node),
+                               unique_ptr<DataType>(new StringDataType()),
+                               CmdId::kCreateStringArray,
+                               CmdId::kCreateAndInitLocalStringArrayVar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, IntArrayAllocWithoutInit) {

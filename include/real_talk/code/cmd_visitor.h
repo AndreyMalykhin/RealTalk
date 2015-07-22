@@ -59,9 +59,14 @@ class CreateAndInitLocalIntVarCmd;
 class CreateAndInitLocalCharVarCmd;
 class CreateAndInitLocalStringVarCmd;
 class CreateAndInitLocalBoolVarCmd;
-class CreateAndInitLocalArrayVarCmd;
 class CreateAndInitLocalLongVarCmd;
 class CreateAndInitLocalDoubleVarCmd;
+class CreateAndInitLocalIntArrayVarCmd;
+class CreateAndInitLocalCharArrayVarCmd;
+class CreateAndInitLocalStringArrayVarCmd;
+class CreateAndInitLocalBoolArrayVarCmd;
+class CreateAndInitLocalLongArrayVarCmd;
+class CreateAndInitLocalDoubleArrayVarCmd;
 class CreateIntArrayCmd;
 class CreateLongArrayCmd;
 class CreateBoolArrayCmd;
@@ -291,12 +296,22 @@ class CmdVisitor {
       const CreateAndInitLocalStringVarCmd &cmd) = 0;
   virtual void VisitCreateAndInitLocalBoolVar(
       const CreateAndInitLocalBoolVarCmd &cmd) = 0;
-  virtual void VisitCreateAndInitLocalArrayVar(
-      const CreateAndInitLocalArrayVarCmd &cmd) = 0;
   virtual void VisitCreateAndInitLocalLongVar(
       const CreateAndInitLocalLongVarCmd &cmd) = 0;
   virtual void VisitCreateAndInitLocalDoubleVar(
       const CreateAndInitLocalDoubleVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitLocalIntArrayVar(
+      const CreateAndInitLocalIntArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitLocalCharArrayVar(
+      const CreateAndInitLocalCharArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitLocalStringArrayVar(
+      const CreateAndInitLocalStringArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitLocalBoolArrayVar(
+      const CreateAndInitLocalBoolArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitLocalLongArrayVar(
+      const CreateAndInitLocalLongArrayVarCmd &cmd) = 0;
+  virtual void VisitCreateAndInitLocalDoubleArrayVar(
+      const CreateAndInitLocalDoubleArrayVarCmd &cmd) = 0;
   virtual void VisitCreateIntArray(
       const CreateIntArrayCmd &cmd) = 0;
   virtual void VisitCreateLongArray(

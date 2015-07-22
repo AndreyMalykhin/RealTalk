@@ -207,6 +207,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class CreateAndInitGlobalVarCmdGenerator;
   class CreateAndInitGlobalArrayVarCmdGenerator;
   class CreateAndInitLocalVarCmdGenerator;
+  class CreateAndInitLocalArrayVarCmdGenerator;
   class CreateArrayCmdGenerator;
   class CreateAndInitArrayCmdGenerator;
   class DestroyLocalVarCmdGenerator;
@@ -685,6 +686,53 @@ class SimpleCodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
   Code *code_;
 };
 
+class SimpleCodeGenerator::Impl::CreateAndInitLocalArrayVarCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const ArrayDataType &data_type, Code *code) {
+    code_ = code;
+    dimensions_count_ = UINT8_C(0);
+    data_type.Accept(*this);
+    code_->WriteUint8(dimensions_count_);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+    ++dimensions_count_;
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalBoolArrayVar);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalIntArrayVar);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalLongArrayVar);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalDoubleArrayVar);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalCharArrayVar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kCreateAndInitLocalStringArrayVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+  uint8_t dimensions_count_;
+};
+
 class SimpleCodeGenerator::Impl::CreateAndInitLocalVarCmdGenerator
     : private DataTypeVisitor {
  public:
@@ -694,8 +742,8 @@ class SimpleCodeGenerator::Impl::CreateAndInitLocalVarCmdGenerator
   }
 
  private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalArrayVar);
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    CreateAndInitLocalArrayVarCmdGenerator().Generate(data_type, code_);
   }
 
   virtual void VisitBool(const BoolDataType&) override {

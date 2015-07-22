@@ -142,6 +142,14 @@ class CmdReaderTest: public Test {
     code.WriteUint8(expected_cmd.GetDimensionsCount());
     TestGetNextCmd(code, expected_cmd);
   }
+
+  void TestCreateAndInitLocalArrayVarCmd(
+      CmdId cmd_id, const CreateAndInitLocalArrayVarCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    TestGetNextCmd(code, expected_cmd);
+  }
 };
 
 TEST_F(CmdReaderTest, CreateGlobalIntVarCmd) {
@@ -519,6 +527,48 @@ TEST_F(CmdReaderTest, CreateAndInitLocalStringVarCmd) {
   Code code;
   code.WriteCmdId(CmdId::kCreateAndInitLocalStringVar);
   TestGetNextCmd(code, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalIntArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(1);
+  CreateAndInitLocalIntArrayVarCmd expected_cmd(dimensions_count);
+  TestCreateAndInitLocalArrayVarCmd(
+      CmdId::kCreateAndInitLocalIntArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalLongArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(1);
+  CreateAndInitLocalLongArrayVarCmd expected_cmd(dimensions_count);
+  TestCreateAndInitLocalArrayVarCmd(
+      CmdId::kCreateAndInitLocalLongArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalDoubleArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(1);
+  CreateAndInitLocalDoubleArrayVarCmd expected_cmd(dimensions_count);
+  TestCreateAndInitLocalArrayVarCmd(
+      CmdId::kCreateAndInitLocalDoubleArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalCharArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(1);
+  CreateAndInitLocalCharArrayVarCmd expected_cmd(dimensions_count);
+  TestCreateAndInitLocalArrayVarCmd(
+      CmdId::kCreateAndInitLocalCharArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalBoolArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(1);
+  CreateAndInitLocalBoolArrayVarCmd expected_cmd(dimensions_count);
+  TestCreateAndInitLocalArrayVarCmd(
+      CmdId::kCreateAndInitLocalBoolArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, CreateAndInitLocalStringArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(1);
+  CreateAndInitLocalStringArrayVarCmd expected_cmd(dimensions_count);
+  TestCreateAndInitLocalArrayVarCmd(
+      CmdId::kCreateAndInitLocalStringArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateIntArrayCmd) {

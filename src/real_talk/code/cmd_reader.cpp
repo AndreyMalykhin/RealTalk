@@ -157,8 +157,6 @@ CreateAndInitStringArrayCmd &kCreateAndInitStringArrayCmd =
 
 const CreateAndInitLocalIntVarCmd &kCreateAndInitLocalIntVarCmd =
     *new CreateAndInitLocalIntVarCmd();
-const CreateAndInitLocalArrayVarCmd &kCreateAndInitLocalArrayVarCmd =
-    *new CreateAndInitLocalArrayVarCmd();
 const CreateAndInitLocalLongVarCmd &kCreateAndInitLocalLongVarCmd =
     *new CreateAndInitLocalLongVarCmd();
 const CreateAndInitLocalDoubleVarCmd &kCreateAndInitLocalDoubleVarCmd =
@@ -169,6 +167,19 @@ const CreateAndInitLocalStringVarCmd &kCreateAndInitLocalStringVarCmd =
     *new CreateAndInitLocalStringVarCmd();
 const CreateAndInitLocalBoolVarCmd &kCreateAndInitLocalBoolVarCmd =
     *new CreateAndInitLocalBoolVarCmd();
+
+CreateAndInitLocalIntArrayVarCmd &kCreateAndInitLocalIntArrayVarCmd =
+    *new CreateAndInitLocalIntArrayVarCmd(UINT8_C(1));
+CreateAndInitLocalLongArrayVarCmd &kCreateAndInitLocalLongArrayVarCmd =
+    *new CreateAndInitLocalLongArrayVarCmd(UINT8_C(1));
+CreateAndInitLocalDoubleArrayVarCmd &kCreateAndInitLocalDoubleArrayVarCmd =
+    *new CreateAndInitLocalDoubleArrayVarCmd(UINT8_C(1));
+CreateAndInitLocalCharArrayVarCmd &kCreateAndInitLocalCharArrayVarCmd =
+    *new CreateAndInitLocalCharArrayVarCmd(UINT8_C(1));
+CreateAndInitLocalStringArrayVarCmd &kCreateAndInitLocalStringArrayVarCmd =
+    *new CreateAndInitLocalStringArrayVarCmd(UINT8_C(1));
+CreateAndInitLocalBoolArrayVarCmd &kCreateAndInitLocalBoolArrayVarCmd =
+    *new CreateAndInitLocalBoolArrayVarCmd(UINT8_C(1));
 
 JumpIfNotCmd &kJumpIfNotCmd = *new JumpIfNotCmd(INT32_C(0));
 ImplicitJumpIfNotCmd &kImplicitJumpIfNotCmd =
@@ -524,9 +535,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kCreateAndInitLocalIntVar:
       cmd = &kCreateAndInitLocalIntVarCmd;
       break;
-    case CmdId::kCreateAndInitLocalArrayVar:
-      cmd = &kCreateAndInitLocalArrayVarCmd;
-      break;
     case CmdId::kCreateAndInitLocalLongVar:
       cmd = &kCreateAndInitLocalLongVarCmd;
       break;
@@ -541,6 +549,32 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       break;
     case CmdId::kCreateAndInitLocalBoolVar:
       cmd = &kCreateAndInitLocalBoolVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalIntArrayVar:
+      kCreateAndInitLocalIntArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kCreateAndInitLocalIntArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalLongArrayVar:
+      kCreateAndInitLocalLongArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kCreateAndInitLocalLongArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalDoubleArrayVar:
+      kCreateAndInitLocalDoubleArrayVarCmd.SetDimensionsCount(
+          code_->ReadUint8());
+      cmd = &kCreateAndInitLocalDoubleArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalCharArrayVar:
+      kCreateAndInitLocalCharArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kCreateAndInitLocalCharArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalStringArrayVar:
+      kCreateAndInitLocalStringArrayVarCmd.SetDimensionsCount(
+          code_->ReadUint8());
+      cmd = &kCreateAndInitLocalStringArrayVarCmd;
+      break;
+    case CmdId::kCreateAndInitLocalBoolArrayVar:
+      kCreateAndInitLocalBoolArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kCreateAndInitLocalBoolArrayVarCmd;
       break;
     case CmdId::kCreateIntArray:
       ReadCreateArrayCmd(kCreateIntArrayCmd);
