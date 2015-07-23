@@ -150,6 +150,14 @@ class CmdReaderTest: public Test {
     code.WriteUint8(expected_cmd.GetDimensionsCount());
     TestGetNextCmd(code, expected_cmd);
   }
+
+  void TestDestroyLocalArrayVarCmd(
+      CmdId cmd_id, const DestroyLocalArrayVarCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    TestGetNextCmd(code, expected_cmd);
+  }
 };
 
 TEST_F(CmdReaderTest, CreateGlobalIntVarCmd) {
@@ -285,11 +293,42 @@ TEST_F(CmdReaderTest, DestroyLocalStringVarCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, DestroyLocalArrayVarCmd) {
-  DestroyLocalArrayVarCmd expected_cmd;
-  Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalArrayVar);
-  TestGetNextCmd(code, expected_cmd);
+TEST_F(CmdReaderTest, DestroyLocalIntArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  DestroyLocalIntArrayVarCmd expected_cmd(dimensions_count);
+  TestDestroyLocalArrayVarCmd(CmdId::kDestroyLocalIntArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalLongArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  DestroyLocalLongArrayVarCmd expected_cmd(dimensions_count);
+  TestDestroyLocalArrayVarCmd(CmdId::kDestroyLocalLongArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalDoubleArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  DestroyLocalDoubleArrayVarCmd expected_cmd(dimensions_count);
+  TestDestroyLocalArrayVarCmd(
+      CmdId::kDestroyLocalDoubleArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalCharArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  DestroyLocalCharArrayVarCmd expected_cmd(dimensions_count);
+  TestDestroyLocalArrayVarCmd(CmdId::kDestroyLocalCharArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalBoolArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  DestroyLocalBoolArrayVarCmd expected_cmd(dimensions_count);
+  TestDestroyLocalArrayVarCmd(CmdId::kDestroyLocalBoolArrayVar, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, DestroyLocalStringArrayVarCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  DestroyLocalStringArrayVarCmd expected_cmd(dimensions_count);
+  TestDestroyLocalArrayVarCmd(
+      CmdId::kDestroyLocalStringArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadBoolCmd) {

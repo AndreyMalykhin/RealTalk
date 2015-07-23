@@ -30,12 +30,17 @@ using real_talk::code::CreateLocalCharVarCmd;
 using real_talk::code::CreateLocalStringVarCmd;
 using real_talk::code::CreateLocalBoolVarCmd;
 using real_talk::code::DestroyLocalIntVarCmd;
-using real_talk::code::DestroyLocalArrayVarCmd;
 using real_talk::code::DestroyLocalLongVarCmd;
 using real_talk::code::DestroyLocalDoubleVarCmd;
 using real_talk::code::DestroyLocalCharVarCmd;
 using real_talk::code::DestroyLocalStringVarCmd;
 using real_talk::code::DestroyLocalBoolVarCmd;
+using real_talk::code::DestroyLocalIntArrayVarCmd;
+using real_talk::code::DestroyLocalLongArrayVarCmd;
+using real_talk::code::DestroyLocalDoubleArrayVarCmd;
+using real_talk::code::DestroyLocalCharArrayVarCmd;
+using real_talk::code::DestroyLocalStringArrayVarCmd;
+using real_talk::code::DestroyLocalBoolArrayVarCmd;
 using real_talk::code::UnloadIntCmd;
 using real_talk::code::UnloadArrayCmd;
 using real_talk::code::UnloadLongCmd;
@@ -240,8 +245,6 @@ class SimpleVM::Impl: private CmdVisitor {
       const CreateLocalBoolVarCmd &cmd) override;
   virtual void VisitDestroyLocalIntVar(
       const DestroyLocalIntVarCmd &cmd) override;
-  virtual void VisitDestroyLocalArrayVar(
-      const DestroyLocalArrayVarCmd &cmd) override;
   virtual void VisitDestroyLocalLongVar(
       const DestroyLocalLongVarCmd &cmd) override;
   virtual void VisitDestroyLocalDoubleVar(
@@ -252,6 +255,18 @@ class SimpleVM::Impl: private CmdVisitor {
       const DestroyLocalStringVarCmd &cmd) override;
   virtual void VisitDestroyLocalBoolVar(
       const DestroyLocalBoolVarCmd &cmd) override;
+  virtual void VisitDestroyLocalIntArrayVar(
+      const DestroyLocalIntArrayVarCmd &cmd) override;
+  virtual void VisitDestroyLocalLongArrayVar(
+      const DestroyLocalLongArrayVarCmd &cmd) override;
+  virtual void VisitDestroyLocalDoubleArrayVar(
+      const DestroyLocalDoubleArrayVarCmd &cmd) override;
+  virtual void VisitDestroyLocalCharArrayVar(
+      const DestroyLocalCharArrayVarCmd &cmd) override;
+  virtual void VisitDestroyLocalStringArrayVar(
+      const DestroyLocalStringArrayVarCmd &cmd) override;
+  virtual void VisitDestroyLocalBoolArrayVar(
+      const DestroyLocalBoolArrayVarCmd &cmd) override;
   virtual void VisitUnloadInt(
       const UnloadIntCmd &cmd) override;
   virtual void VisitUnloadArray(
@@ -681,9 +696,6 @@ void SimpleVM::Impl::VisitCreateLocalBoolVar(
 void SimpleVM::Impl::VisitDestroyLocalIntVar(
     const DestroyLocalIntVarCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitDestroyLocalArrayVar(
-    const DestroyLocalArrayVarCmd&) {assert(false);}
-
 void SimpleVM::Impl::VisitDestroyLocalLongVar(
     const DestroyLocalLongVarCmd&) {assert(false);}
 
@@ -698,6 +710,24 @@ void SimpleVM::Impl::VisitDestroyLocalStringVar(
 
 void SimpleVM::Impl::VisitDestroyLocalBoolVar(
     const DestroyLocalBoolVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitDestroyLocalIntArrayVar(
+    const DestroyLocalIntArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitDestroyLocalLongArrayVar(
+    const DestroyLocalLongArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitDestroyLocalDoubleArrayVar(
+    const DestroyLocalDoubleArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitDestroyLocalCharArrayVar(
+    const DestroyLocalCharArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitDestroyLocalStringArrayVar(
+    const DestroyLocalStringArrayVarCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitDestroyLocalBoolArrayVar(
+    const DestroyLocalBoolArrayVarCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitUnloadInt(
     const UnloadIntCmd&) {assert(false);}

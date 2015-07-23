@@ -1781,6 +1781,111 @@ class SimpleCodeGeneratorTest: public Test {
                  version,
                  expected_module);
   }
+
+  void TestFuncDefWithBodyAndArg(unique_ptr<DataTypeNode> arg_data_type_node,
+                                 const DataType &arg_data_type,
+                                 const Code &expected_create_arg_code,
+                                 const Code &expected_destroy_arg_code) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+    ArgDefNode *arg_def_node_ptr = new ArgDefNode(
+        move(arg_data_type_node),
+        TokenInfo(Token::kName, "arg", UINT32_C(4), UINT32_C(4)));
+    unique_ptr<ArgDefNode> arg_def_node(arg_def_node_ptr);
+    arg_def_nodes.push_back(move(arg_def_node));
+
+    vector< unique_ptr<StmtNode> > body_stmt_nodes;
+    unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
+        TokenInfo(Token::kIntType, "int", UINT32_C(10), UINT32_C(10))));
+    VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
+        move(var_data_type_node),
+        TokenInfo(Token::kName, "var", UINT32_C(11), UINT32_C(11)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
+    unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+    body_stmt_nodes.push_back(move(var_def_node));
+    ScopeNode *body_node_ptr = new ScopeNode(
+        TokenInfo(Token::kScopeStart, "{", UINT32_C(9), UINT32_C(9)),
+        move(body_stmt_nodes),
+        TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
+    unique_ptr<ScopeNode> body_node(body_node_ptr);
+
+    unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
+        TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
+    vector<TokenInfo> modifier_tokens;
+    vector<TokenInfo> arg_separator_tokens;
+    FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
+        modifier_tokens,
+        move(return_data_type_node),
+        TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
+        TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
+        move(arg_def_nodes),
+        arg_separator_tokens,
+        TokenInfo(Token::kGroupEnd, ")", UINT32_C(8), UINT32_C(8)),
+        move(body_node));
+    unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
+    program_stmt_nodes.push_back(move(func_def_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    vector<const VarDefNode*> body_local_var_defs =
+        {arg_def_node_ptr, var_def_node_ptr};
+    unique_ptr<NodeSemanticAnalysis> body_analysis(
+        new ScopeAnalysis(body_local_var_defs));
+    node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
+    vector<const VarDefNode*> flow_local_var_defs;
+    unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
+        arg_data_type.Clone(), flow_local_var_defs));
+    node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
+    vector<const VarDefNode*> flow_local_var_defs2 = {arg_def_node_ptr};
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+        unique_ptr<DataType>(new IntDataType()), flow_local_var_defs2));
+    node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+    unique_ptr<DataType> return_data_type(new VoidDataType());
+    vector< unique_ptr<DataType> > arg_data_types;
+    arg_data_types.push_back(arg_data_type.Clone());
+    bool is_func_native = false;
+    unique_ptr<FuncDataType> func_data_type(new FuncDataType(
+        move(return_data_type), move(arg_data_types), is_func_native));
+    bool is_func_has_return = false;
+    unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
+        move(func_data_type), is_func_has_return));
+    node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::ProgramProblems(), move(node_analyzes));
+
+    unique_ptr<Code> cmds_code(new Code());
+    uint32_t main_cmds_code_size = cmds_code->GetPosition();
+    uint32_t func_def_address = cmds_code->GetPosition();
+    cmds_code->WriteBytes(expected_create_arg_code.GetData(),
+                          expected_create_arg_code.GetSize());
+    cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
+    cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
+    cmds_code->WriteBytes(expected_destroy_arg_code.GetData(),
+                          expected_destroy_arg_code.GetSize());
+    cmds_code->WriteCmdId(CmdId::kReturn);
+
+    vector<IdSize> global_var_defs;
+    vector<IdAddress> func_defs = {{"func", func_def_address}};
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module expected_module(version,
+                           move(cmds_code),
+                           main_cmds_code_size,
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
+    TestGenerate(vector<TestCast>(),
+                 program_node,
+                 semantic_analysis,
+                 version,
+                 expected_module);
+  }
 };
 
 TEST_F(SimpleCodeGeneratorTest, GlobalIntVarDefWithoutInit) {
@@ -4721,106 +4826,280 @@ TEST_F(SimpleCodeGeneratorTest, ContinueWithinLoopWithLocalVarDefs) {
                expected_module);
 }
 
-TEST_F(SimpleCodeGeneratorTest, FuncDefWithBody) {
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndLongArg) {
   vector< unique_ptr<StmtNode> > program_stmt_nodes;
   vector< unique_ptr<ArgDefNode> > arg_def_nodes;
   unique_ptr<DataTypeNode> arg_data_type_node(new LongDataTypeNode(
       TokenInfo(Token::kLongType, "long", UINT32_C(3), UINT32_C(3))));
-  ArgDefNode *arg_def_node_ptr = new ArgDefNode(
-      move(arg_data_type_node),
-      TokenInfo(Token::kName, "arg", UINT32_C(4), UINT32_C(4)));
-  unique_ptr<ArgDefNode> arg_def_node(arg_def_node_ptr);
-  arg_def_nodes.push_back(move(arg_def_node));
+  LongDataType arg_data_type;
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalLongVar);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
 
-  vector< unique_ptr<StmtNode> > body_stmt_nodes;
-  unique_ptr<DataTypeNode> var_data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(10), UINT32_C(10))));
-  VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
-      move(var_data_type_node),
-      TokenInfo(Token::kName, "var", UINT32_C(11), UINT32_C(11)),
-      TokenInfo(Token::kStmtEnd, ";", UINT32_C(12), UINT32_C(12)));
-  unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
-  body_stmt_nodes.push_back(move(var_def_node));
-  ScopeNode *body_node_ptr = new ScopeNode(
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(9), UINT32_C(9)),
-      move(body_stmt_nodes),
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(13), UINT32_C(13)));
-  unique_ptr<ScopeNode> body_node(body_node_ptr);
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndIntArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> arg_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(3), UINT32_C(3))));
+  IntDataType arg_data_type;
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalIntVar);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
 
-  unique_ptr<DataTypeNode> return_data_type_node(new VoidDataTypeNode(
-      TokenInfo(Token::kVoidType, "void", UINT32_C(0), UINT32_C(0))));
-  vector<TokenInfo> modifier_tokens;
-  vector<TokenInfo> arg_separator_tokens;
-  FuncDefWithBodyNode *func_def_node_ptr = new FuncDefWithBodyNode(
-      modifier_tokens,
-      move(return_data_type_node),
-      TokenInfo(Token::kName, "func", UINT32_C(1), UINT32_C(1)),
-      TokenInfo(Token::kGroupStart, "(", UINT32_C(2), UINT32_C(2)),
-      move(arg_def_nodes),
-      arg_separator_tokens,
-      TokenInfo(Token::kGroupEnd, ")", UINT32_C(8), UINT32_C(8)),
-      move(body_node));
-  unique_ptr<StmtNode> func_def_node(func_def_node_ptr);
-  program_stmt_nodes.push_back(move(func_def_node));
-  ProgramNode program_node(move(program_stmt_nodes));
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndDoubleArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> arg_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(3), UINT32_C(3))));
+  DoubleDataType arg_data_type;
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalDoubleVar);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalDoubleVar);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
 
-  SemanticAnalysis::NodeAnalyzes node_analyzes;
-  vector<const VarDefNode*> body_local_var_defs =
-      {arg_def_node_ptr, var_def_node_ptr};
-  unique_ptr<NodeSemanticAnalysis> body_analysis(
-      new ScopeAnalysis(body_local_var_defs));
-  node_analyzes.insert(make_pair(body_node_ptr, move(body_analysis)));
-  vector<const VarDefNode*> flow_local_var_defs;
-  unique_ptr<NodeSemanticAnalysis> arg_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new LongDataType()), flow_local_var_defs));
-  node_analyzes.insert(make_pair(arg_def_node_ptr, move(arg_def_analysis)));
-  vector<const VarDefNode*> flow_local_var_defs2 = {arg_def_node_ptr};
-  unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
-      unique_ptr<DataType>(new IntDataType()), flow_local_var_defs2));
-  node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
-  unique_ptr<DataType> return_data_type(new VoidDataType());
-  vector< unique_ptr<DataType> > arg_data_types;
-  arg_data_types.push_back(unique_ptr<DataType>(new LongDataType()));
-  bool is_func_native = false;
-  unique_ptr<FuncDataType> func_data_type(new FuncDataType(
-      move(return_data_type), move(arg_data_types), is_func_native));
-  bool is_func_has_return = false;
-  unique_ptr<NodeSemanticAnalysis> func_def_analysis(new FuncDefAnalysis(
-      move(func_data_type), is_func_has_return));
-  node_analyzes.insert(make_pair(func_def_node_ptr, move(func_def_analysis)));
-  SemanticAnalysis semantic_analysis(
-      SemanticAnalysis::ProgramProblems(), move(node_analyzes));
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndCharArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> arg_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(3), UINT32_C(3))));
+  CharDataType arg_data_type;
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalCharVar);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalCharVar);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
 
-  unique_ptr<Code> cmds_code(new Code());
-  uint32_t main_cmds_code_size = cmds_code->GetPosition();
-  uint32_t func_def_address = cmds_code->GetPosition();
-  cmds_code->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
-  cmds_code->WriteCmdId(CmdId::kCreateLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalIntVar);
-  cmds_code->WriteCmdId(CmdId::kDestroyLocalLongVar);
-  cmds_code->WriteCmdId(CmdId::kReturn);
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndBoolArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> arg_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(3), UINT32_C(3))));
+  BoolDataType arg_data_type;
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalBoolVar);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
 
-  vector<IdSize> global_var_defs;
-  vector<IdAddress> func_defs = {{"func", func_def_address}};
-  vector<string> native_func_defs;
-  vector<IdAddresses> global_var_refs;
-  vector<IdAddresses> func_refs;
-  vector<IdAddresses> native_func_refs;
-  uint32_t version = UINT32_C(1);
-  Module expected_module(version,
-                         move(cmds_code),
-                         main_cmds_code_size,
-                         func_defs,
-                         global_var_defs,
-                         native_func_defs,
-                         func_refs,
-                         native_func_refs,
-                         global_var_refs);
-  TestGenerate(vector<TestCast>(),
-               program_node,
-               semantic_analysis,
-               version,
-               expected_module);
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndStringArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> arg_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(3), UINT32_C(3))));
+  StringDataType arg_data_type;
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalStringVar);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalStringVar);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndLongArrayArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> element_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(3), UINT32_C(3))));
+  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+      move(element_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> arg_data_type_node(new ArrayDataTypeNode(
+      move(array_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(7), UINT32_C(7))));
+  unique_ptr<DataType> element_data_type(new LongDataType());
+  unique_ptr<DataType> array_data_type(
+      new ArrayDataType(move(element_data_type)));
+  ArrayDataType arg_data_type(move(array_data_type));
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalLongArrayVar);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_create_arg_code.WriteUint8(dimensions_count);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalLongArrayVar);
+  expected_destroy_arg_code.WriteUint8(dimensions_count);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndIntArrayArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> element_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(3), UINT32_C(3))));
+  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+      move(element_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> arg_data_type_node(new ArrayDataTypeNode(
+      move(array_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(7), UINT32_C(7))));
+  unique_ptr<DataType> element_data_type(new IntDataType());
+  unique_ptr<DataType> array_data_type(
+      new ArrayDataType(move(element_data_type)));
+  ArrayDataType arg_data_type(move(array_data_type));
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalIntArrayVar);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_create_arg_code.WriteUint8(dimensions_count);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalIntArrayVar);
+  expected_destroy_arg_code.WriteUint8(dimensions_count);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndDoubleArrayArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> element_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(3), UINT32_C(3))));
+  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+      move(element_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> arg_data_type_node(new ArrayDataTypeNode(
+      move(array_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(7), UINT32_C(7))));
+  unique_ptr<DataType> element_data_type(new DoubleDataType());
+  unique_ptr<DataType> array_data_type(
+      new ArrayDataType(move(element_data_type)));
+  ArrayDataType arg_data_type(move(array_data_type));
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalDoubleArrayVar);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_create_arg_code.WriteUint8(dimensions_count);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalDoubleArrayVar);
+  expected_destroy_arg_code.WriteUint8(dimensions_count);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndCharArrayArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> element_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(3), UINT32_C(3))));
+  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+      move(element_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> arg_data_type_node(new ArrayDataTypeNode(
+      move(array_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(7), UINT32_C(7))));
+  unique_ptr<DataType> element_data_type(new CharDataType());
+  unique_ptr<DataType> array_data_type(
+      new ArrayDataType(move(element_data_type)));
+  ArrayDataType arg_data_type(move(array_data_type));
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalCharArrayVar);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_create_arg_code.WriteUint8(dimensions_count);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalCharArrayVar);
+  expected_destroy_arg_code.WriteUint8(dimensions_count);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndBoolArrayArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> element_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(3), UINT32_C(3))));
+  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+      move(element_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> arg_data_type_node(new ArrayDataTypeNode(
+      move(array_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(7), UINT32_C(7))));
+  unique_ptr<DataType> element_data_type(new BoolDataType());
+  unique_ptr<DataType> array_data_type(
+      new ArrayDataType(move(element_data_type)));
+  ArrayDataType arg_data_type(move(array_data_type));
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalBoolArrayVar);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_create_arg_code.WriteUint8(dimensions_count);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalBoolArrayVar);
+  expected_destroy_arg_code.WriteUint8(dimensions_count);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
+}
+
+TEST_F(SimpleCodeGeneratorTest, FuncDefWithBodyAndStringArrayArg) {
+  vector< unique_ptr<StmtNode> > program_stmt_nodes;
+  vector< unique_ptr<ArgDefNode> > arg_def_nodes;
+  unique_ptr<DataTypeNode> element_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(3), UINT32_C(3))));
+  unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
+      move(element_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(4)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(5), UINT32_C(5))));
+  unique_ptr<DataTypeNode> arg_data_type_node(new ArrayDataTypeNode(
+      move(array_data_type_node),
+      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(7), UINT32_C(7))));
+  unique_ptr<DataType> element_data_type(new StringDataType());
+  unique_ptr<DataType> array_data_type(
+      new ArrayDataType(move(element_data_type)));
+  ArrayDataType arg_data_type(move(array_data_type));
+  Code expected_create_arg_code;
+  expected_create_arg_code.WriteCmdId(CmdId::kCreateAndInitLocalStringArrayVar);
+  uint8_t dimensions_count = UINT8_C(2);
+  expected_create_arg_code.WriteUint8(dimensions_count);
+  Code expected_destroy_arg_code;
+  expected_destroy_arg_code.WriteCmdId(CmdId::kDestroyLocalStringArrayVar);
+  expected_destroy_arg_code.WriteUint8(dimensions_count);
+  TestFuncDefWithBodyAndArg(move(arg_data_type_node),
+                            arg_data_type,
+                            expected_create_arg_code,
+                            expected_destroy_arg_code);
 }
 
 TEST_F(SimpleCodeGeneratorTest, ReturnWithoutValue) {

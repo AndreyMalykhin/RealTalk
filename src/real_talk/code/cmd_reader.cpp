@@ -76,8 +76,6 @@ const CreateLocalBoolVarCmd &kCreateLocalBoolVarCmd =
 
 const DestroyLocalIntVarCmd &kDestroyLocalIntVarCmd =
     *new DestroyLocalIntVarCmd();
-const DestroyLocalArrayVarCmd &kDestroyLocalArrayVarCmd =
-    *new DestroyLocalArrayVarCmd();
 const DestroyLocalLongVarCmd &kDestroyLocalLongVarCmd =
     *new DestroyLocalLongVarCmd();
 const DestroyLocalDoubleVarCmd &kDestroyLocalDoubleVarCmd =
@@ -88,6 +86,19 @@ const DestroyLocalStringVarCmd &kDestroyLocalStringVarCmd =
     *new DestroyLocalStringVarCmd();
 const DestroyLocalBoolVarCmd &kDestroyLocalBoolVarCmd =
     *new DestroyLocalBoolVarCmd();
+
+DestroyLocalIntArrayVarCmd &kDestroyLocalIntArrayVarCmd =
+    *new DestroyLocalIntArrayVarCmd(UINT8_C(1));
+DestroyLocalLongArrayVarCmd &kDestroyLocalLongArrayVarCmd =
+    *new DestroyLocalLongArrayVarCmd(UINT8_C(1));
+DestroyLocalDoubleArrayVarCmd &kDestroyLocalDoubleArrayVarCmd =
+    *new DestroyLocalDoubleArrayVarCmd(UINT8_C(1));
+DestroyLocalCharArrayVarCmd &kDestroyLocalCharArrayVarCmd =
+    *new DestroyLocalCharArrayVarCmd(UINT8_C(1));
+DestroyLocalStringArrayVarCmd &kDestroyLocalStringArrayVarCmd =
+    *new DestroyLocalStringArrayVarCmd(UINT8_C(1));
+DestroyLocalBoolArrayVarCmd &kDestroyLocalBoolArrayVarCmd =
+    *new DestroyLocalBoolArrayVarCmd(UINT8_C(1));
 
 const UnloadIntCmd &kUnloadIntCmd = *new UnloadIntCmd();
 const UnloadArrayCmd &kUnloadArrayCmd = *new UnloadArrayCmd();
@@ -421,9 +432,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kDestroyLocalIntVar:
       cmd = &kDestroyLocalIntVarCmd;
       break;
-    case CmdId::kDestroyLocalArrayVar:
-      cmd = &kDestroyLocalArrayVarCmd;
-      break;
     case CmdId::kDestroyLocalLongVar:
       cmd = &kDestroyLocalLongVarCmd;
       break;
@@ -438,6 +446,30 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       break;
     case CmdId::kDestroyLocalBoolVar:
       cmd = &kDestroyLocalBoolVarCmd;
+      break;
+    case CmdId::kDestroyLocalIntArrayVar:
+      kDestroyLocalIntArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kDestroyLocalIntArrayVarCmd;
+      break;
+    case CmdId::kDestroyLocalLongArrayVar:
+      kDestroyLocalLongArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kDestroyLocalLongArrayVarCmd;
+      break;
+    case CmdId::kDestroyLocalDoubleArrayVar:
+      kDestroyLocalDoubleArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kDestroyLocalDoubleArrayVarCmd;
+      break;
+    case CmdId::kDestroyLocalCharArrayVar:
+      kDestroyLocalCharArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kDestroyLocalCharArrayVarCmd;
+      break;
+    case CmdId::kDestroyLocalStringArrayVar:
+      kDestroyLocalStringArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kDestroyLocalStringArrayVarCmd;
+      break;
+    case CmdId::kDestroyLocalBoolArrayVar:
+      kDestroyLocalBoolArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kDestroyLocalBoolArrayVarCmd;
       break;
     case CmdId::kUnloadInt:
       cmd = &kUnloadIntCmd;

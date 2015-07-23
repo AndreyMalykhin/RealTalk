@@ -211,6 +211,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class CreateArrayCmdGenerator;
   class CreateAndInitArrayCmdGenerator;
   class DestroyLocalVarCmdGenerator;
+  class DestroyLocalArrayVarCmdGenerator;
   class LoadGlobalVarValueCmdGenerator;
   class LoadLocalVarValueCmdGenerator;
   class LoadElementValueCmdGenerator;
@@ -819,6 +820,53 @@ class SimpleCodeGenerator::Impl::CreateLocalVarCmdGenerator
   Code *code_;
 };
 
+class SimpleCodeGenerator::Impl::DestroyLocalArrayVarCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const ArrayDataType &data_type, Code *code) {
+    code_ = code;
+    dimensions_count_ = UINT8_C(0);
+    data_type.Accept(*this);
+    code_->WriteUint8(dimensions_count_);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+    ++dimensions_count_;
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalBoolArrayVar);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalIntArrayVar);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalLongArrayVar);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalDoubleArrayVar);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalCharArrayVar);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kDestroyLocalStringArrayVar);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+  uint8_t dimensions_count_;
+};
+
 class SimpleCodeGenerator::Impl::DestroyLocalVarCmdGenerator
     : private DataTypeVisitor {
  public:
@@ -828,8 +876,8 @@ class SimpleCodeGenerator::Impl::DestroyLocalVarCmdGenerator
   }
 
  private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalArrayVar);
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    DestroyLocalArrayVarCmdGenerator().Generate(data_type, code_);
   }
 
   virtual void VisitBool(const BoolDataType&) override {

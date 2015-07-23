@@ -22,12 +22,17 @@ class CreateLocalCharVarCmd;
 class CreateLocalStringVarCmd;
 class CreateLocalBoolVarCmd;
 class DestroyLocalIntVarCmd;
-class DestroyLocalArrayVarCmd;
 class DestroyLocalLongVarCmd;
 class DestroyLocalDoubleVarCmd;
 class DestroyLocalCharVarCmd;
 class DestroyLocalStringVarCmd;
 class DestroyLocalBoolVarCmd;
+class DestroyLocalIntArrayVarCmd;
+class DestroyLocalLongArrayVarCmd;
+class DestroyLocalDoubleArrayVarCmd;
+class DestroyLocalCharArrayVarCmd;
+class DestroyLocalStringArrayVarCmd;
+class DestroyLocalBoolArrayVarCmd;
 class UnloadIntCmd;
 class UnloadArrayCmd;
 class UnloadLongCmd;
@@ -222,8 +227,6 @@ class CmdVisitor {
       const CreateLocalBoolVarCmd &cmd) = 0;
   virtual void VisitDestroyLocalIntVar(
       const DestroyLocalIntVarCmd &cmd) = 0;
-  virtual void VisitDestroyLocalArrayVar(
-      const DestroyLocalArrayVarCmd &cmd) = 0;
   virtual void VisitDestroyLocalLongVar(
       const DestroyLocalLongVarCmd &cmd) = 0;
   virtual void VisitDestroyLocalDoubleVar(
@@ -234,6 +237,18 @@ class CmdVisitor {
       const DestroyLocalStringVarCmd &cmd) = 0;
   virtual void VisitDestroyLocalBoolVar(
       const DestroyLocalBoolVarCmd &cmd) = 0;
+  virtual void VisitDestroyLocalIntArrayVar(
+      const DestroyLocalIntArrayVarCmd &cmd) = 0;
+  virtual void VisitDestroyLocalLongArrayVar(
+      const DestroyLocalLongArrayVarCmd &cmd) = 0;
+  virtual void VisitDestroyLocalDoubleArrayVar(
+      const DestroyLocalDoubleArrayVarCmd &cmd) = 0;
+  virtual void VisitDestroyLocalCharArrayVar(
+      const DestroyLocalCharArrayVarCmd &cmd) = 0;
+  virtual void VisitDestroyLocalStringArrayVar(
+      const DestroyLocalStringArrayVarCmd &cmd) = 0;
+  virtual void VisitDestroyLocalBoolArrayVar(
+      const DestroyLocalBoolArrayVarCmd &cmd) = 0;
   virtual void VisitUnloadInt(
       const UnloadIntCmd &cmd) = 0;
   virtual void VisitUnloadArray(
