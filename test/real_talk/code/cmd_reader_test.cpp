@@ -58,7 +58,6 @@ class CmdReaderTest: public Test {
     code.SetPosition(UINT32_C(0));
     CmdReader cmd_reader;
     cmd_reader.SetCode(&code);
-
     const Cmd &actual_cmd = cmd_reader.GetNextCmd();
     ASSERT_EQ(expected_cmd, actual_cmd);
   }
@@ -153,6 +152,13 @@ class CmdReaderTest: public Test {
 
   void TestDestroyLocalArrayVarCmd(
       CmdId cmd_id, const DestroyLocalArrayVarCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    TestGetNextCmd(code, expected_cmd);
+  }
+
+  void TestUnloadArrayCmd(CmdId cmd_id, const UnloadArrayCmd &expected_cmd) {
     Code code;
     code.WriteCmdId(cmd_id);
     code.WriteUint8(expected_cmd.GetDimensionsCount());
@@ -373,11 +379,40 @@ TEST_F(CmdReaderTest, UnloadStringCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, UnloadArrayCmd) {
-  UnloadArrayCmd expected_cmd;
-  Code code;
-  code.WriteCmdId(CmdId::kUnloadArray);
-  TestGetNextCmd(code, expected_cmd);
+TEST_F(CmdReaderTest, UnloadIntArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  UnloadIntArrayCmd expected_cmd(dimensions_count);
+  TestUnloadArrayCmd(CmdId::kUnloadIntArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadLongArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  UnloadLongArrayCmd expected_cmd(dimensions_count);
+  TestUnloadArrayCmd(CmdId::kUnloadLongArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadDoubleArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  UnloadDoubleArrayCmd expected_cmd(dimensions_count);
+  TestUnloadArrayCmd(CmdId::kUnloadDoubleArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadCharArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  UnloadCharArrayCmd expected_cmd(dimensions_count);
+  TestUnloadArrayCmd(CmdId::kUnloadCharArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadBoolArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  UnloadBoolArrayCmd expected_cmd(dimensions_count);
+  TestUnloadArrayCmd(CmdId::kUnloadBoolArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, UnloadStringArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  UnloadStringArrayCmd expected_cmd(dimensions_count);
+  TestUnloadArrayCmd(CmdId::kUnloadStringArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadIntValueCmd) {

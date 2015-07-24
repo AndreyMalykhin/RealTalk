@@ -101,12 +101,20 @@ DestroyLocalBoolArrayVarCmd &kDestroyLocalBoolArrayVarCmd =
     *new DestroyLocalBoolArrayVarCmd(UINT8_C(1));
 
 const UnloadIntCmd &kUnloadIntCmd = *new UnloadIntCmd();
-const UnloadArrayCmd &kUnloadArrayCmd = *new UnloadArrayCmd();
 const UnloadLongCmd &kUnloadLongCmd = *new UnloadLongCmd();
 const UnloadDoubleCmd &kUnloadDoubleCmd = *new UnloadDoubleCmd();
 const UnloadCharCmd &kUnloadCharCmd = *new UnloadCharCmd();
 const UnloadStringCmd &kUnloadStringCmd = *new UnloadStringCmd();
 const UnloadBoolCmd &kUnloadBoolCmd = *new UnloadBoolCmd();
+
+UnloadIntArrayCmd &kUnloadIntArrayCmd = *new UnloadIntArrayCmd(UINT8_C(1));
+UnloadLongArrayCmd &kUnloadLongArrayCmd = *new UnloadLongArrayCmd(UINT8_C(1));
+UnloadDoubleArrayCmd &kUnloadDoubleArrayCmd =
+    *new UnloadDoubleArrayCmd(UINT8_C(1));
+UnloadCharArrayCmd &kUnloadCharArrayCmd = *new UnloadCharArrayCmd(UINT8_C(1));
+UnloadStringArrayCmd &kUnloadStringArrayCmd =
+    *new UnloadStringArrayCmd(UINT8_C(1));
+UnloadBoolArrayCmd &kUnloadBoolArrayCmd = *new UnloadBoolArrayCmd(UINT8_C(1));
 
 LoadIntValueCmd &kLoadIntValueCmd = *new LoadIntValueCmd(INT32_C(0));
 LoadLongValueCmd &kLoadLongValueCmd = *new LoadLongValueCmd(INT64_C(0));
@@ -474,9 +482,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kUnloadInt:
       cmd = &kUnloadIntCmd;
       break;
-    case CmdId::kUnloadArray:
-      cmd = &kUnloadArrayCmd;
-      break;
     case CmdId::kUnloadLong:
       cmd = &kUnloadLongCmd;
       break;
@@ -491,6 +496,30 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       break;
     case CmdId::kUnloadBool:
       cmd = &kUnloadBoolCmd;
+      break;
+    case CmdId::kUnloadIntArray:
+      kUnloadIntArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kUnloadIntArrayCmd;
+      break;
+    case CmdId::kUnloadLongArray:
+      kUnloadLongArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kUnloadLongArrayCmd;
+      break;
+    case CmdId::kUnloadDoubleArray:
+      kUnloadDoubleArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kUnloadDoubleArrayCmd;
+      break;
+    case CmdId::kUnloadCharArray:
+      kUnloadCharArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kUnloadCharArrayCmd;
+      break;
+    case CmdId::kUnloadStringArray:
+      kUnloadStringArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kUnloadStringArrayCmd;
+      break;
+    case CmdId::kUnloadBoolArray:
+      kUnloadBoolArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kUnloadBoolArrayCmd;
       break;
     case CmdId::kLoadIntValue:
       kLoadIntValueCmd.SetValue(code_->ReadInt32());

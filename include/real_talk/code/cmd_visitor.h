@@ -34,12 +34,17 @@ class DestroyLocalCharArrayVarCmd;
 class DestroyLocalStringArrayVarCmd;
 class DestroyLocalBoolArrayVarCmd;
 class UnloadIntCmd;
-class UnloadArrayCmd;
 class UnloadLongCmd;
 class UnloadDoubleCmd;
 class UnloadCharCmd;
 class UnloadStringCmd;
 class UnloadBoolCmd;
+class UnloadIntArrayCmd;
+class UnloadLongArrayCmd;
+class UnloadDoubleArrayCmd;
+class UnloadCharArrayCmd;
+class UnloadStringArrayCmd;
+class UnloadBoolArrayCmd;
 class LoadIntValueCmd;
 class LoadLongValueCmd;
 class LoadBoolValueCmd;
@@ -251,8 +256,6 @@ class CmdVisitor {
       const DestroyLocalBoolArrayVarCmd &cmd) = 0;
   virtual void VisitUnloadInt(
       const UnloadIntCmd &cmd) = 0;
-  virtual void VisitUnloadArray(
-      const UnloadArrayCmd &cmd) = 0;
   virtual void VisitUnloadLong(
       const UnloadLongCmd &cmd) = 0;
   virtual void VisitUnloadDouble(
@@ -263,6 +266,18 @@ class CmdVisitor {
       const UnloadStringCmd &cmd) = 0;
   virtual void VisitUnloadBool(
       const UnloadBoolCmd &cmd) = 0;
+  virtual void VisitUnloadIntArray(
+      const UnloadIntArrayCmd &cmd) = 0;
+  virtual void VisitUnloadLongArray(
+      const UnloadLongArrayCmd &cmd) = 0;
+  virtual void VisitUnloadDoubleArray(
+      const UnloadDoubleArrayCmd &cmd) = 0;
+  virtual void VisitUnloadCharArray(
+      const UnloadCharArrayCmd &cmd) = 0;
+  virtual void VisitUnloadStringArray(
+      const UnloadStringArrayCmd &cmd) = 0;
+  virtual void VisitUnloadBoolArray(
+      const UnloadBoolArrayCmd &cmd) = 0;
   virtual void VisitLoadIntValue(
       const LoadIntValueCmd &cmd) = 0;
   virtual void VisitLoadLongValue(

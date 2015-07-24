@@ -42,12 +42,17 @@ using real_talk::code::DestroyLocalCharArrayVarCmd;
 using real_talk::code::DestroyLocalStringArrayVarCmd;
 using real_talk::code::DestroyLocalBoolArrayVarCmd;
 using real_talk::code::UnloadIntCmd;
-using real_talk::code::UnloadArrayCmd;
 using real_talk::code::UnloadLongCmd;
 using real_talk::code::UnloadDoubleCmd;
 using real_talk::code::UnloadCharCmd;
 using real_talk::code::UnloadStringCmd;
 using real_talk::code::UnloadBoolCmd;
+using real_talk::code::UnloadIntArrayCmd;
+using real_talk::code::UnloadLongArrayCmd;
+using real_talk::code::UnloadDoubleArrayCmd;
+using real_talk::code::UnloadCharArrayCmd;
+using real_talk::code::UnloadStringArrayCmd;
+using real_talk::code::UnloadBoolArrayCmd;
 using real_talk::code::LoadIntValueCmd;
 using real_talk::code::LoadLongValueCmd;
 using real_talk::code::LoadBoolValueCmd;
@@ -269,8 +274,6 @@ class SimpleVM::Impl: private CmdVisitor {
       const DestroyLocalBoolArrayVarCmd &cmd) override;
   virtual void VisitUnloadInt(
       const UnloadIntCmd &cmd) override;
-  virtual void VisitUnloadArray(
-      const UnloadArrayCmd &cmd) override;
   virtual void VisitUnloadLong(
       const UnloadLongCmd &cmd) override;
   virtual void VisitUnloadDouble(
@@ -281,6 +284,18 @@ class SimpleVM::Impl: private CmdVisitor {
       const UnloadStringCmd &cmd) override;
   virtual void VisitUnloadBool(
       const UnloadBoolCmd &cmd) override;
+  virtual void VisitUnloadIntArray(
+      const UnloadIntArrayCmd &cmd) override;
+  virtual void VisitUnloadLongArray(
+      const UnloadLongArrayCmd &cmd) override;
+  virtual void VisitUnloadDoubleArray(
+      const UnloadDoubleArrayCmd &cmd) override;
+  virtual void VisitUnloadCharArray(
+      const UnloadCharArrayCmd &cmd) override;
+  virtual void VisitUnloadStringArray(
+      const UnloadStringArrayCmd &cmd) override;
+  virtual void VisitUnloadBoolArray(
+      const UnloadBoolArrayCmd &cmd) override;
   virtual void VisitLoadIntValue(
       const LoadIntValueCmd &cmd) override;
   virtual void VisitLoadLongValue(
@@ -732,9 +747,6 @@ void SimpleVM::Impl::VisitDestroyLocalBoolArrayVar(
 void SimpleVM::Impl::VisitUnloadInt(
     const UnloadIntCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitUnloadArray(
-    const UnloadArrayCmd&) {assert(false);}
-
 void SimpleVM::Impl::VisitUnloadLong(
     const UnloadLongCmd&) {assert(false);}
 
@@ -749,6 +761,24 @@ void SimpleVM::Impl::VisitUnloadString(
 
 void SimpleVM::Impl::VisitUnloadBool(
     const UnloadBoolCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitUnloadIntArray(
+    const UnloadIntArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitUnloadLongArray(
+    const UnloadLongArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitUnloadDoubleArray(
+    const UnloadDoubleArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitUnloadCharArray(
+    const UnloadCharArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitUnloadStringArray(
+    const UnloadStringArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitUnloadBoolArray(
+    const UnloadBoolArrayCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadIntValue(
     const LoadIntValueCmd&) {assert(false);}
