@@ -164,6 +164,13 @@ class CmdReaderTest: public Test {
     code.WriteUint8(expected_cmd.GetDimensionsCount());
     TestGetNextCmd(code, expected_cmd);
   }
+
+  void TestStoreArrayCmd(CmdId cmd_id, const StoreArrayCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    TestGetNextCmd(code, expected_cmd);
+  }
 };
 
 TEST_F(CmdReaderTest, CreateGlobalIntVarCmd) {
@@ -898,11 +905,40 @@ TEST_F(CmdReaderTest, StoreStringCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, StoreArrayCmd) {
-  StoreArrayCmd expected_cmd;
-  Code code;
-  code.WriteCmdId(CmdId::kStoreArray);
-  TestGetNextCmd(code, expected_cmd);
+TEST_F(CmdReaderTest, StoreIntArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  StoreIntArrayCmd expected_cmd(dimensions_count);
+  TestStoreArrayCmd(CmdId::kStoreIntArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreLongArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  StoreLongArrayCmd expected_cmd(dimensions_count);
+  TestStoreArrayCmd(CmdId::kStoreLongArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreDoubleArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  StoreDoubleArrayCmd expected_cmd(dimensions_count);
+  TestStoreArrayCmd(CmdId::kStoreDoubleArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreCharArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  StoreCharArrayCmd expected_cmd(dimensions_count);
+  TestStoreArrayCmd(CmdId::kStoreCharArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreBoolArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  StoreBoolArrayCmd expected_cmd(dimensions_count);
+  TestStoreArrayCmd(CmdId::kStoreBoolArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, StoreStringArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  StoreStringArrayCmd expected_cmd(dimensions_count);
+  TestStoreArrayCmd(CmdId::kStoreStringArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CastCharToIntCmd) {

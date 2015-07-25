@@ -250,7 +250,15 @@ const StoreDoubleCmd &kStoreDoubleCmd = *new StoreDoubleCmd();
 const StoreBoolCmd &kStoreBoolCmd = *new StoreBoolCmd();
 const StoreCharCmd &kStoreCharCmd = *new StoreCharCmd();
 const StoreStringCmd &kStoreStringCmd = *new StoreStringCmd();
-const StoreArrayCmd &kStoreArrayCmd = *new StoreArrayCmd();
+
+StoreIntArrayCmd &kStoreIntArrayCmd = *new StoreIntArrayCmd(UINT8_C(1));
+StoreLongArrayCmd &kStoreLongArrayCmd = *new StoreLongArrayCmd(UINT8_C(1));
+StoreDoubleArrayCmd &kStoreDoubleArrayCmd =
+    *new StoreDoubleArrayCmd(UINT8_C(1));
+StoreBoolArrayCmd &kStoreBoolArrayCmd = *new StoreBoolArrayCmd(UINT8_C(1));
+StoreCharArrayCmd &kStoreCharArrayCmd = *new StoreCharArrayCmd(UINT8_C(1));
+StoreStringArrayCmd &kStoreStringArrayCmd =
+    *new StoreStringArrayCmd(UINT8_C(1));
 
 const CastCharToIntCmd &kCastCharToIntCmd = *new CastCharToIntCmd();
 const CastCharToLongCmd &kCastCharToLongCmd = *new CastCharToLongCmd();
@@ -794,8 +802,29 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kStoreString:
       cmd = &kStoreStringCmd;
       break;
-    case CmdId::kStoreArray:
-      cmd = &kStoreArrayCmd;
+    case CmdId::kStoreIntArray:
+      kStoreIntArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kStoreIntArrayCmd;
+      break;
+    case CmdId::kStoreLongArray:
+      kStoreLongArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kStoreLongArrayCmd;
+      break;
+    case CmdId::kStoreDoubleArray:
+      kStoreDoubleArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kStoreDoubleArrayCmd;
+      break;
+    case CmdId::kStoreBoolArray:
+      kStoreBoolArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kStoreBoolArrayCmd;
+      break;
+    case CmdId::kStoreCharArray:
+      kStoreCharArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kStoreCharArrayCmd;
+      break;
+    case CmdId::kStoreStringArray:
+      kStoreStringArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kStoreStringArrayCmd;
       break;
     case CmdId::kCastCharToInt:
       cmd = &kCastCharToIntCmd;

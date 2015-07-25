@@ -221,6 +221,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class UnloadCmdGenerator;
   class UnloadArrayCmdGenerator;
   class StoreCmdGenerator;
+  class StoreArrayCmdGenerator;
   class CallCmdGenerator;
   class ExprCmdGenerator;
   class AndCmdGenerator;
@@ -1322,6 +1323,53 @@ class SimpleCodeGenerator::Impl::VarDefNodeProcessor
   Code *code_;
 };
 
+class SimpleCodeGenerator::Impl::StoreArrayCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const ArrayDataType &data_type, Code *code) {
+    code_ = code;
+    dimensions_count_ = UINT8_C(0);
+    data_type.Accept(*this);
+    code_->WriteUint8(dimensions_count_);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+    ++dimensions_count_;
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreBoolArray);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreIntArray);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreLongArray);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreDoubleArray);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreCharArray);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kStoreStringArray);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+  uint8_t dimensions_count_;
+};
+
 class SimpleCodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, Code *code) {
@@ -1330,8 +1378,8 @@ class SimpleCodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
   }
 
  private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreArray);
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    StoreArrayCmdGenerator().Generate(data_type, code_);
   }
 
   virtual void VisitBool(const BoolDataType&) override {

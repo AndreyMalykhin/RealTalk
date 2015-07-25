@@ -137,7 +137,12 @@ using real_talk::code::StoreDoubleCmd;
 using real_talk::code::StoreBoolCmd;
 using real_talk::code::StoreCharCmd;
 using real_talk::code::StoreStringCmd;
-using real_talk::code::StoreArrayCmd;
+using real_talk::code::StoreIntArrayCmd;
+using real_talk::code::StoreLongArrayCmd;
+using real_talk::code::StoreDoubleArrayCmd;
+using real_talk::code::StoreBoolArrayCmd;
+using real_talk::code::StoreCharArrayCmd;
+using real_talk::code::StoreStringArrayCmd;
 using real_talk::code::CastCharToIntCmd;
 using real_talk::code::CastCharToDoubleCmd;
 using real_talk::code::CastCharToLongCmd;
@@ -464,8 +469,18 @@ class SimpleVM::Impl: private CmdVisitor {
       const StoreCharCmd &cmd) override;
   virtual void VisitStoreString(
       const StoreStringCmd &cmd) override;
-  virtual void VisitStoreArray(
-      const StoreArrayCmd &cmd) override;
+  virtual void VisitStoreIntArray(
+      const StoreIntArrayCmd &cmd) override;
+  virtual void VisitStoreLongArray(
+      const StoreLongArrayCmd &cmd) override;
+  virtual void VisitStoreDoubleArray(
+      const StoreDoubleArrayCmd &cmd) override;
+  virtual void VisitStoreBoolArray(
+      const StoreBoolArrayCmd &cmd) override;
+  virtual void VisitStoreCharArray(
+      const StoreCharArrayCmd &cmd) override;
+  virtual void VisitStoreStringArray(
+      const StoreStringArrayCmd &cmd) override;
   virtual void VisitCastCharToInt(
       const CastCharToIntCmd &cmd) override;
   virtual void VisitCastCharToDouble(
@@ -1032,8 +1047,23 @@ void SimpleVM::Impl::VisitStoreChar(
 void SimpleVM::Impl::VisitStoreString(
     const StoreStringCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitStoreArray(
-    const StoreArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreIntArray(
+    const StoreIntArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitStoreLongArray(
+    const StoreLongArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitStoreDoubleArray(
+    const StoreDoubleArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitStoreBoolArray(
+    const StoreBoolArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitStoreCharArray(
+    const StoreCharArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitStoreStringArray(
+    const StoreStringArrayCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCastCharToInt(
     const CastCharToIntCmd&) {assert(false);}

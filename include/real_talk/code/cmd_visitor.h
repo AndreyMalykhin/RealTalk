@@ -129,7 +129,12 @@ class StoreDoubleCmd;
 class StoreBoolCmd;
 class StoreCharCmd;
 class StoreStringCmd;
-class StoreArrayCmd;
+class StoreIntArrayCmd;
+class StoreLongArrayCmd;
+class StoreDoubleArrayCmd;
+class StoreBoolArrayCmd;
+class StoreCharArrayCmd;
+class StoreStringArrayCmd;
 class CastCharToIntCmd;
 class CastCharToDoubleCmd;
 class CastCharToLongCmd;
@@ -446,8 +451,18 @@ class CmdVisitor {
       const StoreCharCmd &cmd) = 0;
   virtual void VisitStoreString(
       const StoreStringCmd &cmd) = 0;
-  virtual void VisitStoreArray(
-      const StoreArrayCmd &cmd) = 0;
+  virtual void VisitStoreIntArray(
+      const StoreIntArrayCmd &cmd) = 0;
+  virtual void VisitStoreLongArray(
+      const StoreLongArrayCmd &cmd) = 0;
+  virtual void VisitStoreDoubleArray(
+      const StoreDoubleArrayCmd &cmd) = 0;
+  virtual void VisitStoreBoolArray(
+      const StoreBoolArrayCmd &cmd) = 0;
+  virtual void VisitStoreCharArray(
+      const StoreCharArrayCmd &cmd) = 0;
+  virtual void VisitStoreStringArray(
+      const StoreStringArrayCmd &cmd) = 0;
   virtual void VisitCastCharToInt(
       const CastCharToIntCmd &cmd) = 0;
   virtual void VisitCastCharToDouble(

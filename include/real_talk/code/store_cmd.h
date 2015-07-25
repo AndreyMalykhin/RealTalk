@@ -9,7 +9,7 @@ namespace real_talk {
 namespace code {
 
 class StoreCmd: public Cmd {
- private:
+ protected:
   virtual void Print(std::ostream&) const override {}
   virtual bool IsEqual(const Cmd&) const override {return true;}
 };
@@ -58,8 +58,83 @@ class StoreStringCmd: public StoreCmd {
 
 class StoreArrayCmd: public StoreCmd {
  public:
+  inline explicit StoreArrayCmd(uint8_t dimensions_count) noexcept
+      : dimensions_count_(dimensions_count) {
+        assert(dimensions_count != UINT8_C(0));
+      }
+
+  inline uint8_t GetDimensionsCount() const noexcept {return dimensions_count_;}
+
+  inline void SetDimensionsCount(uint8_t count) noexcept {
+    dimensions_count_ = count;
+  }
+
+ private:
+  virtual void Print(std::ostream &stream) const override {
+    StoreCmd::Print(stream);
+    stream << "dimensions_count=" << static_cast<int>(dimensions_count_);
+  }
+
+  virtual bool IsEqual(const Cmd &cmd) const override {
+    const auto &rhs = static_cast<const StoreArrayCmd&>(cmd);
+    return StoreCmd::IsEqual(cmd)
+        && dimensions_count_ == rhs.dimensions_count_;
+  }
+
+  uint8_t dimensions_count_;
+};
+
+class StoreIntArrayCmd: public StoreArrayCmd {
+ public:
+  using StoreArrayCmd::StoreArrayCmd;
+
   virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitStoreArray(*this);
+    visitor->VisitStoreIntArray(*this);
+  }
+};
+
+class StoreLongArrayCmd: public StoreArrayCmd {
+ public:
+  using StoreArrayCmd::StoreArrayCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitStoreLongArray(*this);
+  }
+};
+
+class StoreDoubleArrayCmd: public StoreArrayCmd {
+ public:
+  using StoreArrayCmd::StoreArrayCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitStoreDoubleArray(*this);
+  }
+};
+
+class StoreBoolArrayCmd: public StoreArrayCmd {
+ public:
+  using StoreArrayCmd::StoreArrayCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitStoreBoolArray(*this);
+  }
+};
+
+class StoreCharArrayCmd: public StoreArrayCmd {
+ public:
+  using StoreArrayCmd::StoreArrayCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitStoreCharArray(*this);
+  }
+};
+
+class StoreStringArrayCmd: public StoreArrayCmd {
+ public:
+  using StoreArrayCmd::StoreArrayCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitStoreStringArray(*this);
   }
 };
 }
