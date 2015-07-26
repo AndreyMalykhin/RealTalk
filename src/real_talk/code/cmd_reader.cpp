@@ -271,31 +271,31 @@ const CastLongToDoubleCmd &kCastLongToDoubleCmd = *new CastLongToDoubleCmd();
 const CallCmd &kCallCmd = *new CallCmd();
 const CallNativeCmd &kCallNativeCmd = *new CallNativeCmd();
 
-LoadArrayOfIntsElementValueCmd &kLoadArrayOfIntsElementValueCmd =
-    *new LoadArrayOfIntsElementValueCmd(UINT8_C(1));
-LoadArrayOfLongsElementValueCmd &kLoadArrayOfLongsElementValueCmd =
-    *new LoadArrayOfLongsElementValueCmd(UINT8_C(1));
-LoadArrayOfDoublesElementValueCmd &kLoadArrayOfDoublesElementValueCmd =
-    *new LoadArrayOfDoublesElementValueCmd(UINT8_C(1));
-LoadArrayOfBoolsElementValueCmd &kLoadArrayOfBoolsElementValueCmd =
-    *new LoadArrayOfBoolsElementValueCmd(UINT8_C(1));
-LoadArrayOfCharsElementValueCmd &kLoadArrayOfCharsElementValueCmd =
-    *new LoadArrayOfCharsElementValueCmd(UINT8_C(1));
-LoadArrayOfStringsElementValueCmd &kLoadArrayOfStringsElementValueCmd =
-    *new LoadArrayOfStringsElementValueCmd(UINT8_C(1));
+LoadIntArrayElementValueCmd &kLoadIntArrayElementValueCmd =
+    *new LoadIntArrayElementValueCmd(UINT8_C(1));
+LoadLongArrayElementValueCmd &kLoadLongArrayElementValueCmd =
+    *new LoadLongArrayElementValueCmd(UINT8_C(1));
+LoadDoubleArrayElementValueCmd &kLoadDoubleArrayElementValueCmd =
+    *new LoadDoubleArrayElementValueCmd(UINT8_C(1));
+LoadBoolArrayElementValueCmd &kLoadBoolArrayElementValueCmd =
+    *new LoadBoolArrayElementValueCmd(UINT8_C(1));
+LoadCharArrayElementValueCmd &kLoadCharArrayElementValueCmd =
+    *new LoadCharArrayElementValueCmd(UINT8_C(1));
+LoadStringArrayElementValueCmd &kLoadStringArrayElementValueCmd =
+    *new LoadStringArrayElementValueCmd(UINT8_C(1));
 
-LoadArrayOfIntsElementAddressCmd &kLoadArrayOfIntsElementAddressCmd =
-    *new LoadArrayOfIntsElementAddressCmd(UINT8_C(1));
-LoadArrayOfLongsElementAddressCmd &kLoadArrayOfLongsElementAddressCmd =
-    *new LoadArrayOfLongsElementAddressCmd(UINT8_C(1));
-LoadArrayOfDoublesElementAddressCmd &kLoadArrayOfDoublesElementAddressCmd =
-    *new LoadArrayOfDoublesElementAddressCmd(UINT8_C(1));
-LoadArrayOfBoolsElementAddressCmd &kLoadArrayOfBoolsElementAddressCmd =
-    *new LoadArrayOfBoolsElementAddressCmd(UINT8_C(1));
-LoadArrayOfCharsElementAddressCmd &kLoadArrayOfCharsElementAddressCmd =
-    *new LoadArrayOfCharsElementAddressCmd(UINT8_C(1));
-LoadArrayOfStringsElementAddressCmd &kLoadArrayOfStringsElementAddressCmd =
-    *new LoadArrayOfStringsElementAddressCmd(UINT8_C(1));
+LoadIntArrayElementAddressCmd &kLoadIntArrayElementAddressCmd =
+    *new LoadIntArrayElementAddressCmd(UINT8_C(1));
+LoadLongArrayElementAddressCmd &kLoadLongArrayElementAddressCmd =
+    *new LoadLongArrayElementAddressCmd(UINT8_C(1));
+LoadDoubleArrayElementAddressCmd &kLoadDoubleArrayElementAddressCmd =
+    *new LoadDoubleArrayElementAddressCmd(UINT8_C(1));
+LoadBoolArrayElementAddressCmd &kLoadBoolArrayElementAddressCmd =
+    *new LoadBoolArrayElementAddressCmd(UINT8_C(1));
+LoadCharArrayElementAddressCmd &kLoadCharArrayElementAddressCmd =
+    *new LoadCharArrayElementAddressCmd(UINT8_C(1));
+LoadStringArrayElementAddressCmd &kLoadStringArrayElementAddressCmd =
+    *new LoadStringArrayElementAddressCmd(UINT8_C(1));
 
 const AndCmd &kAndCmd = *new AndCmd();
 const OrCmd &kOrCmd = *new OrCmd();
@@ -853,55 +853,55 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kCallNative:
       cmd = &kCallNativeCmd;
       break;
-    case CmdId::kLoadArrayOfIntsElementValue:
-      kLoadArrayOfIntsElementValueCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfIntsElementValueCmd;
+    case CmdId::kLoadIntArrayElementValue:
+      kLoadIntArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadIntArrayElementValueCmd;
       break;
-    case CmdId::kLoadArrayOfLongsElementValue:
-      kLoadArrayOfLongsElementValueCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfLongsElementValueCmd;
+    case CmdId::kLoadLongArrayElementValue:
+      kLoadLongArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadLongArrayElementValueCmd;
       break;
-    case CmdId::kLoadArrayOfDoublesElementValue:
-      kLoadArrayOfDoublesElementValueCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfDoublesElementValueCmd;
+    case CmdId::kLoadDoubleArrayElementValue:
+      kLoadDoubleArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadDoubleArrayElementValueCmd;
       break;
-    case CmdId::kLoadArrayOfBoolsElementValue:
-      kLoadArrayOfBoolsElementValueCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfBoolsElementValueCmd;
+    case CmdId::kLoadBoolArrayElementValue:
+      kLoadBoolArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadBoolArrayElementValueCmd;
       break;
-    case CmdId::kLoadArrayOfCharsElementValue:
-      kLoadArrayOfCharsElementValueCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfCharsElementValueCmd;
+    case CmdId::kLoadCharArrayElementValue:
+      kLoadCharArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadCharArrayElementValueCmd;
       break;
-    case CmdId::kLoadArrayOfStringsElementValue:
-      kLoadArrayOfStringsElementValueCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfStringsElementValueCmd;
+    case CmdId::kLoadStringArrayElementValue:
+      kLoadStringArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadStringArrayElementValueCmd;
       break;
-    case CmdId::kLoadArrayOfIntsElementAddress:
-      kLoadArrayOfIntsElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfIntsElementAddressCmd;
+    case CmdId::kLoadIntArrayElementAddress:
+      kLoadIntArrayElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadIntArrayElementAddressCmd;
       break;
-    case CmdId::kLoadArrayOfLongsElementAddress:
-      kLoadArrayOfLongsElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfLongsElementAddressCmd;
+    case CmdId::kLoadLongArrayElementAddress:
+      kLoadLongArrayElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadLongArrayElementAddressCmd;
       break;
-    case CmdId::kLoadArrayOfDoublesElementAddress:
-      kLoadArrayOfDoublesElementAddressCmd.SetDimensionsCount(
+    case CmdId::kLoadDoubleArrayElementAddress:
+      kLoadDoubleArrayElementAddressCmd.SetDimensionsCount(
           code_->ReadUint8());
-      cmd = &kLoadArrayOfDoublesElementAddressCmd;
+      cmd = &kLoadDoubleArrayElementAddressCmd;
       break;
-    case CmdId::kLoadArrayOfBoolsElementAddress:
-      kLoadArrayOfBoolsElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfBoolsElementAddressCmd;
+    case CmdId::kLoadBoolArrayElementAddress:
+      kLoadBoolArrayElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadBoolArrayElementAddressCmd;
       break;
-    case CmdId::kLoadArrayOfCharsElementAddress:
-      kLoadArrayOfCharsElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
-      cmd = &kLoadArrayOfCharsElementAddressCmd;
+    case CmdId::kLoadCharArrayElementAddress:
+      kLoadCharArrayElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kLoadCharArrayElementAddressCmd;
       break;
-    case CmdId::kLoadArrayOfStringsElementAddress:
-      kLoadArrayOfStringsElementAddressCmd.SetDimensionsCount(
+    case CmdId::kLoadStringArrayElementAddress:
+      kLoadStringArrayElementAddressCmd.SetDimensionsCount(
           code_->ReadUint8());
-      cmd = &kLoadArrayOfStringsElementAddressCmd;
+      cmd = &kLoadStringArrayElementAddressCmd;
       break;
     case CmdId::kAnd:
       cmd = &kAndCmd;

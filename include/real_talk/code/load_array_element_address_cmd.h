@@ -32,69 +32,69 @@ class LoadArrayElementAddressCmd: public Cmd {
   uint8_t dimensions_count_;
 };
 
-class LoadArrayOfIntsElementAddressCmd: public LoadArrayElementAddressCmd {
+class LoadIntArrayElementAddressCmd: public LoadArrayElementAddressCmd {
  public:
-  inline explicit LoadArrayOfIntsElementAddressCmd(
+  inline explicit LoadIntArrayElementAddressCmd(
       uint8_t dimensions_count) noexcept
       : LoadArrayElementAddressCmd(dimensions_count) {}
 
   virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitLoadArrayOfIntsElementAddress(*this);
+    visitor->VisitLoadIntArrayElementAddress(*this);
   }
 };
 
-class LoadArrayOfLongsElementAddressCmd: public LoadArrayElementAddressCmd {
+class LoadLongArrayElementAddressCmd: public LoadArrayElementAddressCmd {
  public:
-  inline explicit LoadArrayOfLongsElementAddressCmd(
+  inline explicit LoadLongArrayElementAddressCmd(
       uint8_t dimensions_count) noexcept
       : LoadArrayElementAddressCmd(dimensions_count) {}
 
   virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitLoadArrayOfLongsElementAddress(*this);
+    visitor->VisitLoadLongArrayElementAddress(*this);
   }
 };
 
-class LoadArrayOfDoublesElementAddressCmd: public LoadArrayElementAddressCmd {
+class LoadDoubleArrayElementAddressCmd: public LoadArrayElementAddressCmd {
  public:
-  inline explicit LoadArrayOfDoublesElementAddressCmd(
+  inline explicit LoadDoubleArrayElementAddressCmd(
       uint8_t dimensions_count) noexcept
       : LoadArrayElementAddressCmd(dimensions_count) {}
 
   virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitLoadArrayOfDoublesElementAddress(*this);
+    visitor->VisitLoadDoubleArrayElementAddress(*this);
   }
 };
 
-class LoadArrayOfCharsElementAddressCmd: public LoadArrayElementAddressCmd {
+class LoadCharArrayElementAddressCmd: public LoadArrayElementAddressCmd {
  public:
-  inline explicit LoadArrayOfCharsElementAddressCmd(
+  inline explicit LoadCharArrayElementAddressCmd(
       uint8_t dimensions_count) noexcept
       : LoadArrayElementAddressCmd(dimensions_count) {}
 
   virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitLoadArrayOfCharsElementAddress(*this);
+    visitor->VisitLoadCharArrayElementAddress(*this);
   }
 };
 
-class LoadArrayOfBoolsElementAddressCmd: public LoadArrayElementAddressCmd {
+class LoadBoolArrayElementAddressCmd: public LoadArrayElementAddressCmd {
  public:
-  inline explicit LoadArrayOfBoolsElementAddressCmd(
+  inline explicit LoadBoolArrayElementAddressCmd(
       uint8_t dimensions_count) noexcept
       : LoadArrayElementAddressCmd(dimensions_count) {}
 
   virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitLoadArrayOfBoolsElementAddress(*this);
+    visitor->VisitLoadBoolArrayElementAddress(*this);
   }
 };
 
-class LoadArrayOfStringsElementAddressCmd: public LoadArrayElementAddressCmd {
+class LoadStringArrayElementAddressCmd: public LoadArrayElementAddressCmd {
  public:
-  inline explicit LoadArrayOfStringsElementAddressCmd(
+  inline explicit LoadStringArrayElementAddressCmd(
       uint8_t dimensions_count) noexcept
       : LoadArrayElementAddressCmd(dimensions_count) {}
 
   virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitLoadArrayOfStringsElementAddress(*this);
+    visitor->VisitLoadStringArrayElementAddress(*this);
   }
 };
 }

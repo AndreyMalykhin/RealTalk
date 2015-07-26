@@ -118,19 +118,19 @@ using real_talk::code::LoadLocalBoolVarValueCmd;
 using real_talk::code::LoadLocalDoubleVarValueCmd;
 using real_talk::code::LoadGlobalVarAddressCmd;
 using real_talk::code::LoadLocalVarAddressCmd;
-using real_talk::code::LoadArrayOfIntsElementValueCmd;
-using real_talk::code::LoadArrayOfLongsElementValueCmd;
-using real_talk::code::LoadArrayOfDoublesElementValueCmd;
-using real_talk::code::LoadArrayOfCharsElementValueCmd;
-using real_talk::code::LoadArrayOfStringsElementValueCmd;
-using real_talk::code::LoadArrayOfBoolsElementValueCmd;
-using real_talk::code::LoadArrayOfIntsElementAddressCmd;
-using real_talk::code::LoadArrayOfDoublesElementAddressCmd;
-using real_talk::code::LoadArrayOfBoolsElementAddressCmd;
-using real_talk::code::LoadArrayOfStringsElementAddressCmd;
+using real_talk::code::LoadIntArrayElementValueCmd;
+using real_talk::code::LoadLongArrayElementValueCmd;
+using real_talk::code::LoadDoubleArrayElementValueCmd;
+using real_talk::code::LoadCharArrayElementValueCmd;
+using real_talk::code::LoadStringArrayElementValueCmd;
+using real_talk::code::LoadBoolArrayElementValueCmd;
+using real_talk::code::LoadIntArrayElementAddressCmd;
+using real_talk::code::LoadDoubleArrayElementAddressCmd;
+using real_talk::code::LoadBoolArrayElementAddressCmd;
+using real_talk::code::LoadStringArrayElementAddressCmd;
 using real_talk::code::LoadArrayOfArraysElementAddressCmd;
-using real_talk::code::LoadArrayOfLongsElementAddressCmd;
-using real_talk::code::LoadArrayOfCharsElementAddressCmd;
+using real_talk::code::LoadLongArrayElementAddressCmd;
+using real_talk::code::LoadCharArrayElementAddressCmd;
 using real_talk::code::StoreIntCmd;
 using real_talk::code::StoreLongCmd;
 using real_talk::code::StoreDoubleCmd;
@@ -431,32 +431,32 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadGlobalVarAddressCmd &cmd) override;
   virtual void VisitLoadLocalVarAddress(
       const LoadLocalVarAddressCmd &cmd) override;
-  virtual void VisitLoadArrayOfIntsElementValue(
-      const LoadArrayOfIntsElementValueCmd &cmd) override;
-  virtual void VisitLoadArrayOfLongsElementValue(
-      const LoadArrayOfLongsElementValueCmd &cmd) override;
-  virtual void VisitLoadArrayOfDoublesElementValue(
-      const LoadArrayOfDoublesElementValueCmd &cmd) override;
-  virtual void VisitLoadArrayOfCharsElementValue(
-      const LoadArrayOfCharsElementValueCmd &cmd) override;
-  virtual void VisitLoadArrayOfStringsElementValue(
-      const LoadArrayOfStringsElementValueCmd &cmd) override;
-  virtual void VisitLoadArrayOfBoolsElementValue(
-      const LoadArrayOfBoolsElementValueCmd &cmd) override;
-  virtual void VisitLoadArrayOfIntsElementAddress(
-      const LoadArrayOfIntsElementAddressCmd &cmd) override;
-  virtual void VisitLoadArrayOfDoublesElementAddress(
-      const LoadArrayOfDoublesElementAddressCmd &cmd) override;
-  virtual void VisitLoadArrayOfBoolsElementAddress(
-      const LoadArrayOfBoolsElementAddressCmd &cmd) override;
-  virtual void VisitLoadArrayOfStringsElementAddress(
-      const LoadArrayOfStringsElementAddressCmd &cmd) override;
+  virtual void VisitLoadIntArrayElementValue(
+      const LoadIntArrayElementValueCmd &cmd) override;
+  virtual void VisitLoadLongArrayElementValue(
+      const LoadLongArrayElementValueCmd &cmd) override;
+  virtual void VisitLoadDoubleArrayElementValue(
+      const LoadDoubleArrayElementValueCmd &cmd) override;
+  virtual void VisitLoadCharArrayElementValue(
+      const LoadCharArrayElementValueCmd &cmd) override;
+  virtual void VisitLoadStringArrayElementValue(
+      const LoadStringArrayElementValueCmd &cmd) override;
+  virtual void VisitLoadBoolArrayElementValue(
+      const LoadBoolArrayElementValueCmd &cmd) override;
+  virtual void VisitLoadIntArrayElementAddress(
+      const LoadIntArrayElementAddressCmd &cmd) override;
+  virtual void VisitLoadDoubleArrayElementAddress(
+      const LoadDoubleArrayElementAddressCmd &cmd) override;
+  virtual void VisitLoadBoolArrayElementAddress(
+      const LoadBoolArrayElementAddressCmd &cmd) override;
+  virtual void VisitLoadStringArrayElementAddress(
+      const LoadStringArrayElementAddressCmd &cmd) override;
   virtual void VisitLoadArrayOfArraysElementAddress(
       const LoadArrayOfArraysElementAddressCmd &cmd) override;
-  virtual void VisitLoadArrayOfLongsElementAddress(
-      const LoadArrayOfLongsElementAddressCmd &cmd) override;
-  virtual void VisitLoadArrayOfCharsElementAddress(
-      const LoadArrayOfCharsElementAddressCmd &cmd) override;
+  virtual void VisitLoadLongArrayElementAddress(
+      const LoadLongArrayElementAddressCmd &cmd) override;
+  virtual void VisitLoadCharArrayElementAddress(
+      const LoadCharArrayElementAddressCmd &cmd) override;
   virtual void VisitStoreInt(
       const StoreIntCmd &cmd) override;
   virtual void VisitStoreLong(
@@ -990,44 +990,44 @@ void SimpleVM::Impl::VisitLoadGlobalVarAddress(
 void SimpleVM::Impl::VisitLoadLocalVarAddress(
     const LoadLocalVarAddressCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfIntsElementValue(
-    const LoadArrayOfIntsElementValueCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadIntArrayElementValue(
+    const LoadIntArrayElementValueCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfLongsElementValue(
-    const LoadArrayOfLongsElementValueCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadLongArrayElementValue(
+    const LoadLongArrayElementValueCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfDoublesElementValue(
-    const LoadArrayOfDoublesElementValueCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadDoubleArrayElementValue(
+    const LoadDoubleArrayElementValueCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfCharsElementValue(
-    const LoadArrayOfCharsElementValueCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadCharArrayElementValue(
+    const LoadCharArrayElementValueCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfStringsElementValue(
-    const LoadArrayOfStringsElementValueCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadStringArrayElementValue(
+    const LoadStringArrayElementValueCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfBoolsElementValue(
-    const LoadArrayOfBoolsElementValueCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadBoolArrayElementValue(
+    const LoadBoolArrayElementValueCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfIntsElementAddress(
-    const LoadArrayOfIntsElementAddressCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadIntArrayElementAddress(
+    const LoadIntArrayElementAddressCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfDoublesElementAddress(
-    const LoadArrayOfDoublesElementAddressCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadDoubleArrayElementAddress(
+    const LoadDoubleArrayElementAddressCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfBoolsElementAddress(
-    const LoadArrayOfBoolsElementAddressCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadBoolArrayElementAddress(
+    const LoadBoolArrayElementAddressCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfStringsElementAddress(
-    const LoadArrayOfStringsElementAddressCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadStringArrayElementAddress(
+    const LoadStringArrayElementAddressCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadArrayOfArraysElementAddress(
     const LoadArrayOfArraysElementAddressCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfLongsElementAddress(
-    const LoadArrayOfLongsElementAddressCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadLongArrayElementAddress(
+    const LoadLongArrayElementAddressCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadArrayOfCharsElementAddress(
-    const LoadArrayOfCharsElementAddressCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLoadCharArrayElementAddress(
+    const LoadCharArrayElementAddressCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitStoreInt(
     const StoreIntCmd&) {assert(false);}

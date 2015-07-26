@@ -1022,88 +1022,88 @@ TEST_F(CmdReaderTest, CallNativeCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfIntsElementValueCmd) {
+TEST_F(CmdReaderTest, LoadIntArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfIntsElementValueCmd expected_cmd(dimensions_count);
+  LoadIntArrayElementValueCmd expected_cmd(dimensions_count);
   TestLoadArrayElementValueCmd(
-      CmdId::kLoadArrayOfIntsElementValue, expected_cmd);
+      CmdId::kLoadIntArrayElementValue, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfLongsElementValueCmd) {
+TEST_F(CmdReaderTest, LoadLongArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfLongsElementValueCmd expected_cmd(dimensions_count);
+  LoadLongArrayElementValueCmd expected_cmd(dimensions_count);
   TestLoadArrayElementValueCmd(
-      CmdId::kLoadArrayOfLongsElementValue, expected_cmd);
+      CmdId::kLoadLongArrayElementValue, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfDoublesElementValueCmd) {
+TEST_F(CmdReaderTest, LoadDoubleArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfDoublesElementValueCmd expected_cmd(dimensions_count);
+  LoadDoubleArrayElementValueCmd expected_cmd(dimensions_count);
   TestLoadArrayElementValueCmd(
-      CmdId::kLoadArrayOfDoublesElementValue, expected_cmd);
+      CmdId::kLoadDoubleArrayElementValue, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfCharsElementValueCmd) {
+TEST_F(CmdReaderTest, LoadCharArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfCharsElementValueCmd expected_cmd(dimensions_count);
+  LoadCharArrayElementValueCmd expected_cmd(dimensions_count);
   TestLoadArrayElementValueCmd(
-      CmdId::kLoadArrayOfCharsElementValue, expected_cmd);
+      CmdId::kLoadCharArrayElementValue, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfBoolsElementValueCmd) {
+TEST_F(CmdReaderTest, LoadBoolArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfBoolsElementValueCmd expected_cmd(dimensions_count);
+  LoadBoolArrayElementValueCmd expected_cmd(dimensions_count);
   TestLoadArrayElementValueCmd(
-      CmdId::kLoadArrayOfBoolsElementValue, expected_cmd);
+      CmdId::kLoadBoolArrayElementValue, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfStringsElementValueCmd) {
+TEST_F(CmdReaderTest, LoadStringArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfStringsElementValueCmd expected_cmd(dimensions_count);
+  LoadStringArrayElementValueCmd expected_cmd(dimensions_count);
   TestLoadArrayElementValueCmd(
-      CmdId::kLoadArrayOfStringsElementValue, expected_cmd);
+      CmdId::kLoadStringArrayElementValue, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfIntsElementAddressCmd) {
+TEST_F(CmdReaderTest, LoadIntArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfIntsElementAddressCmd expected_cmd(dimensions_count);
+  LoadIntArrayElementAddressCmd expected_cmd(dimensions_count);
   TestLoadArrayElementAddressCmd(
-      CmdId::kLoadArrayOfIntsElementAddress, expected_cmd);
+      CmdId::kLoadIntArrayElementAddress, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfLongsElementAddressCmd) {
+TEST_F(CmdReaderTest, LoadLongArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfLongsElementAddressCmd expected_cmd(dimensions_count);
+  LoadLongArrayElementAddressCmd expected_cmd(dimensions_count);
   TestLoadArrayElementAddressCmd(
-      CmdId::kLoadArrayOfLongsElementAddress, expected_cmd);
+      CmdId::kLoadLongArrayElementAddress, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfDoublesElementAddressCmd) {
+TEST_F(CmdReaderTest, LoadDoubleArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfDoublesElementAddressCmd expected_cmd(dimensions_count);
+  LoadDoubleArrayElementAddressCmd expected_cmd(dimensions_count);
   TestLoadArrayElementAddressCmd(
-      CmdId::kLoadArrayOfDoublesElementAddress, expected_cmd);
+      CmdId::kLoadDoubleArrayElementAddress, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfCharsElementAddressCmd) {
+TEST_F(CmdReaderTest, LoadCharArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfCharsElementAddressCmd expected_cmd(dimensions_count);
+  LoadCharArrayElementAddressCmd expected_cmd(dimensions_count);
   TestLoadArrayElementAddressCmd(
-      CmdId::kLoadArrayOfCharsElementAddress, expected_cmd);
+      CmdId::kLoadCharArrayElementAddress, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfBoolsElementAddressCmd) {
+TEST_F(CmdReaderTest, LoadBoolArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfBoolsElementAddressCmd expected_cmd(dimensions_count);
+  LoadBoolArrayElementAddressCmd expected_cmd(dimensions_count);
   TestLoadArrayElementAddressCmd(
-      CmdId::kLoadArrayOfBoolsElementAddress, expected_cmd);
+      CmdId::kLoadBoolArrayElementAddress, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadArrayOfStringsElementAddressCmd) {
+TEST_F(CmdReaderTest, LoadStringArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
-  LoadArrayOfStringsElementAddressCmd expected_cmd(dimensions_count);
+  LoadStringArrayElementAddressCmd expected_cmd(dimensions_count);
   TestLoadArrayElementAddressCmd(
-      CmdId::kLoadArrayOfStringsElementAddress, expected_cmd);
+      CmdId::kLoadStringArrayElementAddress, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, AndCmd) {

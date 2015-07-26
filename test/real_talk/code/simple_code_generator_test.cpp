@@ -6896,7 +6896,7 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithIntArray) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType element_data_type(unique_ptr<DataType>(new IntDataType()));
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfIntsElementValue);
+  expected_code.WriteCmdId(CmdId::kLoadIntArrayElementValue);
   uint8_t dimensions_count = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count);
   expected_code.WriteCmdId(CmdId::kUnloadIntArray);
@@ -6916,7 +6916,7 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithLongArray) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType element_data_type(unique_ptr<DataType>(new LongDataType()));
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfLongsElementValue);
+  expected_code.WriteCmdId(CmdId::kLoadLongArrayElementValue);
   uint8_t dimensions_count = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count);
   expected_code.WriteCmdId(CmdId::kUnloadLongArray);
@@ -6936,7 +6936,7 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithDoubleArray) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType element_data_type(unique_ptr<DataType>(new DoubleDataType()));
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfDoublesElementValue);
+  expected_code.WriteCmdId(CmdId::kLoadDoubleArrayElementValue);
   uint8_t dimensions_count = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count);
   expected_code.WriteCmdId(CmdId::kUnloadDoubleArray);
@@ -6956,7 +6956,7 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithBoolArray) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType element_data_type(unique_ptr<DataType>(new BoolDataType()));
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfBoolsElementValue);
+  expected_code.WriteCmdId(CmdId::kLoadBoolArrayElementValue);
   uint8_t dimensions_count = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count);
   expected_code.WriteCmdId(CmdId::kUnloadBoolArray);
@@ -6976,7 +6976,7 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithCharArray) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType element_data_type(unique_ptr<DataType>(new CharDataType()));
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfCharsElementValue);
+  expected_code.WriteCmdId(CmdId::kLoadCharArrayElementValue);
   uint8_t dimensions_count = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count);
   expected_code.WriteCmdId(CmdId::kUnloadCharArray);
@@ -6996,7 +6996,7 @@ TEST_F(SimpleCodeGeneratorTest, NotAssigneeSubscriptWithStringArray) {
       TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
   ArrayDataType element_data_type(unique_ptr<DataType>(new StringDataType()));
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfStringsElementValue);
+  expected_code.WriteCmdId(CmdId::kLoadStringArrayElementValue);
   uint8_t dimensions_count = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count);
   expected_code.WriteCmdId(CmdId::kUnloadStringArray);
@@ -7049,7 +7049,7 @@ TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithIntArray) {
   expected_value_code.WriteInt32(values_count);
 
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfIntsElementAddress);
+  expected_code.WriteCmdId(CmdId::kLoadIntArrayElementAddress);
   uint8_t dimensions_count2 = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count2);
   expected_code.WriteCmdId(CmdId::kStoreIntArray);
@@ -7106,7 +7106,7 @@ TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithLongArray) {
   expected_value_code.WriteInt32(values_count);
 
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfLongsElementAddress);
+  expected_code.WriteCmdId(CmdId::kLoadLongArrayElementAddress);
   uint8_t dimensions_count2 = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count2);
   expected_code.WriteCmdId(CmdId::kStoreLongArray);
@@ -7164,7 +7164,7 @@ TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithDoubleArray) {
   expected_value_code.WriteInt32(values_count);
 
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfDoublesElementAddress);
+  expected_code.WriteCmdId(CmdId::kLoadDoubleArrayElementAddress);
   uint8_t dimensions_count2 = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count2);
   expected_code.WriteCmdId(CmdId::kStoreDoubleArray);
@@ -7221,7 +7221,7 @@ TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithBoolArray) {
   expected_value_code.WriteInt32(values_count);
 
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfBoolsElementAddress);
+  expected_code.WriteCmdId(CmdId::kLoadBoolArrayElementAddress);
   uint8_t dimensions_count2 = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count2);
   expected_code.WriteCmdId(CmdId::kStoreBoolArray);
@@ -7278,7 +7278,7 @@ TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithCharArray) {
   expected_value_code.WriteInt32(values_count);
 
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfCharsElementAddress);
+  expected_code.WriteCmdId(CmdId::kLoadCharArrayElementAddress);
   uint8_t dimensions_count2 = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count2);
   expected_code.WriteCmdId(CmdId::kStoreCharArray);
@@ -7336,7 +7336,7 @@ TEST_F(SimpleCodeGeneratorTest, AssigneeSubscriptWithStringArray) {
   expected_value_code.WriteInt32(values_count);
 
   Code expected_code;
-  expected_code.WriteCmdId(CmdId::kLoadArrayOfStringsElementAddress);
+  expected_code.WriteCmdId(CmdId::kLoadStringArrayElementAddress);
   uint8_t dimensions_count2 = UINT8_C(2);
   expected_code.WriteUint8(dimensions_count2);
   expected_code.WriteCmdId(CmdId::kStoreStringArray);

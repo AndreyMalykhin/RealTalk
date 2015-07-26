@@ -1453,27 +1453,27 @@ class SimpleCodeGenerator::Impl::LoadArrayElementValueCmdGenerator
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfBoolsElementValue);
+    code_->WriteCmdId(CmdId::kLoadBoolArrayElementValue);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfIntsElementValue);
+    code_->WriteCmdId(CmdId::kLoadIntArrayElementValue);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfLongsElementValue);
+    code_->WriteCmdId(CmdId::kLoadLongArrayElementValue);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfDoublesElementValue);
+    code_->WriteCmdId(CmdId::kLoadDoubleArrayElementValue);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfCharsElementValue);
+    code_->WriteCmdId(CmdId::kLoadCharArrayElementValue);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfStringsElementValue);
+    code_->WriteCmdId(CmdId::kLoadStringArrayElementValue);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -1525,27 +1525,27 @@ class SimpleCodeGenerator::Impl::LoadArrayElementAddressCmdGenerator
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfBoolsElementAddress);
+    code_->WriteCmdId(CmdId::kLoadBoolArrayElementAddress);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfIntsElementAddress);
+    code_->WriteCmdId(CmdId::kLoadIntArrayElementAddress);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfLongsElementAddress);
+    code_->WriteCmdId(CmdId::kLoadLongArrayElementAddress);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfDoublesElementAddress);
+    code_->WriteCmdId(CmdId::kLoadDoubleArrayElementAddress);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfCharsElementAddress);
+    code_->WriteCmdId(CmdId::kLoadCharArrayElementAddress);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadArrayOfStringsElementAddress);
+    code_->WriteCmdId(CmdId::kLoadStringArrayElementAddress);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}

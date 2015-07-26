@@ -110,19 +110,19 @@ class LoadLocalBoolVarValueCmd;
 class LoadLocalDoubleVarValueCmd;
 class LoadGlobalVarAddressCmd;
 class LoadLocalVarAddressCmd;
-class LoadArrayOfIntsElementValueCmd;
-class LoadArrayOfLongsElementValueCmd;
-class LoadArrayOfDoublesElementValueCmd;
-class LoadArrayOfCharsElementValueCmd;
-class LoadArrayOfStringsElementValueCmd;
-class LoadArrayOfBoolsElementValueCmd;
-class LoadArrayOfIntsElementAddressCmd;
-class LoadArrayOfDoublesElementAddressCmd;
-class LoadArrayOfBoolsElementAddressCmd;
-class LoadArrayOfStringsElementAddressCmd;
+class LoadIntArrayElementValueCmd;
+class LoadLongArrayElementValueCmd;
+class LoadDoubleArrayElementValueCmd;
+class LoadCharArrayElementValueCmd;
+class LoadStringArrayElementValueCmd;
+class LoadBoolArrayElementValueCmd;
+class LoadIntArrayElementAddressCmd;
+class LoadDoubleArrayElementAddressCmd;
+class LoadBoolArrayElementAddressCmd;
+class LoadStringArrayElementAddressCmd;
 class LoadArrayOfArraysElementAddressCmd;
-class LoadArrayOfLongsElementAddressCmd;
-class LoadArrayOfCharsElementAddressCmd;
+class LoadLongArrayElementAddressCmd;
+class LoadCharArrayElementAddressCmd;
 class StoreIntCmd;
 class StoreLongCmd;
 class StoreDoubleCmd;
@@ -413,32 +413,32 @@ class CmdVisitor {
       const LoadGlobalVarAddressCmd &cmd) = 0;
   virtual void VisitLoadLocalVarAddress(
       const LoadLocalVarAddressCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfIntsElementValue(
-      const LoadArrayOfIntsElementValueCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfLongsElementValue(
-      const LoadArrayOfLongsElementValueCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfDoublesElementValue(
-      const LoadArrayOfDoublesElementValueCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfCharsElementValue(
-      const LoadArrayOfCharsElementValueCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfStringsElementValue(
-      const LoadArrayOfStringsElementValueCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfBoolsElementValue(
-      const LoadArrayOfBoolsElementValueCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfIntsElementAddress(
-      const LoadArrayOfIntsElementAddressCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfDoublesElementAddress(
-      const LoadArrayOfDoublesElementAddressCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfBoolsElementAddress(
-      const LoadArrayOfBoolsElementAddressCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfStringsElementAddress(
-      const LoadArrayOfStringsElementAddressCmd &cmd) = 0;
+  virtual void VisitLoadIntArrayElementValue(
+      const LoadIntArrayElementValueCmd &cmd) = 0;
+  virtual void VisitLoadLongArrayElementValue(
+      const LoadLongArrayElementValueCmd &cmd) = 0;
+  virtual void VisitLoadDoubleArrayElementValue(
+      const LoadDoubleArrayElementValueCmd &cmd) = 0;
+  virtual void VisitLoadCharArrayElementValue(
+      const LoadCharArrayElementValueCmd &cmd) = 0;
+  virtual void VisitLoadStringArrayElementValue(
+      const LoadStringArrayElementValueCmd &cmd) = 0;
+  virtual void VisitLoadBoolArrayElementValue(
+      const LoadBoolArrayElementValueCmd &cmd) = 0;
+  virtual void VisitLoadIntArrayElementAddress(
+      const LoadIntArrayElementAddressCmd &cmd) = 0;
+  virtual void VisitLoadDoubleArrayElementAddress(
+      const LoadDoubleArrayElementAddressCmd &cmd) = 0;
+  virtual void VisitLoadBoolArrayElementAddress(
+      const LoadBoolArrayElementAddressCmd &cmd) = 0;
+  virtual void VisitLoadStringArrayElementAddress(
+      const LoadStringArrayElementAddressCmd &cmd) = 0;
   virtual void VisitLoadArrayOfArraysElementAddress(
       const LoadArrayOfArraysElementAddressCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfLongsElementAddress(
-      const LoadArrayOfLongsElementAddressCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfCharsElementAddress(
-      const LoadArrayOfCharsElementAddressCmd &cmd) = 0;
+  virtual void VisitLoadLongArrayElementAddress(
+      const LoadLongArrayElementAddressCmd &cmd) = 0;
+  virtual void VisitLoadCharArrayElementAddress(
+      const LoadCharArrayElementAddressCmd &cmd) = 0;
   virtual void VisitStoreInt(
       const StoreIntCmd &cmd) = 0;
   virtual void VisitStoreLong(
