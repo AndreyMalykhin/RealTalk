@@ -73,7 +73,7 @@ class DestroyLocalArrayVarCmd: public DestroyLocalVarCmd {
  private:
   virtual void Print(std::ostream &stream) const override {
     DestroyLocalVarCmd::Print(stream);
-    stream << "; dimensions_count=" << static_cast<int>(dimensions_count_);
+    stream << "dimensions_count=" << static_cast<int>(dimensions_count_);
   }
 
   virtual bool IsEqual(const Cmd &cmd) const override {

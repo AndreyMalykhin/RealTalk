@@ -173,9 +173,14 @@ using real_talk::code::EqualIntCmd;
 using real_talk::code::EqualLongCmd;
 using real_talk::code::EqualDoubleCmd;
 using real_talk::code::EqualStringCmd;
-using real_talk::code::EqualArrayCmd;
 using real_talk::code::EqualBoolCmd;
 using real_talk::code::EqualCharCmd;
+using real_talk::code::EqualIntArrayCmd;
+using real_talk::code::EqualLongArrayCmd;
+using real_talk::code::EqualDoubleArrayCmd;
+using real_talk::code::EqualStringArrayCmd;
+using real_talk::code::EqualBoolArrayCmd;
+using real_talk::code::EqualCharArrayCmd;
 using real_talk::code::NotEqualIntCmd;
 using real_talk::code::NotEqualLongCmd;
 using real_talk::code::NotEqualDoubleCmd;
@@ -541,12 +546,22 @@ class SimpleVM::Impl: private CmdVisitor {
       const EqualDoubleCmd &cmd) override;
   virtual void VisitEqualString(
       const EqualStringCmd &cmd) override;
-  virtual void VisitEqualArray(
-      const EqualArrayCmd &cmd) override;
   virtual void VisitEqualBool(
       const EqualBoolCmd &cmd) override;
   virtual void VisitEqualChar(
       const EqualCharCmd &cmd) override;
+  virtual void VisitEqualIntArray(
+      const EqualIntArrayCmd &cmd) override;
+  virtual void VisitEqualLongArray(
+      const EqualLongArrayCmd &cmd) override;
+  virtual void VisitEqualDoubleArray(
+      const EqualDoubleArrayCmd &cmd) override;
+  virtual void VisitEqualStringArray(
+      const EqualStringArrayCmd &cmd) override;
+  virtual void VisitEqualBoolArray(
+      const EqualBoolArrayCmd &cmd) override;
+  virtual void VisitEqualCharArray(
+      const EqualCharArrayCmd &cmd) override;
   virtual void VisitNotEqualInt(
       const NotEqualIntCmd &cmd) override;
   virtual void VisitNotEqualLong(
@@ -1155,14 +1170,29 @@ void SimpleVM::Impl::VisitEqualDouble(
 void SimpleVM::Impl::VisitEqualString(
     const EqualStringCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitEqualArray(
-    const EqualArrayCmd&) {assert(false);}
-
 void SimpleVM::Impl::VisitEqualBool(
     const EqualBoolCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitEqualChar(
     const EqualCharCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitEqualIntArray(
+    const EqualIntArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitEqualLongArray(
+    const EqualLongArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitEqualDoubleArray(
+    const EqualDoubleArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitEqualStringArray(
+    const EqualStringArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitEqualBoolArray(
+    const EqualBoolArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitEqualCharArray(
+    const EqualCharArrayCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitNotEqualInt(
     const NotEqualIntCmd&) {assert(false);}

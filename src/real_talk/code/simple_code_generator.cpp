@@ -231,6 +231,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class SumCmdGenerator;
   class SubCmdGenerator;
   class EqualCmdGenerator;
+  class EqualArrayCmdGenerator;
   class NotEqualCmdGenerator;
   class GreaterCmdGenerator;
   class GreaterOrEqualCmdGenerator;
@@ -1723,11 +1724,58 @@ class SimpleCodeGenerator::Impl::SubCmdGenerator
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
 };
 
+class SimpleCodeGenerator::Impl::EqualArrayCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const ArrayDataType &data_type, Code *code) {
+    code_ = code;
+    dimensions_count_ = UINT8_C(0);
+    data_type.Accept(*this);
+    code_->WriteUint8(dimensions_count_);
+  }
+
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+    ++dimensions_count_;
+  }
+
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualBoolArray);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualIntArray);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualLongArray);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualDoubleArray);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualCharArray);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kEqualStringArray);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+  uint8_t dimensions_count_;
+};
+
 class SimpleCodeGenerator::Impl::EqualCmdGenerator
     : public ExprCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualArray);
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    EqualArrayCmdGenerator().Generate(data_type, code_);
   }
 
   virtual void VisitBool(const BoolDataType&) override {

@@ -165,9 +165,14 @@ class EqualIntCmd;
 class EqualLongCmd;
 class EqualDoubleCmd;
 class EqualStringCmd;
-class EqualArrayCmd;
 class EqualBoolCmd;
 class EqualCharCmd;
+class EqualIntArrayCmd;
+class EqualLongArrayCmd;
+class EqualDoubleArrayCmd;
+class EqualStringArrayCmd;
+class EqualBoolArrayCmd;
+class EqualCharArrayCmd;
 class NotEqualIntCmd;
 class NotEqualLongCmd;
 class NotEqualDoubleCmd;
@@ -523,12 +528,22 @@ class CmdVisitor {
       const EqualDoubleCmd &cmd) = 0;
   virtual void VisitEqualString(
       const EqualStringCmd &cmd) = 0;
-  virtual void VisitEqualArray(
-      const EqualArrayCmd &cmd) = 0;
   virtual void VisitEqualBool(
       const EqualBoolCmd &cmd) = 0;
   virtual void VisitEqualChar(
       const EqualCharCmd &cmd) = 0;
+  virtual void VisitEqualIntArray(
+      const EqualIntArrayCmd &cmd) = 0;
+  virtual void VisitEqualLongArray(
+      const EqualLongArrayCmd &cmd) = 0;
+  virtual void VisitEqualDoubleArray(
+      const EqualDoubleArrayCmd &cmd) = 0;
+  virtual void VisitEqualStringArray(
+      const EqualStringArrayCmd &cmd) = 0;
+  virtual void VisitEqualBoolArray(
+      const EqualBoolArrayCmd &cmd) = 0;
+  virtual void VisitEqualCharArray(
+      const EqualCharArrayCmd &cmd) = 0;
   virtual void VisitNotEqualInt(
       const NotEqualIntCmd &cmd) = 0;
   virtual void VisitNotEqualLong(

@@ -171,6 +171,13 @@ class CmdReaderTest: public Test {
     code.WriteUint8(expected_cmd.GetDimensionsCount());
     TestGetNextCmd(code, expected_cmd);
   }
+
+  void TestEqualArrayCmd(CmdId cmd_id, const EqualArrayCmd &expected_cmd) {
+    Code code;
+    code.WriteCmdId(cmd_id);
+    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    TestGetNextCmd(code, expected_cmd);
+  }
 };
 
 TEST_F(CmdReaderTest, CreateGlobalIntVarCmd) {
@@ -1281,12 +1288,42 @@ TEST_F(CmdReaderTest, EqualStringCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, EqualArrayCmd) {
-  EqualArrayCmd expected_cmd;
-  Code code;
-  code.WriteCmdId(CmdId::kEqualArray);
-  TestGetNextCmd(code, expected_cmd);
+TEST_F(CmdReaderTest, EqualIntArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  EqualIntArrayCmd expected_cmd(dimensions_count);
+  TestEqualArrayCmd(CmdId::kEqualIntArray, expected_cmd);
 }
+
+TEST_F(CmdReaderTest, EqualLongArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  EqualLongArrayCmd expected_cmd(dimensions_count);
+  TestEqualArrayCmd(CmdId::kEqualLongArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualDoubleArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  EqualDoubleArrayCmd expected_cmd(dimensions_count);
+  TestEqualArrayCmd(CmdId::kEqualDoubleArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualCharArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  EqualCharArrayCmd expected_cmd(dimensions_count);
+  TestEqualArrayCmd(CmdId::kEqualCharArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualBoolArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  EqualBoolArrayCmd expected_cmd(dimensions_count);
+  TestEqualArrayCmd(CmdId::kEqualBoolArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, EqualStringArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  EqualStringArrayCmd expected_cmd(dimensions_count);
+  TestEqualArrayCmd(CmdId::kEqualStringArray, expected_cmd);
+}
+
 TEST_F(CmdReaderTest, NotEqualCharCmd) {
   NotEqualCharCmd expected_cmd;
   Code code;

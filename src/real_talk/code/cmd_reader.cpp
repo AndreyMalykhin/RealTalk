@@ -327,7 +327,15 @@ const EqualDoubleCmd &kEqualDoubleCmd = *new EqualDoubleCmd();
 const EqualBoolCmd &kEqualBoolCmd = *new EqualBoolCmd();
 const EqualCharCmd &kEqualCharCmd = *new EqualCharCmd();
 const EqualStringCmd &kEqualStringCmd = *new EqualStringCmd();
-const EqualArrayCmd &kEqualArrayCmd = *new EqualArrayCmd();
+
+EqualIntArrayCmd &kEqualIntArrayCmd = *new EqualIntArrayCmd(UINT8_C(1));
+EqualLongArrayCmd &kEqualLongArrayCmd = *new EqualLongArrayCmd(UINT8_C(1));
+EqualDoubleArrayCmd &kEqualDoubleArrayCmd =
+    *new EqualDoubleArrayCmd(UINT8_C(1));
+EqualBoolArrayCmd &kEqualBoolArrayCmd = *new EqualBoolArrayCmd(UINT8_C(1));
+EqualCharArrayCmd &kEqualCharArrayCmd = *new EqualCharArrayCmd(UINT8_C(1));
+EqualStringArrayCmd &kEqualStringArrayCmd =
+    *new EqualStringArrayCmd(UINT8_C(1));
 
 const NotEqualIntCmd &kNotEqualIntCmd = *new NotEqualIntCmd();
 const NotEqualLongCmd &kNotEqualLongCmd = *new NotEqualLongCmd();
@@ -978,8 +986,29 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kEqualString:
       cmd = &kEqualStringCmd;
       break;
-    case CmdId::kEqualArray:
-      cmd = &kEqualArrayCmd;
+    case CmdId::kEqualIntArray:
+      kEqualIntArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kEqualIntArrayCmd;
+      break;
+    case CmdId::kEqualLongArray:
+      kEqualLongArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kEqualLongArrayCmd;
+      break;
+    case CmdId::kEqualDoubleArray:
+      kEqualDoubleArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kEqualDoubleArrayCmd;
+      break;
+    case CmdId::kEqualBoolArray:
+      kEqualBoolArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kEqualBoolArrayCmd;
+      break;
+    case CmdId::kEqualCharArray:
+      kEqualCharArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kEqualCharArrayCmd;
+      break;
+    case CmdId::kEqualStringArray:
+      kEqualStringArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kEqualStringArrayCmd;
       break;
     case CmdId::kNotEqualInt:
       cmd = &kNotEqualIntCmd;
