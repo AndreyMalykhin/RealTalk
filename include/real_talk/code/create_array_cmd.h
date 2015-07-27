@@ -5,42 +5,29 @@
 #include <cassert>
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
+#include "real_talk/code/array_cmd_trait.h"
 
 namespace real_talk {
 namespace code {
 
-class CreateArrayCmd: public Cmd {
+class CreateArrayCmd: public Cmd, public ArrayCmdTrait {
  public:
-  inline explicit CreateArrayCmd(uint8_t dimensions_count) noexcept
-      : dimensions_count_(dimensions_count) {
-    assert(dimensions_count_ > UINT8_C(0));
-  }
-
-  inline uint8_t GetDimensionsCount() const noexcept {
-    return dimensions_count_;
-  }
-
-  inline void SetDimensionsCount(uint8_t dimensions_count) noexcept {
-    dimensions_count_ = dimensions_count;
-  }
+  using ArrayCmdTrait::ArrayCmdTrait;
 
  private:
   virtual void Print(std::ostream &stream) const override {
-    stream << "dimensions_count=" << static_cast<uint32_t>(dimensions_count_);
+    ArrayCmdTrait::Print(stream);
   }
 
   virtual bool IsEqual(const Cmd &cmd) const override {
     const CreateArrayCmd &rhs = static_cast<const CreateArrayCmd&>(cmd);
-    return dimensions_count_ == rhs.dimensions_count_;
+    return ArrayCmdTrait::IsEqual(rhs);
   }
-
-  uint8_t dimensions_count_;
 };
 
 class CreateIntArrayCmd: public CreateArrayCmd {
  public:
-  inline explicit CreateIntArrayCmd(uint8_t dimensions_count) noexcept
-      : CreateArrayCmd(dimensions_count) {}
+  using CreateArrayCmd::CreateArrayCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateIntArray(*this);
@@ -49,8 +36,7 @@ class CreateIntArrayCmd: public CreateArrayCmd {
 
 class CreateLongArrayCmd: public CreateArrayCmd {
  public:
-  inline explicit CreateLongArrayCmd(uint8_t dimensions_count) noexcept
-      : CreateArrayCmd(dimensions_count) {}
+  using CreateArrayCmd::CreateArrayCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateLongArray(*this);
@@ -59,8 +45,7 @@ class CreateLongArrayCmd: public CreateArrayCmd {
 
 class CreateDoubleArrayCmd: public CreateArrayCmd {
  public:
-  inline explicit CreateDoubleArrayCmd(uint8_t dimensions_count) noexcept
-      : CreateArrayCmd(dimensions_count) {}
+  using CreateArrayCmd::CreateArrayCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateDoubleArray(*this);
@@ -69,8 +54,7 @@ class CreateDoubleArrayCmd: public CreateArrayCmd {
 
 class CreateBoolArrayCmd: public CreateArrayCmd {
  public:
-  inline explicit CreateBoolArrayCmd(uint8_t dimensions_count) noexcept
-      : CreateArrayCmd(dimensions_count) {}
+  using CreateArrayCmd::CreateArrayCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateBoolArray(*this);
@@ -79,8 +63,7 @@ class CreateBoolArrayCmd: public CreateArrayCmd {
 
 class CreateCharArrayCmd: public CreateArrayCmd {
  public:
-  inline explicit CreateCharArrayCmd(uint8_t dimensions_count) noexcept
-      : CreateArrayCmd(dimensions_count) {}
+  using CreateArrayCmd::CreateArrayCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateCharArray(*this);
@@ -89,8 +72,7 @@ class CreateCharArrayCmd: public CreateArrayCmd {
 
 class CreateStringArrayCmd: public CreateArrayCmd {
  public:
-  inline explicit CreateStringArrayCmd(uint8_t dimensions_count) noexcept
-      : CreateArrayCmd(dimensions_count) {}
+  using CreateArrayCmd::CreateArrayCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateStringArray(*this);

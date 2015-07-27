@@ -186,8 +186,13 @@ using real_talk::code::NotEqualLongCmd;
 using real_talk::code::NotEqualDoubleCmd;
 using real_talk::code::NotEqualBoolCmd;
 using real_talk::code::NotEqualStringCmd;
-using real_talk::code::NotEqualArrayCmd;
 using real_talk::code::NotEqualCharCmd;
+using real_talk::code::NotEqualIntArrayCmd;
+using real_talk::code::NotEqualLongArrayCmd;
+using real_talk::code::NotEqualDoubleArrayCmd;
+using real_talk::code::NotEqualStringArrayCmd;
+using real_talk::code::NotEqualBoolArrayCmd;
+using real_talk::code::NotEqualCharArrayCmd;
 using real_talk::code::GreaterCharCmd;
 using real_talk::code::GreaterIntCmd;
 using real_talk::code::GreaterLongCmd;
@@ -572,10 +577,20 @@ class SimpleVM::Impl: private CmdVisitor {
       const NotEqualBoolCmd &cmd) override;
   virtual void VisitNotEqualString(
       const NotEqualStringCmd &cmd) override;
-  virtual void VisitNotEqualArray(
-      const NotEqualArrayCmd &cmd) override;
   virtual void VisitNotEqualChar(
       const NotEqualCharCmd &cmd) override;
+  virtual void VisitNotEqualIntArray(
+      const NotEqualIntArrayCmd &cmd) override;
+  virtual void VisitNotEqualLongArray(
+      const NotEqualLongArrayCmd &cmd) override;
+  virtual void VisitNotEqualDoubleArray(
+      const NotEqualDoubleArrayCmd &cmd) override;
+  virtual void VisitNotEqualStringArray(
+      const NotEqualStringArrayCmd &cmd) override;
+  virtual void VisitNotEqualBoolArray(
+      const NotEqualBoolArrayCmd &cmd) override;
+  virtual void VisitNotEqualCharArray(
+      const NotEqualCharArrayCmd &cmd) override;
   virtual void VisitGreaterChar(
       const GreaterCharCmd &cmd) override;
   virtual void VisitGreaterInt(
@@ -1209,11 +1224,26 @@ void SimpleVM::Impl::VisitNotEqualBool(
 void SimpleVM::Impl::VisitNotEqualString(
     const NotEqualStringCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitNotEqualArray(
-    const NotEqualArrayCmd&) {assert(false);}
-
 void SimpleVM::Impl::VisitNotEqualChar(
     const NotEqualCharCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitNotEqualIntArray(
+    const NotEqualIntArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitNotEqualLongArray(
+    const NotEqualLongArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitNotEqualDoubleArray(
+    const NotEqualDoubleArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitNotEqualStringArray(
+    const NotEqualStringArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitNotEqualBoolArray(
+    const NotEqualBoolArrayCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitNotEqualCharArray(
+    const NotEqualCharArrayCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitGreaterChar(
     const GreaterCharCmd&) {assert(false);}

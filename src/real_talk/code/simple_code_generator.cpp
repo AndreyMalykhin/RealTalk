@@ -202,6 +202,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class IdNodeProcessor;
   template<typename TCreateLocalVarCmdGenerator,
            typename TCreateGlobalVarCmdGenerator> class VarDefNodeProcessor;
+  class ArrayCmdGenerator;
   class CreateGlobalVarCmdGenerator;
   class CreateLocalVarCmdGenerator;
   class CreateAndInitGlobalVarCmdGenerator;
@@ -233,6 +234,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class EqualCmdGenerator;
   class EqualArrayCmdGenerator;
   class NotEqualCmdGenerator;
+  class NotEqualArrayCmdGenerator;
   class GreaterCmdGenerator;
   class GreaterOrEqualCmdGenerator;
   class LessCmdGenerator;
@@ -531,6 +533,31 @@ class SimpleCodeGenerator::Impl::DataTypeSizeResolver: private DataTypeVisitor {
   DataTypeSize result_;
 };
 
+class SimpleCodeGenerator::Impl::ArrayCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const ArrayDataType &data_type, Code *code) {
+    code_ = code;
+    dimensions_count_ = UINT8_C(0);
+    data_type.Accept(*this);
+    code_->WriteUint8(dimensions_count_);
+  }
+
+ protected:
+  Code *code_;
+
+ private:
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+    ++dimensions_count_;
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  uint8_t dimensions_count_;
+};
+
 class SimpleCodeGenerator::Impl::CreateGlobalVarCmdGenerator
     : private DataTypeVisitor {
  public:
@@ -691,21 +718,8 @@ class SimpleCodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::CreateAndInitLocalArrayVarCmdGenerator
-    : private DataTypeVisitor {
- public:
-  void Generate(const ArrayDataType &data_type, Code *code) {
-    code_ = code;
-    dimensions_count_ = UINT8_C(0);
-    data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count_);
-  }
-
+    : public ArrayCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType &data_type) override {
-    data_type.GetElementDataType().Accept(*this);
-    ++dimensions_count_;
-  }
-
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kCreateAndInitLocalBoolArrayVar);
   }
@@ -729,12 +743,6 @@ class SimpleCodeGenerator::Impl::CreateAndInitLocalArrayVarCmdGenerator
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kCreateAndInitLocalStringArrayVar);
   }
-
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-
-  Code *code_;
-  uint8_t dimensions_count_;
 };
 
 class SimpleCodeGenerator::Impl::CreateAndInitLocalVarCmdGenerator
@@ -824,21 +832,8 @@ class SimpleCodeGenerator::Impl::CreateLocalVarCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::DestroyLocalArrayVarCmdGenerator
-    : private DataTypeVisitor {
- public:
-  void Generate(const ArrayDataType &data_type, Code *code) {
-    code_ = code;
-    dimensions_count_ = UINT8_C(0);
-    data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count_);
-  }
-
+    : public ArrayCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType &data_type) override {
-    data_type.GetElementDataType().Accept(*this);
-    ++dimensions_count_;
-  }
-
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kDestroyLocalBoolArrayVar);
   }
@@ -862,12 +857,6 @@ class SimpleCodeGenerator::Impl::DestroyLocalArrayVarCmdGenerator
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kDestroyLocalStringArrayVar);
   }
-
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-
-  Code *code_;
-  uint8_t dimensions_count_;
 };
 
 class SimpleCodeGenerator::Impl::DestroyLocalVarCmdGenerator
@@ -1100,21 +1089,8 @@ class SimpleCodeGenerator::Impl::LoadLocalVarValueCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::UnloadArrayCmdGenerator
-    : private DataTypeVisitor {
- public:
-  void Generate(const ArrayDataType &data_type, Code *code) {
-    code_ = code;
-    dimensions_count_ = UINT8_C(0);
-    data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count_);
-  }
-
+    : public ArrayCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType &data_type) override {
-    data_type.GetElementDataType().Accept(*this);
-    ++dimensions_count_;
-  }
-
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kUnloadBoolArray);
   }
@@ -1138,12 +1114,6 @@ class SimpleCodeGenerator::Impl::UnloadArrayCmdGenerator
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kUnloadStringArray);
   }
-
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-
-  Code *code_;
-  uint8_t dimensions_count_;
 };
 
 class SimpleCodeGenerator::Impl::UnloadCmdGenerator: private DataTypeVisitor {
@@ -1325,21 +1295,8 @@ class SimpleCodeGenerator::Impl::VarDefNodeProcessor
 };
 
 class SimpleCodeGenerator::Impl::StoreArrayCmdGenerator
-    : private DataTypeVisitor {
- public:
-  void Generate(const ArrayDataType &data_type, Code *code) {
-    code_ = code;
-    dimensions_count_ = UINT8_C(0);
-    data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count_);
-  }
-
+    : public ArrayCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType &data_type) override {
-    data_type.GetElementDataType().Accept(*this);
-    ++dimensions_count_;
-  }
-
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kStoreBoolArray);
   }
@@ -1363,12 +1320,6 @@ class SimpleCodeGenerator::Impl::StoreArrayCmdGenerator
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kStoreStringArray);
   }
-
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-
-  Code *code_;
-  uint8_t dimensions_count_;
 };
 
 class SimpleCodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
@@ -1438,21 +1389,8 @@ class SimpleCodeGenerator::Impl::CallCmdGenerator: private DataTypeVisitor {
 };
 
 class SimpleCodeGenerator::Impl::LoadArrayElementValueCmdGenerator
-    : private DataTypeVisitor {
- public:
-  void Generate(const ArrayDataType &data_type, Code *code) {
-    code_ = code;
-    dimensions_count_ = UINT8_C(0);
-    data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count_);
-  }
-
+    : public ArrayCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType &data_type) override {
-    data_type.GetElementDataType().Accept(*this);
-    ++dimensions_count_;
-  }
-
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kLoadBoolArrayElementValue);
   }
@@ -1476,12 +1414,6 @@ class SimpleCodeGenerator::Impl::LoadArrayElementValueCmdGenerator
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kLoadStringArrayElementValue);
   }
-
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-
-  Code *code_;
-  uint8_t dimensions_count_;
 };
 
 class SimpleCodeGenerator::Impl::LoadElementValueCmdGenerator
@@ -1510,21 +1442,8 @@ class SimpleCodeGenerator::Impl::LoadElementValueCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::LoadArrayElementAddressCmdGenerator
-    : private DataTypeVisitor {
- public:
-  void Generate(const ArrayDataType &data_type, Code *code) {
-    code_ = code;
-    dimensions_count_ = UINT8_C(0);
-    data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count_);
-  }
-
+    : public ArrayCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType &data_type) override {
-    data_type.GetElementDataType().Accept(*this);
-    ++dimensions_count_;
-  }
-
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kLoadBoolArrayElementAddress);
   }
@@ -1548,12 +1467,6 @@ class SimpleCodeGenerator::Impl::LoadArrayElementAddressCmdGenerator
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kLoadStringArrayElementAddress);
   }
-
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-
-  Code *code_;
-  uint8_t dimensions_count_;
 };
 
 class SimpleCodeGenerator::Impl::LoadElementAddressCmdGenerator
@@ -1725,21 +1638,8 @@ class SimpleCodeGenerator::Impl::SubCmdGenerator
 };
 
 class SimpleCodeGenerator::Impl::EqualArrayCmdGenerator
-    : private DataTypeVisitor {
- public:
-  void Generate(const ArrayDataType &data_type, Code *code) {
-    code_ = code;
-    dimensions_count_ = UINT8_C(0);
-    data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count_);
-  }
-
+    : public ArrayCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType &data_type) override {
-    data_type.GetElementDataType().Accept(*this);
-    ++dimensions_count_;
-  }
-
   virtual void VisitBool(const BoolDataType&) override {
     code_->WriteCmdId(CmdId::kEqualBoolArray);
   }
@@ -1763,12 +1663,6 @@ class SimpleCodeGenerator::Impl::EqualArrayCmdGenerator
   virtual void VisitString(const StringDataType&) override {
     code_->WriteCmdId(CmdId::kEqualStringArray);
   }
-
-  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
-  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
-
-  Code *code_;
-  uint8_t dimensions_count_;
 };
 
 class SimpleCodeGenerator::Impl::EqualCmdGenerator
@@ -1803,11 +1697,39 @@ class SimpleCodeGenerator::Impl::EqualCmdGenerator
   }
 };
 
+class SimpleCodeGenerator::Impl::NotEqualArrayCmdGenerator
+    : public ArrayCmdGenerator {
+ private:
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualBoolArray);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualIntArray);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualLongArray);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualDoubleArray);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualCharArray);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->WriteCmdId(CmdId::kNotEqualStringArray);
+  }
+};
+
 class SimpleCodeGenerator::Impl::NotEqualCmdGenerator
     : public ExprCmdGenerator {
  private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualArray);
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    NotEqualArrayCmdGenerator().Generate(data_type, code_);
   }
 
   virtual void VisitBool(const BoolDataType&) override {

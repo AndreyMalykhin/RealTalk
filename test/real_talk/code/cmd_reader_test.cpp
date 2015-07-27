@@ -87,13 +87,6 @@ class CmdReaderTest: public Test {
     TestGetNextCmd(code, expected_cmd);
   }
 
-  void TestCreateArrayCmd(CmdId cmd_id, const CreateArrayCmd &expected_cmd) {
-    Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
-    TestGetNextCmd(code, expected_cmd);
-  }
-
   void TestCreateAndInitArrayCmd(
       CmdId cmd_id, const CreateAndInitArrayCmd &expected_cmd) {
     Code code;
@@ -126,53 +119,7 @@ class CmdReaderTest: public Test {
     TestGetNextCmd(code, expected_cmd);
   }
 
-  void TestLoadArrayElementValueCmd(
-      CmdId cmd_id, const LoadArrayElementValueCmd &expected_cmd) {
-    Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
-    TestGetNextCmd(code, expected_cmd);
-  }
-
-  void TestLoadArrayElementAddressCmd(
-      CmdId cmd_id, const LoadArrayElementAddressCmd &expected_cmd) {
-    Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
-    TestGetNextCmd(code, expected_cmd);
-  }
-
-  void TestCreateAndInitLocalArrayVarCmd(
-      CmdId cmd_id, const CreateAndInitLocalArrayVarCmd &expected_cmd) {
-    Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
-    TestGetNextCmd(code, expected_cmd);
-  }
-
-  void TestDestroyLocalArrayVarCmd(
-      CmdId cmd_id, const DestroyLocalArrayVarCmd &expected_cmd) {
-    Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
-    TestGetNextCmd(code, expected_cmd);
-  }
-
-  void TestUnloadArrayCmd(CmdId cmd_id, const UnloadArrayCmd &expected_cmd) {
-    Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
-    TestGetNextCmd(code, expected_cmd);
-  }
-
-  void TestStoreArrayCmd(CmdId cmd_id, const StoreArrayCmd &expected_cmd) {
-    Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
-    TestGetNextCmd(code, expected_cmd);
-  }
-
-  void TestEqualArrayCmd(CmdId cmd_id, const EqualArrayCmd &expected_cmd) {
+  template<typename T> void TestArrayCmd(CmdId cmd_id, const T &expected_cmd) {
     Code code;
     code.WriteCmdId(cmd_id);
     code.WriteUint8(expected_cmd.GetDimensionsCount());
@@ -316,38 +263,38 @@ TEST_F(CmdReaderTest, DestroyLocalStringVarCmd) {
 TEST_F(CmdReaderTest, DestroyLocalIntArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   DestroyLocalIntArrayVarCmd expected_cmd(dimensions_count);
-  TestDestroyLocalArrayVarCmd(CmdId::kDestroyLocalIntArrayVar, expected_cmd);
+  TestArrayCmd(CmdId::kDestroyLocalIntArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalLongArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   DestroyLocalLongArrayVarCmd expected_cmd(dimensions_count);
-  TestDestroyLocalArrayVarCmd(CmdId::kDestroyLocalLongArrayVar, expected_cmd);
+  TestArrayCmd(CmdId::kDestroyLocalLongArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalDoubleArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   DestroyLocalDoubleArrayVarCmd expected_cmd(dimensions_count);
-  TestDestroyLocalArrayVarCmd(
+  TestArrayCmd(
       CmdId::kDestroyLocalDoubleArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalCharArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   DestroyLocalCharArrayVarCmd expected_cmd(dimensions_count);
-  TestDestroyLocalArrayVarCmd(CmdId::kDestroyLocalCharArrayVar, expected_cmd);
+  TestArrayCmd(CmdId::kDestroyLocalCharArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalBoolArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   DestroyLocalBoolArrayVarCmd expected_cmd(dimensions_count);
-  TestDestroyLocalArrayVarCmd(CmdId::kDestroyLocalBoolArrayVar, expected_cmd);
+  TestArrayCmd(CmdId::kDestroyLocalBoolArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalStringArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   DestroyLocalStringArrayVarCmd expected_cmd(dimensions_count);
-  TestDestroyLocalArrayVarCmd(
+  TestArrayCmd(
       CmdId::kDestroyLocalStringArrayVar, expected_cmd);
 }
 
@@ -396,37 +343,37 @@ TEST_F(CmdReaderTest, UnloadStringCmd) {
 TEST_F(CmdReaderTest, UnloadIntArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   UnloadIntArrayCmd expected_cmd(dimensions_count);
-  TestUnloadArrayCmd(CmdId::kUnloadIntArray, expected_cmd);
+  TestArrayCmd(CmdId::kUnloadIntArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadLongArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   UnloadLongArrayCmd expected_cmd(dimensions_count);
-  TestUnloadArrayCmd(CmdId::kUnloadLongArray, expected_cmd);
+  TestArrayCmd(CmdId::kUnloadLongArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadDoubleArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   UnloadDoubleArrayCmd expected_cmd(dimensions_count);
-  TestUnloadArrayCmd(CmdId::kUnloadDoubleArray, expected_cmd);
+  TestArrayCmd(CmdId::kUnloadDoubleArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadCharArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   UnloadCharArrayCmd expected_cmd(dimensions_count);
-  TestUnloadArrayCmd(CmdId::kUnloadCharArray, expected_cmd);
+  TestArrayCmd(CmdId::kUnloadCharArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadBoolArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   UnloadBoolArrayCmd expected_cmd(dimensions_count);
-  TestUnloadArrayCmd(CmdId::kUnloadBoolArray, expected_cmd);
+  TestArrayCmd(CmdId::kUnloadBoolArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadStringArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   UnloadStringArrayCmd expected_cmd(dimensions_count);
-  TestUnloadArrayCmd(CmdId::kUnloadStringArray, expected_cmd);
+  TestArrayCmd(CmdId::kUnloadStringArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadIntValueCmd) {
@@ -620,79 +567,79 @@ TEST_F(CmdReaderTest, CreateAndInitLocalStringVarCmd) {
 TEST_F(CmdReaderTest, CreateAndInitLocalIntArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(1);
   CreateAndInitLocalIntArrayVarCmd expected_cmd(dimensions_count);
-  TestCreateAndInitLocalArrayVarCmd(
+  TestArrayCmd(
       CmdId::kCreateAndInitLocalIntArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalLongArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(1);
   CreateAndInitLocalLongArrayVarCmd expected_cmd(dimensions_count);
-  TestCreateAndInitLocalArrayVarCmd(
+  TestArrayCmd(
       CmdId::kCreateAndInitLocalLongArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalDoubleArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(1);
   CreateAndInitLocalDoubleArrayVarCmd expected_cmd(dimensions_count);
-  TestCreateAndInitLocalArrayVarCmd(
+  TestArrayCmd(
       CmdId::kCreateAndInitLocalDoubleArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalCharArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(1);
   CreateAndInitLocalCharArrayVarCmd expected_cmd(dimensions_count);
-  TestCreateAndInitLocalArrayVarCmd(
+  TestArrayCmd(
       CmdId::kCreateAndInitLocalCharArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalBoolArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(1);
   CreateAndInitLocalBoolArrayVarCmd expected_cmd(dimensions_count);
-  TestCreateAndInitLocalArrayVarCmd(
+  TestArrayCmd(
       CmdId::kCreateAndInitLocalBoolArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalStringArrayVarCmd) {
   uint8_t dimensions_count = UINT8_C(1);
   CreateAndInitLocalStringArrayVarCmd expected_cmd(dimensions_count);
-  TestCreateAndInitLocalArrayVarCmd(
+  TestArrayCmd(
       CmdId::kCreateAndInitLocalStringArrayVar, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateIntArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateIntArrayCmd expected_cmd(dimensions_count);
-  TestCreateArrayCmd(CmdId::kCreateIntArray, expected_cmd);
+  TestArrayCmd(CmdId::kCreateIntArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateLongArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateLongArrayCmd expected_cmd(dimensions_count);
-  TestCreateArrayCmd(CmdId::kCreateLongArray, expected_cmd);
+  TestArrayCmd(CmdId::kCreateLongArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateDoubleArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateDoubleArrayCmd expected_cmd(dimensions_count);
-  TestCreateArrayCmd(CmdId::kCreateDoubleArray, expected_cmd);
+  TestArrayCmd(CmdId::kCreateDoubleArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateBoolArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateBoolArrayCmd expected_cmd(dimensions_count);
-  TestCreateArrayCmd(CmdId::kCreateBoolArray, expected_cmd);
+  TestArrayCmd(CmdId::kCreateBoolArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateCharArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateCharArrayCmd expected_cmd(dimensions_count);
-  TestCreateArrayCmd(CmdId::kCreateCharArray, expected_cmd);
+  TestArrayCmd(CmdId::kCreateCharArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateStringArrayCmd) {
   uint8_t dimensions_count = UINT8_C(2);
   CreateStringArrayCmd expected_cmd(dimensions_count);
-  TestCreateArrayCmd(CmdId::kCreateStringArray, expected_cmd);
+  TestArrayCmd(CmdId::kCreateStringArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitIntArrayCmd) {
@@ -915,37 +862,37 @@ TEST_F(CmdReaderTest, StoreStringCmd) {
 TEST_F(CmdReaderTest, StoreIntArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   StoreIntArrayCmd expected_cmd(dimensions_count);
-  TestStoreArrayCmd(CmdId::kStoreIntArray, expected_cmd);
+  TestArrayCmd(CmdId::kStoreIntArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreLongArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   StoreLongArrayCmd expected_cmd(dimensions_count);
-  TestStoreArrayCmd(CmdId::kStoreLongArray, expected_cmd);
+  TestArrayCmd(CmdId::kStoreLongArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreDoubleArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   StoreDoubleArrayCmd expected_cmd(dimensions_count);
-  TestStoreArrayCmd(CmdId::kStoreDoubleArray, expected_cmd);
+  TestArrayCmd(CmdId::kStoreDoubleArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreCharArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   StoreCharArrayCmd expected_cmd(dimensions_count);
-  TestStoreArrayCmd(CmdId::kStoreCharArray, expected_cmd);
+  TestArrayCmd(CmdId::kStoreCharArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreBoolArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   StoreBoolArrayCmd expected_cmd(dimensions_count);
-  TestStoreArrayCmd(CmdId::kStoreBoolArray, expected_cmd);
+  TestArrayCmd(CmdId::kStoreBoolArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreStringArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   StoreStringArrayCmd expected_cmd(dimensions_count);
-  TestStoreArrayCmd(CmdId::kStoreStringArray, expected_cmd);
+  TestArrayCmd(CmdId::kStoreStringArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CastCharToIntCmd) {
@@ -1032,84 +979,84 @@ TEST_F(CmdReaderTest, CallNativeCmd) {
 TEST_F(CmdReaderTest, LoadIntArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadIntArrayElementValueCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementValueCmd(
+  TestArrayCmd(
       CmdId::kLoadIntArrayElementValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadLongArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadLongArrayElementValueCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementValueCmd(
+  TestArrayCmd(
       CmdId::kLoadLongArrayElementValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadDoubleArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadDoubleArrayElementValueCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementValueCmd(
+  TestArrayCmd(
       CmdId::kLoadDoubleArrayElementValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadCharArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadCharArrayElementValueCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementValueCmd(
+  TestArrayCmd(
       CmdId::kLoadCharArrayElementValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadBoolArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadBoolArrayElementValueCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementValueCmd(
+  TestArrayCmd(
       CmdId::kLoadBoolArrayElementValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadStringArrayElementValueCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadStringArrayElementValueCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementValueCmd(
+  TestArrayCmd(
       CmdId::kLoadStringArrayElementValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadIntArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadIntArrayElementAddressCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementAddressCmd(
+  TestArrayCmd(
       CmdId::kLoadIntArrayElementAddress, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadLongArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadLongArrayElementAddressCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementAddressCmd(
+  TestArrayCmd(
       CmdId::kLoadLongArrayElementAddress, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadDoubleArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadDoubleArrayElementAddressCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementAddressCmd(
+  TestArrayCmd(
       CmdId::kLoadDoubleArrayElementAddress, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadCharArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadCharArrayElementAddressCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementAddressCmd(
+  TestArrayCmd(
       CmdId::kLoadCharArrayElementAddress, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadBoolArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadBoolArrayElementAddressCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementAddressCmd(
+  TestArrayCmd(
       CmdId::kLoadBoolArrayElementAddress, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadStringArrayElementAddressCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   LoadStringArrayElementAddressCmd expected_cmd(dimensions_count);
-  TestLoadArrayElementAddressCmd(
+  TestArrayCmd(
       CmdId::kLoadStringArrayElementAddress, expected_cmd);
 }
 
@@ -1291,37 +1238,37 @@ TEST_F(CmdReaderTest, EqualStringCmd) {
 TEST_F(CmdReaderTest, EqualIntArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   EqualIntArrayCmd expected_cmd(dimensions_count);
-  TestEqualArrayCmd(CmdId::kEqualIntArray, expected_cmd);
+  TestArrayCmd(CmdId::kEqualIntArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualLongArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   EqualLongArrayCmd expected_cmd(dimensions_count);
-  TestEqualArrayCmd(CmdId::kEqualLongArray, expected_cmd);
+  TestArrayCmd(CmdId::kEqualLongArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualDoubleArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   EqualDoubleArrayCmd expected_cmd(dimensions_count);
-  TestEqualArrayCmd(CmdId::kEqualDoubleArray, expected_cmd);
+  TestArrayCmd(CmdId::kEqualDoubleArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualCharArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   EqualCharArrayCmd expected_cmd(dimensions_count);
-  TestEqualArrayCmd(CmdId::kEqualCharArray, expected_cmd);
+  TestArrayCmd(CmdId::kEqualCharArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualBoolArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   EqualBoolArrayCmd expected_cmd(dimensions_count);
-  TestEqualArrayCmd(CmdId::kEqualBoolArray, expected_cmd);
+  TestArrayCmd(CmdId::kEqualBoolArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualStringArrayCmd) {
   uint8_t dimensions_count = UINT8_C(7);
   EqualStringArrayCmd expected_cmd(dimensions_count);
-  TestEqualArrayCmd(CmdId::kEqualStringArray, expected_cmd);
+  TestArrayCmd(CmdId::kEqualStringArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, NotEqualCharCmd) {
@@ -1366,11 +1313,40 @@ TEST_F(CmdReaderTest, NotEqualStringCmd) {
   TestGetNextCmd(code, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, NotEqualArrayCmd) {
-  NotEqualArrayCmd expected_cmd;
-  Code code;
-  code.WriteCmdId(CmdId::kNotEqualArray);
-  TestGetNextCmd(code, expected_cmd);
+TEST_F(CmdReaderTest, NotEqualIntArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  NotEqualIntArrayCmd expected_cmd(dimensions_count);
+  TestArrayCmd(CmdId::kNotEqualIntArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualLongArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  NotEqualLongArrayCmd expected_cmd(dimensions_count);
+  TestArrayCmd(CmdId::kNotEqualLongArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualDoubleArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  NotEqualDoubleArrayCmd expected_cmd(dimensions_count);
+  TestArrayCmd(CmdId::kNotEqualDoubleArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualCharArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  NotEqualCharArrayCmd expected_cmd(dimensions_count);
+  TestArrayCmd(CmdId::kNotEqualCharArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualBoolArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  NotEqualBoolArrayCmd expected_cmd(dimensions_count);
+  TestArrayCmd(CmdId::kNotEqualBoolArray, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, NotEqualStringArrayCmd) {
+  uint8_t dimensions_count = UINT8_C(7);
+  NotEqualStringArrayCmd expected_cmd(dimensions_count);
+  TestArrayCmd(CmdId::kNotEqualStringArray, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, GreaterCharCmd) {

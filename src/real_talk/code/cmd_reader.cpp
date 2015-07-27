@@ -343,7 +343,19 @@ const NotEqualDoubleCmd &kNotEqualDoubleCmd = *new NotEqualDoubleCmd();
 const NotEqualBoolCmd &kNotEqualBoolCmd = *new NotEqualBoolCmd();
 const NotEqualCharCmd &kNotEqualCharCmd = *new NotEqualCharCmd();
 const NotEqualStringCmd &kNotEqualStringCmd = *new NotEqualStringCmd();
-const NotEqualArrayCmd &kNotEqualArrayCmd = *new NotEqualArrayCmd();
+
+NotEqualIntArrayCmd &kNotEqualIntArrayCmd =
+    *new NotEqualIntArrayCmd(UINT8_C(1));
+NotEqualLongArrayCmd &kNotEqualLongArrayCmd =
+    *new NotEqualLongArrayCmd(UINT8_C(1));
+NotEqualDoubleArrayCmd &kNotEqualDoubleArrayCmd =
+    *new NotEqualDoubleArrayCmd(UINT8_C(1));
+NotEqualBoolArrayCmd &kNotEqualBoolArrayCmd =
+    *new NotEqualBoolArrayCmd(UINT8_C(1));
+NotEqualCharArrayCmd &kNotEqualCharArrayCmd =
+    *new NotEqualCharArrayCmd(UINT8_C(1));
+NotEqualStringArrayCmd &kNotEqualStringArrayCmd =
+    *new NotEqualStringArrayCmd(UINT8_C(1));
 
 const GreaterCharCmd &kGreaterCharCmd = *new GreaterCharCmd();
 const GreaterIntCmd &kGreaterIntCmd = *new GreaterIntCmd();
@@ -1028,8 +1040,29 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kNotEqualString:
       cmd = &kNotEqualStringCmd;
       break;
-    case CmdId::kNotEqualArray:
-      cmd = &kNotEqualArrayCmd;
+    case CmdId::kNotEqualIntArray:
+      kNotEqualIntArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kNotEqualIntArrayCmd;
+      break;
+    case CmdId::kNotEqualLongArray:
+      kNotEqualLongArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kNotEqualLongArrayCmd;
+      break;
+    case CmdId::kNotEqualDoubleArray:
+      kNotEqualDoubleArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kNotEqualDoubleArrayCmd;
+      break;
+    case CmdId::kNotEqualBoolArray:
+      kNotEqualBoolArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kNotEqualBoolArrayCmd;
+      break;
+    case CmdId::kNotEqualCharArray:
+      kNotEqualCharArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kNotEqualCharArrayCmd;
+      break;
+    case CmdId::kNotEqualStringArray:
+      kNotEqualStringArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      cmd = &kNotEqualStringArrayCmd;
       break;
     case CmdId::kGreaterChar:
       cmd = &kGreaterCharCmd;

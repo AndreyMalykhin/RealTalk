@@ -2115,6 +2115,101 @@ class SimpleCodeGeneratorTest: public Test {
                    vector<TestCast>(),
                    move(expected_code));
   }
+
+  void TestNotEqualArray(unique_ptr<PrimitiveDataTypeNode> left_data_type_node,
+                         unique_ptr<PrimitiveDataTypeNode> right_data_type_node,
+                         unique_ptr<DataType> data_type,
+                         CmdId expected_create_array_cmd_id,
+                         CmdId expected_equal_cmd_id) {
+    vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
+    unique_ptr<UnboundedArraySizeNode> array_size_node(
+        new UnboundedArraySizeNode(
+            TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
+            TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3))));
+    array_size_nodes.push_back(move(array_size_node));
+    unique_ptr<UnboundedArraySizeNode> array_size_node2(
+        new UnboundedArraySizeNode(
+            TokenInfo(Token::kSubscriptStart, "[", UINT32_C(4), UINT32_C(4)),
+            TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(5), UINT32_C(5))));
+    array_size_nodes.push_back(move(array_size_node2));
+    vector< unique_ptr<ExprNode> > array_value_nodes;
+    vector<TokenInfo> array_value_separator_tokens;
+    ArrayAllocWithInitNode *left_operand_node_ptr = new ArrayAllocWithInitNode(
+        TokenInfo(Token::kNew, "new", UINT32_C(0), UINT32_C(0)),
+        move(left_data_type_node),
+        move(array_size_nodes),
+        TokenInfo(Token::kScopeStart, "{", UINT32_C(6), UINT32_C(6)),
+        move(array_value_nodes),
+        array_value_separator_tokens,
+        TokenInfo(Token::kScopeEnd, "}", UINT32_C(7), UINT32_C(7)));
+    unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
+
+    vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes2;
+    unique_ptr<UnboundedArraySizeNode> array_size_node3(
+        new UnboundedArraySizeNode(
+            TokenInfo(Token::kSubscriptStart, "[", UINT32_C(11), UINT32_C(11)),
+            TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(12), UINT32_C(12))));
+    array_size_nodes2.push_back(move(array_size_node3));
+    unique_ptr<UnboundedArraySizeNode> array_size_node4(
+        new UnboundedArraySizeNode(
+            TokenInfo(Token::kSubscriptStart, "[", UINT32_C(13), UINT32_C(13)),
+            TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(14), UINT32_C(14))));
+    array_size_nodes2.push_back(move(array_size_node4));
+    vector< unique_ptr<ExprNode> > array_value_nodes2;
+    vector<TokenInfo> array_value_separator_tokens2;
+    ArrayAllocWithInitNode *right_operand_node_ptr = new ArrayAllocWithInitNode(
+        TokenInfo(Token::kNew, "new", UINT32_C(9), UINT32_C(9)),
+        move(right_data_type_node),
+        move(array_size_nodes2),
+        TokenInfo(Token::kScopeStart, "{", UINT32_C(15), UINT32_C(15)),
+        move(array_value_nodes2),
+        array_value_separator_tokens2,
+        TokenInfo(Token::kScopeEnd, "}", UINT32_C(16), UINT32_C(16)));
+    unique_ptr<ExprNode> right_operand_node(right_operand_node_ptr);
+    unique_ptr<ExprNode> expr_node(new NotEqualNode(
+        TokenInfo(Token::kNotEqualOp, "!=", UINT32_C(8), UINT32_C(8)),
+        move(left_operand_node),
+        move(right_operand_node)));
+
+    unique_ptr<DataType> array_data_type(new ArrayDataType(move(data_type)));
+    ArrayDataType array_data_type2(move(array_data_type));
+    unique_ptr<DataType> left_operand_data_type = array_data_type2.Clone();
+    unique_ptr<DataType> left_operand_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> left_operand_analysis(
+        new CommonExprAnalysis(
+            move(left_operand_data_type),
+            move(left_operand_casted_data_type),
+            ValueType::kRight));
+    unique_ptr<DataType> right_operand_data_type = array_data_type2.Clone();
+    unique_ptr<DataType> right_operand_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> right_operand_analysis(
+        new CommonExprAnalysis(
+            move(right_operand_data_type),
+            move(right_operand_casted_data_type),
+            ValueType::kRight));
+    unique_ptr<DataType> expr_data_type(new BoolDataType());
+
+    unique_ptr<Code> expected_code(new Code());
+    expected_code->WriteCmdId(expected_create_array_cmd_id);
+    uint8_t dimensions_count = UINT8_C(2);
+    expected_code->WriteUint8(dimensions_count);
+    int32_t values_count = INT32_C(0);
+    expected_code->WriteInt32(values_count);
+    expected_code->WriteCmdId(expected_create_array_cmd_id);
+    expected_code->WriteUint8(dimensions_count);
+    expected_code->WriteInt32(values_count);
+    expected_code->WriteCmdId(expected_equal_cmd_id);
+    expected_code->WriteUint8(dimensions_count);
+    expected_code->WriteCmdId(CmdId::kUnloadBool);
+    TestBinaryExpr(left_operand_node_ptr,
+                   right_operand_node_ptr,
+                   move(expr_node),
+                   move(left_operand_analysis),
+                   move(right_operand_analysis),
+                   move(expr_data_type),
+                   vector<TestCast>(),
+                   move(expected_code));
+  }
 };
 
 TEST_F(SimpleCodeGeneratorTest, GlobalIntVarDefWithoutInit) {
@@ -9201,87 +9296,82 @@ TEST_F(SimpleCodeGeneratorTest, NotEqualBool) {
                  move(expected_code));
 }
 
-TEST_F(SimpleCodeGeneratorTest, NotEqualArray) {
-  unique_ptr<PrimitiveDataTypeNode> int_data_type_node(new IntDataTypeNode(
+TEST_F(SimpleCodeGeneratorTest, NotEqualIntArray) {
+  unique_ptr<PrimitiveDataTypeNode> left_data_type_node(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(1), UINT32_C(1))));
-  vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes;
-  unique_ptr<UnboundedArraySizeNode> array_size_node(new UnboundedArraySizeNode(
-      TokenInfo(Token::kSubscriptStart, "[", UINT32_C(2), UINT32_C(2)),
-      TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(3), UINT32_C(3))));
-  array_size_nodes.push_back(move(array_size_node));
-  vector< unique_ptr<ExprNode> > array_value_nodes;
-  vector<TokenInfo> array_value_separator_tokens;
-  ArrayAllocWithInitNode *left_operand_node_ptr = new ArrayAllocWithInitNode(
-      TokenInfo(Token::kNew, "new", UINT32_C(0), UINT32_C(0)),
-      move(int_data_type_node),
-      move(array_size_nodes),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(4), UINT32_C(4)),
-      move(array_value_nodes),
-      array_value_separator_tokens,
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(5), UINT32_C(5)));
-  unique_ptr<ExprNode> left_operand_node(left_operand_node_ptr);
+  unique_ptr<PrimitiveDataTypeNode> right_data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(10), UINT32_C(10))));
+  unique_ptr<DataType> data_type(new IntDataType());
+  TestNotEqualArray(move(left_data_type_node),
+                    move(right_data_type_node),
+                    move(data_type),
+                    CmdId::kCreateAndInitIntArray,
+                    CmdId::kNotEqualIntArray);
+}
 
-  unique_ptr<PrimitiveDataTypeNode> int_data_type_node2(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(8), UINT32_C(8))));
-  vector< unique_ptr<UnboundedArraySizeNode> > array_size_nodes2;
-  unique_ptr<UnboundedArraySizeNode> array_size_node2(
-      new UnboundedArraySizeNode(
-          TokenInfo(Token::kSubscriptStart, "[", UINT32_C(9), UINT32_C(9)),
-          TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(10), UINT32_C(10))));
-  array_size_nodes2.push_back(move(array_size_node2));
-  vector< unique_ptr<ExprNode> > array_value_nodes2;
-  vector<TokenInfo> array_value_separator_tokens2;
-  ArrayAllocWithInitNode *right_operand_node_ptr = new ArrayAllocWithInitNode(
-      TokenInfo(Token::kNew, "new", UINT32_C(7), UINT32_C(7)),
-      move(int_data_type_node2),
-      move(array_size_nodes2),
-      TokenInfo(Token::kScopeStart, "{", UINT32_C(11), UINT32_C(11)),
-      move(array_value_nodes2),
-      array_value_separator_tokens2,
-      TokenInfo(Token::kScopeEnd, "}", UINT32_C(12), UINT32_C(12)));
-  unique_ptr<ExprNode> right_operand_node(right_operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new NotEqualNode(
-      TokenInfo(Token::kNotEqualOp, "!=", UINT32_C(6), UINT32_C(6)),
-      move(left_operand_node),
-      move(right_operand_node)));
+TEST_F(SimpleCodeGeneratorTest, NotEqualLongArray) {
+  unique_ptr<PrimitiveDataTypeNode> left_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<PrimitiveDataTypeNode> right_data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(10), UINT32_C(10))));
+  unique_ptr<DataType> data_type(new LongDataType());
+  TestNotEqualArray(move(left_data_type_node),
+                    move(right_data_type_node),
+                    move(data_type),
+                    CmdId::kCreateAndInitLongArray,
+                    CmdId::kNotEqualLongArray);
+}
 
-  unique_ptr<DataType> left_operand_data_type(
-      new ArrayDataType(unique_ptr<DataType>(new IntDataType())));
-  unique_ptr<DataType> left_operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> left_operand_analysis(new CommonExprAnalysis(
-      move(left_operand_data_type),
-      move(left_operand_casted_data_type),
-      ValueType::kRight));
-  unique_ptr<DataType> right_operand_data_type(
-      new ArrayDataType(unique_ptr<DataType>(new IntDataType())));
-  unique_ptr<DataType> right_operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> right_operand_analysis(
-      new CommonExprAnalysis(
-          move(right_operand_data_type),
-          move(right_operand_casted_data_type),
-          ValueType::kRight));
-  unique_ptr<DataType> expr_data_type(new BoolDataType());
+TEST_F(SimpleCodeGeneratorTest, NotEqualDoubleArray) {
+  unique_ptr<PrimitiveDataTypeNode> left_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<PrimitiveDataTypeNode> right_data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(10), UINT32_C(10))));
+  unique_ptr<DataType> data_type(new DoubleDataType());
+  TestNotEqualArray(move(left_data_type_node),
+                    move(right_data_type_node),
+                    move(data_type),
+                    CmdId::kCreateAndInitDoubleArray,
+                    CmdId::kNotEqualDoubleArray);
+}
 
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->WriteCmdId(CmdId::kCreateAndInitIntArray);
-  uint8_t dimensions_count = UINT8_C(1);
-  expected_code->WriteUint8(dimensions_count);
-  int32_t values_count = INT32_C(0);
-  expected_code->WriteInt32(values_count);
-  expected_code->WriteCmdId(CmdId::kCreateAndInitIntArray);
-  expected_code->WriteUint8(dimensions_count);
-  expected_code->WriteInt32(values_count);
-  expected_code->WriteCmdId(CmdId::kNotEqualArray);
-  expected_code->WriteCmdId(CmdId::kUnloadBool);
+TEST_F(SimpleCodeGeneratorTest, NotEqualCharArray) {
+  unique_ptr<PrimitiveDataTypeNode> left_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<PrimitiveDataTypeNode> right_data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(10), UINT32_C(10))));
+  unique_ptr<DataType> data_type(new CharDataType());
+  TestNotEqualArray(move(left_data_type_node),
+                    move(right_data_type_node),
+                    move(data_type),
+                    CmdId::kCreateAndInitCharArray,
+                    CmdId::kNotEqualCharArray);
+}
 
-  TestBinaryExpr(left_operand_node_ptr,
-                 right_operand_node_ptr,
-                 move(expr_node),
-                 move(left_operand_analysis),
-                 move(right_operand_analysis),
-                 move(expr_data_type),
-                 vector<TestCast>(),
-                 move(expected_code));
+TEST_F(SimpleCodeGeneratorTest, NotEqualBoolArray) {
+  unique_ptr<PrimitiveDataTypeNode> left_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<PrimitiveDataTypeNode> right_data_type_node(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(10), UINT32_C(10))));
+  unique_ptr<DataType> data_type(new BoolDataType());
+  TestNotEqualArray(move(left_data_type_node),
+                    move(right_data_type_node),
+                    move(data_type),
+                    CmdId::kCreateAndInitBoolArray,
+                    CmdId::kNotEqualBoolArray);
+}
+
+TEST_F(SimpleCodeGeneratorTest, NotEqualStringArray) {
+  unique_ptr<PrimitiveDataTypeNode> left_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<PrimitiveDataTypeNode> right_data_type_node(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(10), UINT32_C(10))));
+  unique_ptr<DataType> data_type(new StringDataType());
+  TestNotEqualArray(move(left_data_type_node),
+                    move(right_data_type_node),
+                    move(data_type),
+                    CmdId::kCreateAndInitStringArray,
+                    CmdId::kNotEqualStringArray);
 }
 
 TEST_F(SimpleCodeGeneratorTest, GreaterChar) {

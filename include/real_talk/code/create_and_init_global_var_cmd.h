@@ -5,6 +5,7 @@
 #include <cassert>
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
+#include "real_talk/code/array_cmd_trait.h"
 
 namespace real_talk {
 namespace code {
@@ -92,42 +93,31 @@ class CreateAndInitGlobalBoolVarCmd: public CreateAndInitGlobalVarCmd {
   }
 };
 
-class CreateAndInitGlobalArrayVarCmd: public CreateAndInitGlobalVarCmd {
+class CreateAndInitGlobalArrayVarCmd: public CreateAndInitGlobalVarCmd,
+                                      public ArrayCmdTrait {
  public:
-  inline uint8_t GetDimensionsCount() const noexcept {return dimensions_count_;}
-
-  inline void SetDimensionsCount(uint8_t count) noexcept {
-    dimensions_count_ = count;
-  }
-
- protected:
   inline CreateAndInitGlobalArrayVarCmd(
       uint32_t var_index, uint8_t dimensions_count) noexcept
       : CreateAndInitGlobalVarCmd(var_index),
-        dimensions_count_(dimensions_count) {
-        assert(dimensions_count != UINT8_C(0));
-      }
+        ArrayCmdTrait(dimensions_count) {}
 
  private:
   virtual void Print(std::ostream &stream) const override {
     CreateAndInitGlobalVarCmd::Print(stream);
-    stream << "; dimensions_count=" << static_cast<int>(dimensions_count_);
+    stream << "; ";
+    ArrayCmdTrait::Print(stream);
   }
 
   virtual bool IsEqual(const Cmd &cmd) const override {
     const auto &rhs = static_cast<const CreateAndInitGlobalArrayVarCmd&>(cmd);
     return CreateAndInitGlobalVarCmd::IsEqual(cmd)
-        && dimensions_count_ == rhs.dimensions_count_;
+        && ArrayCmdTrait::IsEqual(rhs);
   }
-
-  uint8_t dimensions_count_;
 };
 
 class CreateAndInitGlobalIntArrayVarCmd: public CreateAndInitGlobalArrayVarCmd {
  public:
-  inline CreateAndInitGlobalIntArrayVarCmd(
-      uint32_t var_index, uint8_t dimensions_count) noexcept
-      : CreateAndInitGlobalArrayVarCmd(var_index, dimensions_count) {}
+  using CreateAndInitGlobalArrayVarCmd::CreateAndInitGlobalArrayVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalIntArrayVar(*this);
@@ -137,9 +127,7 @@ class CreateAndInitGlobalIntArrayVarCmd: public CreateAndInitGlobalArrayVarCmd {
 class CreateAndInitGlobalLongArrayVarCmd
     : public CreateAndInitGlobalArrayVarCmd {
  public:
-  inline CreateAndInitGlobalLongArrayVarCmd(
-      uint32_t var_index, uint8_t dimensions_count) noexcept
-      : CreateAndInitGlobalArrayVarCmd(var_index, dimensions_count) {}
+  using CreateAndInitGlobalArrayVarCmd::CreateAndInitGlobalArrayVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalLongArrayVar(*this);
@@ -149,9 +137,7 @@ class CreateAndInitGlobalLongArrayVarCmd
 class CreateAndInitGlobalDoubleArrayVarCmd
     : public CreateAndInitGlobalArrayVarCmd {
  public:
-  inline CreateAndInitGlobalDoubleArrayVarCmd(
-      uint32_t var_index, uint8_t dimensions_count) noexcept
-      : CreateAndInitGlobalArrayVarCmd(var_index, dimensions_count) {}
+  using CreateAndInitGlobalArrayVarCmd::CreateAndInitGlobalArrayVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalDoubleArrayVar(*this);
@@ -161,9 +147,7 @@ class CreateAndInitGlobalDoubleArrayVarCmd
 class CreateAndInitGlobalCharArrayVarCmd
     : public CreateAndInitGlobalArrayVarCmd {
  public:
-  inline CreateAndInitGlobalCharArrayVarCmd(
-      uint32_t var_index, uint8_t dimensions_count) noexcept
-      : CreateAndInitGlobalArrayVarCmd(var_index, dimensions_count) {}
+  using CreateAndInitGlobalArrayVarCmd::CreateAndInitGlobalArrayVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalCharArrayVar(*this);
@@ -173,9 +157,7 @@ class CreateAndInitGlobalCharArrayVarCmd
 class CreateAndInitGlobalStringArrayVarCmd
     : public CreateAndInitGlobalArrayVarCmd {
  public:
-  inline CreateAndInitGlobalStringArrayVarCmd(
-      uint32_t var_index, uint8_t dimensions_count) noexcept
-      : CreateAndInitGlobalArrayVarCmd(var_index, dimensions_count) {}
+  using CreateAndInitGlobalArrayVarCmd::CreateAndInitGlobalArrayVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalStringArrayVar(*this);
@@ -185,9 +167,7 @@ class CreateAndInitGlobalStringArrayVarCmd
 class CreateAndInitGlobalBoolArrayVarCmd
     : public CreateAndInitGlobalArrayVarCmd {
  public:
-  inline CreateAndInitGlobalBoolArrayVarCmd(
-      uint32_t var_index, uint8_t dimensions_count) noexcept
-      : CreateAndInitGlobalArrayVarCmd(var_index, dimensions_count) {}
+  using CreateAndInitGlobalArrayVarCmd::CreateAndInitGlobalArrayVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalBoolArrayVar(*this);

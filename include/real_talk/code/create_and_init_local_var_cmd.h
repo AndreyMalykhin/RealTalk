@@ -4,6 +4,7 @@
 
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd.h"
+#include "real_talk/code/array_cmd_trait.h"
 
 namespace real_talk {
 namespace code {
@@ -57,33 +58,22 @@ class CreateAndInitLocalBoolVarCmd: public CreateAndInitLocalVarCmd {
 };
 
 
-class CreateAndInitLocalArrayVarCmd: public CreateAndInitLocalVarCmd {
+class CreateAndInitLocalArrayVarCmd: public CreateAndInitLocalVarCmd,
+                                     public ArrayCmdTrait {
  public:
-  inline explicit CreateAndInitLocalArrayVarCmd(
-      uint8_t dimensions_count) noexcept
-      : dimensions_count_(dimensions_count) {
-        assert(dimensions_count != UINT8_C(0));
-      }
-
-  inline uint8_t GetDimensionsCount() const noexcept {return dimensions_count_;}
-
-  inline void SetDimensionsCount(uint8_t count) noexcept {
-    dimensions_count_ = count;
-  }
+  using ArrayCmdTrait::ArrayCmdTrait;
 
  private:
   virtual void Print(std::ostream &stream) const override {
     CreateAndInitLocalVarCmd::Print(stream);
-    stream << "; dimensions_count=" << static_cast<int>(dimensions_count_);
+    ArrayCmdTrait::Print(stream);
   }
 
   virtual bool IsEqual(const Cmd &cmd) const override {
     const auto &rhs = static_cast<const CreateAndInitLocalArrayVarCmd&>(cmd);
     return CreateAndInitLocalVarCmd::IsEqual(cmd)
-        && dimensions_count_ == rhs.dimensions_count_;
+        && ArrayCmdTrait::IsEqual(rhs);
   }
-
-  uint8_t dimensions_count_;
 };
 
 class CreateAndInitLocalIntArrayVarCmd: public CreateAndInitLocalArrayVarCmd {
