@@ -709,28 +709,38 @@ const SimpleVM::FuncFrames &SimpleVM::Impl::GetFuncFrames() const {
 
 void SimpleVM::Impl::VisitCreateGlobalIntVar(
     const CreateGlobalIntVarCmd &cmd) {
-  global_vars_.GetInt(cmd.GetVarIndex()) = IntValue();
+  global_vars_.CreateInt(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalArrayVar(
     const CreateGlobalArrayVarCmd &cmd) {
-  global_vars_.GetArray(cmd.GetVarIndex()) = ArrayValue();
+  global_vars_.CreateArray(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalLongVar(
-    const CreateGlobalLongVarCmd&) {assert(false);}
+    const CreateGlobalLongVarCmd &cmd) {
+  global_vars_.CreateLong(cmd.GetVarIndex());
+}
 
 void SimpleVM::Impl::VisitCreateGlobalDoubleVar(
-    const CreateGlobalDoubleVarCmd&) {assert(false);}
+    const CreateGlobalDoubleVarCmd &cmd) {
+  global_vars_.CreateDouble(cmd.GetVarIndex());
+}
 
 void SimpleVM::Impl::VisitCreateGlobalCharVar(
-    const CreateGlobalCharVarCmd&) {assert(false);}
+    const CreateGlobalCharVarCmd &cmd) {
+  global_vars_.CreateChar(cmd.GetVarIndex());
+}
 
 void SimpleVM::Impl::VisitCreateGlobalStringVar(
-    const CreateGlobalStringVarCmd&) {assert(false);}
+    const CreateGlobalStringVarCmd &cmd) {
+  global_vars_.CreateString(cmd.GetVarIndex());
+}
 
 void SimpleVM::Impl::VisitCreateGlobalBoolVar(
-    const CreateGlobalBoolVarCmd&) {assert(false);}
+    const CreateGlobalBoolVarCmd &cmd) {
+  global_vars_.CreateBool(cmd.GetVarIndex());
+}
 
 void SimpleVM::Impl::VisitCreateLocalIntVar(
     const CreateLocalIntVarCmd&) {assert(false);}

@@ -79,6 +79,7 @@ add_library(real_talk_lib SHARED
   src/real_talk/vm/data_storage.cpp
   src/real_talk/vm/vm_config.cpp
   src/real_talk/vm/vm_app.cpp
+  src/real_talk/vm/array_value.cpp
   src/real_talk/vm/simple_vm.cpp
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp

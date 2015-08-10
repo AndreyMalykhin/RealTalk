@@ -3,6 +3,13 @@
 #include <string>
 #include "real_talk/code/data_type_size.h"
 #include "real_talk/vm/data_storage.h"
+#include "real_talk/vm/int_value.h"
+#include "real_talk/vm/long_value.h"
+#include "real_talk/vm/double_value.h"
+#include "real_talk/vm/bool_value.h"
+#include "real_talk/vm/char_value.h"
+#include "real_talk/vm/string_value.h"
+#include "real_talk/vm/array_value.h"
 
 using std::string;
 using std::runtime_error;
@@ -18,10 +25,25 @@ namespace vm {
 
 static_assert(sizeof(IntValue) <= static_cast<size_t>(DataTypeSize::kInt)
               * sizeof(DataStorage::Slot),
-              "Int value doesn't fit into required slots count");
+              "Unsupported 'int' size");
+static_assert(sizeof(LongValue) <= static_cast<size_t>(DataTypeSize::kLong)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'long' size");
+static_assert(sizeof(DoubleValue) <= static_cast<size_t>(DataTypeSize::kDouble)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'double' size");
+static_assert(sizeof(BoolValue) <= static_cast<size_t>(DataTypeSize::kBool)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'bool' size");
+static_assert(sizeof(BoolValue) <= static_cast<size_t>(DataTypeSize::kBool)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'char' size");
+static_assert(sizeof(StringValue) <= static_cast<size_t>(DataTypeSize::kString)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'string' size");
 static_assert(sizeof(ArrayValue) <= static_cast<size_t>(DataTypeSize::kArray)
               * sizeof(DataStorage::Slot),
-              "Array value doesn't fit into required slots count");
+              "Unsupported 'array' size");
 
 DataStorage::DataStorage(size_t size): capacity_(size * 2),
                                        data_(new Slot[capacity_]()),
@@ -29,12 +51,37 @@ DataStorage::DataStorage(size_t size): capacity_(size * 2),
 
 DataStorage::DataStorage(): DataStorage(0) {}
 
-IntValue &DataStorage::GetInt(size_t index) noexcept {
-  return *(reinterpret_cast<IntValue*>(GetSlot(index)));
+void DataStorage::CreateInt(size_t) noexcept {
+  // slot already filled with zeros
 }
 
-ArrayValue &DataStorage::GetArray(size_t index) noexcept {
-  return *(reinterpret_cast<ArrayValue*>(GetSlot(index)));
+void DataStorage::CreateLong(size_t) noexcept {
+  // slot already filled with zeros
+}
+
+void DataStorage::CreateDouble(size_t) noexcept {
+  // slot already filled with zeros
+}
+
+void DataStorage::CreateBool(size_t) noexcept {
+  // slot already filled with zeros
+}
+
+void DataStorage::CreateChar(size_t) noexcept {
+  // slot already filled with zeros
+}
+
+void DataStorage::CreateString(size_t index) {
+  new(GetSlot(index)) StringValue();
+}
+
+void DataStorage::CreateArray(size_t index) {
+  new(GetSlot(index)) ArrayValue();
+}
+
+size_t DataStorage::GetSize() const noexcept {
+  assert(current_slot_ >= data_.get());
+  return static_cast<size_t>(current_slot_ - data_.get());
 }
 
 void DataStorage::EnsureCapacity(size_t slots_count) {
@@ -76,11 +123,6 @@ inline DataStorage::Slot *DataStorage::GetSlot(size_t index) const noexcept {
 
 inline bool DataStorage::HasSlots(size_t count) const noexcept {
   return GetSize() >= count;
-}
-
-inline size_t DataStorage::GetSize() const noexcept {
-  assert(current_slot_ >= data_.get());
-  return static_cast<size_t>(current_slot_ - data_.get());
 }
 
 bool operator==(const DataStorage &lhs, const DataStorage &rhs) {

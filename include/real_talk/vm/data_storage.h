@@ -6,7 +6,6 @@
 #include <string>
 #include <iostream>
 #include <memory>
-#include "real_talk/vm/values.h"
 
 namespace real_talk {
 namespace vm {
@@ -22,8 +21,14 @@ class DataStorage {
 
   DataStorage();
   explicit DataStorage(size_t size);
-  IntValue &GetInt(size_t index) noexcept;
-  ArrayValue &GetArray(size_t index) noexcept;
+  size_t GetSize() const noexcept;
+  void CreateInt(size_t index) noexcept;
+  void CreateLong(size_t index) noexcept;
+  void CreateDouble(size_t index) noexcept;
+  void CreateBool(size_t index) noexcept;
+  void CreateChar(size_t index) noexcept;
+  void CreateString(size_t index);
+  void CreateArray(size_t index);
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
   friend std::ostream &operator<<(
       std::ostream &stream, const DataStorage &storage);
@@ -35,7 +40,6 @@ class DataStorage {
   void AfterPop(size_t popped_slots_count) noexcept;
   Slot *GetSlot(size_t index) const noexcept;
   bool HasSlots(size_t count) const noexcept;
-  size_t GetSize() const noexcept;
 
   size_t capacity_;
   std::unique_ptr<Slot[]> data_;
