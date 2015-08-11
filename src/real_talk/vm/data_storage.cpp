@@ -79,6 +79,20 @@ void DataStorage::CreateArray(size_t index) {
   new(GetSlot(index)) ArrayValue();
 }
 
+void DataStorage::PushInt(IntValue value) noexcept {
+  const size_t size = static_cast<size_t>(DataTypeSize::kInt);
+  EnsureCapacity(size);
+  *(reinterpret_cast<IntValue*>(current_slot_)) = value;
+  AfterPush(size);
+}
+
+void DataStorage::PushString(StringValue value) {
+  const size_t size = static_cast<size_t>(DataTypeSize::kString);
+  EnsureCapacity(size);
+  new(current_slot_) StringValue(value);
+  AfterPush(size);
+}
+
 size_t DataStorage::GetSize() const noexcept {
   assert(current_slot_ >= data_.get());
   return static_cast<size_t>(current_slot_ - data_.get());

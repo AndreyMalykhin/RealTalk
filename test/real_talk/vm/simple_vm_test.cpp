@@ -144,5 +144,43 @@ TEST_F(SimpleVMTest, CreateGlobalArrayVarCmd) {
   TestCreateGlobalVarCmd(
       CmdId::kCreateGlobalArrayVar, var_index, expected_global_vars);
 }
+
+TEST_F(SimpleVMTest, LoadIntValueCmd) {
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadIntValue);
+  int32_t value = INT32_C(7);
+  cmds->WriteInt32(value);
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  uint32_t global_vars_size = UINT32_C(0);
+  DataStorage expected_operands;
+  expected_operands.PushInt(value);
+  DataStorage expected_global_vars;
+  DataStorage expected_local_vars;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              global_vars_size,
+              expected_global_vars,
+              expected_local_vars,
+              expected_operands);
+}
+
+TEST_F(SimpleVMTest, LoadStringValueCmd) {
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadStringValue);
+  const string value = "abc";
+  cmds->WriteString(value);
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  uint32_t global_vars_size = UINT32_C(0);
+  DataStorage expected_operands;
+  expected_operands.PushString(StringValue(value));
+  DataStorage expected_global_vars;
+  DataStorage expected_local_vars;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              global_vars_size,
+              expected_global_vars,
+              expected_local_vars,
+              expected_operands);
+}
 }
 }

@@ -5,6 +5,7 @@
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/create_global_var_cmd.h"
+#include "real_talk/code/load_value_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
@@ -836,7 +837,9 @@ void SimpleVM::Impl::VisitUnloadBoolArray(
     const UnloadBoolArrayCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadIntValue(
-    const LoadIntValueCmd&) {assert(false);}
+    const LoadIntValueCmd &cmd) {
+  operands_.PushInt(cmd.GetValue());
+}
 
 void SimpleVM::Impl::VisitLoadLongValue(
     const LoadLongValueCmd&) {assert(false);}
@@ -848,7 +851,9 @@ void SimpleVM::Impl::VisitLoadCharValue(
     const LoadCharValueCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadStringValue(
-    const LoadStringValueCmd&) {assert(false);}
+    const LoadStringValueCmd &cmd) {
+  operands_.PushString(StringValue(cmd.GetValue()));
+}
 
 void SimpleVM::Impl::VisitLoadDoubleValue(
     const LoadDoubleValueCmd&) {assert(false);}

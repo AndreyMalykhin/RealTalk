@@ -15,6 +15,7 @@ class LoadIntValueCmd: public Cmd {
  public:
   inline explicit LoadIntValueCmd(int32_t value) noexcept: value_(value) {}
   inline void SetValue(int32_t value) noexcept {value_ = value;}
+  inline int32_t GetValue() const noexcept {return value_;}
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadIntValue(*this);
@@ -103,6 +104,7 @@ class LoadStringValueCmd: public Cmd {
  public:
   explicit LoadStringValueCmd(const std::string &value): value_(value) {}
   inline void SetValue(const std::string &value) {value_ = value;}
+  inline const std::string &GetValue() const noexcept {return value_;}
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadStringValue(*this);

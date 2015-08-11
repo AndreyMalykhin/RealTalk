@@ -6,6 +6,8 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include "real_talk/vm/int_value.h"
+#include "real_talk/vm/string_value.h"
 
 namespace real_talk {
 namespace vm {
@@ -29,6 +31,8 @@ class DataStorage {
   void CreateChar(size_t index) noexcept;
   void CreateString(size_t index);
   void CreateArray(size_t index);
+  void PushInt(IntValue value) noexcept;
+  void PushString(StringValue value);
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
   friend std::ostream &operator<<(
       std::ostream &stream, const DataStorage &storage);
