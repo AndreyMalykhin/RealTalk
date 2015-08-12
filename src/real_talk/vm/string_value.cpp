@@ -12,6 +12,7 @@ class StringValue::Storage {
  public:
   explicit Storage(const string &data);
   size_t &GetRefsCount() noexcept;
+  const string &GetData() const noexcept;
 
  private:
   std::string data_;
@@ -39,11 +40,21 @@ void StringValue::DecRefsCount() noexcept {
   }
 }
 
+bool operator==(const StringValue &lhs, const StringValue &rhs) {
+  assert(lhs.storage_);
+  assert(rhs.storage_);
+  return lhs.storage_->GetData() == rhs.storage_->GetData();
+}
+
 StringValue::Storage::Storage(const string &data)
     : data_(data), refs_count_(1) {}
 
 inline size_t &StringValue::Storage::GetRefsCount() noexcept {
   return refs_count_;
+}
+
+inline const string &StringValue::Storage::GetData() const noexcept {
+  return data_;
 }
 }
 }

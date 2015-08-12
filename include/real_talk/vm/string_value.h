@@ -13,6 +13,7 @@ class StringValue {
   StringValue(const StringValue &value);
   StringValue &operator=(const StringValue&) = delete;
   ~StringValue();
+  friend bool operator==(const StringValue &lhs, const StringValue &rhs);
 
  private:
   class Storage;

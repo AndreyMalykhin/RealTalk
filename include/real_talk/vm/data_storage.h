@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include "real_talk/vm/int_value.h"
+#include "real_talk/vm/long_value.h"
 #include "real_talk/vm/string_value.h"
 
 namespace real_talk {
@@ -31,6 +32,9 @@ class DataStorage {
   void CreateChar(size_t index) noexcept;
   void CreateString(size_t index);
   void CreateArray(size_t index);
+  IntValue GetInt(size_t index) const noexcept;
+  LongValue GetLong(size_t index) const noexcept;
+  const StringValue &GetString(size_t index) const noexcept;
   void PushInt(IntValue value) noexcept;
   void PushString(StringValue value);
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
