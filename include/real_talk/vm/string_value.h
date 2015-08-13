@@ -3,6 +3,7 @@
 #define _REAL_TALK_VM_STRING_VALUE_H_
 
 #include <string>
+#include <iostream>
 
 namespace real_talk {
 namespace vm {
@@ -14,6 +15,8 @@ class StringValue {
   StringValue &operator=(const StringValue&) = delete;
   ~StringValue();
   friend bool operator==(const StringValue &lhs, const StringValue &rhs);
+  friend std::ostream &operator<<(
+      std::ostream &stream, const StringValue &value);
 
  private:
   class Storage;

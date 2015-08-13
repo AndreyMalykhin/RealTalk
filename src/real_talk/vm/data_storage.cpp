@@ -80,15 +80,31 @@ void DataStorage::CreateArray(size_t index) {
 }
 
 IntValue DataStorage::GetInt(size_t index) const noexcept {
-  return *(reinterpret_cast<IntValue*>(GetSlot(index)));
+  return Get<IntValue>(index);
 }
 
 LongValue DataStorage::GetLong(size_t index) const noexcept {
-  return *(reinterpret_cast<LongValue*>(GetSlot(index)));
+  return Get<LongValue>(index);
+}
+
+DoubleValue DataStorage::GetDouble(size_t index) const noexcept {
+  return Get<DoubleValue>(index);
+}
+
+BoolValue DataStorage::GetBool(size_t index) const noexcept {
+  return Get<BoolValue>(index);
+}
+
+CharValue DataStorage::GetChar(size_t index) const noexcept {
+  return Get<CharValue>(index);
 }
 
 const StringValue &DataStorage::GetString(size_t index) const noexcept {
-  return *(reinterpret_cast<StringValue*>(GetSlot(index)));
+  return Get<StringValue>(index);
+}
+
+const ArrayValue &DataStorage::GetArray(size_t index) const noexcept {
+  return Get<ArrayValue>(index);
 }
 
 void DataStorage::PushInt(IntValue value) noexcept {
@@ -103,6 +119,10 @@ void DataStorage::PushString(StringValue value) {
   EnsureCapacity(size);
   new(current_slot_) StringValue(value);
   AfterPush(size);
+}
+
+template<typename T> const T &DataStorage::Get(size_t index) const noexcept {
+  return *(reinterpret_cast<T*>(GetSlot(index)));
 }
 
 size_t DataStorage::GetSize() const noexcept {

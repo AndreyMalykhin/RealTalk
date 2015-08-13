@@ -4,6 +4,7 @@
 #include "real_talk/vm/string_value.h"
 
 using std::string;
+using std::ostream;
 
 namespace real_talk {
 namespace vm {
@@ -44,6 +45,12 @@ bool operator==(const StringValue &lhs, const StringValue &rhs) {
   assert(lhs.storage_);
   assert(rhs.storage_);
   return lhs.storage_->GetData() == rhs.storage_->GetData();
+}
+
+ostream &operator<<(ostream &stream, const StringValue &value) {
+  assert(value.storage_);
+  return stream << "refs_count=" << value.storage_->GetRefsCount()
+                << "; data=" << value.storage_->GetData();
 }
 
 StringValue::Storage::Storage(const string &data)

@@ -7,7 +7,15 @@
 namespace real_talk {
 namespace vm {
 
-class ArrayValue {};
+class ArrayValue {
+ public:
+  ArrayValue();
+  friend bool operator==(const ArrayValue &lhs, const ArrayValue &rhs);
+
+ private:
+  class Storage;
+  Storage *storage_;
+};
 }
 }
 #endif

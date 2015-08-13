@@ -91,9 +91,10 @@ class SimpleVMTest: public Test {
     cmds->WriteCmdId(cmd_id);
     cmds->WriteUint32(var_index);
     uint32_t main_cmds_code_size = cmds->GetPosition();
+    SimpleVM::FuncFrames expected_func_frames;
     TestExecute(move(cmds),
                 main_cmds_code_size,
-                SimpleVM::FuncFrames(),
+                expected_func_frames,
                 expected_global_vars,
                 global_vars_asserter);
   }
@@ -132,34 +133,58 @@ TEST_F(SimpleVMTest, CreateGlobalLongVarCmd) {
                          expected_global_vars,
                          global_vars_asserter);
 }
-/*
+
 TEST_F(SimpleVMTest, CreateGlobalDoubleVarCmd) {
+  auto global_vars_asserter = [](const DataStorage &expected_global_vars,
+                                 const DataStorage &actual_global_vars) {
+    uint32_t var_index = UINT32_C(7);
+    ASSERT_EQ(expected_global_vars.GetDouble(var_index),
+              actual_global_vars.GetDouble(var_index));
+  };
   size_t global_vars_size = 77;
   DataStorage expected_global_vars(global_vars_size);
   uint32_t var_index = UINT32_C(7);
   expected_global_vars.CreateDouble(var_index);
-  TestCreateGlobalVarCmd(
-      CmdId::kCreateGlobalDoubleVar, var_index, expected_global_vars);
+  TestCreateGlobalVarCmd(CmdId::kCreateGlobalDoubleVar,
+                         var_index,
+                         expected_global_vars,
+                         global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, CreateGlobalBoolVarCmd) {
+  auto global_vars_asserter = [](const DataStorage &expected_global_vars,
+                                 const DataStorage &actual_global_vars) {
+    uint32_t var_index = UINT32_C(7);
+    ASSERT_EQ(expected_global_vars.GetBool(var_index),
+              actual_global_vars.GetBool(var_index));
+  };
   size_t global_vars_size = 77;
   DataStorage expected_global_vars(global_vars_size);
   uint32_t var_index = UINT32_C(7);
   expected_global_vars.CreateBool(var_index);
-  TestCreateGlobalVarCmd(
-      CmdId::kCreateGlobalBoolVar, var_index, expected_global_vars);
+  TestCreateGlobalVarCmd(CmdId::kCreateGlobalBoolVar,
+                         var_index,
+                         expected_global_vars,
+                         global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, CreateGlobalCharVarCmd) {
+  auto global_vars_asserter = [](const DataStorage &expected_global_vars,
+                                 const DataStorage &actual_global_vars) {
+    uint32_t var_index = UINT32_C(7);
+    ASSERT_EQ(expected_global_vars.GetChar(var_index),
+              actual_global_vars.GetChar(var_index));
+  };
   size_t global_vars_size = 77;
   DataStorage expected_global_vars(global_vars_size);
   uint32_t var_index = UINT32_C(7);
   expected_global_vars.CreateChar(var_index);
-  TestCreateGlobalVarCmd(
-      CmdId::kCreateGlobalCharVar, var_index, expected_global_vars);
+  TestCreateGlobalVarCmd(CmdId::kCreateGlobalCharVar,
+                         var_index,
+                         expected_global_vars,
+                         global_vars_asserter);
 }
-*/
+
 TEST_F(SimpleVMTest, CreateGlobalStringVarCmd) {
   auto global_vars_asserter = [](const DataStorage &expected_global_vars,
                                  const DataStorage &actual_global_vars) {
@@ -176,53 +201,82 @@ TEST_F(SimpleVMTest, CreateGlobalStringVarCmd) {
                          expected_global_vars,
                          global_vars_asserter);
 }
-/*
+
 TEST_F(SimpleVMTest, CreateGlobalArrayVarCmd) {
+  auto global_vars_asserter = [](const DataStorage &expected_global_vars,
+                                 const DataStorage &actual_global_vars) {
+    uint32_t var_index = UINT32_C(7);
+    ASSERT_EQ(expected_global_vars.GetArray(var_index),
+              actual_global_vars.GetArray(var_index));
+  };
   size_t global_vars_size = 77;
   DataStorage expected_global_vars(global_vars_size);
   uint32_t var_index = UINT32_C(7);
   expected_global_vars.CreateArray(var_index);
-  TestCreateGlobalVarCmd(
-      CmdId::kCreateGlobalArrayVar, var_index, expected_global_vars);
+  TestCreateGlobalVarCmd(CmdId::kCreateGlobalArrayVar,
+                         var_index,
+                         expected_global_vars,
+                         global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, LoadIntValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    ASSERT_EQ(expected_operands.GetInt(operand_index),
+              actual_operands.GetInt(operand_index));
+  };
   unique_ptr<Code> cmds(new Code());
   cmds->WriteCmdId(CmdId::kLoadIntValue);
   int32_t value = INT32_C(7);
   cmds->WriteInt32(value);
   uint32_t main_cmds_code_size = cmds->GetPosition();
-  uint32_t global_vars_size = UINT32_C(0);
   DataStorage expected_operands;
   expected_operands.PushInt(value);
   DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
   DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  SimpleVM::FuncFrames expected_func_frames;
   TestExecute(move(cmds),
               main_cmds_code_size,
-              global_vars_size,
+              expected_func_frames,
               expected_global_vars,
+              global_vars_asserter,
               expected_local_vars,
-              expected_operands);
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
 }
 
 TEST_F(SimpleVMTest, LoadStringValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    ASSERT_EQ(expected_operands.GetString(operand_index),
+              actual_operands.GetString(operand_index));
+  };
   unique_ptr<Code> cmds(new Code());
   cmds->WriteCmdId(CmdId::kLoadStringValue);
   const string value = "abc";
   cmds->WriteString(value);
   uint32_t main_cmds_code_size = cmds->GetPosition();
-  uint32_t global_vars_size = UINT32_C(0);
   DataStorage expected_operands;
   expected_operands.PushString(StringValue(value));
   DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
   DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  SimpleVM::FuncFrames expected_func_frames;
   TestExecute(move(cmds),
               main_cmds_code_size,
-              global_vars_size,
+              expected_func_frames,
               expected_global_vars,
+              global_vars_asserter,
               expected_local_vars,
-              expected_operands);
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
 }
-*/
 }
 }
