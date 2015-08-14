@@ -715,7 +715,7 @@ void SimpleVM::Impl::VisitCreateGlobalIntVar(
 
 void SimpleVM::Impl::VisitCreateGlobalArrayVar(
     const CreateGlobalArrayVarCmd &cmd) {
-  global_vars_.CreateArray(cmd.GetVarIndex());
+  global_vars_.CreateArray<IntValue>(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalLongVar(

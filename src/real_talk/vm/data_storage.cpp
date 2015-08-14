@@ -41,9 +41,33 @@ static_assert(sizeof(BoolValue) <= static_cast<size_t>(DataTypeSize::kBool)
 static_assert(sizeof(StringValue) <= static_cast<size_t>(DataTypeSize::kString)
               * sizeof(DataStorage::Slot),
               "Unsupported 'string' size");
-static_assert(sizeof(ArrayValue) <= static_cast<size_t>(DataTypeSize::kArray)
+static_assert(sizeof(ArrayValue<IntValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
               * sizeof(DataStorage::Slot),
-              "Unsupported 'array' size");
+              "Unsupported 'int array' size");
+static_assert(sizeof(ArrayValue<LongValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'long array' size");
+static_assert(sizeof(ArrayValue<DoubleValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'double array' size");
+static_assert(sizeof(ArrayValue<CharValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'char array' size");
+static_assert(sizeof(ArrayValue<BoolValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'bool array' size");
+static_assert(sizeof(ArrayValue<IntValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'string array' size");
+
+DataStorage::MemorySizeOverflowError::MemorySizeOverflowError(const string &msg)
+    : runtime_error(msg) {}
 
 DataStorage::DataStorage(size_t size): capacity_(size * 2),
                                        data_(new Slot[capacity_]()),
@@ -75,9 +99,16 @@ void DataStorage::CreateString(size_t index) {
   new(GetSlot(index)) StringValue();
 }
 
-void DataStorage::CreateArray(size_t index) {
-  new(GetSlot(index)) ArrayValue();
+template<typename T> void DataStorage::CreateArray(size_t index) {
+  new(GetSlot(index)) ArrayValue<T>();
 }
+
+template void DataStorage::CreateArray<IntValue>(size_t index);
+template void DataStorage::CreateArray<LongValue>(size_t index);
+template void DataStorage::CreateArray<DoubleValue>(size_t index);
+template void DataStorage::CreateArray<CharValue>(size_t index);
+template void DataStorage::CreateArray<BoolValue>(size_t index);
+template void DataStorage::CreateArray<StringValue>(size_t index);
 
 IntValue DataStorage::GetInt(size_t index) const noexcept {
   return Get<IntValue>(index);
@@ -103,9 +134,23 @@ const StringValue &DataStorage::GetString(size_t index) const noexcept {
   return Get<StringValue>(index);
 }
 
-const ArrayValue &DataStorage::GetArray(size_t index) const noexcept {
-  return Get<ArrayValue>(index);
+template<typename T> const ArrayValue<T> &DataStorage::GetArray(size_t index)
+    const noexcept {
+  return Get< ArrayValue<T> >(index);
 }
+
+template const ArrayValue<IntValue> &DataStorage::GetArray<IntValue>(
+    size_t index) const noexcept;
+template const ArrayValue<LongValue> &DataStorage::GetArray<LongValue>(
+    size_t index) const noexcept;
+template const ArrayValue<DoubleValue> &DataStorage::GetArray<DoubleValue>(
+    size_t index) const noexcept;
+template const ArrayValue<CharValue> &DataStorage::GetArray<CharValue>(
+    size_t index) const noexcept;
+template const ArrayValue<BoolValue> &DataStorage::GetArray<BoolValue>(
+    size_t index) const noexcept;
+template const ArrayValue<StringValue> &DataStorage::GetArray<StringValue>(
+    size_t index) const noexcept;
 
 void DataStorage::PushInt(IntValue value) noexcept {
   const size_t size = static_cast<size_t>(DataTypeSize::kInt);
@@ -121,13 +166,33 @@ void DataStorage::PushString(StringValue value) {
   AfterPush(size);
 }
 
-template<typename T> const T &DataStorage::Get(size_t index) const noexcept {
-  return *(reinterpret_cast<T*>(GetSlot(index)));
-}
-
 size_t DataStorage::GetSize() const noexcept {
   assert(current_slot_ >= data_.get());
   return static_cast<size_t>(current_slot_ - data_.get());
+}
+
+bool operator==(const DataStorage &lhs, const DataStorage &rhs) {
+  return lhs.capacity_ == rhs.capacity_
+      && lhs.GetSize() == rhs.GetSize()
+      && memcmp(lhs.data_.get(), rhs.data_.get(), lhs.GetSize()) == 0;
+}
+
+ostream &operator<<(
+    ostream &stream, const DataStorage &storage) {
+  stream << "size=" << storage.GetSize() << "; capacity=" << storage.capacity_
+         << "; data=";
+
+  for (const DataStorage::Slot *data_it = storage.data_.get();
+       data_it != storage.data_.get() + storage.GetSize();
+       ++data_it) {
+    stream << hex << *data_it << ' ';
+  }
+
+  return stream;
+}
+
+template<typename T> const T &DataStorage::Get(size_t index) const noexcept {
+  return *(reinterpret_cast<T*>(GetSlot(index)));
 }
 
 void DataStorage::EnsureCapacity(size_t slots_count) {
@@ -170,28 +235,5 @@ inline DataStorage::Slot *DataStorage::GetSlot(size_t index) const noexcept {
 inline bool DataStorage::HasSlots(size_t count) const noexcept {
   return GetSize() >= count;
 }
-
-bool operator==(const DataStorage &lhs, const DataStorage &rhs) {
-  return lhs.capacity_ == rhs.capacity_
-      && lhs.GetSize() == rhs.GetSize()
-      && memcmp(lhs.data_.get(), rhs.data_.get(), lhs.GetSize()) == 0;
-}
-
-ostream &operator<<(
-    ostream &stream, const DataStorage &storage) {
-  stream << "size=" << storage.GetSize() << "; capacity=" << storage.capacity_
-         << "; data=";
-
-  for (const DataStorage::Slot *data_it = storage.data_.get();
-       data_it != storage.data_.get() + storage.GetSize();
-       ++data_it) {
-    stream << hex << *data_it << ' ';
-  }
-
-  return stream;
-}
-
-DataStorage::MemorySizeOverflowError::MemorySizeOverflowError(const string &msg)
-    : runtime_error(msg) {}
 }
 }

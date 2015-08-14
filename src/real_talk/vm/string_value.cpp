@@ -22,14 +22,25 @@ class StringValue::Storage {
 
 StringValue::StringValue(const string &str): storage_(new Storage(str)) {}
 
-StringValue::StringValue(const StringValue &value) {
+StringValue::StringValue(const StringValue &value) noexcept {
   storage_ = value.storage_;
   assert(storage_);
   ++(storage_->GetRefsCount());
 }
 
-StringValue::~StringValue() {
-  DecRefsCount();
+StringValue::~StringValue() {DecRefsCount();}
+
+bool operator==(const StringValue &lhs, const StringValue &rhs) noexcept {
+  assert(lhs.storage_);
+  assert(rhs.storage_);
+  return lhs.storage_ == rhs.storage_
+      || lhs.storage_->GetData() == rhs.storage_->GetData();
+}
+
+ostream &operator<<(ostream &stream, const StringValue &value) {
+  assert(value.storage_);
+  return stream << "refs_count=" << value.storage_->GetRefsCount()
+                << "; data=" << value.storage_->GetData();
 }
 
 void StringValue::DecRefsCount() noexcept {
@@ -39,18 +50,6 @@ void StringValue::DecRefsCount() noexcept {
     delete storage_;
     storage_ = nullptr;
   }
-}
-
-bool operator==(const StringValue &lhs, const StringValue &rhs) {
-  assert(lhs.storage_);
-  assert(rhs.storage_);
-  return lhs.storage_->GetData() == rhs.storage_->GetData();
-}
-
-ostream &operator<<(ostream &stream, const StringValue &value) {
-  assert(value.storage_);
-  return stream << "refs_count=" << value.storage_->GetRefsCount()
-                << "; data=" << value.storage_->GetData();
 }
 
 StringValue::Storage::Storage(const string &data)
