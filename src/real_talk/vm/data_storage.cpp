@@ -41,30 +41,9 @@ static_assert(sizeof(BoolValue) <= static_cast<size_t>(DataTypeSize::kBool)
 static_assert(sizeof(StringValue) <= static_cast<size_t>(DataTypeSize::kString)
               * sizeof(DataStorage::Slot),
               "Unsupported 'string' size");
-static_assert(sizeof(ArrayValue<IntValue>)
-              <= static_cast<size_t>(DataTypeSize::kArray)
+static_assert(sizeof(ArrayValue) <= static_cast<size_t>(DataTypeSize::kArray)
               * sizeof(DataStorage::Slot),
-              "Unsupported 'int array' size");
-static_assert(sizeof(ArrayValue<LongValue>)
-              <= static_cast<size_t>(DataTypeSize::kArray)
-              * sizeof(DataStorage::Slot),
-              "Unsupported 'long array' size");
-static_assert(sizeof(ArrayValue<DoubleValue>)
-              <= static_cast<size_t>(DataTypeSize::kArray)
-              * sizeof(DataStorage::Slot),
-              "Unsupported 'double array' size");
-static_assert(sizeof(ArrayValue<CharValue>)
-              <= static_cast<size_t>(DataTypeSize::kArray)
-              * sizeof(DataStorage::Slot),
-              "Unsupported 'char array' size");
-static_assert(sizeof(ArrayValue<BoolValue>)
-              <= static_cast<size_t>(DataTypeSize::kArray)
-              * sizeof(DataStorage::Slot),
-              "Unsupported 'bool array' size");
-static_assert(sizeof(ArrayValue<IntValue>)
-              <= static_cast<size_t>(DataTypeSize::kArray)
-              * sizeof(DataStorage::Slot),
-              "Unsupported 'string array' size");
+              "Unsupported 'array' size");
 
 DataStorage::MemorySizeOverflowError::MemorySizeOverflowError(const string &msg)
     : runtime_error(msg) {}
@@ -99,58 +78,44 @@ void DataStorage::CreateString(size_t index) {
   new(GetSlot(index)) StringValue();
 }
 
-template<typename T> void DataStorage::CreateArray(size_t index) {
-  new(GetSlot(index)) ArrayValue<T>();
+void DataStorage::CreateArray(size_t index) {
+  new(GetSlot(index)) ArrayValue();
 }
 
-template void DataStorage::CreateArray<IntValue>(size_t index);
-template void DataStorage::CreateArray<LongValue>(size_t index);
-template void DataStorage::CreateArray<DoubleValue>(size_t index);
-template void DataStorage::CreateArray<CharValue>(size_t index);
-template void DataStorage::CreateArray<BoolValue>(size_t index);
-template void DataStorage::CreateArray<StringValue>(size_t index);
+// template void DataStorage::CreateArray<IntValue>(size_t index);
+// template void DataStorage::CreateArray<LongValue>(size_t index);
+// template void DataStorage::CreateArray<DoubleValue>(size_t index);
+// template void DataStorage::CreateArray<CharValue>(size_t index);
+// template void DataStorage::CreateArray<BoolValue>(size_t index);
+// template void DataStorage::CreateArray<StringValue>(size_t index);
 
 IntValue DataStorage::GetInt(size_t index) const noexcept {
-  return Get<IntValue>(index);
+  return *Get<IntValue>(index);
 }
 
 LongValue DataStorage::GetLong(size_t index) const noexcept {
-  return Get<LongValue>(index);
+  return *Get<LongValue>(index);
 }
 
 DoubleValue DataStorage::GetDouble(size_t index) const noexcept {
-  return Get<DoubleValue>(index);
+  return *Get<DoubleValue>(index);
 }
 
 BoolValue DataStorage::GetBool(size_t index) const noexcept {
-  return Get<BoolValue>(index);
+  return *Get<BoolValue>(index);
 }
 
 CharValue DataStorage::GetChar(size_t index) const noexcept {
-  return Get<CharValue>(index);
+  return *Get<CharValue>(index);
 }
 
 const StringValue &DataStorage::GetString(size_t index) const noexcept {
-  return Get<StringValue>(index);
+  return *Get<StringValue>(index);
 }
 
-template<typename T> const ArrayValue<T> &DataStorage::GetArray(size_t index)
-    const noexcept {
-  return Get< ArrayValue<T> >(index);
+const ArrayValue &DataStorage::GetArray(size_t index) const noexcept {
+  return *Get<ArrayValue>(index);
 }
-
-template const ArrayValue<IntValue> &DataStorage::GetArray<IntValue>(
-    size_t index) const noexcept;
-template const ArrayValue<LongValue> &DataStorage::GetArray<LongValue>(
-    size_t index) const noexcept;
-template const ArrayValue<DoubleValue> &DataStorage::GetArray<DoubleValue>(
-    size_t index) const noexcept;
-template const ArrayValue<CharValue> &DataStorage::GetArray<CharValue>(
-    size_t index) const noexcept;
-template const ArrayValue<BoolValue> &DataStorage::GetArray<BoolValue>(
-    size_t index) const noexcept;
-template const ArrayValue<StringValue> &DataStorage::GetArray<StringValue>(
-    size_t index) const noexcept;
 
 void DataStorage::PushInt(IntValue value) noexcept {
   const size_t size = static_cast<size_t>(DataTypeSize::kInt);
@@ -191,8 +156,8 @@ ostream &operator<<(
   return stream;
 }
 
-template<typename T> const T &DataStorage::Get(size_t index) const noexcept {
-  return *(reinterpret_cast<T*>(GetSlot(index)));
+template<typename T> const T *DataStorage::Get(size_t index) const noexcept {
+  return reinterpret_cast<T*>(GetSlot(index));
 }
 
 void DataStorage::EnsureCapacity(size_t slots_count) {

@@ -35,15 +35,14 @@ class DataStorage {
   void CreateBool(size_t index) noexcept;
   void CreateChar(size_t index) noexcept;
   void CreateString(size_t index);
-  template<typename T> void CreateArray(size_t index);
+  void CreateArray(size_t index);
   IntValue GetInt(size_t index) const noexcept;
   LongValue GetLong(size_t index) const noexcept;
   DoubleValue GetDouble(size_t index) const noexcept;
   BoolValue GetBool(size_t index) const noexcept;
   CharValue GetChar(size_t index) const noexcept;
   const StringValue &GetString(size_t index) const noexcept;
-  template<typename T> const ArrayValue<T> &GetArray(size_t index)
-      const noexcept;
+  const ArrayValue &GetArray(size_t index) const noexcept;
   void PushInt(IntValue value) noexcept;
   void PushString(StringValue value);
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
@@ -57,7 +56,7 @@ class DataStorage {
   void AfterPop(size_t popped_slots_count) noexcept;
   Slot *GetSlot(size_t index) const noexcept;
   bool HasSlots(size_t count) const noexcept;
-  template<typename T> const T &Get(size_t index) const noexcept;
+  template<typename T> const T *Get(size_t index) const noexcept;
 
   size_t capacity_;
   std::unique_ptr<Slot[]> data_;

@@ -226,8 +226,11 @@ TEST_F(SimpleVMTest, CreateGlobalArrayVarCmd) {
   auto global_vars_asserter = [](const DataStorage &expected_global_vars,
                                  const DataStorage &actual_global_vars) {
     uint32_t var_index = UINT32_C(7);
-    ASSERT_EQ(expected_global_vars.GetArray<IntValue>(var_index),
-              actual_global_vars.GetArray<IntValue>(var_index));
+    const ArrayValue &expected_var = expected_global_vars.GetArray(var_index);
+    const ArrayValue &actual_var = actual_global_vars.GetArray(var_index);
+    uint8_t dimensions_count = UINT8_C(1);
+    ASSERT_TRUE(
+        actual_var.IsDeeplyEqual<IntValue>(expected_var, dimensions_count));
   };
   size_t global_vars_size = 77;
   DataStorage expected_global_vars(global_vars_size);
