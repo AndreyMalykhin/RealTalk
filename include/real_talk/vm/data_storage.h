@@ -35,7 +35,7 @@ class DataStorage {
   void CreateBool(size_t index) noexcept;
   void CreateChar(size_t index) noexcept;
   void CreateString(size_t index);
-  void CreateArray(size_t index);
+  template<typename T> void CreateArray(size_t index);
   IntValue GetInt(size_t index) const noexcept;
   LongValue GetLong(size_t index) const noexcept;
   DoubleValue GetDouble(size_t index) const noexcept;

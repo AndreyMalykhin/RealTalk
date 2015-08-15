@@ -78,16 +78,16 @@ void DataStorage::CreateString(size_t index) {
   new(GetSlot(index)) StringValue();
 }
 
-void DataStorage::CreateArray(size_t index) {
-  new(GetSlot(index)) ArrayValue();
+template<typename T> void DataStorage::CreateArray(size_t index) {
+  ArrayValue::CreateAt<T>(GetSlot(index));
 }
 
-// template void DataStorage::CreateArray<IntValue>(size_t index);
-// template void DataStorage::CreateArray<LongValue>(size_t index);
-// template void DataStorage::CreateArray<DoubleValue>(size_t index);
-// template void DataStorage::CreateArray<CharValue>(size_t index);
-// template void DataStorage::CreateArray<BoolValue>(size_t index);
-// template void DataStorage::CreateArray<StringValue>(size_t index);
+template void DataStorage::CreateArray<IntValue>(size_t index);
+template void DataStorage::CreateArray<LongValue>(size_t index);
+template void DataStorage::CreateArray<DoubleValue>(size_t index);
+template void DataStorage::CreateArray<CharValue>(size_t index);
+template void DataStorage::CreateArray<BoolValue>(size_t index);
+template void DataStorage::CreateArray<StringValue>(size_t index);
 
 IntValue DataStorage::GetInt(size_t index) const noexcept {
   return *Get<IntValue>(index);

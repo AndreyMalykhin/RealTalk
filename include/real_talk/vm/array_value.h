@@ -10,7 +10,8 @@ namespace vm {
 
 class ArrayValue {
  public:
-  template<typename T> static ArrayValue Create(size_t size);
+  template<typename T> static ArrayValue Create(size_t size = 0);
+  template<typename T> static void CreateAt(void *address, size_t size = 0);
   ArrayValue(const ArrayValue &value) noexcept;
   ArrayValue &operator=(const ArrayValue&) = delete;
   template<typename T> void Destruct(uint8_t dimensions_count) noexcept;
@@ -24,7 +25,7 @@ class ArrayValue {
   class Storage;
 
   explicit ArrayValue(Storage *storage) noexcept;
-  void DecRefsCount() noexcept;
+  template<typename T> void DecRefsCount(uint8_t dimensions_count) noexcept;
 
   Storage *storage_;
 };
