@@ -4,7 +4,7 @@
 
 #include <memory>
 #include <vector>
-#include "real_talk/vm/native_func.h"
+#include "real_talk/vm/native_func_value.h"
 
 namespace real_talk {
 namespace code {
@@ -21,7 +21,7 @@ class VMFactory {
   virtual ~VMFactory() {}
   virtual std::unique_ptr<VM> Create(
       real_talk::code::Exe *exe,
-      const std::vector<NativeFunc> &native_funcs) const = 0;
+      const std::vector<NativeFuncValue> &native_funcs) const = 0;
 };
 }
 }

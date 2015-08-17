@@ -22,10 +22,19 @@ class StringValue::Storage {
 
 StringValue::StringValue(const string &str): storage_(new Storage(str)) {}
 
-StringValue::StringValue(const StringValue &value) noexcept {
-  storage_ = value.storage_;
+StringValue::StringValue(const StringValue &value) noexcept
+    : storage_(value.storage_) {
   assert(storage_);
   ++(storage_->GetRefsCount());
+}
+
+void StringValue::operator=(const StringValue &value) noexcept {
+  if (this != &value) {
+    assert(value.storage_);
+    DecRefsCount();
+    storage_ = value.storage_;
+    ++(storage_->GetRefsCount());
+  }
 }
 
 StringValue::~StringValue() {DecRefsCount();}

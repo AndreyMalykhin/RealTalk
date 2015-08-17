@@ -88,13 +88,13 @@ class ExeReaderMock: public ExeReader {
 
 class NativeFuncStorageMock: public NativeFuncStorage {
  public:
-  MOCK_CONST_METHOD0(GetAll, const unordered_map<string, NativeFunc>&());
+  MOCK_CONST_METHOD0(GetAll, const unordered_map<string, NativeFuncValue>&());
 };
 
 class NativeFuncLinkerMock: public NativeFuncLinker {
  public:
-  MOCK_CONST_METHOD3(Link, void(
-      const unordered_map<string, NativeFunc>&, vector<NativeFunc>*, Exe*));
+  MOCK_CONST_METHOD3(Link, void(const unordered_map<string, NativeFuncValue>&,
+                                vector<NativeFuncValue>*, Exe*));
 };
 
 class VMMock: public VM {
@@ -105,11 +105,12 @@ class VMMock: public VM {
 class VMFactoryMock: public VMFactory {
  public:
   virtual unique_ptr<VM> Create(
-      Exe *exe, const vector<NativeFunc> &used_native_funcs) const override {
+      Exe *exe,
+      const vector<NativeFuncValue> &used_native_funcs) const override {
     return unique_ptr<VM>(Create_(exe, used_native_funcs));
   }
 
-  MOCK_CONST_METHOD2(Create_, VM*(Exe*, const vector<NativeFunc>&));
+  MOCK_CONST_METHOD2(Create_, VM*(Exe*, const vector<NativeFuncValue>&));
 };
 }
 
@@ -145,8 +146,8 @@ TEST_F(VMAppTest, Execute) {
                       native_func_defs,
                       native_func_refs);
   auto *exe_stream = new stringstream();
-  vector<NativeFunc> used_native_funcs;
-  unordered_map<string, NativeFunc> available_native_funcs;
+  vector<NativeFuncValue> used_native_funcs;
+  unordered_map<string, NativeFuncValue> available_native_funcs;
   EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))
       .Times(1)
       .WillOnce(SetArgPointee<3>(VMCmd::kExecute));
@@ -244,7 +245,7 @@ TEST_F(VMAppTest, MissingFuncErrorWhileLinkingNativeFuncs) {
                       native_func_defs,
                       native_func_refs);
   auto *exe_stream = new stringstream();
-  unordered_map<string, NativeFunc> available_native_funcs;
+  unordered_map<string, NativeFuncValue> available_native_funcs;
   NativeFuncLinker::MissingFuncError error("func", "msg");
   string msg = "Function \"func\" is not exists";
   EXPECT_CALL(config_parser, Parse(argc, argv, &config, NotNull()))

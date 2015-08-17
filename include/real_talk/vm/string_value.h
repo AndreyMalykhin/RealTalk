@@ -12,7 +12,7 @@ class StringValue {
  public:
   explicit StringValue(const std::string& str = "");
   StringValue(const StringValue &value) noexcept;
-  StringValue &operator=(const StringValue&) = delete;
+  void operator=(const StringValue&) noexcept;
   ~StringValue();
   friend bool operator==(const StringValue &lhs, const StringValue &rhs)
       noexcept;
@@ -21,6 +21,7 @@ class StringValue {
 
  private:
   class Storage;
+
   void DecRefsCount() noexcept;
 
   Storage *storage_;

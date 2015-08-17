@@ -41,9 +41,30 @@ static_assert(sizeof(BoolValue) <= static_cast<size_t>(DataTypeSize::kBool)
 static_assert(sizeof(StringValue) <= static_cast<size_t>(DataTypeSize::kString)
               * sizeof(DataStorage::Slot),
               "Unsupported 'string' size");
-static_assert(sizeof(ArrayValue) <= static_cast<size_t>(DataTypeSize::kArray)
+static_assert(sizeof(ArrayValue<IntValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
               * sizeof(DataStorage::Slot),
-              "Unsupported 'array' size");
+              "Unsupported 'int array' size");
+static_assert(sizeof(ArrayValue<LongValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'long array' size");
+static_assert(sizeof(ArrayValue<DoubleValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'double array' size");
+static_assert(sizeof(ArrayValue<CharValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'char array' size");
+static_assert(sizeof(ArrayValue<BoolValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'bool array' size");
+static_assert(sizeof(ArrayValue<StringValue>)
+              <= static_cast<size_t>(DataTypeSize::kArray)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'string array' size");
 
 DataStorage::MemorySizeOverflowError::MemorySizeOverflowError(const string &msg)
     : runtime_error(msg) {}
@@ -79,7 +100,7 @@ void DataStorage::CreateString(size_t index) {
 }
 
 template<typename T> void DataStorage::CreateArray(size_t index) {
-  ArrayValue::CreateAt<T>(GetSlot(index));
+  new(GetSlot(index)) ArrayValue<T>();
 }
 
 template void DataStorage::CreateArray<IntValue>(size_t index);
@@ -109,26 +130,70 @@ CharValue DataStorage::GetChar(size_t index) const noexcept {
   return *Get<CharValue>(index);
 }
 
+FuncValue DataStorage::GetFunc(size_t index) const noexcept {
+  return *Get<FuncValue>(index);
+}
+
+NativeFuncValue DataStorage::GetNativeFunc(size_t index) const noexcept {
+  return *Get<NativeFuncValue>(index);
+}
+
 const StringValue &DataStorage::GetString(size_t index) const noexcept {
   return *Get<StringValue>(index);
 }
 
-const ArrayValue &DataStorage::GetArray(size_t index) const noexcept {
-  return *Get<ArrayValue>(index);
+template<typename T> const ArrayValue<T> &DataStorage::GetArray(size_t index)
+    const noexcept {
+  return *Get< ArrayValue<T> >(index);
 }
+
+template const ArrayValue<IntValue> &DataStorage::GetArray(size_t index)
+    const noexcept;
+template const ArrayValue<LongValue> &DataStorage::GetArray(size_t index)
+    const noexcept;
+template const ArrayValue<DoubleValue> &DataStorage::GetArray(size_t index)
+    const noexcept;
+template const ArrayValue<CharValue> &DataStorage::GetArray(size_t index)
+    const noexcept;
+template const ArrayValue<BoolValue> &DataStorage::GetArray(size_t index)
+    const noexcept;
+template const ArrayValue<StringValue> &DataStorage::GetArray(size_t index)
+    const noexcept;
 
 void DataStorage::PushInt(IntValue value) noexcept {
-  const size_t size = static_cast<size_t>(DataTypeSize::kInt);
-  EnsureCapacity(size);
-  *(reinterpret_cast<IntValue*>(current_slot_)) = value;
-  AfterPush(size);
+  PushPrimitive<IntValue, DataTypeSize::kInt>(value);
 }
 
-void DataStorage::PushString(StringValue value) {
-  const size_t size = static_cast<size_t>(DataTypeSize::kString);
-  EnsureCapacity(size);
-  new(current_slot_) StringValue(value);
-  AfterPush(size);
+void DataStorage::PushLong(LongValue value) noexcept {
+  PushPrimitive<LongValue, DataTypeSize::kLong>(value);
+}
+
+void DataStorage::PushDouble(DoubleValue value) noexcept {
+  PushPrimitive<DoubleValue, DataTypeSize::kDouble>(value);
+}
+
+void DataStorage::PushChar(CharValue value) noexcept {
+  PushPrimitive<CharValue, DataTypeSize::kChar>(value);
+}
+
+void DataStorage::PushBool(BoolValue value) noexcept {
+  PushPrimitive<BoolValue, DataTypeSize::kBool>(value);
+}
+
+void DataStorage::PushFunc(FuncValue value) noexcept {
+  PushPrimitive<FuncValue, DataTypeSize::kFunc>(value);
+}
+
+void DataStorage::PushNativeFunc(NativeFuncValue value) noexcept {
+  PushPrimitive<NativeFuncValue, DataTypeSize::kNativeFunc>(value);
+}
+
+void DataStorage::PushString(const StringValue &value) {
+  PushNonPrimitive<StringValue, DataTypeSize::kString>(value);
+}
+
+template<typename T> void DataStorage::PushArray(const ArrayValue<T> &value) {
+  PushNonPrimitive<ArrayValue<T>, DataTypeSize::kArray>(value);
 }
 
 size_t DataStorage::GetSize() const noexcept {
@@ -156,6 +221,22 @@ ostream &operator<<(
   return stream;
 }
 
+template<typename TType, DataTypeSize TSize> void DataStorage::PushPrimitive(
+    TType value) noexcept {
+  const size_t size = static_cast<size_t>(TSize);
+  EnsureCapacity(size);
+  *(reinterpret_cast<TType*>(current_slot_)) = value;
+  AfterPush(size);
+}
+
+template<typename TType, DataTypeSize TSize> void DataStorage::PushNonPrimitive(
+    const TType &value) {
+  const size_t size = static_cast<size_t>(TSize);
+  EnsureCapacity(size);
+  new(current_slot_) TType(value);
+  AfterPush(size);
+}
+
 template<typename T> const T *DataStorage::Get(size_t index) const noexcept {
   return reinterpret_cast<T*>(GetSlot(index));
 }
@@ -168,16 +249,16 @@ void DataStorage::EnsureCapacity(size_t slots_count) {
   const size_t size = GetSize();
   const size_t new_capacity = (size + slots_count) * 2;
 
-  if (new_capacity <= capacity_) {
+  if (new_capacity >= capacity_) {
+    unique_ptr<Slot[]> new_data_(new Slot[new_capacity]());
+    memcpy(new_data_.get(), data_.get(), capacity_);
+    capacity_ = new_capacity;
+    data_ = move(new_data_);
+    current_slot_ = data_.get() + size;
+    assert(capacity_ >= size + slots_count);
+  } else {
     throw MemorySizeOverflowError("Memory size exceeds max value");
   }
-
-  unique_ptr<Slot[]> new_data_(new Slot[new_capacity]());
-  memcpy(new_data_.get(), data_.get(), capacity_);
-  capacity_ = new_capacity;
-  data_ = move(new_data_);
-  current_slot_ = data_.get() + size;
-  assert(capacity_ >= size + slots_count);
 }
 
 inline bool DataStorage::HasEnoughCapacity(size_t slots_count) const noexcept {

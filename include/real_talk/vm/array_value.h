@@ -8,24 +8,28 @@
 namespace real_talk {
 namespace vm {
 
-class ArrayValue {
+template<typename T> class ArrayValue;
+template<typename T> bool operator==(
+    const ArrayValue<T> &lhs, const ArrayValue<T> &rhs) noexcept;
+
+template<typename T> class ArrayValue {
  public:
-  template<typename T> static ArrayValue Create(size_t size = 0);
-  template<typename T> static void CreateAt(void *address, size_t size = 0);
-  ArrayValue(const ArrayValue &value) noexcept;
-  ArrayValue &operator=(const ArrayValue&) = delete;
-  template<typename T> void Destruct(uint8_t dimensions_count) noexcept;
-  template<typename T> bool IsDeeplyEqual(
-      const ArrayValue &rhs, uint8_t dimensions_count) const noexcept;
-  template<typename T> void Print(
-      std::ostream &stream, uint8_t dimensions_count) const;
-  friend bool operator==(const ArrayValue &lhs, const ArrayValue &rhs) noexcept;
+  explicit ArrayValue(size_t size = 0);
+  ArrayValue(const ArrayValue<T> &value) noexcept;
+  ArrayValue<T> &operator=(const ArrayValue<T>&) = delete;
+  void Set(const ArrayValue<T> &value, uint8_t dimensions_count) noexcept;
+  void Destroy(uint8_t dimensions_count) noexcept;
+  bool IsDeeplyEqual(
+      const ArrayValue<T> &rhs, uint8_t dimensions_count) const noexcept;
+  void Print(std::ostream &stream, uint8_t dimensions_count) const;
+  friend bool operator== <>(const ArrayValue<T> &lhs, const ArrayValue<T> &rhs)
+      noexcept;
 
  private:
   class Storage;
 
-  explicit ArrayValue(Storage *storage) noexcept;
-  template<typename T> void DecRefsCount(uint8_t dimensions_count) noexcept;
+  static Storage *CreateStorage(size_t size);
+  void DecRefsCount(uint8_t dimensions_count) noexcept;
 
   Storage *storage_;
 };

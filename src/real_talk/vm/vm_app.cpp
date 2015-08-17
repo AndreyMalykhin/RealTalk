@@ -82,9 +82,9 @@ void VMApp::Run(int argc, const char *argv[]) {
     return;
   }
 
-  const unordered_map<string, NativeFunc> &available_native_funcs =
+  const unordered_map<string, NativeFuncValue> &available_native_funcs =
       native_func_storage_.GetAll();
-  vector<NativeFunc> used_native_funcs;
+  vector<NativeFuncValue> used_native_funcs;
 
   try {
     native_func_linker_.Link(

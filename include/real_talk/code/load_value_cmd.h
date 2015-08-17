@@ -38,6 +38,7 @@ class LoadLongValueCmd: public Cmd {
  public:
   inline explicit LoadLongValueCmd(int64_t value) noexcept: value_(value) {}
   inline void SetValue(int64_t value) noexcept {value_ = value;}
+  inline int64_t GetValue() const noexcept {return value_;}
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLongValue(*this);
@@ -60,6 +61,7 @@ class LoadBoolValueCmd: public Cmd {
  public:
   inline explicit LoadBoolValueCmd(bool value) noexcept: value_(value) {}
   inline void SetValue(bool value) noexcept {value_ = value;}
+  inline bool GetValue() const noexcept {return value_;}
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadBoolValue(*this);
@@ -82,6 +84,7 @@ class LoadCharValueCmd: public Cmd {
  public:
   inline explicit LoadCharValueCmd(char value) noexcept: value_(value) {}
   inline void SetValue(char value) noexcept {value_ = value;}
+  inline char GetValue() const noexcept {return value_;}
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadCharValue(*this);
@@ -127,6 +130,7 @@ class LoadDoubleValueCmd: public Cmd {
  public:
   inline explicit LoadDoubleValueCmd(double value) noexcept: value_(value) {}
   inline void SetValue(double value) noexcept {value_ = value;}
+  inline double GetValue() const noexcept {return value_;}
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadDoubleValue(*this);

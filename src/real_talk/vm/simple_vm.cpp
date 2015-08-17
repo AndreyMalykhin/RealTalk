@@ -228,7 +228,7 @@ namespace vm {
 
 class SimpleVM::Impl: private CmdVisitor {
  public:
-  Impl(Exe *exe, const vector<NativeFunc> &native_funcs);
+  Impl(Exe *exe, const vector<NativeFuncValue> &native_funcs);
   void Execute();
   const DataStorage &GetGlobalVars() const;
   const DataStorage &GetLocalVars() const;
@@ -654,7 +654,7 @@ class SimpleVM::Impl: private CmdVisitor {
       const OrCmd &cmd) override;
 
   Exe *exe_;
-  const vector<NativeFunc> &native_funcs_;
+  const vector<NativeFuncValue> &native_funcs_;
   Code &cmds_code_;
   CmdReader cmd_reader_;
   DataStorage global_vars_;
@@ -663,7 +663,7 @@ class SimpleVM::Impl: private CmdVisitor {
   FuncFrames func_frames_;
 };
 
-SimpleVM::Impl::Impl(Exe *exe, const vector<NativeFunc> &native_funcs)
+SimpleVM::Impl::Impl(Exe *exe, const vector<NativeFuncValue> &native_funcs)
     : exe_(exe),
       native_funcs_(native_funcs),
       cmds_code_(exe->GetCmdsCode()),
@@ -681,15 +681,11 @@ void SimpleVM::Impl::Execute() {
   const FuncFrame main_func_frame(local_vars_start_index, return_address);
   func_frames_.push_back(main_func_frame);
 
-  while (true) {
-    const bool is_in_main_func = func_frames_.size() == 1;
-
-    if (cmds_code_.GetPosition() == main_cmds_end_position && is_in_main_func) {
-      break;
-    }
-
+  while (cmds_code_.GetPosition() != main_cmds_end_position) {
     cmd_reader_.GetNextCmd().Accept(this);
   }
+
+  assert(func_frames_.size() == 1);
 }
 
 const DataStorage &SimpleVM::Impl::GetGlobalVars() const {
@@ -842,13 +838,19 @@ void SimpleVM::Impl::VisitLoadIntValue(
 }
 
 void SimpleVM::Impl::VisitLoadLongValue(
-    const LoadLongValueCmd&) {assert(false);}
+    const LoadLongValueCmd &cmd) {
+  operands_.PushLong(cmd.GetValue());
+}
 
 void SimpleVM::Impl::VisitLoadBoolValue(
-    const LoadBoolValueCmd&) {assert(false);}
+    const LoadBoolValueCmd &cmd) {
+  operands_.PushBool(cmd.GetValue());
+}
 
 void SimpleVM::Impl::VisitLoadCharValue(
-    const LoadCharValueCmd&) {assert(false);}
+    const LoadCharValueCmd &cmd) {
+  operands_.PushChar(cmd.GetValue());
+}
 
 void SimpleVM::Impl::VisitLoadStringValue(
     const LoadStringValueCmd &cmd) {
@@ -856,13 +858,20 @@ void SimpleVM::Impl::VisitLoadStringValue(
 }
 
 void SimpleVM::Impl::VisitLoadDoubleValue(
-    const LoadDoubleValueCmd&) {assert(false);}
+    const LoadDoubleValueCmd &cmd) {
+  operands_.PushDouble(cmd.GetValue());
+}
 
 void SimpleVM::Impl::VisitLoadFuncValue(
-    const LoadFuncValueCmd&) {assert(false);}
+    const LoadFuncValueCmd &cmd) {
+  operands_.PushFunc(cmd.GetAddress());
+}
 
 void SimpleVM::Impl::VisitLoadNativeFuncValue(
-    const LoadNativeFuncValueCmd&) {assert(false);}
+    const LoadNativeFuncValueCmd &cmd) {
+  assert(cmd.GetFuncIndex() < native_funcs_.size());
+  operands_.PushNativeFunc(native_funcs_[cmd.GetFuncIndex()]);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitGlobalBoolVar(
     const CreateAndInitGlobalBoolVarCmd&) {assert(false);}
@@ -1350,7 +1359,7 @@ void SimpleVM::Impl::VisitAnd(
 void SimpleVM::Impl::VisitOr(
     const OrCmd&) {assert(false);}
 
-SimpleVM::SimpleVM(Exe *exe, const vector<NativeFunc> &native_funcs)
+SimpleVM::SimpleVM(Exe *exe, const vector<NativeFuncValue> &native_funcs)
     : impl_(new Impl(exe, native_funcs)) {}
 
 SimpleVM::~SimpleVM() {}

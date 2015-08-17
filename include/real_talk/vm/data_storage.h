@@ -13,6 +13,8 @@
 #include "real_talk/vm/char_value.h"
 #include "real_talk/vm/string_value.h"
 #include "real_talk/vm/array_value.h"
+#include "real_talk/vm/func_value.h"
+#include "real_talk/vm/native_func_value.h"
 
 namespace real_talk {
 namespace vm {
@@ -41,10 +43,20 @@ class DataStorage {
   DoubleValue GetDouble(size_t index) const noexcept;
   BoolValue GetBool(size_t index) const noexcept;
   CharValue GetChar(size_t index) const noexcept;
+  FuncValue GetFunc(size_t index) const noexcept;
+  NativeFuncValue GetNativeFunc(size_t index) const noexcept;
   const StringValue &GetString(size_t index) const noexcept;
-  const ArrayValue &GetArray(size_t index) const noexcept;
+  template<typename T> const ArrayValue<T> &GetArray(size_t index)
+      const noexcept;
   void PushInt(IntValue value) noexcept;
-  void PushString(StringValue value);
+  void PushLong(LongValue value) noexcept;
+  void PushDouble(DoubleValue value) noexcept;
+  void PushChar(CharValue value) noexcept;
+  void PushBool(BoolValue value) noexcept;
+  void PushFunc(FuncValue value) noexcept;
+  void PushNativeFunc(NativeFuncValue value) noexcept;
+  void PushString(const StringValue &value);
+  template<typename T> void PushArray(const ArrayValue<T> &value);
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
   friend std::ostream &operator<<(
       std::ostream &stream, const DataStorage &storage);
@@ -56,6 +68,10 @@ class DataStorage {
   void AfterPop(size_t popped_slots_count) noexcept;
   Slot *GetSlot(size_t index) const noexcept;
   bool HasSlots(size_t count) const noexcept;
+  template<typename TType, real_talk::code::DataTypeSize TSize>
+  void PushPrimitive(TType value) noexcept;
+  template<typename TType, real_talk::code::DataTypeSize TSize>
+  void PushNonPrimitive(const TType &value);
   template<typename T> const T *Get(size_t index) const noexcept;
 
   size_t capacity_;

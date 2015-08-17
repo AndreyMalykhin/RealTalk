@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "real_talk/vm/native_func.h"
+#include "real_talk/vm/native_func_value.h"
 
 namespace real_talk {
 namespace code {
@@ -29,8 +29,8 @@ class NativeFuncLinker {
 
   virtual ~NativeFuncLinker() {}
   virtual void Link(
-      const std::unordered_map<std::string, NativeFunc> &available_funcs,
-      std::vector<NativeFunc> *output_used_funcs,
+      const std::unordered_map<std::string, NativeFuncValue> &available_funcs,
+      std::vector<NativeFuncValue> *output_used_funcs,
       real_talk::code::Exe *exe) const = 0;
 };
 }

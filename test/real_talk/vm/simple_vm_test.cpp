@@ -31,13 +31,14 @@ class SimpleVMTest: public Test {
   void TestExecute(
       unique_ptr<Code> cmds,
       uint32_t main_cmds_code_size,
-      const SimpleVM::FuncFrames &expected_func_frames = SimpleVM::FuncFrames(),
-      const DataStorage &expected_global_vars = DataStorage(),
+      const SimpleVM::FuncFrames &expected_func_frames = {},
+      const DataStorage &expected_global_vars = {},
       DataStorageAsserter global_vars_asserter = nullptr,
-      const DataStorage &expected_local_vars = DataStorage(),
+      const DataStorage &expected_local_vars = {},
       DataStorageAsserter local_vars_asserter = nullptr,
-      const DataStorage &expected_operands = DataStorage(),
-      DataStorageAsserter operands_asserter = nullptr) {
+      const DataStorage &expected_operands = {},
+      DataStorageAsserter operands_asserter = nullptr,
+      const vector<NativeFuncValue> &native_funcs = {}) {
     cmds->SetPosition(UINT32_C(0));
     uint32_t exe_version = UINT32_C(1);
     vector<string> native_func_defs;
@@ -59,7 +60,6 @@ class SimpleVMTest: public Test {
                                     expected_func_frames.cbegin(),
                                     expected_func_frames.cend());
     uint32_t expected_cmds_position = main_cmds_code_size;
-    vector<NativeFunc> native_funcs;
     SimpleVM vm(&exe, native_funcs);
     vm.Execute();
     uint32_t actual_cmds_position = exe.GetCmdsCode().GetPosition();
@@ -101,7 +101,8 @@ class SimpleVMTest: public Test {
 
   void TestLoadValueCmd(unique_ptr<Code> cmds,
                         const DataStorage &expected_operands,
-                        DataStorageAsserter operands_asserter) {
+                        DataStorageAsserter operands_asserter,
+                        vector<NativeFuncValue> native_funcs = {}) {
     uint32_t main_cmds_code_size = cmds->GetPosition();
     DataStorage expected_global_vars;
     DataStorageAsserter global_vars_asserter = nullptr;
@@ -116,7 +117,8 @@ class SimpleVMTest: public Test {
                 expected_local_vars,
                 local_vars_asserter,
                 expected_operands,
-                operands_asserter);
+                operands_asserter,
+                native_funcs);
   }
 };
 
@@ -158,8 +160,8 @@ TEST_F(SimpleVMTest, CreateGlobalDoubleVarCmd) {
   auto global_vars_asserter = [](const DataStorage &expected_global_vars,
                                  const DataStorage &actual_global_vars) {
     uint32_t var_index = UINT32_C(7);
-    ASSERT_EQ(expected_global_vars.GetDouble(var_index),
-              actual_global_vars.GetDouble(var_index));
+    ASSERT_DOUBLE_EQ(expected_global_vars.GetDouble(var_index),
+                     actual_global_vars.GetDouble(var_index));
   };
   size_t global_vars_size = 77;
   DataStorage expected_global_vars(global_vars_size);
@@ -226,11 +228,12 @@ TEST_F(SimpleVMTest, CreateGlobalArrayVarCmd) {
   auto global_vars_asserter = [](const DataStorage &expected_global_vars,
                                  const DataStorage &actual_global_vars) {
     uint32_t var_index = UINT32_C(7);
-    const ArrayValue &expected_var = expected_global_vars.GetArray(var_index);
-    const ArrayValue &actual_var = actual_global_vars.GetArray(var_index);
+    const ArrayValue<IntValue> &expected_var =
+      expected_global_vars.GetArray<IntValue>(var_index);
+    const ArrayValue<IntValue> &actual_var =
+      actual_global_vars.GetArray<IntValue>(var_index);
     uint8_t dimensions_count = UINT8_C(1);
-    ASSERT_TRUE(
-        actual_var.IsDeeplyEqual<IntValue>(expected_var, dimensions_count));
+    ASSERT_TRUE(actual_var.IsDeeplyEqual(expected_var, dimensions_count));
   };
   size_t global_vars_size = 77;
   DataStorage expected_global_vars(global_vars_size);
@@ -258,6 +261,70 @@ TEST_F(SimpleVMTest, LoadIntValueCmd) {
   TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
 }
 
+TEST_F(SimpleVMTest, LoadLongValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    ASSERT_EQ(expected_operands.GetLong(operand_index),
+              actual_operands.GetLong(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadLongValue);
+  int64_t value = INT64_C(7);
+  cmds->WriteInt64(value);
+  DataStorage expected_operands;
+  expected_operands.PushLong(value);
+  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+}
+
+TEST_F(SimpleVMTest, LoadDoubleValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    ASSERT_DOUBLE_EQ(expected_operands.GetDouble(operand_index),
+                     actual_operands.GetDouble(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadDoubleValue);
+  double value = 7.7;
+  cmds->WriteDouble(value);
+  DataStorage expected_operands;
+  expected_operands.PushDouble(value);
+  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+}
+
+TEST_F(SimpleVMTest, LoadCharValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    ASSERT_EQ(expected_operands.GetChar(operand_index),
+              actual_operands.GetChar(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadCharValue);
+  char value = 'a';
+  cmds->WriteChar(value);
+  DataStorage expected_operands;
+  expected_operands.PushChar(value);
+  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+}
+
+TEST_F(SimpleVMTest, LoadBoolValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    ASSERT_EQ(expected_operands.GetBool(operand_index),
+              actual_operands.GetBool(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadBoolValue);
+  bool value = true;
+  cmds->WriteBool(value);
+  DataStorage expected_operands;
+  expected_operands.PushBool(value);
+  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+}
+
 TEST_F(SimpleVMTest, LoadStringValueCmd) {
   auto operands_asserter = [](const DataStorage &expected_operands,
                                 const DataStorage &actual_operands) {
@@ -272,6 +339,42 @@ TEST_F(SimpleVMTest, LoadStringValueCmd) {
   DataStorage expected_operands;
   expected_operands.PushString(StringValue(value));
   TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+}
+
+TEST_F(SimpleVMTest, LoadFuncValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    ASSERT_EQ(expected_operands.GetFunc(operand_index),
+              actual_operands.GetFunc(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadFuncValue);
+  uint32_t func_address = UINT32_C(7);
+  cmds->WriteUint32(func_address);
+  DataStorage expected_operands;
+  expected_operands.PushFunc(func_address);
+  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+}
+
+TEST_F(SimpleVMTest, LoadNativeFuncValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    ASSERT_EQ(expected_operands.GetNativeFunc(operand_index),
+              actual_operands.GetNativeFunc(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadNativeFuncValue);
+  uint32_t func_index = UINT32_C(5);
+  cmds->WriteUint32(func_index);
+  DataStorage expected_operands;
+  NativeFuncValue value = []() {};
+  expected_operands.PushNativeFunc(value);
+  vector<NativeFuncValue> native_funcs(7);
+  native_funcs[func_index] = value;
+  TestLoadValueCmd(
+      move(cmds), expected_operands, operands_asserter, native_funcs);
 }
 }
 }

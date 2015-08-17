@@ -4,7 +4,7 @@
 
 #include <memory>
 #include <vector>
-#include "real_talk/vm/native_func.h"
+#include "real_talk/vm/native_func_value.h"
 #include "real_talk/vm/func_frame.h"
 #include "real_talk/vm/vm.h"
 
@@ -23,7 +23,7 @@ class SimpleVM: public VM {
   typedef std::vector<FuncFrame> FuncFrames;
 
   SimpleVM(real_talk::code::Exe *exe,
-           const std::vector<NativeFunc> &native_funcs);
+           const std::vector<NativeFuncValue> &native_funcs);
   ~SimpleVM();
   virtual void Execute() override;
   const DataStorage &GetGlobalVars() const;
