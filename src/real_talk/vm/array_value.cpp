@@ -21,8 +21,10 @@ template<typename T> class ArrayValue<T>::Storage {
  public:
   Storage(unique_ptr<unsigned char> data, size_t size) noexcept;
   size_t &GetRefsCount() noexcept;
-  template<typename V> const V *GetData() const noexcept;
-  template<typename V> V *GetData() noexcept;
+  const T *GetItems() const noexcept;
+  T *GetItems() noexcept;
+  const ArrayValue<T> *GetArrayItems() const noexcept;
+  ArrayValue<T> *GetArrayItems() noexcept;
   size_t GetSize() const noexcept;
 
  private:
@@ -31,6 +33,7 @@ template<typename T> class ArrayValue<T>::Storage {
   unique_ptr<unsigned char> data_;
 };
 
+// TODO segfault
 template<typename T> ArrayValue<T>::ArrayValue(size_t size)
     : storage_(CreateStorage(size)) {}
 
@@ -38,6 +41,30 @@ template<typename T> ArrayValue<T>::ArrayValue(const ArrayValue<T> &value)
     noexcept: storage_(value.storage_) {
   assert(storage_);
   ++(storage_->GetRefsCount());
+}
+
+template<typename T> T &ArrayValue<T>::GetItem(size_t index) noexcept {
+  return const_cast<T&>(static_cast<const ArrayValue*>(this)->GetItem(index));
+}
+
+template<typename T> const T &ArrayValue<T>::GetItem(size_t index)
+    const noexcept {
+  assert(storage_);
+  assert(index < storage_->GetSize());
+  return storage_->GetItems()[index];
+}
+
+template<typename T> ArrayValue<T> &ArrayValue<T>::GetArrayItem(size_t index)
+    noexcept {
+  return const_cast<ArrayValue<T>&>(
+      static_cast<const ArrayValue*>(this)->GetArrayItem(index));
+}
+
+template<typename T> const ArrayValue<T> &ArrayValue<T>::GetArrayItem(
+    size_t index) const noexcept {
+  assert(storage_);
+  assert(index < storage_->GetSize());
+  return storage_->GetArrayItems()[index];
 }
 
 template<typename T> void ArrayValue<T>::Set(
@@ -65,18 +92,16 @@ template<typename T> bool ArrayValue<T>::IsDeeplyEqual(
   }
 
   if (dimensions_count == 1) {
-    return equal(storage_->template GetData<T>(),
-                 storage_->template GetData<T>() + storage_->GetSize(),
-                 rhs.storage_->template GetData<T>());
+    return equal(storage_->GetItems(),
+                 storage_->GetItems() + storage_->GetSize(),
+                 rhs.storage_->GetItems());
   }
 
   const ArrayValue<T> *items_end_it =
-      storage_->template GetData< ArrayValue<T> >() + storage_->GetSize();
-  const ArrayValue<T> *rhs_items_it =
-      rhs.storage_->template GetData< ArrayValue<T> >();
+      storage_->GetArrayItems() + storage_->GetSize();
+  const ArrayValue<T> *rhs_items_it = rhs.storage_->GetArrayItems();
 
-  for (const ArrayValue<T> *items_it =
-           storage_->template GetData< ArrayValue<T> >();
+  for (const ArrayValue<T> *items_it = storage_->GetArrayItems();
        items_it != items_end_it;
        ++items_it, ++rhs_items_it) {
     if (!items_it->IsDeeplyEqual(*rhs_items_it, dimensions_count - 1)) {
@@ -101,20 +126,18 @@ template<typename T> void ArrayValue<T>::Print(
          << "; size=" << storage_->GetSize() << "; data=[";
 
   if (dimensions_count == 1) {
-    const T *items_end_it =
-        storage_->template GetData<T>() + storage_->GetSize();
+    const T *items_end_it = storage_->GetItems() + storage_->GetSize();
 
-    for (const T *items_it = storage_->template GetData<T>();
+    for (const T *items_it = storage_->GetItems();
          items_it != items_end_it;
          ++items_it) {
       stream << *items_it << ", ";
     }
   } else {
     const ArrayValue<T> *items_end_it =
-        storage_->template GetData< ArrayValue<T> >() + storage_->GetSize();
+        storage_->GetArrayItems() + storage_->GetSize();
 
-    for (const ArrayValue<T> *items_it =
-             storage_->template GetData< ArrayValue<T> >();
+    for (const ArrayValue<T> *items_it = storage_->GetArrayItems();
          items_it != items_end_it;
          ++items_it) {
       items_it->Print(stream, dimensions_count - 1);
@@ -137,20 +160,18 @@ template<typename T> void ArrayValue<T>::DecRefsCount(uint8_t dimensions_count)
 
   if (--(storage_->GetRefsCount()) == 0) {
     if (dimensions_count == 1) {
-      const T *items_end_it =
-          storage_->template GetData<T>() + storage_->GetSize();
+      const T *items_end_it = storage_->GetItems() + storage_->GetSize();
 
-      for (const T *items_it = storage_->template GetData<T>();
+      for (const T *items_it = storage_->GetItems();
            items_it != items_end_it;
            ++items_it) {
         items_it->~T();
       }
     } else {
       const ArrayValue<T> *items_end_it =
-          storage_->template GetData< ArrayValue<T> >() + storage_->GetSize();
+          storage_->GetArrayItems() + storage_->GetSize();
 
-      for (ArrayValue<T> *items_it =
-               storage_->template GetData< ArrayValue<T> >();
+      for (ArrayValue<T> *items_it = storage_->GetArrayItems();
            items_it != items_end_it;
            ++items_it) {
         items_it->DecRefsCount(dimensions_count - 1);
@@ -172,14 +193,23 @@ template<typename T> size_t &ArrayValue<T>::Storage::GetRefsCount() noexcept {
   return refs_count_;
 }
 
-template<typename T> template<typename V>
-const V *ArrayValue<T>::Storage::GetData() const noexcept {
-  return reinterpret_cast<const V*>(data_.get());
+template<typename T> const T *ArrayValue<T>::Storage::GetItems()
+    const noexcept {
+  return reinterpret_cast<const T*>(data_.get());
 }
 
-template<typename T> template<typename V>
-V *ArrayValue<T>::Storage::GetData() noexcept {
-  return reinterpret_cast<V*>(data_.get());
+template<typename T> T *ArrayValue<T>::Storage::GetItems() noexcept {
+  return reinterpret_cast<T*>(data_.get());
+}
+
+template<typename T>
+const ArrayValue<T> *ArrayValue<T>::Storage::GetArrayItems() const noexcept {
+  return reinterpret_cast<const ArrayValue<T>*>(data_.get());
+}
+
+template<typename T>
+ArrayValue<T> *ArrayValue<T>::Storage::GetArrayItems() noexcept {
+  return reinterpret_cast<ArrayValue<T>*>(data_.get());
 }
 
 template<typename T> size_t ArrayValue<T>::Storage::GetSize() const noexcept {

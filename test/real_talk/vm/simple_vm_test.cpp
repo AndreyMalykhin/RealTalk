@@ -120,6 +120,26 @@ class SimpleVMTest: public Test {
                 operands_asserter,
                 native_funcs);
   }
+
+  void TestCreateArrayCmd(unique_ptr<Code> cmds,
+                          const DataStorage &expected_operands,
+                          DataStorageAsserter operands_asserter) {
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    SimpleVM::FuncFrames expected_func_frames;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_func_frames,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
 };
 
 TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
@@ -375,6 +395,38 @@ TEST_F(SimpleVMTest, LoadNativeFuncValueCmd) {
   native_funcs[func_index] = value;
   TestLoadValueCmd(
       move(cmds), expected_operands, operands_asserter, native_funcs);
+}
+
+TEST_F(SimpleVMTest, CreateIntArrayCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    uint32_t operand_index = UINT32_C(0);
+    const ArrayValue<IntValue> &expected_array =
+      expected_operands.GetArray<IntValue>(operand_index);
+    const ArrayValue<IntValue> &actual_array =
+      actual_operands.GetArray<IntValue>(operand_index);
+    uint8_t dimensions_count = UINT8_C(2);
+    ASSERT_TRUE(actual_array.IsDeeplyEqual(expected_array, dimensions_count));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->WriteCmdId(CmdId::kLoadIntValue);
+  int32_t inner_array_size = INT32_C(2);
+  cmds->WriteInt32(inner_array_size);
+  cmds->WriteCmdId(CmdId::kLoadIntValue);
+  int32_t outer_array_size = INT32_C(1);
+  cmds->WriteInt32(outer_array_size);
+  cmds->WriteCmdId(CmdId::kCreateIntArray);
+  uint8_t outer_array_dimensions_count = UINT8_C(2);
+  cmds->WriteUint32(outer_array_dimensions_count);
+  DataStorage expected_operands;
+  ArrayValue<IntValue> outer_array(static_cast<size_t>(outer_array_size));
+  ArrayValue<IntValue> inner_array(static_cast<size_t>(inner_array_size));
+  inner_array.GetItem(0) = IntValue(7);
+  inner_array.GetItem(1) = IntValue(77);
+  uint8_t inner_array_dimensions_count = UINT8_C(1);
+  outer_array.GetArrayItem(0).Set(inner_array, inner_array_dimensions_count);
+  expected_operands.PushArray<IntValue>(outer_array);
+  TestCreateArrayCmd(move(cmds), expected_operands, operands_asserter);
 }
 }
 }

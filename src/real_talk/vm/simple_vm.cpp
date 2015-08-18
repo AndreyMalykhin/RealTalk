@@ -946,7 +946,9 @@ void SimpleVM::Impl::VisitCreateAndInitLocalDoubleArrayVar(
     const CreateAndInitLocalDoubleArrayVarCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCreateIntArray(
-    const CreateIntArrayCmd&) {assert(false);}
+    const CreateIntArrayCmd&) {
+  assert(false);
+}
 
 void SimpleVM::Impl::VisitCreateLongArray(
     const CreateLongArrayCmd&) {assert(false);}

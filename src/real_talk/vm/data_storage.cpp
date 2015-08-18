@@ -196,6 +196,19 @@ template<typename T> void DataStorage::PushArray(const ArrayValue<T> &value) {
   PushNonPrimitive<ArrayValue<T>, DataTypeSize::kArray>(value);
 }
 
+template void DataStorage::PushArray<IntValue>(
+    const ArrayValue<IntValue> &value);
+template void DataStorage::PushArray<LongValue>(
+    const ArrayValue<LongValue> &value);
+template void DataStorage::PushArray<DoubleValue>(
+    const ArrayValue<DoubleValue> &value);
+template void DataStorage::PushArray<CharValue>(
+    const ArrayValue<CharValue> &value);
+template void DataStorage::PushArray<BoolValue>(
+    const ArrayValue<BoolValue> &value);
+template void DataStorage::PushArray<StringValue>(
+    const ArrayValue<StringValue> &value);
+
 size_t DataStorage::GetSize() const noexcept {
   assert(current_slot_ >= data_.get());
   return static_cast<size_t>(current_slot_ - data_.get());

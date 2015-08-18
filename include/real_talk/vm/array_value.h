@@ -19,6 +19,10 @@ template<typename T> class ArrayValue {
   ArrayValue<T> &operator=(const ArrayValue<T>&) = delete;
   void Set(const ArrayValue<T> &value, uint8_t dimensions_count) noexcept;
   void Destroy(uint8_t dimensions_count) noexcept;
+  T &GetItem(size_t index) noexcept;
+  const T &GetItem(size_t index) const noexcept;
+  ArrayValue<T> &GetArrayItem(size_t index) noexcept;
+  const ArrayValue<T> &GetArrayItem(size_t index) const noexcept;
   bool IsDeeplyEqual(
       const ArrayValue<T> &rhs, uint8_t dimensions_count) const noexcept;
   void Print(std::ostream &stream, uint8_t dimensions_count) const;
