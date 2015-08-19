@@ -2,6 +2,7 @@
 #include <cassert>
 #include <memory>
 #include <algorithm>
+#include <vector>
 #include "real_talk/vm/int_value.h"
 #include "real_talk/vm/long_value.h"
 #include "real_talk/vm/double_value.h"
@@ -11,31 +12,86 @@
 #include "real_talk/vm/array_value.h"
 
 using std::equal;
+using std::reverse;
 using std::unique_ptr;
 using std::ostream;
+using std::vector;
 
 namespace real_talk {
 namespace vm {
 
 template<typename T> class ArrayValue<T>::Storage {
  public:
-  Storage(unique_ptr<unsigned char> data, size_t size) noexcept;
+  Storage(unique_ptr<unsigned char> items, size_t size) noexcept;
   size_t &GetRefsCount() noexcept;
   const T *GetItems() const noexcept;
   T *GetItems() noexcept;
-  const ArrayValue<T> *GetArrayItems() const noexcept;
-  ArrayValue<T> *GetArrayItems() noexcept;
+  const ArrayValue<T> *GetItemsArray() const noexcept;
+  ArrayValue<T> *GetItemsArray() noexcept;
   size_t GetSize() const noexcept;
 
  private:
   size_t refs_count_;
   size_t size_;
-  unique_ptr<unsigned char> data_;
+  unique_ptr<unsigned char> items_;
 };
 
-// TODO segfault
-template<typename T> ArrayValue<T>::ArrayValue(size_t size)
-    : storage_(CreateStorage(size)) {}
+template<typename T> ArrayValue<T> ArrayValue<T>::Unidimensional(size_t size) {
+  unique_ptr<unsigned char> items(
+      static_cast<unsigned char*>(::operator new(size * sizeof(T))));
+  ArrayValue<T> array(new Storage(move(items), size));
+  const T *items_end_it = array.storage_->GetItems() + size;
+
+  for (T *items_it = array.storage_->GetItems();
+       items_it != items_end_it;
+       ++items_it) {
+    new(items_it) T();
+  }
+
+  return array;
+}
+
+template<typename T> void ArrayValue<T>::UnidimensionalAt(
+    size_t size, void *address) {
+  assert(address);
+  unique_ptr<unsigned char> items(
+      static_cast<unsigned char*>(::operator new(size * sizeof(T))));
+  auto array = new(address) ArrayValue<T>(new Storage(move(items), size));
+  const T *items_end_it = array->storage_->GetItems() + size;
+
+  for (T *items_it = array->storage_->GetItems();
+       items_it != items_end_it;
+       ++items_it) {
+    new(items_it) T();
+  }
+}
+
+template<typename T> ArrayValue<T> ArrayValue<T>::Multidimensional(
+    vector<size_t> dimensions) {
+  assert(!dimensions.empty());
+
+  if (dimensions.size() > 1) {
+    reverse(dimensions.begin(), dimensions.end());
+    const size_t size = dimensions.back();
+    dimensions.pop_back();
+    unique_ptr<unsigned char> items(static_cast<unsigned char*>(
+        ::operator new(size * sizeof(ArrayValue<T>))));
+    ArrayValue<T> array(new Storage(move(items), size));
+    const ArrayValue<T> *items_end_it = array.storage_->GetItemsArray() + size;
+
+    if (!dimensions.empty()) {
+      for (ArrayValue<T> *items_it = array.storage_->GetItemsArray();
+           items_it != items_end_it;
+           ++items_it) {
+        new(items_it) ArrayValue<T>(Multidimensional(dimensions));
+      }
+    }
+
+    return array;
+  }
+
+  return Unidimensional(dimensions.back());
+}
 
 template<typename T> ArrayValue<T>::ArrayValue(const ArrayValue<T> &value)
     noexcept: storage_(value.storage_) {
@@ -54,17 +110,17 @@ template<typename T> const T &ArrayValue<T>::GetItem(size_t index)
   return storage_->GetItems()[index];
 }
 
-template<typename T> ArrayValue<T> &ArrayValue<T>::GetArrayItem(size_t index)
+template<typename T> ArrayValue<T> &ArrayValue<T>::GetItemsArray(size_t index)
     noexcept {
   return const_cast<ArrayValue<T>&>(
-      static_cast<const ArrayValue*>(this)->GetArrayItem(index));
+      static_cast<const ArrayValue*>(this)->GetItemsArray(index));
 }
 
-template<typename T> const ArrayValue<T> &ArrayValue<T>::GetArrayItem(
+template<typename T> const ArrayValue<T> &ArrayValue<T>::GetItemsArray(
     size_t index) const noexcept {
   assert(storage_);
   assert(index < storage_->GetSize());
-  return storage_->GetArrayItems()[index];
+  return storage_->GetItemsArray()[index];
 }
 
 template<typename T> void ArrayValue<T>::Set(
@@ -98,10 +154,10 @@ template<typename T> bool ArrayValue<T>::IsDeeplyEqual(
   }
 
   const ArrayValue<T> *items_end_it =
-      storage_->GetArrayItems() + storage_->GetSize();
-  const ArrayValue<T> *rhs_items_it = rhs.storage_->GetArrayItems();
+      storage_->GetItemsArray() + storage_->GetSize();
+  const ArrayValue<T> *rhs_items_it = rhs.storage_->GetItemsArray();
 
-  for (const ArrayValue<T> *items_it = storage_->GetArrayItems();
+  for (const ArrayValue<T> *items_it = storage_->GetItemsArray();
        items_it != items_end_it;
        ++items_it, ++rhs_items_it) {
     if (!items_it->IsDeeplyEqual(*rhs_items_it, dimensions_count - 1)) {
@@ -119,7 +175,7 @@ template<typename T> bool operator==(
   return lhs.storage_ == rhs.storage_;
 }
 
-template<typename T> void ArrayValue<T>::Print(
+template<typename T> ostream &ArrayValue<T>::Print(
     ostream &stream, uint8_t dimensions_count) const {
   assert(storage_);
   stream << "refs_count=" << storage_->GetRefsCount()
@@ -135,24 +191,20 @@ template<typename T> void ArrayValue<T>::Print(
     }
   } else {
     const ArrayValue<T> *items_end_it =
-        storage_->GetArrayItems() + storage_->GetSize();
+        storage_->GetItemsArray() + storage_->GetSize();
 
-    for (const ArrayValue<T> *items_it = storage_->GetArrayItems();
+    for (const ArrayValue<T> *items_it = storage_->GetItemsArray();
          items_it != items_end_it;
          ++items_it) {
       items_it->Print(stream, dimensions_count - 1);
     }
   }
 
-  stream << ']';
+  return stream << ']';
 }
 
-template<typename T>
-typename ArrayValue<T>::Storage *ArrayValue<T>::CreateStorage(size_t size) {
-  unique_ptr<unsigned char> data(
-      static_cast<unsigned char*>(::operator new(size * sizeof(T))));
-  return new Storage(move(data), size);
-}
+template<typename T> ArrayValue<T>::ArrayValue(Storage *storage) noexcept
+    : storage_(storage) {}
 
 template<typename T> void ArrayValue<T>::DecRefsCount(uint8_t dimensions_count)
     noexcept {
@@ -169,9 +221,9 @@ template<typename T> void ArrayValue<T>::DecRefsCount(uint8_t dimensions_count)
       }
     } else {
       const ArrayValue<T> *items_end_it =
-          storage_->GetArrayItems() + storage_->GetSize();
+          storage_->GetItemsArray() + storage_->GetSize();
 
-      for (ArrayValue<T> *items_it = storage_->GetArrayItems();
+      for (ArrayValue<T> *items_it = storage_->GetItemsArray();
            items_it != items_end_it;
            ++items_it) {
         items_it->DecRefsCount(dimensions_count - 1);
@@ -184,9 +236,9 @@ template<typename T> void ArrayValue<T>::DecRefsCount(uint8_t dimensions_count)
 }
 
 template<typename T> ArrayValue<T>::Storage::Storage(
-    unique_ptr<unsigned char> data, size_t size) noexcept
-    : refs_count_(1), size_(size), data_(move(data)) {
-  assert(data_);
+    unique_ptr<unsigned char> items, size_t size) noexcept
+    : refs_count_(1), size_(size), items_(move(items)) {
+  assert(items_);
 }
 
 template<typename T> size_t &ArrayValue<T>::Storage::GetRefsCount() noexcept {
@@ -195,21 +247,21 @@ template<typename T> size_t &ArrayValue<T>::Storage::GetRefsCount() noexcept {
 
 template<typename T> const T *ArrayValue<T>::Storage::GetItems()
     const noexcept {
-  return reinterpret_cast<const T*>(data_.get());
+  return reinterpret_cast<const T*>(items_.get());
 }
 
 template<typename T> T *ArrayValue<T>::Storage::GetItems() noexcept {
-  return reinterpret_cast<T*>(data_.get());
+  return reinterpret_cast<T*>(items_.get());
 }
 
 template<typename T>
-const ArrayValue<T> *ArrayValue<T>::Storage::GetArrayItems() const noexcept {
-  return reinterpret_cast<const ArrayValue<T>*>(data_.get());
+const ArrayValue<T> *ArrayValue<T>::Storage::GetItemsArray() const noexcept {
+  return reinterpret_cast<const ArrayValue<T>*>(items_.get());
 }
 
 template<typename T>
-ArrayValue<T> *ArrayValue<T>::Storage::GetArrayItems() noexcept {
-  return reinterpret_cast<ArrayValue<T>*>(data_.get());
+ArrayValue<T> *ArrayValue<T>::Storage::GetItemsArray() noexcept {
+  return reinterpret_cast<ArrayValue<T>*>(items_.get());
 }
 
 template<typename T> size_t ArrayValue<T>::Storage::GetSize() const noexcept {

@@ -48,6 +48,7 @@ class DataStorage {
   const StringValue &GetString(size_t index) const noexcept;
   template<typename T> const ArrayValue<T> &GetArray(size_t index)
       const noexcept;
+  template<typename T> ArrayValue<T> &GetArray(size_t index) noexcept;
   void PushInt(IntValue value) noexcept;
   void PushLong(LongValue value) noexcept;
   void PushDouble(DoubleValue value) noexcept;
@@ -58,6 +59,7 @@ class DataStorage {
   void PushString(const StringValue &value);
   template<typename T> void PushArray(const ArrayValue<T> &value);
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
+  IntValue PopInt() noexcept;
   friend std::ostream &operator<<(
       std::ostream &stream, const DataStorage &storage);
 
@@ -73,6 +75,7 @@ class DataStorage {
   template<typename TType, real_talk::code::DataTypeSize TSize>
   void PushNonPrimitive(const TType &value);
   template<typename T> const T *Get(size_t index) const noexcept;
+  template<typename T> T *Get(size_t index) noexcept;
 
   size_t capacity_;
   std::unique_ptr<Slot[]> data_;

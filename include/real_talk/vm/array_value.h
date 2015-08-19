@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <vector>
 
 namespace real_talk {
 namespace vm {
@@ -14,25 +15,28 @@ template<typename T> bool operator==(
 
 template<typename T> class ArrayValue {
  public:
-  explicit ArrayValue(size_t size = 0);
+  static ArrayValue<T> Unidimensional(size_t size);
+  static void UnidimensionalAt(size_t size, void *address);
+  static ArrayValue<T> Multidimensional(std::vector<size_t> dimensions);
   ArrayValue(const ArrayValue<T> &value) noexcept;
   ArrayValue<T> &operator=(const ArrayValue<T>&) = delete;
   void Set(const ArrayValue<T> &value, uint8_t dimensions_count) noexcept;
   void Destroy(uint8_t dimensions_count) noexcept;
   T &GetItem(size_t index) noexcept;
   const T &GetItem(size_t index) const noexcept;
-  ArrayValue<T> &GetArrayItem(size_t index) noexcept;
-  const ArrayValue<T> &GetArrayItem(size_t index) const noexcept;
+  ArrayValue<T> &GetItemsArray(size_t index) noexcept;
+  const ArrayValue<T> &GetItemsArray(size_t index) const noexcept;
   bool IsDeeplyEqual(
       const ArrayValue<T> &rhs, uint8_t dimensions_count) const noexcept;
-  void Print(std::ostream &stream, uint8_t dimensions_count) const;
+  std::ostream &Print(std::ostream &stream, uint8_t dimensions_count) const;
   friend bool operator== <>(const ArrayValue<T> &lhs, const ArrayValue<T> &rhs)
       noexcept;
 
  private:
   class Storage;
 
-  static Storage *CreateStorage(size_t size);
+  explicit ArrayValue(Storage *storage) noexcept;
+  static Storage *CreateStorage(size_t items_count, size_t bytes_count);
   void DecRefsCount(uint8_t dimensions_count) noexcept;
 
   Storage *storage_;

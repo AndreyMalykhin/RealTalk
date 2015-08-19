@@ -100,7 +100,8 @@ void DataStorage::CreateString(size_t index) {
 }
 
 template<typename T> void DataStorage::CreateArray(size_t index) {
-  new(GetSlot(index)) ArrayValue<T>();
+  const size_t size = 0;
+  ArrayValue<T>::UnidimensionalAt(size, GetSlot(index));
 }
 
 template void DataStorage::CreateArray<IntValue>(size_t index);
@@ -147,6 +148,11 @@ template<typename T> const ArrayValue<T> &DataStorage::GetArray(size_t index)
   return *Get< ArrayValue<T> >(index);
 }
 
+template<typename T> ArrayValue<T> &DataStorage::GetArray(size_t index)
+    noexcept {
+  return *Get< ArrayValue<T> >(index);
+}
+
 template const ArrayValue<IntValue> &DataStorage::GetArray(size_t index)
     const noexcept;
 template const ArrayValue<LongValue> &DataStorage::GetArray(size_t index)
@@ -159,6 +165,19 @@ template const ArrayValue<BoolValue> &DataStorage::GetArray(size_t index)
     const noexcept;
 template const ArrayValue<StringValue> &DataStorage::GetArray(size_t index)
     const noexcept;
+
+template ArrayValue<IntValue> &DataStorage::GetArray(size_t index)
+    noexcept;
+template ArrayValue<LongValue> &DataStorage::GetArray(size_t index)
+    noexcept;
+template ArrayValue<DoubleValue> &DataStorage::GetArray(size_t index)
+    noexcept;
+template ArrayValue<CharValue> &DataStorage::GetArray(size_t index)
+    noexcept;
+template ArrayValue<BoolValue> &DataStorage::GetArray(size_t index)
+    noexcept;
+template ArrayValue<StringValue> &DataStorage::GetArray(size_t index)
+    noexcept;
 
 void DataStorage::PushInt(IntValue value) noexcept {
   PushPrimitive<IntValue, DataTypeSize::kInt>(value);
@@ -209,6 +228,13 @@ template void DataStorage::PushArray<BoolValue>(
 template void DataStorage::PushArray<StringValue>(
     const ArrayValue<StringValue> &value);
 
+IntValue DataStorage::PopInt() noexcept {
+  const size_t size = static_cast<size_t>(DataTypeSize::kInt);
+  assert(HasSlots(size));
+  current_slot_ -= size;
+  return *(reinterpret_cast<IntValue*>(current_slot_));
+}
+
 size_t DataStorage::GetSize() const noexcept {
   assert(current_slot_ >= data_.get());
   return static_cast<size_t>(current_slot_ - data_.get());
@@ -251,6 +277,10 @@ template<typename TType, DataTypeSize TSize> void DataStorage::PushNonPrimitive(
 }
 
 template<typename T> const T *DataStorage::Get(size_t index) const noexcept {
+  return reinterpret_cast<T*>(GetSlot(index));
+}
+
+template<typename T> T *DataStorage::Get(size_t index) noexcept {
   return reinterpret_cast<T*>(GetSlot(index));
 }
 

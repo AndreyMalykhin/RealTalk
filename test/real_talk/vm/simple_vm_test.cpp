@@ -10,6 +10,7 @@
 using std::vector;
 using std::string;
 using std::unique_ptr;
+using std::stringstream;
 using testing::Test;
 using real_talk::code::Code;
 using real_talk::code::CmdId;
@@ -21,6 +22,13 @@ namespace vm {
 namespace {
 
 typedef void (*DataStorageAsserter)(const DataStorage&, const DataStorage&);
+
+template<typename T> string PrintArray(
+    const ArrayValue<T> &array, uint8_t dimensions_count) {
+  stringstream stream;
+  array.Print(stream, dimensions_count);
+  return stream.str();
+}
 }
 
 class SimpleVMTest: public Test {
@@ -406,7 +414,9 @@ TEST_F(SimpleVMTest, CreateIntArrayCmd) {
     const ArrayValue<IntValue> &actual_array =
       actual_operands.GetArray<IntValue>(operand_index);
     uint8_t dimensions_count = UINT8_C(2);
-    ASSERT_TRUE(actual_array.IsDeeplyEqual(expected_array, dimensions_count));
+    ASSERT_TRUE(expected_array.IsDeeplyEqual(actual_array, dimensions_count))
+      << "[expected]\n" << PrintArray(expected_array, dimensions_count)
+      << "\n[actual]\n" << PrintArray(actual_array, dimensions_count);
   };
   unique_ptr<Code> cmds(new Code());
   cmds->WriteCmdId(CmdId::kLoadIntValue);
@@ -417,15 +427,12 @@ TEST_F(SimpleVMTest, CreateIntArrayCmd) {
   cmds->WriteInt32(outer_array_size);
   cmds->WriteCmdId(CmdId::kCreateIntArray);
   uint8_t outer_array_dimensions_count = UINT8_C(2);
-  cmds->WriteUint32(outer_array_dimensions_count);
+  cmds->WriteUint8(outer_array_dimensions_count);
   DataStorage expected_operands;
-  ArrayValue<IntValue> outer_array(static_cast<size_t>(outer_array_size));
-  ArrayValue<IntValue> inner_array(static_cast<size_t>(inner_array_size));
-  inner_array.GetItem(0) = IntValue(7);
-  inner_array.GetItem(1) = IntValue(77);
-  uint8_t inner_array_dimensions_count = UINT8_C(1);
-  outer_array.GetArrayItem(0).Set(inner_array, inner_array_dimensions_count);
-  expected_operands.PushArray<IntValue>(outer_array);
+  vector<size_t> dimensions = {static_cast<size_t>(outer_array_size),
+                               static_cast<size_t>(inner_array_size)};
+  expected_operands.PushArray<IntValue>(
+      ArrayValue<IntValue>::Multidimensional(dimensions));
   TestCreateArrayCmd(move(cmds), expected_operands, operands_asserter);
 }
 }

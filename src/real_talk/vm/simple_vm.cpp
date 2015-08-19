@@ -6,6 +6,7 @@
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/load_value_cmd.h"
+#include "real_talk/code/create_array_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
@@ -946,8 +947,18 @@ void SimpleVM::Impl::VisitCreateAndInitLocalDoubleArrayVar(
     const CreateAndInitLocalDoubleArrayVarCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCreateIntArray(
-    const CreateIntArrayCmd&) {
-  assert(false);
+    const CreateIntArrayCmd &cmd) {
+  const uint8_t dimensions_count = cmd.GetDimensionsCount();
+  vector<size_t> dimensions(dimensions_count);
+
+  for (uint8_t i = 0; i != dimensions_count; ++i) {
+    const int32_t size = operands_.PopInt();
+    assert(size >= 0);
+    assert(i < dimensions.size());
+    dimensions[i] = static_cast<size_t>(size);
+  }
+
+  operands_.PushArray(ArrayValue<IntValue>::Multidimensional(dimensions));
 }
 
 void SimpleVM::Impl::VisitCreateLongArray(
