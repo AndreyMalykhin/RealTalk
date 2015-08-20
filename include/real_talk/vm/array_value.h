@@ -17,10 +17,14 @@ template<typename T> class ArrayValue {
  public:
   static ArrayValue<T> Unidimensional(size_t size);
   static void UnidimensionalAt(size_t size, void *address);
-  static ArrayValue<T> Multidimensional(std::vector<size_t> dimensions);
-  ArrayValue(const ArrayValue<T> &value) noexcept;
+  static ArrayValue<T> Multidimensional(
+      std::vector<size_t>::iterator dimensions_start,
+      std::vector<size_t>::iterator dimensions_end);
+  ArrayValue(ArrayValue<T> &&value) noexcept;
+  ArrayValue(const ArrayValue<T>&) = delete;
   ArrayValue<T> &operator=(const ArrayValue<T>&) = delete;
   void Set(const ArrayValue<T> &value, uint8_t dimensions_count) noexcept;
+  ArrayValue<T> Clone() noexcept;
   void Destroy(uint8_t dimensions_count) noexcept;
   T &GetItem(size_t index) noexcept;
   const T &GetItem(size_t index) const noexcept;

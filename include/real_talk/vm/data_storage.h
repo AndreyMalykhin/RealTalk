@@ -56,8 +56,8 @@ class DataStorage {
   void PushBool(BoolValue value) noexcept;
   void PushFunc(FuncValue value) noexcept;
   void PushNativeFunc(NativeFuncValue value) noexcept;
-  void PushString(const StringValue &value);
-  template<typename T> void PushArray(const ArrayValue<T> &value);
+  void PushString(StringValue &&value);
+  template<typename T> void PushArray(ArrayValue<T> &&value);
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
   IntValue PopInt() noexcept;
   friend std::ostream &operator<<(
@@ -73,7 +73,7 @@ class DataStorage {
   template<typename TType, real_talk::code::DataTypeSize TSize>
   void PushPrimitive(TType value) noexcept;
   template<typename TType, real_talk::code::DataTypeSize TSize>
-  void PushNonPrimitive(const TType &value);
+  void PushNonPrimitive(TType &&value);
   template<typename T> const T *Get(size_t index) const noexcept;
   template<typename T> T *Get(size_t index) noexcept;
 

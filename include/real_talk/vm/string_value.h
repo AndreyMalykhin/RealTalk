@@ -11,8 +11,10 @@ namespace vm {
 class StringValue {
  public:
   explicit StringValue(const std::string& str = "");
-  StringValue(const StringValue &value) noexcept;
+  StringValue(const StringValue&) noexcept;
+  StringValue(StringValue&&) noexcept;
   void operator=(const StringValue&) noexcept;
+  void operator=(StringValue&&) noexcept;
   ~StringValue();
   friend bool operator==(const StringValue &lhs, const StringValue &rhs)
       noexcept;

@@ -16,6 +16,7 @@ using std::runtime_error;
 using std::unique_ptr;
 using std::memcpy;
 using std::memcmp;
+using std::move;
 using std::ostream;
 using std::hex;
 using real_talk::code::DataTypeSize;
@@ -207,26 +208,26 @@ void DataStorage::PushNativeFunc(NativeFuncValue value) noexcept {
   PushPrimitive<NativeFuncValue, DataTypeSize::kNativeFunc>(value);
 }
 
-void DataStorage::PushString(const StringValue &value) {
-  PushNonPrimitive<StringValue, DataTypeSize::kString>(value);
+void DataStorage::PushString(StringValue &&value) {
+  PushNonPrimitive<StringValue, DataTypeSize::kString>(move(value));
 }
 
-template<typename T> void DataStorage::PushArray(const ArrayValue<T> &value) {
-  PushNonPrimitive<ArrayValue<T>, DataTypeSize::kArray>(value);
+template<typename T> void DataStorage::PushArray(ArrayValue<T> &&value) {
+  PushNonPrimitive<ArrayValue<T>, DataTypeSize::kArray>(move(value));
 }
 
 template void DataStorage::PushArray<IntValue>(
-    const ArrayValue<IntValue> &value);
+    ArrayValue<IntValue> &&value);
 template void DataStorage::PushArray<LongValue>(
-    const ArrayValue<LongValue> &value);
+    ArrayValue<LongValue> &&value);
 template void DataStorage::PushArray<DoubleValue>(
-    const ArrayValue<DoubleValue> &value);
+    ArrayValue<DoubleValue> &&value);
 template void DataStorage::PushArray<CharValue>(
-    const ArrayValue<CharValue> &value);
+    ArrayValue<CharValue> &&value);
 template void DataStorage::PushArray<BoolValue>(
-    const ArrayValue<BoolValue> &value);
+    ArrayValue<BoolValue> &&value);
 template void DataStorage::PushArray<StringValue>(
-    const ArrayValue<StringValue> &value);
+    ArrayValue<StringValue> &&value);
 
 IntValue DataStorage::PopInt() noexcept {
   const size_t size = static_cast<size_t>(DataTypeSize::kInt);
@@ -269,10 +270,10 @@ template<typename TType, DataTypeSize TSize> void DataStorage::PushPrimitive(
 }
 
 template<typename TType, DataTypeSize TSize> void DataStorage::PushNonPrimitive(
-    const TType &value) {
+    TType &&value) {
   const size_t size = static_cast<size_t>(TSize);
   EnsureCapacity(size);
-  new(current_slot_) TType(value);
+  new(current_slot_) TType(move(value));
   AfterPush(size);
 }
 

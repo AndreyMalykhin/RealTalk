@@ -16,6 +16,7 @@ using std::reverse;
 using std::unique_ptr;
 using std::ostream;
 using std::vector;
+using std::move;
 
 namespace real_talk {
 namespace vm {
@@ -67,36 +68,43 @@ template<typename T> void ArrayValue<T>::UnidimensionalAt(
 }
 
 template<typename T> ArrayValue<T> ArrayValue<T>::Multidimensional(
-    vector<size_t> dimensions) {
-  assert(!dimensions.empty());
+    vector<size_t>::iterator dimensions_start,
+    vector<size_t>::iterator dimensions_end) {
+  const auto dimensions_count = dimensions_end - dimensions_start;
+  assert(dimensions_count);
 
-  if (dimensions.size() > 1) {
-    reverse(dimensions.begin(), dimensions.end());
-    const size_t size = dimensions.back();
-    dimensions.pop_back();
+  if (dimensions_count > 1) {
+    const size_t size = *dimensions_start;
+    ++dimensions_start;
     unique_ptr<unsigned char> items(static_cast<unsigned char*>(
         ::operator new(size * sizeof(ArrayValue<T>))));
     ArrayValue<T> array(new Storage(move(items), size));
     const ArrayValue<T> *items_end_it = array.storage_->GetItemsArray() + size;
 
-    if (!dimensions.empty()) {
+    if (dimensions_start != dimensions_end) {
       for (ArrayValue<T> *items_it = array.storage_->GetItemsArray();
            items_it != items_end_it;
            ++items_it) {
-        new(items_it) ArrayValue<T>(Multidimensional(dimensions));
+        new(items_it) ArrayValue<T>(
+            Multidimensional(dimensions_start, dimensions_end));
       }
     }
 
     return array;
   }
 
-  return Unidimensional(dimensions.back());
+  return Unidimensional(*dimensions_start);
 }
 
-template<typename T> ArrayValue<T>::ArrayValue(const ArrayValue<T> &value)
+template<typename T> ArrayValue<T> ArrayValue<T>::Clone() noexcept {
+  ++(storage_->GetRefsCount());
+  return ArrayValue<T>(storage_);
+}
+
+template<typename T> ArrayValue<T>::ArrayValue(ArrayValue<T> &&value)
     noexcept: storage_(value.storage_) {
   assert(storage_);
-  ++(storage_->GetRefsCount());
+  value.storage_ = nullptr;
 }
 
 template<typename T> T &ArrayValue<T>::GetItem(size_t index) noexcept {
@@ -179,7 +187,7 @@ template<typename T> ostream &ArrayValue<T>::Print(
     ostream &stream, uint8_t dimensions_count) const {
   assert(storage_);
   stream << "refs_count=" << storage_->GetRefsCount()
-         << "; size=" << storage_->GetSize() << "; data=[";
+         << "; size=" << storage_->GetSize() << "; items=[";
 
   if (dimensions_count == 1) {
     const T *items_end_it = storage_->GetItems() + storage_->GetSize();
@@ -204,7 +212,9 @@ template<typename T> ostream &ArrayValue<T>::Print(
 }
 
 template<typename T> ArrayValue<T>::ArrayValue(Storage *storage) noexcept
-    : storage_(storage) {}
+    : storage_(storage) {
+  assert(storage_);
+}
 
 template<typename T> void ArrayValue<T>::DecRefsCount(uint8_t dimensions_count)
     noexcept {

@@ -958,7 +958,8 @@ void SimpleVM::Impl::VisitCreateIntArray(
     dimensions[i] = static_cast<size_t>(size);
   }
 
-  operands_.PushArray(ArrayValue<IntValue>::Multidimensional(dimensions));
+  operands_.PushArray(ArrayValue<IntValue>::Multidimensional(
+      dimensions.begin(), dimensions.end()));
 }
 
 void SimpleVM::Impl::VisitCreateLongArray(

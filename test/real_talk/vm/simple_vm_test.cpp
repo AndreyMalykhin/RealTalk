@@ -414,6 +414,7 @@ TEST_F(SimpleVMTest, CreateIntArrayCmd) {
     const ArrayValue<IntValue> &actual_array =
       actual_operands.GetArray<IntValue>(operand_index);
     uint8_t dimensions_count = UINT8_C(2);
+    expected_array.Print(std::cout, dimensions_count) << std::endl;
     ASSERT_TRUE(expected_array.IsDeeplyEqual(actual_array, dimensions_count))
       << "[expected]\n" << PrintArray(expected_array, dimensions_count)
       << "\n[actual]\n" << PrintArray(actual_array, dimensions_count);
@@ -431,8 +432,8 @@ TEST_F(SimpleVMTest, CreateIntArrayCmd) {
   DataStorage expected_operands;
   vector<size_t> dimensions = {static_cast<size_t>(outer_array_size),
                                static_cast<size_t>(inner_array_size)};
-  expected_operands.PushArray<IntValue>(
-      ArrayValue<IntValue>::Multidimensional(dimensions));
+  expected_operands.PushArray<IntValue>(ArrayValue<IntValue>::Multidimensional(
+      dimensions.begin(), dimensions.end()));
   TestCreateArrayCmd(move(cmds), expected_operands, operands_asserter);
 }
 }

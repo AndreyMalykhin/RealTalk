@@ -22,18 +22,32 @@ class StringValue::Storage {
 
 StringValue::StringValue(const string &str): storage_(new Storage(str)) {}
 
-StringValue::StringValue(const StringValue &value) noexcept
-    : storage_(value.storage_) {
+StringValue::StringValue(const StringValue &rhs) noexcept
+    : storage_(rhs.storage_) {
   assert(storage_);
   ++(storage_->GetRefsCount());
 }
 
-void StringValue::operator=(const StringValue &value) noexcept {
-  if (this != &value) {
-    assert(value.storage_);
+StringValue::StringValue(StringValue &&rhs) noexcept
+    : storage_(rhs.storage_) {
+  assert(storage_);
+  rhs.storage_ = nullptr;
+}
+
+void StringValue::operator=(const StringValue &rhs) noexcept {
+  if (this != &rhs) {
+    assert(rhs.storage_);
     DecRefsCount();
-    storage_ = value.storage_;
+    storage_ = rhs.storage_;
     ++(storage_->GetRefsCount());
+  }
+}
+
+void StringValue::operator=(StringValue &&rhs) noexcept {
+  if (this != &rhs) {
+    assert(rhs.storage_);
+    storage_ = rhs.storage_;
+    rhs.storage_ = nullptr;
   }
 }
 
@@ -53,9 +67,7 @@ ostream &operator<<(ostream &stream, const StringValue &value) {
 }
 
 void StringValue::DecRefsCount() noexcept {
-  assert(storage_);
-
-  if (--(storage_->GetRefsCount()) == 0) {
+  if (storage_ != nullptr && --(storage_->GetRefsCount()) == 0) {
     delete storage_;
     storage_ = nullptr;
   }
