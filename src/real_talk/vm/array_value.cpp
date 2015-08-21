@@ -96,15 +96,54 @@ template<typename T> ArrayValue<T> ArrayValue<T>::Multidimensional(
   return Unidimensional(*dimensions_start);
 }
 
-template<typename T> ArrayValue<T> ArrayValue<T>::Clone() noexcept {
-  ++(storage_->GetRefsCount());
-  return ArrayValue<T>(storage_);
+template<typename T> ArrayValue<T>::ArrayValue(Storage *storage) noexcept
+    : storage_(storage) {
+  assert(storage_);
 }
 
 template<typename T> ArrayValue<T>::ArrayValue(ArrayValue<T> &&value)
     noexcept: storage_(value.storage_) {
   assert(storage_);
   value.storage_ = nullptr;
+}
+
+template<typename T> void ArrayValue<T>::Destroy(uint8_t dimensions_count)
+    noexcept {
+  DecRefsCount(dimensions_count);
+}
+
+template<typename T> void ArrayValue<T>::DecRefsCount(uint8_t dimensions_count)
+    noexcept {
+  assert(storage_);
+
+  if (--(storage_->GetRefsCount()) == 0) {
+    if (dimensions_count == 1) {
+      const T *items_end_it = storage_->GetItems() + storage_->GetSize();
+
+      for (const T *items_it = storage_->GetItems();
+           items_it != items_end_it;
+           ++items_it) {
+        items_it->~T();
+      }
+    } else {
+      const ArrayValue<T> *items_end_it =
+          storage_->GetItemsArray() + storage_->GetSize();
+
+      for (ArrayValue<T> *items_it = storage_->GetItemsArray();
+           items_it != items_end_it;
+           ++items_it) {
+        items_it->DecRefsCount(dimensions_count - 1);
+      }
+    }
+
+    delete storage_;
+    storage_ = nullptr;
+  }
+}
+
+template<typename T> ArrayValue<T> ArrayValue<T>::Clone() noexcept {
+  ++(storage_->GetRefsCount());
+  return ArrayValue<T>(storage_);
 }
 
 template<typename T> T &ArrayValue<T>::GetItem(size_t index) noexcept {
@@ -139,11 +178,6 @@ template<typename T> void ArrayValue<T>::Set(
     storage_ = value.storage_;
     ++(storage_->GetRefsCount());
   }
-}
-
-template<typename T> void ArrayValue<T>::Destroy(uint8_t dimensions_count)
-    noexcept {
-  DecRefsCount(dimensions_count);
 }
 
 template<typename T> bool ArrayValue<T>::IsDeeplyEqual(
@@ -209,40 +243,6 @@ template<typename T> ostream &ArrayValue<T>::Print(
   }
 
   return stream << ']';
-}
-
-template<typename T> ArrayValue<T>::ArrayValue(Storage *storage) noexcept
-    : storage_(storage) {
-  assert(storage_);
-}
-
-template<typename T> void ArrayValue<T>::DecRefsCount(uint8_t dimensions_count)
-    noexcept {
-  assert(storage_);
-
-  if (--(storage_->GetRefsCount()) == 0) {
-    if (dimensions_count == 1) {
-      const T *items_end_it = storage_->GetItems() + storage_->GetSize();
-
-      for (const T *items_it = storage_->GetItems();
-           items_it != items_end_it;
-           ++items_it) {
-        items_it->~T();
-      }
-    } else {
-      const ArrayValue<T> *items_end_it =
-          storage_->GetItemsArray() + storage_->GetSize();
-
-      for (ArrayValue<T> *items_it = storage_->GetItemsArray();
-           items_it != items_end_it;
-           ++items_it) {
-        items_it->DecRefsCount(dimensions_count - 1);
-      }
-    }
-
-    delete storage_;
-    storage_ = nullptr;
-  }
 }
 
 template<typename T> ArrayValue<T>::Storage::Storage(

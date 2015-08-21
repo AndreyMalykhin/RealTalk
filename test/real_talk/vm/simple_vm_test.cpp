@@ -129,9 +129,34 @@ class SimpleVMTest: public Test {
                 native_funcs);
   }
 
-  void TestCreateArrayCmd(unique_ptr<Code> cmds,
-                          const DataStorage &expected_operands,
-                          DataStorageAsserter operands_asserter) {
+  template<typename T> void TestCreateArrayCmd(CmdId cmd_id) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      uint32_t operand_index = UINT32_C(0);
+      const ArrayValue<T> &expected_array =
+        expected_operands.GetArray<T>(operand_index);
+      const ArrayValue<T> &actual_array =
+        actual_operands.GetArray<T>(operand_index);
+      uint8_t dimensions_count = UINT8_C(2);
+      ASSERT_TRUE(expected_array.IsDeeplyEqual(actual_array, dimensions_count))
+        << "[expected]\n" << PrintArray(expected_array, dimensions_count)
+        << "\n[actual]\n" << PrintArray(actual_array, dimensions_count);
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->WriteCmdId(CmdId::kLoadIntValue);
+    int32_t inner_array_size = INT32_C(2);
+    cmds->WriteInt32(inner_array_size);
+    cmds->WriteCmdId(CmdId::kLoadIntValue);
+    int32_t outer_array_size = INT32_C(1);
+    cmds->WriteInt32(outer_array_size);
+    cmds->WriteCmdId(cmd_id);
+    uint8_t outer_array_dimensions_count = UINT8_C(2);
+    cmds->WriteUint8(outer_array_dimensions_count);
+    DataStorage expected_operands;
+    vector<size_t> dimensions = {static_cast<size_t>(outer_array_size),
+                                 static_cast<size_t>(inner_array_size)};
+    expected_operands.PushArray<T>(ArrayValue<T>::Multidimensional(
+        dimensions.begin(), dimensions.end()));
     uint32_t main_cmds_code_size = cmds->GetPosition();
     DataStorage expected_global_vars;
     DataStorageAsserter global_vars_asserter = nullptr;
@@ -406,35 +431,27 @@ TEST_F(SimpleVMTest, LoadNativeFuncValueCmd) {
 }
 
 TEST_F(SimpleVMTest, CreateIntArrayCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    const ArrayValue<IntValue> &expected_array =
-      expected_operands.GetArray<IntValue>(operand_index);
-    const ArrayValue<IntValue> &actual_array =
-      actual_operands.GetArray<IntValue>(operand_index);
-    uint8_t dimensions_count = UINT8_C(2);
-    expected_array.Print(std::cout, dimensions_count) << std::endl;
-    ASSERT_TRUE(expected_array.IsDeeplyEqual(actual_array, dimensions_count))
-      << "[expected]\n" << PrintArray(expected_array, dimensions_count)
-      << "\n[actual]\n" << PrintArray(actual_array, dimensions_count);
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->WriteCmdId(CmdId::kLoadIntValue);
-  int32_t inner_array_size = INT32_C(2);
-  cmds->WriteInt32(inner_array_size);
-  cmds->WriteCmdId(CmdId::kLoadIntValue);
-  int32_t outer_array_size = INT32_C(1);
-  cmds->WriteInt32(outer_array_size);
-  cmds->WriteCmdId(CmdId::kCreateIntArray);
-  uint8_t outer_array_dimensions_count = UINT8_C(2);
-  cmds->WriteUint8(outer_array_dimensions_count);
-  DataStorage expected_operands;
-  vector<size_t> dimensions = {static_cast<size_t>(outer_array_size),
-                               static_cast<size_t>(inner_array_size)};
-  expected_operands.PushArray<IntValue>(ArrayValue<IntValue>::Multidimensional(
-      dimensions.begin(), dimensions.end()));
-  TestCreateArrayCmd(move(cmds), expected_operands, operands_asserter);
+  TestCreateArrayCmd<IntValue>(CmdId::kCreateIntArray);
+}
+
+TEST_F(SimpleVMTest, CreateLongArrayCmd) {
+  TestCreateArrayCmd<LongValue>(CmdId::kCreateLongArray);
+}
+
+TEST_F(SimpleVMTest, CreateDoubleArrayCmd) {
+  TestCreateArrayCmd<DoubleValue>(CmdId::kCreateDoubleArray);
+}
+
+TEST_F(SimpleVMTest, CreateCharArrayCmd) {
+  TestCreateArrayCmd<CharValue>(CmdId::kCreateCharArray);
+}
+
+TEST_F(SimpleVMTest, CreateBoolArrayCmd) {
+  TestCreateArrayCmd<BoolValue>(CmdId::kCreateBoolArray);
+}
+
+TEST_F(SimpleVMTest, CreateStringArrayCmd) {
+  TestCreateArrayCmd<StringValue>(CmdId::kCreateStringArray);
 }
 }
 }

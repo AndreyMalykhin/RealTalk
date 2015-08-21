@@ -87,6 +87,7 @@ using real_talk::code::CreateAndInitLocalStringArrayVarCmd;
 using real_talk::code::CreateAndInitLocalBoolArrayVarCmd;
 using real_talk::code::CreateAndInitLocalLongArrayVarCmd;
 using real_talk::code::CreateAndInitLocalDoubleArrayVarCmd;
+using real_talk::code::CreateArrayCmd;
 using real_talk::code::CreateIntArrayCmd;
 using real_talk::code::CreateLongArrayCmd;
 using real_talk::code::CreateBoolArrayCmd;
@@ -653,6 +654,7 @@ class SimpleVM::Impl: private CmdVisitor {
       const AndCmd &cmd) override;
   virtual void VisitOr(
       const OrCmd &cmd) override;
+  vector<size_t> VisitCreateArray(const CreateArrayCmd &cmd);
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
@@ -948,6 +950,47 @@ void SimpleVM::Impl::VisitCreateAndInitLocalDoubleArrayVar(
 
 void SimpleVM::Impl::VisitCreateIntArray(
     const CreateIntArrayCmd &cmd) {
+  vector<size_t> dimensions = VisitCreateArray(cmd);
+  operands_.PushArray(ArrayValue<IntValue>::Multidimensional(
+      dimensions.begin(), dimensions.end()));
+}
+
+void SimpleVM::Impl::VisitCreateLongArray(
+    const CreateLongArrayCmd &cmd) {
+  vector<size_t> dimensions = VisitCreateArray(cmd);
+  operands_.PushArray(ArrayValue<LongValue>::Multidimensional(
+      dimensions.begin(), dimensions.end()));
+}
+
+void SimpleVM::Impl::VisitCreateBoolArray(
+    const CreateBoolArrayCmd &cmd) {
+  vector<size_t> dimensions = VisitCreateArray(cmd);
+  operands_.PushArray(ArrayValue<BoolValue>::Multidimensional(
+      dimensions.begin(), dimensions.end()));
+}
+
+void SimpleVM::Impl::VisitCreateCharArray(
+    const CreateCharArrayCmd &cmd) {
+  vector<size_t> dimensions = VisitCreateArray(cmd);
+  operands_.PushArray(ArrayValue<CharValue>::Multidimensional(
+      dimensions.begin(), dimensions.end()));
+}
+
+void SimpleVM::Impl::VisitCreateDoubleArray(
+    const CreateDoubleArrayCmd &cmd) {
+  vector<size_t> dimensions = VisitCreateArray(cmd);
+  operands_.PushArray(ArrayValue<DoubleValue>::Multidimensional(
+      dimensions.begin(), dimensions.end()));
+}
+
+void SimpleVM::Impl::VisitCreateStringArray(
+    const CreateStringArrayCmd &cmd) {
+  vector<size_t> dimensions = VisitCreateArray(cmd);
+  operands_.PushArray(ArrayValue<StringValue>::Multidimensional(
+      dimensions.begin(), dimensions.end()));
+}
+
+vector<size_t> SimpleVM::Impl::VisitCreateArray(const CreateArrayCmd &cmd) {
   const uint8_t dimensions_count = cmd.GetDimensionsCount();
   vector<size_t> dimensions(dimensions_count);
 
@@ -958,24 +1001,8 @@ void SimpleVM::Impl::VisitCreateIntArray(
     dimensions[i] = static_cast<size_t>(size);
   }
 
-  operands_.PushArray(ArrayValue<IntValue>::Multidimensional(
-      dimensions.begin(), dimensions.end()));
+  return dimensions;
 }
-
-void SimpleVM::Impl::VisitCreateLongArray(
-    const CreateLongArrayCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitCreateBoolArray(
-    const CreateBoolArrayCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitCreateCharArray(
-    const CreateCharArrayCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitCreateDoubleArray(
-    const CreateDoubleArrayCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitCreateStringArray(
-    const CreateStringArrayCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCreateAndInitIntArray(
     const CreateAndInitIntArrayCmd&) {assert(false);}
