@@ -10,6 +10,7 @@
 #include "real_talk/vm/char_value.h"
 #include "real_talk/vm/string_value.h"
 #include "real_talk/vm/array_value.h"
+#include "real_talk/vm/data_storage.h"
 
 using std::equal;
 using std::reverse;
@@ -71,29 +72,64 @@ template<typename T> ArrayValue<T> ArrayValue<T>::Multidimensional(
     vector<size_t>::iterator dimensions_start,
     vector<size_t>::iterator dimensions_end) {
   const auto dimensions_count = dimensions_end - dimensions_start;
+  assert(dimensions_count > 0);
+
+  if (dimensions_count == 1) {
+    return Unidimensional(*dimensions_start);
+  }
+
+  const size_t size = *dimensions_start;
+  ++dimensions_start;
+  unique_ptr<unsigned char> items(static_cast<unsigned char*>(
+      ::operator new(size * sizeof(ArrayValue<T>))));
+  ArrayValue<T> array(new Storage(move(items), size));
+  const ArrayValue<T> *items_end_it = array.storage_->GetItemsArray() + size;
+
+  if (dimensions_start != dimensions_end) {
+    for (ArrayValue<T> *items_it = array.storage_->GetItemsArray();
+         items_it != items_end_it;
+         ++items_it) {
+      new(items_it) ArrayValue<T>(
+          Multidimensional(dimensions_start, dimensions_end));
+    }
+  }
+
+  return array;
+}
+
+template<typename T> ArrayValue<T> ArrayValue<T>::Multidimensional(
+    uint8_t dimensions_count, size_t values_count, DataStorage *values) {
   assert(dimensions_count);
+  assert(values);
 
-  if (dimensions_count > 1) {
-    const size_t size = *dimensions_start;
-    ++dimensions_start;
+  if (dimensions_count == 1) {
     unique_ptr<unsigned char> items(static_cast<unsigned char*>(
-        ::operator new(size * sizeof(ArrayValue<T>))));
-    ArrayValue<T> array(new Storage(move(items), size));
-    const ArrayValue<T> *items_end_it = array.storage_->GetItemsArray() + size;
+        ::operator new(values_count * sizeof(T))));
+    ArrayValue<T> array(new Storage(move(items), values_count));
+    const T *items_end_it = array.storage_->GetItems() + values_count;
 
-    if (dimensions_start != dimensions_end) {
-      for (ArrayValue<T> *items_it = array.storage_->GetItemsArray();
-           items_it != items_end_it;
-           ++items_it) {
-        new(items_it) ArrayValue<T>(
-            Multidimensional(dimensions_start, dimensions_end));
-      }
+    for (T *items_it = array.storage_->GetItems();
+         items_it != items_end_it;
+         ++items_it) {
+      new(items_it) T(values->Pop<T>());
     }
 
     return array;
   }
 
-  return Unidimensional(*dimensions_start);
+  unique_ptr<unsigned char> items(static_cast<unsigned char*>(
+      ::operator new(values_count * sizeof(ArrayValue<T>))));
+  ArrayValue<T> array(new Storage(move(items), values_count));
+  const ArrayValue<T> *items_end_it =
+      array.storage_->GetItemsArray() + values_count;
+
+  for (ArrayValue<T> *items_it = array.storage_->GetItemsArray();
+       items_it != items_end_it;
+       ++items_it) {
+    new(items_it) ArrayValue<T>(values->Pop< ArrayValue<T> >());
+  }
+
+  return array;
 }
 
 template<typename T> ArrayValue<T>::ArrayValue(Storage *storage) noexcept
@@ -171,12 +207,12 @@ template<typename T> const ArrayValue<T> &ArrayValue<T>::GetItemsArray(
 }
 
 template<typename T> void ArrayValue<T>::Set(
-    const ArrayValue<T> &value, uint8_t dimensions_count) noexcept {
+    ArrayValue<T> &&value, uint8_t dimensions_count) noexcept {
   if (this != &value) {
     assert(value.storage_);
     DecRefsCount(dimensions_count);
     storage_ = value.storage_;
-    ++(storage_->GetRefsCount());
+    value.storage_ = nullptr;
   }
 }
 

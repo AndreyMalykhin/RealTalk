@@ -7,10 +7,12 @@
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
+#include "real_talk/code/create_and_init_array_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
 using std::vector;
+using std::move;
 using real_talk::code::Exe;
 using real_talk::code::Code;
 using real_talk::code::CmdReader;
@@ -995,7 +997,7 @@ vector<size_t> SimpleVM::Impl::VisitCreateArray(const CreateArrayCmd &cmd) {
   vector<size_t> dimensions(dimensions_count);
 
   for (uint8_t i = 0; i != dimensions_count; ++i) {
-    const int32_t size = operands_.PopInt();
+    const int32_t size = operands_.Pop<IntValue>();
     assert(size >= 0);
     assert(i < dimensions.size());
     dimensions[i] = static_cast<size_t>(size);
@@ -1005,7 +1007,13 @@ vector<size_t> SimpleVM::Impl::VisitCreateArray(const CreateArrayCmd &cmd) {
 }
 
 void SimpleVM::Impl::VisitCreateAndInitIntArray(
-    const CreateAndInitIntArrayCmd&) {assert(false);}
+    const CreateAndInitIntArrayCmd &cmd) {
+  auto array = ArrayValue<IntValue>::Multidimensional(
+      cmd.GetDimensionsCount(),
+      static_cast<size_t>(cmd.GetValuesCount()),
+      &operands_);
+  operands_.PushArray<IntValue>(move(array));
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLongArray(
     const CreateAndInitLongArrayCmd&) {assert(false);}

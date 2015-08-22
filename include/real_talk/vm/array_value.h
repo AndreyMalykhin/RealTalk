@@ -9,6 +9,7 @@
 namespace real_talk {
 namespace vm {
 
+class DataStorage;
 template<typename T> class ArrayValue;
 template<typename T> bool operator==(
     const ArrayValue<T> &lhs, const ArrayValue<T> &rhs) noexcept;
@@ -20,10 +21,12 @@ template<typename T> class ArrayValue {
   static ArrayValue<T> Multidimensional(
       std::vector<size_t>::iterator dimensions_start,
       std::vector<size_t>::iterator dimensions_end);
+  static ArrayValue<T> Multidimensional(
+      uint8_t dimensions_count, size_t values_count, DataStorage *values);
   ArrayValue(ArrayValue<T> &&value) noexcept;
   ArrayValue(const ArrayValue<T>&) = delete;
   ArrayValue<T> &operator=(const ArrayValue<T>&) = delete;
-  void Set(const ArrayValue<T> &value, uint8_t dimensions_count) noexcept;
+  void Set(ArrayValue<T> &&value, uint8_t dimensions_count) noexcept;
   ArrayValue<T> Clone() noexcept;
   void Destroy(uint8_t dimensions_count) noexcept;
   T &GetItem(size_t index) noexcept;

@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include "real_talk/code/data_type_size.h"
 #include "real_talk/vm/int_value.h"
 #include "real_talk/vm/long_value.h"
 #include "real_talk/vm/double_value.h"
@@ -59,7 +60,7 @@ class DataStorage {
   void PushString(StringValue &&value);
   template<typename T> void PushArray(ArrayValue<T> &&value);
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
-  IntValue PopInt() noexcept;
+  template<typename T> T Pop() noexcept;
   friend std::ostream &operator<<(
       std::ostream &stream, const DataStorage &storage);
 
@@ -67,7 +68,6 @@ class DataStorage {
   void EnsureCapacity(size_t slots_count);
   bool HasEnoughCapacity(size_t slots_count) const noexcept;
   void AfterPush(size_t pushed_slots_count) noexcept;
-  void AfterPop(size_t popped_slots_count) noexcept;
   Slot *GetSlot(size_t index) const noexcept;
   bool HasSlots(size_t count) const noexcept;
   template<typename TType, real_talk::code::DataTypeSize TSize>
@@ -76,6 +76,7 @@ class DataStorage {
   void PushNonPrimitive(TType &&value);
   template<typename T> const T *Get(size_t index) const noexcept;
   template<typename T> T *Get(size_t index) noexcept;
+  template<typename T> T DoPop(real_talk::code::DataTypeSize size) noexcept;
 
   size_t capacity_;
   std::unique_ptr<Slot[]> data_;

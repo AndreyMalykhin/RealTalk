@@ -229,11 +229,81 @@ template void DataStorage::PushArray<BoolValue>(
 template void DataStorage::PushArray<StringValue>(
     ArrayValue<StringValue> &&value);
 
-IntValue DataStorage::PopInt() noexcept {
-  const size_t size = static_cast<size_t>(DataTypeSize::kInt);
-  assert(HasSlots(size));
-  current_slot_ -= size;
-  return *(reinterpret_cast<IntValue*>(current_slot_));
+template<typename TType, DataTypeSize TSize> void DataStorage::PushPrimitive(
+    TType value) noexcept {
+  const size_t size = static_cast<size_t>(TSize);
+  EnsureCapacity(size);
+  *(reinterpret_cast<TType*>(current_slot_)) = value;
+  AfterPush(size);
+}
+
+template<typename TType, DataTypeSize TSize> void DataStorage::PushNonPrimitive(
+    TType &&value) {
+  const size_t size = static_cast<size_t>(TSize);
+  EnsureCapacity(size);
+  new(current_slot_) TType(move(value));
+  AfterPush(size);
+}
+
+template<> IntValue DataStorage::Pop<IntValue>() noexcept {
+  return DoPop<IntValue>(DataTypeSize::kInt);
+}
+
+template<> LongValue DataStorage::Pop<LongValue>() noexcept {
+  return DoPop<LongValue>(DataTypeSize::kLong);
+}
+
+template<> DoubleValue DataStorage::Pop<DoubleValue>() noexcept {
+  return DoPop<DoubleValue>(DataTypeSize::kDouble);
+}
+
+template<> CharValue DataStorage::Pop<CharValue>() noexcept {
+  return DoPop<CharValue>(DataTypeSize::kChar);
+}
+
+template<> BoolValue DataStorage::Pop<BoolValue>() noexcept {
+  return DoPop<BoolValue>(DataTypeSize::kBool);
+}
+
+template<> StringValue DataStorage::Pop<StringValue>() noexcept {
+  return DoPop<StringValue>(DataTypeSize::kString);
+}
+
+template<> ArrayValue<IntValue> DataStorage::Pop<ArrayValue< IntValue> >()
+    noexcept {
+  return DoPop< ArrayValue<IntValue> >(DataTypeSize::kArray);
+}
+
+template<> ArrayValue<LongValue> DataStorage::Pop< ArrayValue<LongValue> >()
+    noexcept {
+  return DoPop< ArrayValue<LongValue> >(DataTypeSize::kArray);
+}
+
+template<> ArrayValue<DoubleValue> DataStorage::Pop< ArrayValue<DoubleValue> >()
+    noexcept {
+  return DoPop< ArrayValue<DoubleValue> >(DataTypeSize::kArray);
+}
+
+template<> ArrayValue<CharValue> DataStorage::Pop< ArrayValue<CharValue> >()
+    noexcept {
+  return DoPop< ArrayValue<CharValue> >(DataTypeSize::kArray);
+}
+
+template<> ArrayValue<BoolValue> DataStorage::Pop< ArrayValue<BoolValue> >()
+    noexcept {
+  return DoPop< ArrayValue<BoolValue> >(DataTypeSize::kArray);
+}
+
+template<> ArrayValue<StringValue> DataStorage::Pop< ArrayValue<StringValue> >()
+    noexcept {
+  return DoPop< ArrayValue<StringValue> >(DataTypeSize::kArray);
+}
+
+template<typename T> T DataStorage::DoPop(DataTypeSize size) noexcept {
+  const size_t casted_size = static_cast<size_t>(size);
+  assert(HasSlots(casted_size));
+  current_slot_ -= casted_size;
+  return move(*(reinterpret_cast<T*>(current_slot_)));
 }
 
 size_t DataStorage::GetSize() const noexcept {
@@ -259,22 +329,6 @@ ostream &operator<<(
   }
 
   return stream;
-}
-
-template<typename TType, DataTypeSize TSize> void DataStorage::PushPrimitive(
-    TType value) noexcept {
-  const size_t size = static_cast<size_t>(TSize);
-  EnsureCapacity(size);
-  *(reinterpret_cast<TType*>(current_slot_)) = value;
-  AfterPush(size);
-}
-
-template<typename TType, DataTypeSize TSize> void DataStorage::PushNonPrimitive(
-    TType &&value) {
-  const size_t size = static_cast<size_t>(TSize);
-  EnsureCapacity(size);
-  new(current_slot_) TType(move(value));
-  AfterPush(size);
 }
 
 template<typename T> const T *DataStorage::Get(size_t index) const noexcept {
@@ -311,10 +365,6 @@ inline bool DataStorage::HasEnoughCapacity(size_t slots_count) const noexcept {
 
 inline void DataStorage::AfterPush(size_t pushed_slots_count) noexcept {
   current_slot_ += pushed_slots_count;
-}
-
-inline void DataStorage::AfterPop(size_t popped_slots_count) noexcept {
-  current_slot_ -= popped_slots_count;
 }
 
 inline DataStorage::Slot *DataStorage::GetSlot(size_t index) const noexcept {

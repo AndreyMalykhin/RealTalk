@@ -14,7 +14,9 @@ class CreateAndInitArrayCmd: public Cmd, public ArrayCmdTrait {
  public:
   inline explicit CreateAndInitArrayCmd(
       uint8_t dimensions_count, int32_t values_count) noexcept
-      : ArrayCmdTrait(dimensions_count), values_count_(values_count) {}
+      : ArrayCmdTrait(dimensions_count), values_count_(values_count) {
+        assert(values_count_ >= 0);
+      }
 
   inline int32_t GetValuesCount() const noexcept {
     return values_count_;
