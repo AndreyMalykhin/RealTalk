@@ -246,64 +246,65 @@ template<typename TType, DataTypeSize TSize> void DataStorage::PushNonPrimitive(
 }
 
 template<> IntValue DataStorage::Pop<IntValue>() noexcept {
-  return DoPop<IntValue>(DataTypeSize::kInt);
+  return DoPop<IntValue, DataTypeSize::kInt>();
 }
 
 template<> LongValue DataStorage::Pop<LongValue>() noexcept {
-  return DoPop<LongValue>(DataTypeSize::kLong);
+  return DoPop<LongValue, DataTypeSize::kLong>();
 }
 
 template<> DoubleValue DataStorage::Pop<DoubleValue>() noexcept {
-  return DoPop<DoubleValue>(DataTypeSize::kDouble);
+  return DoPop<DoubleValue, DataTypeSize::kDouble>();
 }
 
 template<> CharValue DataStorage::Pop<CharValue>() noexcept {
-  return DoPop<CharValue>(DataTypeSize::kChar);
+  return DoPop<CharValue, DataTypeSize::kChar>();
 }
 
 template<> BoolValue DataStorage::Pop<BoolValue>() noexcept {
-  return DoPop<BoolValue>(DataTypeSize::kBool);
+  return DoPop<BoolValue, DataTypeSize::kBool>();
 }
 
 template<> StringValue DataStorage::Pop<StringValue>() noexcept {
-  return DoPop<StringValue>(DataTypeSize::kString);
+  return DoPop<StringValue, DataTypeSize::kString>();
 }
 
 template<> ArrayValue<IntValue> DataStorage::Pop<ArrayValue< IntValue> >()
     noexcept {
-  return DoPop< ArrayValue<IntValue> >(DataTypeSize::kArray);
+  return DoPop<ArrayValue<IntValue>, DataTypeSize::kArray>();
 }
 
 template<> ArrayValue<LongValue> DataStorage::Pop< ArrayValue<LongValue> >()
     noexcept {
-  return DoPop< ArrayValue<LongValue> >(DataTypeSize::kArray);
+  return DoPop<ArrayValue<LongValue>, DataTypeSize::kArray>();
 }
 
 template<> ArrayValue<DoubleValue> DataStorage::Pop< ArrayValue<DoubleValue> >()
     noexcept {
-  return DoPop< ArrayValue<DoubleValue> >(DataTypeSize::kArray);
+  return DoPop<ArrayValue<DoubleValue>, DataTypeSize::kArray>();
 }
 
 template<> ArrayValue<CharValue> DataStorage::Pop< ArrayValue<CharValue> >()
     noexcept {
-  return DoPop< ArrayValue<CharValue> >(DataTypeSize::kArray);
+  return DoPop<ArrayValue<CharValue>, DataTypeSize::kArray>();
 }
 
 template<> ArrayValue<BoolValue> DataStorage::Pop< ArrayValue<BoolValue> >()
     noexcept {
-  return DoPop< ArrayValue<BoolValue> >(DataTypeSize::kArray);
+  return DoPop<ArrayValue<BoolValue>, DataTypeSize::kArray>();
 }
 
 template<> ArrayValue<StringValue> DataStorage::Pop< ArrayValue<StringValue> >()
     noexcept {
-  return DoPop< ArrayValue<StringValue> >(DataTypeSize::kArray);
+  return DoPop<ArrayValue<StringValue>, DataTypeSize::kArray>();
 }
 
-template<typename T> T DataStorage::DoPop(DataTypeSize size) noexcept {
-  const size_t casted_size = static_cast<size_t>(size);
+template<typename TType, DataTypeSize TSize> TType DataStorage::DoPop()
+    noexcept {
+  const size_t casted_size = static_cast<size_t>(TSize);
   assert(HasSlots(casted_size));
   current_slot_ -= casted_size;
-  return move(*(reinterpret_cast<T*>(current_slot_)));
+  return move(*(reinterpret_cast<TType*>(current_slot_)));
 }
 
 size_t DataStorage::GetSize() const noexcept {

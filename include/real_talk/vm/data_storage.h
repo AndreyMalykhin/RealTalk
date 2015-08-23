@@ -76,7 +76,7 @@ class DataStorage {
   void PushNonPrimitive(TType &&value);
   template<typename T> const T *Get(size_t index) const noexcept;
   template<typename T> T *Get(size_t index) noexcept;
-  template<typename T> T DoPop(real_talk::code::DataTypeSize size) noexcept;
+  template<typename T, real_talk::code::DataTypeSize TSize> T DoPop() noexcept;
 
   size_t capacity_;
   std::unique_ptr<Slot[]> data_;

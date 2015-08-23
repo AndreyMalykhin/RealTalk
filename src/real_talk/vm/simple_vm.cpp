@@ -96,6 +96,7 @@ using real_talk::code::CreateBoolArrayCmd;
 using real_talk::code::CreateCharArrayCmd;
 using real_talk::code::CreateStringArrayCmd;
 using real_talk::code::CreateDoubleArrayCmd;
+using real_talk::code::CreateAndInitArrayCmd;
 using real_talk::code::CreateAndInitIntArrayCmd;
 using real_talk::code::CreateAndInitLongArrayCmd;
 using real_talk::code::CreateAndInitDoubleArrayCmd;
@@ -657,6 +658,8 @@ class SimpleVM::Impl: private CmdVisitor {
   virtual void VisitOr(
       const OrCmd &cmd) override;
   vector<size_t> VisitCreateArray(const CreateArrayCmd &cmd);
+  template<typename T> void VisitCreateAndInitArray(
+      const CreateAndInitArrayCmd &cmd);
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
@@ -1008,27 +1011,40 @@ vector<size_t> SimpleVM::Impl::VisitCreateArray(const CreateArrayCmd &cmd) {
 
 void SimpleVM::Impl::VisitCreateAndInitIntArray(
     const CreateAndInitIntArrayCmd &cmd) {
-  auto array = ArrayValue<IntValue>::Multidimensional(
-      cmd.GetDimensionsCount(),
-      static_cast<size_t>(cmd.GetValuesCount()),
-      &operands_);
-  operands_.PushArray<IntValue>(move(array));
+  VisitCreateAndInitArray<IntValue>(cmd);
 }
 
 void SimpleVM::Impl::VisitCreateAndInitLongArray(
-    const CreateAndInitLongArrayCmd&) {assert(false);}
+    const CreateAndInitLongArrayCmd &cmd) {
+  VisitCreateAndInitArray<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitDoubleArray(
-    const CreateAndInitDoubleArrayCmd&) {assert(false);}
+    const CreateAndInitDoubleArrayCmd &cmd) {
+  VisitCreateAndInitArray<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitBoolArray(
     const CreateAndInitBoolArrayCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCreateAndInitCharArray(
-    const CreateAndInitCharArrayCmd&) {assert(false);}
+    const CreateAndInitCharArrayCmd &cmd) {
+  VisitCreateAndInitArray<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitStringArray(
-    const CreateAndInitStringArrayCmd&) {assert(false);}
+    const CreateAndInitStringArrayCmd &cmd) {
+  VisitCreateAndInitArray<StringValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitCreateAndInitArray(
+    const CreateAndInitArrayCmd &cmd) {
+  auto array = ArrayValue<T>::Multidimensional(
+      cmd.GetDimensionsCount(),
+      static_cast<size_t>(cmd.GetValuesCount()),
+      &operands_);
+  operands_.PushArray<T>(move(array));
+}
 
 void SimpleVM::Impl::VisitDirectJump(
     const DirectJumpCmd&) {assert(false);}
