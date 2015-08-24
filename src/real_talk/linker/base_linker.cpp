@@ -113,11 +113,11 @@ void BaseLinker::WriteModuleCmds(const Module &module,
   output_cmds->SetPosition(main_cmds_start_address);
   const unsigned char * const module_main_cmds = module.GetCmdsCode().GetData();
   const uint32_t module_main_cmds_size = module.GetMainCmdsCodeSize();
-  output_cmds->WriteBytes(module_main_cmds, module_main_cmds_size);
+  output_cmds->Write(module_main_cmds, module_main_cmds_size);
   output_cmds->SetPosition(func_cmds_start_address);
   const unsigned char * const module_func_cmds =
       module_main_cmds + module_main_cmds_size;
-  output_cmds->WriteBytes(module_func_cmds, module.GetFuncCmdsCodeSize());
+  output_cmds->Write(module_func_cmds, module.GetFuncCmdsCodeSize());
 }
 }
 }

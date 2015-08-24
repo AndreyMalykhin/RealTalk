@@ -1,5 +1,6 @@
 
 #include <cassert>
+#include <string>
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/create_local_var_cmd.h"
 #include "real_talk/code/destroy_local_var_cmd.h"
@@ -39,6 +40,8 @@
 #include "real_talk/code/pre_dec_cmd.h"
 #include "real_talk/code/pre_inc_cmd.h"
 #include "real_talk/code/code.h"
+
+using std::string;
 
 namespace real_talk {
 namespace code {
@@ -415,33 +418,33 @@ Code *CmdReader::GetCode() const noexcept {
 const Cmd &CmdReader::GetNextCmd() noexcept {
   const Cmd *cmd = nullptr;
 
-  switch (code_->ReadCmdId()) {
+  switch (code_->Read<CmdId>()) {
     case CmdId::kCreateGlobalIntVar:
-      kCreateGlobalIntVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateGlobalIntVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateGlobalIntVarCmd;
       break;
     case CmdId::kCreateGlobalArrayVar:
-      kCreateGlobalArrayVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateGlobalArrayVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateGlobalArrayVarCmd;
       break;
     case CmdId::kCreateGlobalLongVar:
-      kCreateGlobalLongVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateGlobalLongVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateGlobalLongVarCmd;
       break;
     case CmdId::kCreateGlobalDoubleVar:
-      kCreateGlobalDoubleVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateGlobalDoubleVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateGlobalDoubleVarCmd;
       break;
     case CmdId::kCreateGlobalCharVar:
-      kCreateGlobalCharVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateGlobalCharVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateGlobalCharVarCmd;
       break;
     case CmdId::kCreateGlobalStringVar:
-      kCreateGlobalStringVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateGlobalStringVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateGlobalStringVarCmd;
       break;
     case CmdId::kCreateGlobalBoolVar:
-      kCreateGlobalBoolVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateGlobalBoolVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateGlobalBoolVarCmd;
       break;
     case CmdId::kCreateLocalIntVar:
@@ -484,27 +487,27 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       cmd = &kDestroyLocalBoolVarCmd;
       break;
     case CmdId::kDestroyLocalIntArrayVar:
-      kDestroyLocalIntArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kDestroyLocalIntArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kDestroyLocalIntArrayVarCmd;
       break;
     case CmdId::kDestroyLocalLongArrayVar:
-      kDestroyLocalLongArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kDestroyLocalLongArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kDestroyLocalLongArrayVarCmd;
       break;
     case CmdId::kDestroyLocalDoubleArrayVar:
-      kDestroyLocalDoubleArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kDestroyLocalDoubleArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kDestroyLocalDoubleArrayVarCmd;
       break;
     case CmdId::kDestroyLocalCharArrayVar:
-      kDestroyLocalCharArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kDestroyLocalCharArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kDestroyLocalCharArrayVarCmd;
       break;
     case CmdId::kDestroyLocalStringArrayVar:
-      kDestroyLocalStringArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kDestroyLocalStringArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kDestroyLocalStringArrayVarCmd;
       break;
     case CmdId::kDestroyLocalBoolArrayVar:
-      kDestroyLocalBoolArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kDestroyLocalBoolArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kDestroyLocalBoolArrayVarCmd;
       break;
     case CmdId::kUnloadInt:
@@ -526,75 +529,75 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       cmd = &kUnloadBoolCmd;
       break;
     case CmdId::kUnloadIntArray:
-      kUnloadIntArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kUnloadIntArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kUnloadIntArrayCmd;
       break;
     case CmdId::kUnloadLongArray:
-      kUnloadLongArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kUnloadLongArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kUnloadLongArrayCmd;
       break;
     case CmdId::kUnloadDoubleArray:
-      kUnloadDoubleArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kUnloadDoubleArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kUnloadDoubleArrayCmd;
       break;
     case CmdId::kUnloadCharArray:
-      kUnloadCharArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kUnloadCharArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kUnloadCharArrayCmd;
       break;
     case CmdId::kUnloadStringArray:
-      kUnloadStringArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kUnloadStringArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kUnloadStringArrayCmd;
       break;
     case CmdId::kUnloadBoolArray:
-      kUnloadBoolArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kUnloadBoolArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kUnloadBoolArrayCmd;
       break;
     case CmdId::kLoadIntValue:
-      kLoadIntValueCmd.SetValue(code_->ReadInt32());
+      kLoadIntValueCmd.SetValue(code_->Read<int32_t>());
       cmd = &kLoadIntValueCmd;
       break;
     case CmdId::kLoadLongValue:
-      kLoadLongValueCmd.SetValue(code_->ReadInt64());
+      kLoadLongValueCmd.SetValue(code_->Read<int64_t>());
       cmd = &kLoadLongValueCmd;
       break;
     case CmdId::kLoadBoolValue:
-      kLoadBoolValueCmd.SetValue(code_->ReadBool());
+      kLoadBoolValueCmd.SetValue(code_->Read<bool>());
       cmd = &kLoadBoolValueCmd;
       break;
     case CmdId::kLoadCharValue:
-      kLoadCharValueCmd.SetValue(code_->ReadChar());
+      kLoadCharValueCmd.SetValue(code_->Read<char>());
       cmd = &kLoadCharValueCmd;
       break;
     case CmdId::kLoadStringValue:
-      kLoadStringValueCmd.SetValue(code_->ReadString());
+      kLoadStringValueCmd.SetValue(code_->Read<string>());
       cmd = &kLoadStringValueCmd;
       break;
     case CmdId::kLoadDoubleValue:
-      kLoadDoubleValueCmd.SetValue(code_->ReadDouble());
+      kLoadDoubleValueCmd.SetValue(code_->Read<double>());
       cmd = &kLoadDoubleValueCmd;
       break;
     case CmdId::kCreateAndInitGlobalIntVar:
-      kCreateAndInitGlobalIntVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateAndInitGlobalIntVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateAndInitGlobalIntVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalLongVar:
-      kCreateAndInitGlobalLongVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateAndInitGlobalLongVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateAndInitGlobalLongVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalDoubleVar:
-      kCreateAndInitGlobalDoubleVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateAndInitGlobalDoubleVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateAndInitGlobalDoubleVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalCharVar:
-      kCreateAndInitGlobalCharVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateAndInitGlobalCharVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateAndInitGlobalCharVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalStringVar:
-      kCreateAndInitGlobalStringVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateAndInitGlobalStringVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateAndInitGlobalStringVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalBoolVar:
-      kCreateAndInitGlobalBoolVarCmd.SetVarIndex(code_->ReadUint32());
+      kCreateAndInitGlobalBoolVarCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kCreateAndInitGlobalBoolVarCmd;
       break;
     case CmdId::kCreateAndInitGlobalIntArrayVar:
@@ -640,29 +643,29 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       cmd = &kCreateAndInitLocalBoolVarCmd;
       break;
     case CmdId::kCreateAndInitLocalIntArrayVar:
-      kCreateAndInitLocalIntArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kCreateAndInitLocalIntArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kCreateAndInitLocalIntArrayVarCmd;
       break;
     case CmdId::kCreateAndInitLocalLongArrayVar:
-      kCreateAndInitLocalLongArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kCreateAndInitLocalLongArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kCreateAndInitLocalLongArrayVarCmd;
       break;
     case CmdId::kCreateAndInitLocalDoubleArrayVar:
       kCreateAndInitLocalDoubleArrayVarCmd.SetDimensionsCount(
-          code_->ReadUint8());
+          code_->Read<uint8_t>());
       cmd = &kCreateAndInitLocalDoubleArrayVarCmd;
       break;
     case CmdId::kCreateAndInitLocalCharArrayVar:
-      kCreateAndInitLocalCharArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kCreateAndInitLocalCharArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kCreateAndInitLocalCharArrayVarCmd;
       break;
     case CmdId::kCreateAndInitLocalStringArrayVar:
       kCreateAndInitLocalStringArrayVarCmd.SetDimensionsCount(
-          code_->ReadUint8());
+          code_->Read<uint8_t>());
       cmd = &kCreateAndInitLocalStringArrayVarCmd;
       break;
     case CmdId::kCreateAndInitLocalBoolArrayVar:
-      kCreateAndInitLocalBoolArrayVarCmd.SetDimensionsCount(code_->ReadUint8());
+      kCreateAndInitLocalBoolArrayVarCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kCreateAndInitLocalBoolArrayVarCmd;
       break;
     case CmdId::kCreateIntArray:
@@ -761,19 +764,19 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       cmd = &kLoadGlobalBoolVarValueCmd;
       break;
     case CmdId::kLoadGlobalVarAddress:
-      kLoadGlobalVarAddressCmd.SetVarIndex(code_->ReadUint32());
+      kLoadGlobalVarAddressCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kLoadGlobalVarAddressCmd;
       break;
     case CmdId::kLoadLocalVarAddress:
-      kLoadLocalVarAddressCmd.SetVarIndex(code_->ReadUint32());
+      kLoadLocalVarAddressCmd.SetVarIndex(code_->Read<uint32_t>());
       cmd = &kLoadLocalVarAddressCmd;
       break;
     case CmdId::kLoadFuncValue:
-      kLoadFuncValueCmd.SetAddress(code_->ReadUint32());
+      kLoadFuncValueCmd.SetAddress(code_->Read<uint32_t>());
       cmd = &kLoadFuncValueCmd;
       break;
     case CmdId::kLoadNativeFuncValue:
-      kLoadNativeFuncValueCmd.SetFuncIndex(code_->ReadUint32());
+      kLoadNativeFuncValueCmd.SetFuncIndex(code_->Read<uint32_t>());
       cmd = &kLoadNativeFuncValueCmd;
       break;
     case CmdId::kLoadLocalIntVarValue:
@@ -823,27 +826,27 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       cmd = &kStoreStringCmd;
       break;
     case CmdId::kStoreIntArray:
-      kStoreIntArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kStoreIntArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kStoreIntArrayCmd;
       break;
     case CmdId::kStoreLongArray:
-      kStoreLongArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kStoreLongArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kStoreLongArrayCmd;
       break;
     case CmdId::kStoreDoubleArray:
-      kStoreDoubleArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kStoreDoubleArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kStoreDoubleArrayCmd;
       break;
     case CmdId::kStoreBoolArray:
-      kStoreBoolArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kStoreBoolArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kStoreBoolArrayCmd;
       break;
     case CmdId::kStoreCharArray:
-      kStoreCharArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kStoreCharArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kStoreCharArrayCmd;
       break;
     case CmdId::kStoreStringArray:
-      kStoreStringArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kStoreStringArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kStoreStringArrayCmd;
       break;
     case CmdId::kCastCharToInt:
@@ -874,53 +877,53 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       cmd = &kCallNativeCmd;
       break;
     case CmdId::kLoadIntArrayElementValue:
-      kLoadIntArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadIntArrayElementValueCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadIntArrayElementValueCmd;
       break;
     case CmdId::kLoadLongArrayElementValue:
-      kLoadLongArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadLongArrayElementValueCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadLongArrayElementValueCmd;
       break;
     case CmdId::kLoadDoubleArrayElementValue:
-      kLoadDoubleArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadDoubleArrayElementValueCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadDoubleArrayElementValueCmd;
       break;
     case CmdId::kLoadBoolArrayElementValue:
-      kLoadBoolArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadBoolArrayElementValueCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadBoolArrayElementValueCmd;
       break;
     case CmdId::kLoadCharArrayElementValue:
-      kLoadCharArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadCharArrayElementValueCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadCharArrayElementValueCmd;
       break;
     case CmdId::kLoadStringArrayElementValue:
-      kLoadStringArrayElementValueCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadStringArrayElementValueCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadStringArrayElementValueCmd;
       break;
     case CmdId::kLoadIntArrayElementAddress:
-      kLoadIntArrayElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadIntArrayElementAddressCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadIntArrayElementAddressCmd;
       break;
     case CmdId::kLoadLongArrayElementAddress:
-      kLoadLongArrayElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadLongArrayElementAddressCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadLongArrayElementAddressCmd;
       break;
     case CmdId::kLoadDoubleArrayElementAddress:
       kLoadDoubleArrayElementAddressCmd.SetDimensionsCount(
-          code_->ReadUint8());
+          code_->Read<uint8_t>());
       cmd = &kLoadDoubleArrayElementAddressCmd;
       break;
     case CmdId::kLoadBoolArrayElementAddress:
-      kLoadBoolArrayElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadBoolArrayElementAddressCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadBoolArrayElementAddressCmd;
       break;
     case CmdId::kLoadCharArrayElementAddress:
-      kLoadCharArrayElementAddressCmd.SetDimensionsCount(code_->ReadUint8());
+      kLoadCharArrayElementAddressCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kLoadCharArrayElementAddressCmd;
       break;
     case CmdId::kLoadStringArrayElementAddress:
       kLoadStringArrayElementAddressCmd.SetDimensionsCount(
-          code_->ReadUint8());
+          code_->Read<uint8_t>());
       cmd = &kLoadStringArrayElementAddressCmd;
       break;
     case CmdId::kAnd:
@@ -999,27 +1002,27 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       cmd = &kEqualStringCmd;
       break;
     case CmdId::kEqualIntArray:
-      kEqualIntArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kEqualIntArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kEqualIntArrayCmd;
       break;
     case CmdId::kEqualLongArray:
-      kEqualLongArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kEqualLongArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kEqualLongArrayCmd;
       break;
     case CmdId::kEqualDoubleArray:
-      kEqualDoubleArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kEqualDoubleArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kEqualDoubleArrayCmd;
       break;
     case CmdId::kEqualBoolArray:
-      kEqualBoolArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kEqualBoolArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kEqualBoolArrayCmd;
       break;
     case CmdId::kEqualCharArray:
-      kEqualCharArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kEqualCharArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kEqualCharArrayCmd;
       break;
     case CmdId::kEqualStringArray:
-      kEqualStringArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kEqualStringArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kEqualStringArrayCmd;
       break;
     case CmdId::kNotEqualInt:
@@ -1041,27 +1044,27 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       cmd = &kNotEqualStringCmd;
       break;
     case CmdId::kNotEqualIntArray:
-      kNotEqualIntArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kNotEqualIntArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kNotEqualIntArrayCmd;
       break;
     case CmdId::kNotEqualLongArray:
-      kNotEqualLongArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kNotEqualLongArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kNotEqualLongArrayCmd;
       break;
     case CmdId::kNotEqualDoubleArray:
-      kNotEqualDoubleArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kNotEqualDoubleArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kNotEqualDoubleArrayCmd;
       break;
     case CmdId::kNotEqualBoolArray:
-      kNotEqualBoolArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kNotEqualBoolArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kNotEqualBoolArrayCmd;
       break;
     case CmdId::kNotEqualCharArray:
-      kNotEqualCharArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kNotEqualCharArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kNotEqualCharArrayCmd;
       break;
     case CmdId::kNotEqualStringArray:
-      kNotEqualStringArrayCmd.SetDimensionsCount(code_->ReadUint8());
+      kNotEqualStringArrayCmd.SetDimensionsCount(code_->Read<uint8_t>());
       cmd = &kNotEqualStringArrayCmd;
       break;
     case CmdId::kGreaterChar:
@@ -1155,33 +1158,33 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
 }
 
 inline void CmdReader::ReadCreateArrayCmd(CreateArrayCmd &cmd) noexcept {
-  cmd.SetDimensionsCount(code_->ReadUint8());
+  cmd.SetDimensionsCount(code_->Read<uint8_t>());
 }
 
 inline void CmdReader::ReadCreateAndInitArrayCmd(
     CreateAndInitArrayCmd &cmd) noexcept {
-  cmd.SetDimensionsCount(code_->ReadUint8());
-  cmd.SetValuesCount(code_->ReadInt32());
+  cmd.SetDimensionsCount(code_->Read<uint8_t>());
+  cmd.SetValuesCount(code_->Read<int32_t>());
 }
 
 inline void CmdReader::ReadJumpCmd(JumpCmd &cmd) noexcept {
-  cmd.SetOffset(code_->ReadInt32());
+  cmd.SetOffset(code_->Read<int32_t>());
 }
 
 inline void CmdReader::ReadLoadGlobalVarValueCmd(
     LoadGlobalVarValueCmd &cmd) noexcept {
-  cmd.SetVarIndex(code_->ReadUint32());
+  cmd.SetVarIndex(code_->Read<uint32_t>());
 }
 
 inline void CmdReader::ReadLoadLocalVarValueCmd(
     LoadLocalVarValueCmd &cmd) noexcept {
-  cmd.SetVarIndex(code_->ReadUint32());
+  cmd.SetVarIndex(code_->Read<uint32_t>());
 }
 
 inline void CmdReader::ReadCreateAndInitGlobalArrayVarCmd(
     CreateAndInitGlobalArrayVarCmd &cmd) noexcept {
-  cmd.SetVarIndex(code_->ReadUint32());
-  cmd.SetDimensionsCount(code_->ReadUint8());
+  cmd.SetVarIndex(code_->Read<uint32_t>());
+  cmd.SetDimensionsCount(code_->Read<uint8_t>());
 }
 }
 }

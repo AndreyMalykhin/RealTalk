@@ -68,8 +68,8 @@ TEST_F(SimpleFileTest, Write) {
   path file_path(TestConfig::GetResourceDir() / path("file2.txt"));
   files_to_remove_.push_back(file_path);
   Code code;
-  code.WriteChar('a');
-  code.WriteChar('b');
+  code.Write<char>('a');
+  code.Write<char>('b');
   size_t expected_content_size = 2;
   char expected_content[] = "ab";
   SimpleFile file;

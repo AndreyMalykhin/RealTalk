@@ -76,28 +76,36 @@ DataStorage::DataStorage(size_t size): capacity_(size * 2),
 
 DataStorage::DataStorage(): DataStorage(0) {}
 
-void DataStorage::CreateInt(size_t) noexcept {
+template<typename T> void DataStorage::Create(size_t) {
   // slot already filled with zeros
 }
 
-void DataStorage::CreateLong(size_t) noexcept {
-  // slot already filled with zeros
-}
-
-void DataStorage::CreateDouble(size_t) noexcept {
-  // slot already filled with zeros
-}
-
-void DataStorage::CreateBool(size_t) noexcept {
-  // slot already filled with zeros
-}
-
-void DataStorage::CreateChar(size_t) noexcept {
-  // slot already filled with zeros
-}
-
-void DataStorage::CreateString(size_t index) {
+template<> void DataStorage::Create<StringValue>(size_t index) {
   new(GetSlot(index)) StringValue();
+}
+
+template<> void DataStorage::Create< ArrayValue<IntValue> >(size_t index) {
+  CreateArray<IntValue>(index);
+}
+
+template<> void DataStorage::Create< ArrayValue<LongValue> >(size_t index) {
+  CreateArray<LongValue>(index);
+}
+
+template<> void DataStorage::Create< ArrayValue<DoubleValue> >(size_t index) {
+  CreateArray<DoubleValue>(index);
+}
+
+template<> void DataStorage::Create< ArrayValue<CharValue> >(size_t index) {
+  CreateArray<CharValue>(index);
+}
+
+template<> void DataStorage::Create< ArrayValue<BoolValue> >(size_t index) {
+  CreateArray<BoolValue>(index);
+}
+
+template<> void DataStorage::Create< ArrayValue<StringValue> >(size_t index) {
+  CreateArray<StringValue>(index);
 }
 
 template<typename T> void DataStorage::CreateArray(size_t index) {
@@ -105,140 +113,109 @@ template<typename T> void DataStorage::CreateArray(size_t index) {
   ArrayValue<T>::UnidimensionalAt(size, GetSlot(index));
 }
 
-template void DataStorage::CreateArray<IntValue>(size_t index);
-template void DataStorage::CreateArray<LongValue>(size_t index);
-template void DataStorage::CreateArray<DoubleValue>(size_t index);
-template void DataStorage::CreateArray<CharValue>(size_t index);
-template void DataStorage::CreateArray<BoolValue>(size_t index);
-template void DataStorage::CreateArray<StringValue>(size_t index);
+template void DataStorage::Create<IntValue>(size_t index);
+template void DataStorage::Create<LongValue>(size_t index);
+template void DataStorage::Create<DoubleValue>(size_t index);
+template void DataStorage::Create<CharValue>(size_t index);
+template void DataStorage::Create<BoolValue>(size_t index);
 
-IntValue DataStorage::GetInt(size_t index) const noexcept {
-  return *Get<IntValue>(index);
+template<typename T> const T &DataStorage::Get(size_t index) const noexcept {
+  return *(reinterpret_cast<T*>(GetSlot(index)));
 }
 
-LongValue DataStorage::GetLong(size_t index) const noexcept {
-  return *Get<LongValue>(index);
-}
-
-DoubleValue DataStorage::GetDouble(size_t index) const noexcept {
-  return *Get<DoubleValue>(index);
-}
-
-BoolValue DataStorage::GetBool(size_t index) const noexcept {
-  return *Get<BoolValue>(index);
-}
-
-CharValue DataStorage::GetChar(size_t index) const noexcept {
-  return *Get<CharValue>(index);
-}
-
-FuncValue DataStorage::GetFunc(size_t index) const noexcept {
-  return *Get<FuncValue>(index);
-}
-
-NativeFuncValue DataStorage::GetNativeFunc(size_t index) const noexcept {
-  return *Get<NativeFuncValue>(index);
-}
-
-const StringValue &DataStorage::GetString(size_t index) const noexcept {
-  return *Get<StringValue>(index);
-}
-
-template<typename T> const ArrayValue<T> &DataStorage::GetArray(size_t index)
-    const noexcept {
-  return *Get< ArrayValue<T> >(index);
-}
-
-template<typename T> ArrayValue<T> &DataStorage::GetArray(size_t index)
-    noexcept {
-  return *Get< ArrayValue<T> >(index);
-}
-
-template const ArrayValue<IntValue> &DataStorage::GetArray(size_t index)
+template const IntValue &DataStorage::Get<IntValue>(size_t index)
     const noexcept;
-template const ArrayValue<LongValue> &DataStorage::GetArray(size_t index)
+template const LongValue &DataStorage::Get<LongValue>(size_t index)
     const noexcept;
-template const ArrayValue<DoubleValue> &DataStorage::GetArray(size_t index)
+template const DoubleValue &DataStorage::Get<DoubleValue>(size_t index)
     const noexcept;
-template const ArrayValue<CharValue> &DataStorage::GetArray(size_t index)
+template const CharValue &DataStorage::Get<CharValue>(size_t index)
     const noexcept;
-template const ArrayValue<BoolValue> &DataStorage::GetArray(size_t index)
+template const BoolValue &DataStorage::Get<BoolValue>(size_t index)
     const noexcept;
-template const ArrayValue<StringValue> &DataStorage::GetArray(size_t index)
+template const StringValue &DataStorage::Get<StringValue>(size_t index)
     const noexcept;
+template const FuncValue &DataStorage::Get<FuncValue>(size_t index)
+    const noexcept;
+template const NativeFuncValue &DataStorage::Get<NativeFuncValue>(
+    size_t index) const noexcept;
+template const ArrayValue<IntValue> &DataStorage::Get< ArrayValue<IntValue> >(
+    size_t index) const noexcept;
+template const ArrayValue<LongValue> &DataStorage::Get< ArrayValue<LongValue> >(
+    size_t index) const noexcept;
+template const ArrayValue<DoubleValue>
+&DataStorage::Get< ArrayValue<DoubleValue> >(size_t index) const noexcept;
+template const ArrayValue<CharValue> &DataStorage::Get< ArrayValue<CharValue> >(
+    size_t index) const noexcept;
+template const ArrayValue<BoolValue> &DataStorage::Get< ArrayValue<BoolValue> >(
+    size_t index) const noexcept;
+template const ArrayValue<StringValue>
+&DataStorage::Get< ArrayValue<StringValue> >(size_t index) const noexcept;
 
-template ArrayValue<IntValue> &DataStorage::GetArray(size_t index)
-    noexcept;
-template ArrayValue<LongValue> &DataStorage::GetArray(size_t index)
-    noexcept;
-template ArrayValue<DoubleValue> &DataStorage::GetArray(size_t index)
-    noexcept;
-template ArrayValue<CharValue> &DataStorage::GetArray(size_t index)
-    noexcept;
-template ArrayValue<BoolValue> &DataStorage::GetArray(size_t index)
-    noexcept;
-template ArrayValue<StringValue> &DataStorage::GetArray(size_t index)
-    noexcept;
-
-void DataStorage::PushInt(IntValue value) noexcept {
-  PushPrimitive<IntValue, DataTypeSize::kInt>(value);
+template<> void DataStorage::Push<IntValue>(IntValue value) {
+  DoPush<IntValue, DataTypeSize::kInt>(value);
 }
 
-void DataStorage::PushLong(LongValue value) noexcept {
-  PushPrimitive<LongValue, DataTypeSize::kLong>(value);
+template<> void DataStorage::Push<LongValue>(LongValue value) {
+  DoPush<LongValue, DataTypeSize::kLong>(value);
 }
 
-void DataStorage::PushDouble(DoubleValue value) noexcept {
-  PushPrimitive<DoubleValue, DataTypeSize::kDouble>(value);
+template<> void DataStorage::Push<DoubleValue>(DoubleValue value) {
+  DoPush<DoubleValue, DataTypeSize::kDouble>(value);
 }
 
-void DataStorage::PushChar(CharValue value) noexcept {
-  PushPrimitive<CharValue, DataTypeSize::kChar>(value);
+template<> void DataStorage::Push<CharValue>(CharValue value) {
+  DoPush<CharValue, DataTypeSize::kChar>(value);
 }
 
-void DataStorage::PushBool(BoolValue value) noexcept {
-  PushPrimitive<BoolValue, DataTypeSize::kBool>(value);
+template<> void DataStorage::Push<BoolValue>(BoolValue value) {
+  DoPush<BoolValue, DataTypeSize::kBool>(value);
 }
 
-void DataStorage::PushFunc(FuncValue value) noexcept {
-  PushPrimitive<FuncValue, DataTypeSize::kFunc>(value);
+template<> void DataStorage::Push<FuncValue>(FuncValue value) {
+  DoPush<FuncValue, DataTypeSize::kFunc>(value);
 }
 
-void DataStorage::PushNativeFunc(NativeFuncValue value) noexcept {
-  PushPrimitive<NativeFuncValue, DataTypeSize::kNativeFunc>(value);
+template<> void DataStorage::Push<NativeFuncValue>(NativeFuncValue value) {
+  DoPush<NativeFuncValue, DataTypeSize::kNativeFunc>(value);
 }
 
-void DataStorage::PushString(StringValue &&value) {
-  PushNonPrimitive<StringValue, DataTypeSize::kString>(move(value));
+template<> void DataStorage::Push<StringValue>(StringValue value) {
+  DoPush<StringValue, DataTypeSize::kString>(move(value));
 }
 
-template<typename T> void DataStorage::PushArray(ArrayValue<T> &&value) {
-  PushNonPrimitive<ArrayValue<T>, DataTypeSize::kArray>(move(value));
+template<> void DataStorage::Push< ArrayValue<IntValue> >(
+    ArrayValue<IntValue> value) {
+  DoPush<ArrayValue<IntValue>, DataTypeSize::kArray>(move(value));
 }
 
-template void DataStorage::PushArray<IntValue>(
-    ArrayValue<IntValue> &&value);
-template void DataStorage::PushArray<LongValue>(
-    ArrayValue<LongValue> &&value);
-template void DataStorage::PushArray<DoubleValue>(
-    ArrayValue<DoubleValue> &&value);
-template void DataStorage::PushArray<CharValue>(
-    ArrayValue<CharValue> &&value);
-template void DataStorage::PushArray<BoolValue>(
-    ArrayValue<BoolValue> &&value);
-template void DataStorage::PushArray<StringValue>(
-    ArrayValue<StringValue> &&value);
-
-template<typename TType, DataTypeSize TSize> void DataStorage::PushPrimitive(
-    TType value) noexcept {
-  const size_t size = static_cast<size_t>(TSize);
-  EnsureCapacity(size);
-  *(reinterpret_cast<TType*>(current_slot_)) = value;
-  AfterPush(size);
+template<> void DataStorage::Push< ArrayValue<LongValue> >(
+    ArrayValue<LongValue> value) {
+  DoPush<ArrayValue<LongValue>, DataTypeSize::kArray>(move(value));
 }
 
-template<typename TType, DataTypeSize TSize> void DataStorage::PushNonPrimitive(
-    TType &&value) {
+template<> void DataStorage::Push< ArrayValue<DoubleValue> >(
+    ArrayValue<DoubleValue> value) {
+  DoPush<ArrayValue<DoubleValue>, DataTypeSize::kArray>(move(value));
+}
+
+template<> void DataStorage::Push< ArrayValue<CharValue> >(
+    ArrayValue<CharValue> value) {
+  DoPush<ArrayValue<CharValue>, DataTypeSize::kArray>(move(value));
+}
+
+template<> void DataStorage::Push< ArrayValue<BoolValue> >(
+    ArrayValue<BoolValue> value) {
+  DoPush<ArrayValue<BoolValue>, DataTypeSize::kArray>(move(value));
+}
+
+template<> void DataStorage::Push< ArrayValue<StringValue> >(
+    ArrayValue<StringValue> value) {
+  DoPush<ArrayValue<StringValue>, DataTypeSize::kArray>(move(value));
+}
+
+template<typename TType, DataTypeSize TSize> void DataStorage::DoPush(
+    TType value) {
   const size_t size = static_cast<size_t>(TSize);
   EnsureCapacity(size);
   new(current_slot_) TType(move(value));
@@ -330,14 +307,6 @@ ostream &operator<<(
   }
 
   return stream;
-}
-
-template<typename T> const T *DataStorage::Get(size_t index) const noexcept {
-  return reinterpret_cast<T*>(GetSlot(index));
-}
-
-template<typename T> T *DataStorage::Get(size_t index) noexcept {
-  return reinterpret_cast<T*>(GetSlot(index));
 }
 
 void DataStorage::EnsureCapacity(size_t slots_count) {

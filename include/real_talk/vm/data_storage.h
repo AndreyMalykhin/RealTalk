@@ -32,35 +32,11 @@ class DataStorage {
   DataStorage();
   explicit DataStorage(size_t size);
   size_t GetSize() const noexcept;
-  void CreateInt(size_t index) noexcept;
-  void CreateLong(size_t index) noexcept;
-  void CreateDouble(size_t index) noexcept;
-  void CreateBool(size_t index) noexcept;
-  void CreateChar(size_t index) noexcept;
-  void CreateString(size_t index);
-  template<typename T> void CreateArray(size_t index);
-  IntValue GetInt(size_t index) const noexcept;
-  LongValue GetLong(size_t index) const noexcept;
-  DoubleValue GetDouble(size_t index) const noexcept;
-  BoolValue GetBool(size_t index) const noexcept;
-  CharValue GetChar(size_t index) const noexcept;
-  FuncValue GetFunc(size_t index) const noexcept;
-  NativeFuncValue GetNativeFunc(size_t index) const noexcept;
-  const StringValue &GetString(size_t index) const noexcept;
-  template<typename T> const ArrayValue<T> &GetArray(size_t index)
-      const noexcept;
-  template<typename T> ArrayValue<T> &GetArray(size_t index) noexcept;
-  void PushInt(IntValue value) noexcept;
-  void PushLong(LongValue value) noexcept;
-  void PushDouble(DoubleValue value) noexcept;
-  void PushChar(CharValue value) noexcept;
-  void PushBool(BoolValue value) noexcept;
-  void PushFunc(FuncValue value) noexcept;
-  void PushNativeFunc(NativeFuncValue value) noexcept;
-  void PushString(StringValue &&value);
-  template<typename T> void PushArray(ArrayValue<T> &&value);
-  friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
+  template<typename T> void Create(size_t index);
+  template<typename T> const T &Get(size_t index) const noexcept;
+  template<typename T> void Push(T value);
   template<typename T> T Pop() noexcept;
+  friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
   friend std::ostream &operator<<(
       std::ostream &stream, const DataStorage &storage);
 
@@ -70,12 +46,9 @@ class DataStorage {
   void AfterPush(size_t pushed_slots_count) noexcept;
   Slot *GetSlot(size_t index) const noexcept;
   bool HasSlots(size_t count) const noexcept;
-  template<typename TType, real_talk::code::DataTypeSize TSize>
-  void PushPrimitive(TType value) noexcept;
-  template<typename TType, real_talk::code::DataTypeSize TSize>
-  void PushNonPrimitive(TType &&value);
-  template<typename T> const T *Get(size_t index) const noexcept;
-  template<typename T> T *Get(size_t index) noexcept;
+  template<typename T> void CreateArray(size_t index);
+  template<typename TType, real_talk::code::DataTypeSize TSize> void DoPush(
+      TType value);
   template<typename T, real_talk::code::DataTypeSize TSize> T DoPop() noexcept;
 
   size_t capacity_;

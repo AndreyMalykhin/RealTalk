@@ -540,7 +540,7 @@ class SimpleCodeGenerator::Impl::ArrayCmdGenerator
     code_ = code;
     dimensions_count_ = UINT8_C(0);
     data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count_);
+    code_->Write<uint8_t>(dimensions_count_);
   }
 
  protected:
@@ -569,36 +569,36 @@ class SimpleCodeGenerator::Impl::CreateGlobalVarCmdGenerator
     data_type.Accept(*this);
     *var_index_placeholder = code->GetPosition();
     const uint32_t var_index = numeric_limits<uint32_t>::max();
-    code->WriteUint32(var_index);
+    code->Write<uint32_t>(var_index);
   }
 
  private:
   virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateGlobalArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateGlobalArrayVar);
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateGlobalBoolVar);
+    code_->Write<CmdId>(CmdId::kCreateGlobalBoolVar);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateGlobalIntVar);
+    code_->Write<CmdId>(CmdId::kCreateGlobalIntVar);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateGlobalLongVar);
+    code_->Write<CmdId>(CmdId::kCreateGlobalLongVar);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateGlobalDoubleVar);
+    code_->Write<CmdId>(CmdId::kCreateGlobalDoubleVar);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateGlobalCharVar);
+    code_->Write<CmdId>(CmdId::kCreateGlobalCharVar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateGlobalStringVar);
+    code_->Write<CmdId>(CmdId::kCreateGlobalStringVar);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -620,8 +620,8 @@ class SimpleCodeGenerator::Impl::CreateAndInitGlobalArrayVarCmdGenerator
     data_type.Accept(*this);
     *var_index_placeholder = code->GetPosition();
     const uint32_t var_index = numeric_limits<uint32_t>::max();
-    code->WriteUint32(var_index);
-    code->WriteUint8(dimensions_count_);
+    code->Write<uint32_t>(var_index);
+    code->Write<uint8_t>(dimensions_count_);
   }
 
  private:
@@ -631,27 +631,27 @@ class SimpleCodeGenerator::Impl::CreateAndInitGlobalArrayVarCmdGenerator
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalBoolArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitGlobalBoolArrayVar);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalIntArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitGlobalIntArrayVar);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalLongArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitGlobalLongArrayVar);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalDoubleArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitGlobalDoubleArrayVar);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalCharArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitGlobalCharArrayVar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitGlobalStringArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitGlobalStringArrayVar);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -707,10 +707,10 @@ class SimpleCodeGenerator::Impl::CreateAndInitGlobalVarCmdGenerator
   virtual void VisitFunc(const FuncDataType&) override {assert(false);}
 
   void VisitNonArray(CmdId cmd_id) {
-    code_->WriteCmdId(cmd_id);
+    code_->Write<CmdId>(cmd_id);
     *var_index_placeholder_ = code_->GetPosition();
     const uint32_t var_index = numeric_limits<uint32_t>::max();
-    code_->WriteUint32(var_index);
+    code_->Write<uint32_t>(var_index);
   }
 
   uint32_t *var_index_placeholder_;
@@ -721,27 +721,27 @@ class SimpleCodeGenerator::Impl::CreateAndInitLocalArrayVarCmdGenerator
     : public ArrayCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalBoolArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalBoolArrayVar);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalIntArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalIntArrayVar);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalLongArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalLongArrayVar);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalDoubleArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalDoubleArrayVar);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalCharArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalCharArrayVar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalStringArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalStringArrayVar);
   }
 };
 
@@ -759,27 +759,27 @@ class SimpleCodeGenerator::Impl::CreateAndInitLocalVarCmdGenerator
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalBoolVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalBoolVar);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalIntVar);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalLongVar);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalDoubleVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalDoubleVar);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalCharVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalCharVar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLocalStringVar);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLocalStringVar);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -798,31 +798,31 @@ class SimpleCodeGenerator::Impl::CreateLocalVarCmdGenerator
 
  private:
   virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateLocalArrayVar);
+    code_->Write<CmdId>(CmdId::kCreateLocalArrayVar);
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateLocalBoolVar);
+    code_->Write<CmdId>(CmdId::kCreateLocalBoolVar);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateLocalIntVar);
+    code_->Write<CmdId>(CmdId::kCreateLocalIntVar);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateLocalLongVar);
+    code_->Write<CmdId>(CmdId::kCreateLocalLongVar);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateLocalDoubleVar);
+    code_->Write<CmdId>(CmdId::kCreateLocalDoubleVar);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateLocalCharVar);
+    code_->Write<CmdId>(CmdId::kCreateLocalCharVar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateLocalStringVar);
+    code_->Write<CmdId>(CmdId::kCreateLocalStringVar);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -835,27 +835,27 @@ class SimpleCodeGenerator::Impl::DestroyLocalArrayVarCmdGenerator
     : public ArrayCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalBoolArrayVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalBoolArrayVar);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalIntArrayVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalIntArrayVar);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalLongArrayVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalLongArrayVar);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalDoubleArrayVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalDoubleArrayVar);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalCharArrayVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalCharArrayVar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalStringArrayVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalStringArrayVar);
   }
 };
 
@@ -873,27 +873,27 @@ class SimpleCodeGenerator::Impl::DestroyLocalVarCmdGenerator
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalBoolVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalBoolVar);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalIntVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalIntVar);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalLongVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalLongVar);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalDoubleVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalDoubleVar);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalCharVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalCharVar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kDestroyLocalStringVar);
+    code_->Write<CmdId>(CmdId::kDestroyLocalStringVar);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -909,32 +909,32 @@ class SimpleCodeGenerator::Impl::CreateArrayCmdGenerator
       const DataType &data_type, uint8_t dimensions_count, Code *code) {
     code_ = code;
     data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count);
+    code_->Write<uint8_t>(dimensions_count);
   }
 
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateBoolArray);
+    code_->Write<CmdId>(CmdId::kCreateBoolArray);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateIntArray);
+    code_->Write<CmdId>(CmdId::kCreateIntArray);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateLongArray);
+    code_->Write<CmdId>(CmdId::kCreateLongArray);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateDoubleArray);
+    code_->Write<CmdId>(CmdId::kCreateDoubleArray);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateCharArray);
+    code_->Write<CmdId>(CmdId::kCreateCharArray);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateStringArray);
+    code_->Write<CmdId>(CmdId::kCreateStringArray);
   }
 
   virtual void VisitArray(const ArrayDataType &data_type) override {
@@ -956,33 +956,33 @@ class SimpleCodeGenerator::Impl::CreateAndInitArrayCmdGenerator
                 Code *code) {
     code_ = code;
     data_type.Accept(*this);
-    code_->WriteUint8(dimensions_count);
-    code_->WriteInt32(values_count);
+    code_->Write<uint8_t>(dimensions_count);
+    code_->Write<int32_t>(values_count);
   }
 
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitBoolArray);
+    code_->Write<CmdId>(CmdId::kCreateAndInitBoolArray);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitIntArray);
+    code_->Write<CmdId>(CmdId::kCreateAndInitIntArray);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitLongArray);
+    code_->Write<CmdId>(CmdId::kCreateAndInitLongArray);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitDoubleArray);
+    code_->Write<CmdId>(CmdId::kCreateAndInitDoubleArray);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitCharArray);
+    code_->Write<CmdId>(CmdId::kCreateAndInitCharArray);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kCreateAndInitStringArray);
+    code_->Write<CmdId>(CmdId::kCreateAndInitStringArray);
   }
 
   virtual void VisitArray(const ArrayDataType &data_type) override {
@@ -1006,36 +1006,36 @@ class SimpleCodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
     data_type.Accept(*this);
     *var_index_placeholder = code_->GetPosition();
     const uint32_t var_index = numeric_limits<uint32_t>::max();
-    code_->WriteUint32(var_index);
+    code_->Write<uint32_t>(var_index);
   }
 
  private:
   virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadGlobalArrayVarValue);
+    code_->Write<CmdId>(CmdId::kLoadGlobalArrayVarValue);
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadGlobalBoolVarValue);
+    code_->Write<CmdId>(CmdId::kLoadGlobalBoolVarValue);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadGlobalIntVarValue);
+    code_->Write<CmdId>(CmdId::kLoadGlobalIntVarValue);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadGlobalLongVarValue);
+    code_->Write<CmdId>(CmdId::kLoadGlobalLongVarValue);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadGlobalDoubleVarValue);
+    code_->Write<CmdId>(CmdId::kLoadGlobalDoubleVarValue);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadGlobalCharVarValue);
+    code_->Write<CmdId>(CmdId::kLoadGlobalCharVarValue);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadGlobalStringVarValue);
+    code_->Write<CmdId>(CmdId::kLoadGlobalStringVarValue);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -1050,36 +1050,36 @@ class SimpleCodeGenerator::Impl::LoadLocalVarValueCmdGenerator
   void Generate(const DataType &data_type, uint32_t var_index, Code *code) {
     code_ = code;
     data_type.Accept(*this);
-    code_->WriteUint32(var_index);
+    code_->Write<uint32_t>(var_index);
   }
 
  private:
   virtual void VisitArray(const ArrayDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLocalArrayVarValue);
+    code_->Write<CmdId>(CmdId::kLoadLocalArrayVarValue);
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLocalBoolVarValue);
+    code_->Write<CmdId>(CmdId::kLoadLocalBoolVarValue);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLocalIntVarValue);
+    code_->Write<CmdId>(CmdId::kLoadLocalIntVarValue);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLocalLongVarValue);
+    code_->Write<CmdId>(CmdId::kLoadLocalLongVarValue);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLocalDoubleVarValue);
+    code_->Write<CmdId>(CmdId::kLoadLocalDoubleVarValue);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLocalCharVarValue);
+    code_->Write<CmdId>(CmdId::kLoadLocalCharVarValue);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLocalStringVarValue);
+    code_->Write<CmdId>(CmdId::kLoadLocalStringVarValue);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -1092,27 +1092,27 @@ class SimpleCodeGenerator::Impl::UnloadArrayCmdGenerator
     : public ArrayCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadBoolArray);
+    code_->Write<CmdId>(CmdId::kUnloadBoolArray);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadIntArray);
+    code_->Write<CmdId>(CmdId::kUnloadIntArray);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadLongArray);
+    code_->Write<CmdId>(CmdId::kUnloadLongArray);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadDoubleArray);
+    code_->Write<CmdId>(CmdId::kUnloadDoubleArray);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadCharArray);
+    code_->Write<CmdId>(CmdId::kUnloadCharArray);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadStringArray);
+    code_->Write<CmdId>(CmdId::kUnloadStringArray);
   }
 };
 
@@ -1130,27 +1130,27 @@ class SimpleCodeGenerator::Impl::UnloadCmdGenerator: private DataTypeVisitor {
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadBool);
+    code_->Write<CmdId>(CmdId::kUnloadBool);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadInt);
+    code_->Write<CmdId>(CmdId::kUnloadInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadLong);
+    code_->Write<CmdId>(CmdId::kUnloadLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadDouble);
+    code_->Write<CmdId>(CmdId::kUnloadDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadChar);
+    code_->Write<CmdId>(CmdId::kUnloadChar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kUnloadString);
+    code_->Write<CmdId>(CmdId::kUnloadString);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {}
@@ -1193,8 +1193,8 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     }
 
     if (id_analysis_->IsAssignee()) {
-      code_->WriteCmdId(CmdId::kLoadLocalVarAddress);
-      code_->WriteUint32(var_index);
+      code_->Write<CmdId>(CmdId::kLoadLocalVarAddress);
+      code_->Write<uint32_t>(var_index);
     } else {
       LoadLocalVarValueCmdGenerator().Generate(
           var_def_analysis.GetDataType(), var_index, code_);
@@ -1206,9 +1206,9 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
     uint32_t var_index_placeholder;
 
     if (id_analysis_->IsAssignee()) {
-      code_->WriteCmdId(CmdId::kLoadGlobalVarAddress);
+      code_->Write<CmdId>(CmdId::kLoadGlobalVarAddress);
       var_index_placeholder = code_->GetPosition();
-      code_->WriteUint32(numeric_limits<uint32_t>::max());
+      code_->Write<uint32_t>(numeric_limits<uint32_t>::max());
     } else {
       LoadGlobalVarValueCmdGenerator().Generate(
           var_def_analysis.GetDataType(), &var_index_placeholder, code_);
@@ -1231,10 +1231,10 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
       func_refs = func_refs_;
     }
 
-    code_->WriteCmdId(cmd);
+    code_->Write<CmdId>(cmd);
     const uint32_t func_value_placeholder = code_->GetPosition();
     const uint32_t func_value = numeric_limits<uint32_t>::max();
-    code_->WriteUint32(func_value);
+    code_->Write<uint32_t>(func_value);
     const string &id = id_node_->GetStartToken().GetValue();
     (*func_refs)[id].push_back(func_value_placeholder);
   }
@@ -1298,27 +1298,27 @@ class SimpleCodeGenerator::Impl::StoreArrayCmdGenerator
     : public ArrayCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreBoolArray);
+    code_->Write<CmdId>(CmdId::kStoreBoolArray);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreIntArray);
+    code_->Write<CmdId>(CmdId::kStoreIntArray);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreLongArray);
+    code_->Write<CmdId>(CmdId::kStoreLongArray);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreDoubleArray);
+    code_->Write<CmdId>(CmdId::kStoreDoubleArray);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreCharArray);
+    code_->Write<CmdId>(CmdId::kStoreCharArray);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreStringArray);
+    code_->Write<CmdId>(CmdId::kStoreStringArray);
   }
 };
 
@@ -1335,27 +1335,27 @@ class SimpleCodeGenerator::Impl::StoreCmdGenerator: private DataTypeVisitor {
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreBool);
+    code_->Write<CmdId>(CmdId::kStoreBool);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreInt);
+    code_->Write<CmdId>(CmdId::kStoreInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreLong);
+    code_->Write<CmdId>(CmdId::kStoreLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreDouble);
+    code_->Write<CmdId>(CmdId::kStoreDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreChar);
+    code_->Write<CmdId>(CmdId::kStoreChar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kStoreString);
+    code_->Write<CmdId>(CmdId::kStoreString);
   }
 
   virtual void VisitVoid(const VoidDataType&) override {assert(false);}
@@ -1373,7 +1373,7 @@ class SimpleCodeGenerator::Impl::CallCmdGenerator: private DataTypeVisitor {
 
  private:
   virtual void VisitFunc(const FuncDataType &data_type) override {
-    code_->WriteCmdId(data_type.IsNative() ? CmdId::kCallNative : CmdId::kCall);
+    code_->Write<CmdId>(data_type.IsNative() ? CmdId::kCallNative : CmdId::kCall);
   }
 
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
@@ -1392,27 +1392,27 @@ class SimpleCodeGenerator::Impl::LoadArrayElementValueCmdGenerator
     : public ArrayCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadBoolArrayElementValue);
+    code_->Write<CmdId>(CmdId::kLoadBoolArrayElementValue);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadIntArrayElementValue);
+    code_->Write<CmdId>(CmdId::kLoadIntArrayElementValue);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLongArrayElementValue);
+    code_->Write<CmdId>(CmdId::kLoadLongArrayElementValue);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadDoubleArrayElementValue);
+    code_->Write<CmdId>(CmdId::kLoadDoubleArrayElementValue);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadCharArrayElementValue);
+    code_->Write<CmdId>(CmdId::kLoadCharArrayElementValue);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadStringArrayElementValue);
+    code_->Write<CmdId>(CmdId::kLoadStringArrayElementValue);
   }
 };
 
@@ -1445,27 +1445,27 @@ class SimpleCodeGenerator::Impl::LoadArrayElementAddressCmdGenerator
     : public ArrayCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadBoolArrayElementAddress);
+    code_->Write<CmdId>(CmdId::kLoadBoolArrayElementAddress);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadIntArrayElementAddress);
+    code_->Write<CmdId>(CmdId::kLoadIntArrayElementAddress);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadLongArrayElementAddress);
+    code_->Write<CmdId>(CmdId::kLoadLongArrayElementAddress);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadDoubleArrayElementAddress);
+    code_->Write<CmdId>(CmdId::kLoadDoubleArrayElementAddress);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadCharArrayElementAddress);
+    code_->Write<CmdId>(CmdId::kLoadCharArrayElementAddress);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kLoadStringArrayElementAddress);
+    code_->Write<CmdId>(CmdId::kLoadStringArrayElementAddress);
   }
 };
 
@@ -1513,7 +1513,7 @@ class SimpleCodeGenerator::Impl::AndCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kAnd);
+    code_->Write<CmdId>(CmdId::kAnd);
   }
 
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
@@ -1527,7 +1527,7 @@ class SimpleCodeGenerator::Impl::AndCmdGenerator
 class SimpleCodeGenerator::Impl::OrCmdGenerator: public ExprCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kOr);
+    code_->Write<CmdId>(CmdId::kOr);
   }
 
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
@@ -1542,19 +1542,19 @@ class SimpleCodeGenerator::Impl::MulCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kMulInt);
+    code_->Write<CmdId>(CmdId::kMulInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kMulLong);
+    code_->Write<CmdId>(CmdId::kMulLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kMulDouble);
+    code_->Write<CmdId>(CmdId::kMulDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kMulChar);
+    code_->Write<CmdId>(CmdId::kMulChar);
   }
 
   virtual void VisitBool(const BoolDataType&) override {assert(false);}
@@ -1566,19 +1566,19 @@ class SimpleCodeGenerator::Impl::DivCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kDivInt);
+    code_->Write<CmdId>(CmdId::kDivInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kDivLong);
+    code_->Write<CmdId>(CmdId::kDivLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kDivDouble);
+    code_->Write<CmdId>(CmdId::kDivDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kDivChar);
+    code_->Write<CmdId>(CmdId::kDivChar);
   }
 
   virtual void VisitBool(const BoolDataType&) override {assert(false);}
@@ -1590,23 +1590,23 @@ class SimpleCodeGenerator::Impl::SumCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kSumInt);
+    code_->Write<CmdId>(CmdId::kSumInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kSumLong);
+    code_->Write<CmdId>(CmdId::kSumLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kSumDouble);
+    code_->Write<CmdId>(CmdId::kSumDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kSumChar);
+    code_->Write<CmdId>(CmdId::kSumChar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kSumString);
+    code_->Write<CmdId>(CmdId::kSumString);
   }
 
   virtual void VisitBool(const BoolDataType&) override {assert(false);}
@@ -1617,19 +1617,19 @@ class SimpleCodeGenerator::Impl::SubCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kSubInt);
+    code_->Write<CmdId>(CmdId::kSubInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kSubLong);
+    code_->Write<CmdId>(CmdId::kSubLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kSubDouble);
+    code_->Write<CmdId>(CmdId::kSubDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kSubChar);
+    code_->Write<CmdId>(CmdId::kSubChar);
   }
 
   virtual void VisitString(const StringDataType&) override {assert(false);}
@@ -1641,27 +1641,27 @@ class SimpleCodeGenerator::Impl::EqualArrayCmdGenerator
     : public ArrayCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualBoolArray);
+    code_->Write<CmdId>(CmdId::kEqualBoolArray);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualIntArray);
+    code_->Write<CmdId>(CmdId::kEqualIntArray);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualLongArray);
+    code_->Write<CmdId>(CmdId::kEqualLongArray);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualDoubleArray);
+    code_->Write<CmdId>(CmdId::kEqualDoubleArray);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualCharArray);
+    code_->Write<CmdId>(CmdId::kEqualCharArray);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualStringArray);
+    code_->Write<CmdId>(CmdId::kEqualStringArray);
   }
 };
 
@@ -1673,27 +1673,27 @@ class SimpleCodeGenerator::Impl::EqualCmdGenerator
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualBool);
+    code_->Write<CmdId>(CmdId::kEqualBool);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualInt);
+    code_->Write<CmdId>(CmdId::kEqualInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualLong);
+    code_->Write<CmdId>(CmdId::kEqualLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualDouble);
+    code_->Write<CmdId>(CmdId::kEqualDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualChar);
+    code_->Write<CmdId>(CmdId::kEqualChar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kEqualString);
+    code_->Write<CmdId>(CmdId::kEqualString);
   }
 };
 
@@ -1701,27 +1701,27 @@ class SimpleCodeGenerator::Impl::NotEqualArrayCmdGenerator
     : public ArrayCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualBoolArray);
+    code_->Write<CmdId>(CmdId::kNotEqualBoolArray);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualIntArray);
+    code_->Write<CmdId>(CmdId::kNotEqualIntArray);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualLongArray);
+    code_->Write<CmdId>(CmdId::kNotEqualLongArray);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualDoubleArray);
+    code_->Write<CmdId>(CmdId::kNotEqualDoubleArray);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualCharArray);
+    code_->Write<CmdId>(CmdId::kNotEqualCharArray);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualStringArray);
+    code_->Write<CmdId>(CmdId::kNotEqualStringArray);
   }
 };
 
@@ -1733,27 +1733,27 @@ class SimpleCodeGenerator::Impl::NotEqualCmdGenerator
   }
 
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualBool);
+    code_->Write<CmdId>(CmdId::kNotEqualBool);
   }
 
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualInt);
+    code_->Write<CmdId>(CmdId::kNotEqualInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualLong);
+    code_->Write<CmdId>(CmdId::kNotEqualLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualDouble);
+    code_->Write<CmdId>(CmdId::kNotEqualDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualChar);
+    code_->Write<CmdId>(CmdId::kNotEqualChar);
   }
 
   virtual void VisitString(const StringDataType&) override {
-    code_->WriteCmdId(CmdId::kNotEqualString);
+    code_->Write<CmdId>(CmdId::kNotEqualString);
   }
 };
 
@@ -1761,19 +1761,19 @@ class SimpleCodeGenerator::Impl::GreaterCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kGreaterInt);
+    code_->Write<CmdId>(CmdId::kGreaterInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kGreaterLong);
+    code_->Write<CmdId>(CmdId::kGreaterLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kGreaterDouble);
+    code_->Write<CmdId>(CmdId::kGreaterDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kGreaterChar);
+    code_->Write<CmdId>(CmdId::kGreaterChar);
   }
 
   virtual void VisitString(const StringDataType&) override {assert(false);}
@@ -1785,19 +1785,19 @@ class SimpleCodeGenerator::Impl::GreaterOrEqualCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kGreaterOrEqualInt);
+    code_->Write<CmdId>(CmdId::kGreaterOrEqualInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kGreaterOrEqualLong);
+    code_->Write<CmdId>(CmdId::kGreaterOrEqualLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kGreaterOrEqualDouble);
+    code_->Write<CmdId>(CmdId::kGreaterOrEqualDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kGreaterOrEqualChar);
+    code_->Write<CmdId>(CmdId::kGreaterOrEqualChar);
   }
 
   virtual void VisitString(const StringDataType&) override {assert(false);}
@@ -1809,19 +1809,19 @@ class SimpleCodeGenerator::Impl::LessCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kLessInt);
+    code_->Write<CmdId>(CmdId::kLessInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kLessLong);
+    code_->Write<CmdId>(CmdId::kLessLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kLessDouble);
+    code_->Write<CmdId>(CmdId::kLessDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kLessChar);
+    code_->Write<CmdId>(CmdId::kLessChar);
   }
 
   virtual void VisitString(const StringDataType&) override {assert(false);}
@@ -1833,19 +1833,19 @@ class SimpleCodeGenerator::Impl::LessOrEqualCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kLessOrEqualInt);
+    code_->Write<CmdId>(CmdId::kLessOrEqualInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kLessOrEqualLong);
+    code_->Write<CmdId>(CmdId::kLessOrEqualLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kLessOrEqualDouble);
+    code_->Write<CmdId>(CmdId::kLessOrEqualDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kLessOrEqualChar);
+    code_->Write<CmdId>(CmdId::kLessOrEqualChar);
   }
 
   virtual void VisitString(const StringDataType&) override {assert(false);}
@@ -1857,7 +1857,7 @@ class SimpleCodeGenerator::Impl::LogicalNegateCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitBool(const BoolDataType&) override {
-    code_->WriteCmdId(CmdId::kLogicalNegateBool);
+    code_->Write<CmdId>(CmdId::kLogicalNegateBool);
   }
 
   virtual void VisitArray(const ArrayDataType&) override {assert(false);}
@@ -1872,15 +1872,15 @@ class SimpleCodeGenerator::Impl::ArithmeticNegateCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kArithmeticNegateInt);
+    code_->Write<CmdId>(CmdId::kArithmeticNegateInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kArithmeticNegateLong);
+    code_->Write<CmdId>(CmdId::kArithmeticNegateLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kArithmeticNegateDouble);
+    code_->Write<CmdId>(CmdId::kArithmeticNegateDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {assert(false);}
@@ -1893,19 +1893,19 @@ class SimpleCodeGenerator::Impl::PreDecCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kPreDecInt);
+    code_->Write<CmdId>(CmdId::kPreDecInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kPreDecLong);
+    code_->Write<CmdId>(CmdId::kPreDecLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kPreDecDouble);
+    code_->Write<CmdId>(CmdId::kPreDecDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kPreDecChar);
+    code_->Write<CmdId>(CmdId::kPreDecChar);
   }
 
   virtual void VisitString(const StringDataType&) override {assert(false);}
@@ -1917,19 +1917,19 @@ class SimpleCodeGenerator::Impl::PreIncCmdGenerator
     : public ExprCmdGenerator {
  private:
   virtual void VisitInt(const IntDataType&) override {
-    code_->WriteCmdId(CmdId::kPreIncInt);
+    code_->Write<CmdId>(CmdId::kPreIncInt);
   }
 
   virtual void VisitLong(const LongDataType&) override {
-    code_->WriteCmdId(CmdId::kPreIncLong);
+    code_->Write<CmdId>(CmdId::kPreIncLong);
   }
 
   virtual void VisitDouble(const DoubleDataType&) override {
-    code_->WriteCmdId(CmdId::kPreIncDouble);
+    code_->Write<CmdId>(CmdId::kPreIncDouble);
   }
 
   virtual void VisitChar(const CharDataType&) override {
-    code_->WriteCmdId(CmdId::kPreIncChar);
+    code_->Write<CmdId>(CmdId::kPreIncChar);
   }
 
   virtual void VisitString(const StringDataType&) override {assert(false);}
@@ -2053,7 +2053,7 @@ void SimpleCodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
   const uint32_t start_address = code_->GetPosition();
   node.GetCond()->Accept(*this);
   Scope scope(start_address, scopes_stack_);
-  code_->WriteCmdId(CmdId::kJumpIfNot);
+  code_->Write<CmdId>(CmdId::kJumpIfNot);
   const uint32_t end_offset_placeholder = code_->GetPosition();
   scope.GetEndAddressPlaceholders().push_back(end_offset_placeholder);
   code_->Skip(sizeof(int32_t));
@@ -2066,7 +2066,7 @@ void SimpleCodeGenerator::Impl::VisitPreTestLoop(const PreTestLoopNode &node) {
                                   + static_cast<int64_t>(sizeof(int32_t)));
   assert(start_offset <= numeric_limits<int32_t>::max());
   assert(start_offset >= numeric_limits<int32_t>::min());
-  code_->WriteInt32(static_cast<int32_t>(start_offset));
+  code_->Write<int32_t>(static_cast<int32_t>(start_offset));
   WriteCurrentCmdOffset(scope.GetEndAddressPlaceholders());
 }
 
@@ -2090,7 +2090,7 @@ void SimpleCodeGenerator::Impl::VisitContinue(const ContinueNode &node) {
          + static_cast<int64_t>(sizeof(int32_t)));
   assert(scope_start_offset <= numeric_limits<int32_t>::max());
   assert(scope_start_offset >= numeric_limits<int32_t>::min());
-  code_->WriteInt32(static_cast<int32_t>(scope_start_offset));
+  code_->Write<int32_t>(static_cast<int32_t>(scope_start_offset));
 }
 
 void SimpleCodeGenerator::Impl::VisitIfElseIfElse(
@@ -2140,7 +2140,7 @@ void SimpleCodeGenerator::Impl::VisitIfElseIf(const IfElseIfNode &if_else_if) {
 void SimpleCodeGenerator::Impl::VisitIf(
     const IfNode &node, uint32_t *branch_end_offset_placeholder) {
   node.GetCond()->Accept(*this);
-  code_->WriteCmdId(CmdId::kJumpIfNot);
+  code_->Write<CmdId>(CmdId::kJumpIfNot);
   const uint32_t body_end_offset_placeholder = code_->GetPosition();
   code_->Skip(sizeof(int32_t));
   node.GetBody()->Accept(*this);
@@ -2317,7 +2317,7 @@ void SimpleCodeGenerator::Impl::VisitSubscript(const SubscriptNode &node) {
 
 void SimpleCodeGenerator::Impl::VisitAnd(const AndNode &node) {
   node.GetLeftOperand()->Accept(*this);
-  code_->WriteCmdId(CmdId::kImplicitJumpIfNot);
+  code_->Write<CmdId>(CmdId::kImplicitJumpIfNot);
   const uint32_t end_address_placeholder = code_->GetPosition();
   code_->Skip(sizeof(int32_t));
   node.GetRightOperand()->Accept(*this);
@@ -2333,7 +2333,7 @@ void SimpleCodeGenerator::Impl::VisitAnd(const AndNode &node) {
 
 void SimpleCodeGenerator::Impl::VisitOr(const OrNode &node) {
   node.GetLeftOperand()->Accept(*this);
-  code_->WriteCmdId(CmdId::kImplicitJumpIf);
+  code_->Write<CmdId>(CmdId::kImplicitJumpIf);
   const uint32_t end_address_placeholder = code_->GetPosition();
   code_->Skip(sizeof(int32_t));
   node.GetRightOperand()->Accept(*this);
@@ -2442,62 +2442,62 @@ void SimpleCodeGenerator::Impl::VisitUnaryExpr(
 }
 
 void SimpleCodeGenerator::Impl::VisitInt(const IntNode &node) {
-  code_->WriteCmdId(CmdId::kLoadIntValue);
+  code_->Write<CmdId>(CmdId::kLoadIntValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
   const int32_t value =
       static_cast<const IntLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteInt32(value);
+  code_->Write<int32_t>(value);
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitLong(const LongNode &node) {
-  code_->WriteCmdId(CmdId::kLoadLongValue);
+  code_->Write<CmdId>(CmdId::kLoadLongValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
   const int64_t value =
       static_cast<const LongLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteInt64(value);
+  code_->Write<int64_t>(value);
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitBool(const BoolNode &node) {
-  code_->WriteCmdId(CmdId::kLoadBoolValue);
+  code_->Write<CmdId>(CmdId::kLoadBoolValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
   const bool value =
       static_cast<const BoolLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteBool(value);
+  code_->Write<bool>(value);
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitChar(const CharNode &node) {
-  code_->WriteCmdId(CmdId::kLoadCharValue);
+  code_->Write<CmdId>(CmdId::kLoadCharValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
   const char value =
       static_cast<const CharLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteChar(value);
+  code_->Write<char>(value);
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitString(const StringNode &node) {
-  code_->WriteCmdId(CmdId::kLoadStringValue);
+  code_->Write<CmdId>(CmdId::kLoadStringValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
   const string &value =
       static_cast<const StringLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteString(value);
+  code_->Write<string>(value);
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
 void SimpleCodeGenerator::Impl::VisitDouble(const DoubleNode &node) {
-  code_->WriteCmdId(CmdId::kLoadDoubleValue);
+  code_->Write<CmdId>(CmdId::kLoadDoubleValue);
   const LitAnalysis &lit_analysis =
       static_cast<const LitAnalysis&>(GetNodeAnalysis(node));
   const double &value =
       static_cast<const DoubleLit&>(lit_analysis.GetLit()).GetValue();
-  code_->WriteDouble(value);
+  code_->Write<double>(value);
   GenerateCastCmdIfNeeded(lit_analysis);
 }
 
@@ -2552,7 +2552,7 @@ void SimpleCodeGenerator::Impl::WriteCurrentCmdOffset(
                               + static_cast<int64_t>(sizeof(int32_t)));
     assert(offset <= numeric_limits<int32_t>::max());
     assert(offset >= numeric_limits<int32_t>::min());
-    code_->WriteInt32(static_cast<int32_t>(offset));
+    code_->Write<int32_t>(static_cast<int32_t>(offset));
   }
 
   code_->SetPosition(current_address);
@@ -2561,7 +2561,7 @@ void SimpleCodeGenerator::Impl::WriteCurrentCmdOffset(
 void SimpleCodeGenerator::Impl::GenerateJumpCmdStart(
     const vector<const VarDefNode*> &flow_local_var_defs) {
   GenerateDestroyLocalVarCmds(flow_local_var_defs);
-  code_->WriteCmdId(CmdId::kDirectJump);
+  code_->Write<CmdId>(CmdId::kDirectJump);
 }
 
 SimpleCodeGenerator::Impl::Scope *SimpleCodeGenerator::Impl::GetCurrentScope() {
@@ -2577,7 +2577,7 @@ void SimpleCodeGenerator::Impl::GenerateCastCmdIfNeeded(
 
   CmdId cmd_id = cast_cmd_generator_.Generate(
       *(expr_analysis.GetCastedDataType()), expr_analysis.GetDataType());
-  code_->WriteCmdId(cmd_id);
+  code_->Write<CmdId>(cmd_id);
 }
 
 void SimpleCodeGenerator::Impl::GenerateDestroyLocalVarCmds(
@@ -2595,7 +2595,7 @@ void SimpleCodeGenerator::Impl::GenerateDestroyLocalVarCmds(
 void SimpleCodeGenerator::Impl::GenerateReturnCmd(
     const vector<const VarDefNode*> &flow_local_var_defs) {
   GenerateDestroyLocalVarCmds(flow_local_var_defs);
-  code_->WriteCmdId(CmdId::kReturn);
+  code_->Write<CmdId>(CmdId::kReturn);
 }
 
 const DataType &SimpleCodeGenerator::Impl::GetExprDataType(

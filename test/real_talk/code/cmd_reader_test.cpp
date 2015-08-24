@@ -65,64 +65,64 @@ class CmdReaderTest: public Test {
   void TestCreateGlobalVarCmd(
       CmdId cmd_id, const CreateGlobalVarCmd &expected_cmd) {
     Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint32(expected_cmd.GetVarIndex());
+    code.Write<CmdId>(cmd_id);
+    code.Write<uint32_t>(expected_cmd.GetVarIndex());
     TestGetNextCmd(code, expected_cmd);
   }
 
   void TestCreateAndInitGlobalVarCmd(
       CmdId cmd_id, const CreateAndInitGlobalVarCmd &expected_cmd) {
     Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint32(expected_cmd.GetVarIndex());
+    code.Write<CmdId>(cmd_id);
+    code.Write<uint32_t>(expected_cmd.GetVarIndex());
     TestGetNextCmd(code, expected_cmd);
   }
 
   void TestCreateAndInitGlobalArrayVarCmd(
       CmdId cmd_id, const CreateAndInitGlobalArrayVarCmd &expected_cmd) {
     Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint32(expected_cmd.GetVarIndex());
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    code.Write<CmdId>(cmd_id);
+    code.Write<uint32_t>(expected_cmd.GetVarIndex());
+    code.Write<uint8_t>(expected_cmd.GetDimensionsCount());
     TestGetNextCmd(code, expected_cmd);
   }
 
   void TestCreateAndInitArrayCmd(
       CmdId cmd_id, const CreateAndInitArrayCmd &expected_cmd) {
     Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
-    code.WriteInt32(expected_cmd.GetValuesCount());
+    code.Write<CmdId>(cmd_id);
+    code.Write<uint8_t>(expected_cmd.GetDimensionsCount());
+    code.Write<int32_t>(expected_cmd.GetValuesCount());
     TestGetNextCmd(code, expected_cmd);
   }
 
   void TestJumpCmd(CmdId cmd_id, const JumpCmd &expected_cmd) {
     Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteInt32(expected_cmd.GetOffset());
+    code.Write<CmdId>(cmd_id);
+    code.Write<int32_t>(expected_cmd.GetOffset());
     TestGetNextCmd(code, expected_cmd);
   }
 
   void TestLoadGlobalVarValueCmd(
       CmdId cmd_id, const LoadGlobalVarValueCmd &expected_cmd) {
     Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint32(expected_cmd.GetVarIndex());
+    code.Write<CmdId>(cmd_id);
+    code.Write<uint32_t>(expected_cmd.GetVarIndex());
     TestGetNextCmd(code, expected_cmd);
   }
 
   void TestLoadLocalVarValueCmd(
       CmdId cmd_id, const LoadLocalVarValueCmd &expected_cmd) {
     Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint32(expected_cmd.GetVarIndex());
+    code.Write<CmdId>(cmd_id);
+    code.Write<uint32_t>(expected_cmd.GetVarIndex());
     TestGetNextCmd(code, expected_cmd);
   }
 
   template<typename T> void TestArrayCmd(CmdId cmd_id, const T &expected_cmd) {
     Code code;
-    code.WriteCmdId(cmd_id);
-    code.WriteUint8(expected_cmd.GetDimensionsCount());
+    code.Write<CmdId>(cmd_id);
+    code.Write<uint8_t>(expected_cmd.GetDimensionsCount());
     TestGetNextCmd(code, expected_cmd);
   }
 };
@@ -172,91 +172,91 @@ TEST_F(CmdReaderTest, CreateGlobalBoolVarCmd) {
 TEST_F(CmdReaderTest, CreateLocalIntVarCmd) {
   CreateLocalIntVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateLocalIntVar);
+  code.Write<CmdId>(CmdId::kCreateLocalIntVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateLocalLongVarCmd) {
   CreateLocalLongVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateLocalLongVar);
+  code.Write<CmdId>(CmdId::kCreateLocalLongVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateLocalDoubleVarCmd) {
   CreateLocalDoubleVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateLocalDoubleVar);
+  code.Write<CmdId>(CmdId::kCreateLocalDoubleVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateLocalBoolVarCmd) {
   CreateLocalBoolVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateLocalBoolVar);
+  code.Write<CmdId>(CmdId::kCreateLocalBoolVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateLocalCharVarCmd) {
   CreateLocalCharVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateLocalCharVar);
+  code.Write<CmdId>(CmdId::kCreateLocalCharVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateLocalStringVarCmd) {
   CreateLocalStringVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateLocalStringVar);
+  code.Write<CmdId>(CmdId::kCreateLocalStringVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateLocalArrayVarCmd) {
   CreateLocalArrayVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateLocalArrayVar);
+  code.Write<CmdId>(CmdId::kCreateLocalArrayVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalIntVarCmd) {
   DestroyLocalIntVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalIntVar);
+  code.Write<CmdId>(CmdId::kDestroyLocalIntVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalLongVarCmd) {
   DestroyLocalLongVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalLongVar);
+  code.Write<CmdId>(CmdId::kDestroyLocalLongVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalDoubleVarCmd) {
   DestroyLocalDoubleVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalDoubleVar);
+  code.Write<CmdId>(CmdId::kDestroyLocalDoubleVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalBoolVarCmd) {
   DestroyLocalBoolVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalBoolVar);
+  code.Write<CmdId>(CmdId::kDestroyLocalBoolVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalCharVarCmd) {
   DestroyLocalCharVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalCharVar);
+  code.Write<CmdId>(CmdId::kDestroyLocalCharVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DestroyLocalStringVarCmd) {
   DestroyLocalStringVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDestroyLocalStringVar);
+  code.Write<CmdId>(CmdId::kDestroyLocalStringVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -301,42 +301,42 @@ TEST_F(CmdReaderTest, DestroyLocalStringArrayVarCmd) {
 TEST_F(CmdReaderTest, UnloadBoolCmd) {
   UnloadBoolCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kUnloadBool);
+  code.Write<CmdId>(CmdId::kUnloadBool);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadCharCmd) {
   UnloadCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kUnloadChar);
+  code.Write<CmdId>(CmdId::kUnloadChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadIntCmd) {
   UnloadIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kUnloadInt);
+  code.Write<CmdId>(CmdId::kUnloadInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadLongCmd) {
   UnloadLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kUnloadLong);
+  code.Write<CmdId>(CmdId::kUnloadLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadDoubleCmd) {
   UnloadDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kUnloadDouble);
+  code.Write<CmdId>(CmdId::kUnloadDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, UnloadStringCmd) {
   UnloadStringCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kUnloadString);
+  code.Write<CmdId>(CmdId::kUnloadString);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -380,8 +380,8 @@ TEST_F(CmdReaderTest, LoadIntValueCmd) {
   int32_t value = INT32_C(-7);
   LoadIntValueCmd expected_cmd(value);
   Code code;
-  code.WriteCmdId(CmdId::kLoadIntValue);
-  code.WriteInt32(value);
+  code.Write<CmdId>(CmdId::kLoadIntValue);
+  code.Write<int32_t>(value);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -389,8 +389,8 @@ TEST_F(CmdReaderTest, LoadLongValueCmd) {
   int64_t value = INT64_C(-77);
   LoadLongValueCmd expected_cmd(value);
   Code code;
-  code.WriteCmdId(CmdId::kLoadLongValue);
-  code.WriteInt64(value);
+  code.Write<CmdId>(CmdId::kLoadLongValue);
+  code.Write<int64_t>(value);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -398,8 +398,8 @@ TEST_F(CmdReaderTest, LoadBoolValueCmd) {
   bool value = true;
   LoadBoolValueCmd expected_cmd(value);
   Code code;
-  code.WriteCmdId(CmdId::kLoadBoolValue);
-  code.WriteBool(value);
+  code.Write<CmdId>(CmdId::kLoadBoolValue);
+  code.Write<bool>(value);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -407,8 +407,8 @@ TEST_F(CmdReaderTest, LoadCharValueCmd) {
   char value = 'a';
   LoadCharValueCmd expected_cmd(value);
   Code code;
-  code.WriteCmdId(CmdId::kLoadCharValue);
-  code.WriteChar(value);
+  code.Write<CmdId>(CmdId::kLoadCharValue);
+  code.Write<char>(value);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -416,8 +416,8 @@ TEST_F(CmdReaderTest, LoadStringValueCmd) {
   string value("swag");
   LoadStringValueCmd expected_cmd(value);
   Code code;
-  code.WriteCmdId(CmdId::kLoadStringValue);
-  code.WriteString(value);
+  code.Write<CmdId>(CmdId::kLoadStringValue);
+  code.Write<string>(value);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -425,8 +425,8 @@ TEST_F(CmdReaderTest, LoadDoubleValueCmd) {
   double value = -7.77777777777777777777;
   LoadDoubleValueCmd expected_cmd(value);
   Code code;
-  code.WriteCmdId(CmdId::kLoadDoubleValue);
-  code.WriteDouble(value);
+  code.Write<CmdId>(CmdId::kLoadDoubleValue);
+  code.Write<double>(value);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -525,42 +525,42 @@ TEST_F(CmdReaderTest, CreateAndInitGlobalBoolArrayVarCmd) {
 TEST_F(CmdReaderTest, CreateAndInitLocalIntVarCmd) {
   CreateAndInitLocalIntVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateAndInitLocalIntVar);
+  code.Write<CmdId>(CmdId::kCreateAndInitLocalIntVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalLongVarCmd) {
   CreateAndInitLocalLongVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateAndInitLocalLongVar);
+  code.Write<CmdId>(CmdId::kCreateAndInitLocalLongVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalDoubleVarCmd) {
   CreateAndInitLocalDoubleVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateAndInitLocalDoubleVar);
+  code.Write<CmdId>(CmdId::kCreateAndInitLocalDoubleVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalBoolVarCmd) {
   CreateAndInitLocalBoolVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateAndInitLocalBoolVar);
+  code.Write<CmdId>(CmdId::kCreateAndInitLocalBoolVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalCharVarCmd) {
   CreateAndInitLocalCharVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateAndInitLocalCharVar);
+  code.Write<CmdId>(CmdId::kCreateAndInitLocalCharVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CreateAndInitLocalStringVarCmd) {
   CreateAndInitLocalStringVarCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCreateAndInitLocalStringVar);
+  code.Write<CmdId>(CmdId::kCreateAndInitLocalStringVar);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -711,7 +711,7 @@ TEST_F(CmdReaderTest, ImplicitJumpIfCmd) {
 TEST_F(CmdReaderTest, ReturnCmd) {
   ReturnCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kReturn);
+  code.Write<CmdId>(CmdId::kReturn);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -803,8 +803,8 @@ TEST_F(CmdReaderTest, LoadGlobalVarAddressCmd) {
   uint32_t var_index = UINT32_C(7);
   LoadGlobalVarAddressCmd expected_cmd(var_index);
   Code code;
-  code.WriteCmdId(CmdId::kLoadGlobalVarAddress);
-  code.WriteUint32(var_index);
+  code.Write<CmdId>(CmdId::kLoadGlobalVarAddress);
+  code.Write<uint32_t>(var_index);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -812,50 +812,50 @@ TEST_F(CmdReaderTest, LoadLocalVarAddressCmd) {
   uint32_t var_index = UINT32_C(7);
   LoadLocalVarAddressCmd expected_cmd(var_index);
   Code code;
-  code.WriteCmdId(CmdId::kLoadLocalVarAddress);
-  code.WriteUint32(var_index);
+  code.Write<CmdId>(CmdId::kLoadLocalVarAddress);
+  code.Write<uint32_t>(var_index);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreIntCmd) {
   StoreIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kStoreInt);
+  code.Write<CmdId>(CmdId::kStoreInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreLongCmd) {
   StoreLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kStoreLong);
+  code.Write<CmdId>(CmdId::kStoreLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreDoubleCmd) {
   StoreDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kStoreDouble);
+  code.Write<CmdId>(CmdId::kStoreDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreBoolCmd) {
   StoreBoolCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kStoreBool);
+  code.Write<CmdId>(CmdId::kStoreBool);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreCharCmd) {
   StoreCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kStoreChar);
+  code.Write<CmdId>(CmdId::kStoreChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, StoreStringCmd) {
   StoreStringCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kStoreString);
+  code.Write<CmdId>(CmdId::kStoreString);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -898,49 +898,49 @@ TEST_F(CmdReaderTest, StoreStringArrayCmd) {
 TEST_F(CmdReaderTest, CastCharToIntCmd) {
   CastCharToIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCastCharToInt);
+  code.Write<CmdId>(CmdId::kCastCharToInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CastCharToLongCmd) {
   CastCharToLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCastCharToLong);
+  code.Write<CmdId>(CmdId::kCastCharToLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CastCharToDoubleCmd) {
   CastCharToDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCastCharToDouble);
+  code.Write<CmdId>(CmdId::kCastCharToDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CastCharToStringCmd) {
   CastCharToStringCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCastCharToString);
+  code.Write<CmdId>(CmdId::kCastCharToString);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CastIntToLongCmd) {
   CastIntToLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCastIntToLong);
+  code.Write<CmdId>(CmdId::kCastIntToLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CastIntToDoubleCmd) {
   CastIntToDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCastIntToDouble);
+  code.Write<CmdId>(CmdId::kCastIntToDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CastLongToDoubleCmd) {
   CastLongToDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCastLongToDouble);
+  code.Write<CmdId>(CmdId::kCastLongToDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -948,8 +948,8 @@ TEST_F(CmdReaderTest, LoadFuncValueCmd) {
   uint32_t address = UINT32_C(7);
   LoadFuncValueCmd expected_cmd(address);
   Code code;
-  code.WriteCmdId(CmdId::kLoadFuncValue);
-  code.WriteUint32(address);
+  code.Write<CmdId>(CmdId::kLoadFuncValue);
+  code.Write<uint32_t>(address);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -957,22 +957,22 @@ TEST_F(CmdReaderTest, LoadNativeFuncValueCmd) {
   uint32_t func_index = UINT32_C(7);
   LoadNativeFuncValueCmd expected_cmd(func_index);
   Code code;
-  code.WriteCmdId(CmdId::kLoadNativeFuncValue);
-  code.WriteUint32(func_index);
+  code.Write<CmdId>(CmdId::kLoadNativeFuncValue);
+  code.Write<uint32_t>(func_index);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CallCmd) {
   CallCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCall);
+  code.Write<CmdId>(CmdId::kCall);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, CallNativeCmd) {
   CallNativeCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kCallNative);
+  code.Write<CmdId>(CmdId::kCallNative);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -1063,175 +1063,175 @@ TEST_F(CmdReaderTest, LoadStringArrayElementAddressCmd) {
 TEST_F(CmdReaderTest, AndCmd) {
   AndCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kAnd);
+  code.Write<CmdId>(CmdId::kAnd);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, OrCmd) {
   OrCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kOr);
+  code.Write<CmdId>(CmdId::kOr);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, MulIntCmd) {
   MulIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kMulInt);
+  code.Write<CmdId>(CmdId::kMulInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, MulLongCmd) {
   MulLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kMulLong);
+  code.Write<CmdId>(CmdId::kMulLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, MulDoubleCmd) {
   MulDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kMulDouble);
+  code.Write<CmdId>(CmdId::kMulDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, MulCharCmd) {
   MulCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kMulChar);
+  code.Write<CmdId>(CmdId::kMulChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DivCharCmd) {
   DivCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDivChar);
+  code.Write<CmdId>(CmdId::kDivChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DivIntCmd) {
   DivIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDivInt);
+  code.Write<CmdId>(CmdId::kDivInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DivLongCmd) {
   DivLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDivLong);
+  code.Write<CmdId>(CmdId::kDivLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, DivDoubleCmd) {
   DivDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kDivDouble);
+  code.Write<CmdId>(CmdId::kDivDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SumCharCmd) {
   SumCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSumChar);
+  code.Write<CmdId>(CmdId::kSumChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SumIntCmd) {
   SumIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSumInt);
+  code.Write<CmdId>(CmdId::kSumInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SumLongCmd) {
   SumLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSumLong);
+  code.Write<CmdId>(CmdId::kSumLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SumDoubleCmd) {
   SumDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSumDouble);
+  code.Write<CmdId>(CmdId::kSumDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SumStringCmd) {
   SumStringCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSumString);
+  code.Write<CmdId>(CmdId::kSumString);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SubCharCmd) {
   SubCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSubChar);
+  code.Write<CmdId>(CmdId::kSubChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SubIntCmd) {
   SubIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSubInt);
+  code.Write<CmdId>(CmdId::kSubInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SubLongCmd) {
   SubLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSubLong);
+  code.Write<CmdId>(CmdId::kSubLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, SubDoubleCmd) {
   SubDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kSubDouble);
+  code.Write<CmdId>(CmdId::kSubDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualCharCmd) {
   EqualCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kEqualChar);
+  code.Write<CmdId>(CmdId::kEqualChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualIntCmd) {
   EqualIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kEqualInt);
+  code.Write<CmdId>(CmdId::kEqualInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualLongCmd) {
   EqualLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kEqualLong);
+  code.Write<CmdId>(CmdId::kEqualLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualDoubleCmd) {
   EqualDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kEqualDouble);
+  code.Write<CmdId>(CmdId::kEqualDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualBoolCmd) {
   EqualBoolCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kEqualBool);
+  code.Write<CmdId>(CmdId::kEqualBool);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, EqualStringCmd) {
   EqualStringCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kEqualString);
+  code.Write<CmdId>(CmdId::kEqualString);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -1274,42 +1274,42 @@ TEST_F(CmdReaderTest, EqualStringArrayCmd) {
 TEST_F(CmdReaderTest, NotEqualCharCmd) {
   NotEqualCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kNotEqualChar);
+  code.Write<CmdId>(CmdId::kNotEqualChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, NotEqualIntCmd) {
   NotEqualIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kNotEqualInt);
+  code.Write<CmdId>(CmdId::kNotEqualInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, NotEqualLongCmd) {
   NotEqualLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kNotEqualLong);
+  code.Write<CmdId>(CmdId::kNotEqualLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, NotEqualDoubleCmd) {
   NotEqualDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kNotEqualDouble);
+  code.Write<CmdId>(CmdId::kNotEqualDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, NotEqualBoolCmd) {
   NotEqualBoolCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kNotEqualBool);
+  code.Write<CmdId>(CmdId::kNotEqualBool);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, NotEqualStringCmd) {
   NotEqualStringCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kNotEqualString);
+  code.Write<CmdId>(CmdId::kNotEqualString);
   TestGetNextCmd(code, expected_cmd);
 }
 
@@ -1352,168 +1352,168 @@ TEST_F(CmdReaderTest, NotEqualStringArrayCmd) {
 TEST_F(CmdReaderTest, GreaterCharCmd) {
   GreaterCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kGreaterChar);
+  code.Write<CmdId>(CmdId::kGreaterChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, GreaterIntCmd) {
   GreaterIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kGreaterInt);
+  code.Write<CmdId>(CmdId::kGreaterInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, GreaterLongCmd) {
   GreaterLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kGreaterLong);
+  code.Write<CmdId>(CmdId::kGreaterLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, GreaterDoubleCmd) {
   GreaterDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kGreaterDouble);
+  code.Write<CmdId>(CmdId::kGreaterDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, GreaterOrEqualCharCmd) {
   GreaterOrEqualCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kGreaterOrEqualChar);
+  code.Write<CmdId>(CmdId::kGreaterOrEqualChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, GreaterOrEqualIntCmd) {
   GreaterOrEqualIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kGreaterOrEqualInt);
+  code.Write<CmdId>(CmdId::kGreaterOrEqualInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, GreaterOrEqualLongCmd) {
   GreaterOrEqualLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kGreaterOrEqualLong);
+  code.Write<CmdId>(CmdId::kGreaterOrEqualLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, GreaterOrEqualDoubleCmd) {
   GreaterOrEqualDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kGreaterOrEqualDouble);
+  code.Write<CmdId>(CmdId::kGreaterOrEqualDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LessCharCmd) {
   LessCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLessChar);
+  code.Write<CmdId>(CmdId::kLessChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LessIntCmd) {
   LessIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLessInt);
+  code.Write<CmdId>(CmdId::kLessInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LessLongCmd) {
   LessLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLessLong);
+  code.Write<CmdId>(CmdId::kLessLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LessDoubleCmd) {
   LessDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLessDouble);
+  code.Write<CmdId>(CmdId::kLessDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LessOrEqualCharCmd) {
   LessOrEqualCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLessOrEqualChar);
+  code.Write<CmdId>(CmdId::kLessOrEqualChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LessOrEqualIntCmd) {
   LessOrEqualIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLessOrEqualInt);
+  code.Write<CmdId>(CmdId::kLessOrEqualInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LessOrEqualLongCmd) {
   LessOrEqualLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLessOrEqualLong);
+  code.Write<CmdId>(CmdId::kLessOrEqualLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LessOrEqualDoubleCmd) {
   LessOrEqualDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLessOrEqualDouble);
+  code.Write<CmdId>(CmdId::kLessOrEqualDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LogicalNegateBoolCmd) {
   LogicalNegateBoolCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kLogicalNegateBool);
+  code.Write<CmdId>(CmdId::kLogicalNegateBool);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, PreDecCharCmd) {
   PreDecCharCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kPreDecChar);
+  code.Write<CmdId>(CmdId::kPreDecChar);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, PreDecIntCmd) {
   PreDecIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kPreDecInt);
+  code.Write<CmdId>(CmdId::kPreDecInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, PreDecLongCmd) {
   PreDecLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kPreDecLong);
+  code.Write<CmdId>(CmdId::kPreDecLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, PreDecDoubleCmd) {
   PreDecDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kPreDecDouble);
+  code.Write<CmdId>(CmdId::kPreDecDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, ArithmeticNegateIntCmd) {
   ArithmeticNegateIntCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kArithmeticNegateInt);
+  code.Write<CmdId>(CmdId::kArithmeticNegateInt);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, ArithmeticNegateLongCmd) {
   ArithmeticNegateLongCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kArithmeticNegateLong);
+  code.Write<CmdId>(CmdId::kArithmeticNegateLong);
   TestGetNextCmd(code, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, ArithmeticNegateDoubleCmd) {
   ArithmeticNegateDoubleCmd expected_cmd;
   Code code;
-  code.WriteCmdId(CmdId::kArithmeticNegateDouble);
+  code.Write<CmdId>(CmdId::kArithmeticNegateDouble);
   TestGetNextCmd(code, expected_cmd);
 }
 }

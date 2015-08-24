@@ -18,15 +18,15 @@ namespace code {
 
 unique_ptr<Exe> SimpleExeReader::ReadFromCode(Code *code) const {
   assert(code);
-  const uint32_t version = code->ReadUint32();
-  const uint32_t global_vars_size = code->ReadUint32();
-  const uint32_t cmds_address = code->ReadUint32();
-  const uint32_t main_cmds_size = code->ReadUint32();
-  const uint32_t func_cmds_size = code->ReadUint32();
-  const uint32_t native_func_defs_metadata_address = code->ReadUint32();
-  const uint32_t native_func_defs_metadata_size = code->ReadUint32();
-  const uint32_t native_func_refs_metadata_address = code->ReadUint32();
-  const uint32_t native_func_refs_metadata_size = code->ReadUint32();
+  const uint32_t version = code->Read<uint32_t>();
+  const uint32_t global_vars_size = code->Read<uint32_t>();
+  const uint32_t cmds_address = code->Read<uint32_t>();
+  const uint32_t main_cmds_size = code->Read<uint32_t>();
+  const uint32_t func_cmds_size = code->Read<uint32_t>();
+  const uint32_t native_func_defs_metadata_address = code->Read<uint32_t>();
+  const uint32_t native_func_defs_metadata_size = code->Read<uint32_t>();
+  const uint32_t native_func_refs_metadata_address = code->Read<uint32_t>();
+  const uint32_t native_func_refs_metadata_size = code->Read<uint32_t>();
 
   code->SetPosition(cmds_address);
   unique_ptr<Code> cmds_code(new Code(
@@ -38,7 +38,7 @@ unique_ptr<Exe> SimpleExeReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition() + native_func_defs_metadata_size;
 
   while (code->GetDataAtPosition() != native_func_defs_metadata_end) {
-    native_func_defs.push_back(code->ReadString());
+    native_func_defs.push_back(code->Read<string>());
   }
 
   code->SetPosition(native_func_refs_metadata_address);
@@ -47,7 +47,7 @@ unique_ptr<Exe> SimpleExeReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition() + native_func_refs_metadata_size;
 
   while (code->GetDataAtPosition() != native_func_refs_metadata_end) {
-    native_func_refs.push_back(code->ReadIdAddresses());
+    native_func_refs.push_back(code->Read<IdAddresses>());
   }
 
   return unique_ptr<Exe>(new Exe(version,

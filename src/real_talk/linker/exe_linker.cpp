@@ -109,7 +109,7 @@ void ExeLinker::FillAddressPlaceholders(
           main_cmds_start_address,
           func_cmds_start_address);
       cmds->SetPosition(absolute_placeholder_address);
-      cmds->WriteUint32(address);
+      cmds->Write<uint32_t>(address);
     }
   }
 }

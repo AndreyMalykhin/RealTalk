@@ -18,22 +18,22 @@ namespace code {
 
 unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
   assert(code);
-  const uint32_t version = code->ReadUint32();
-  const uint32_t cmds_address = code->ReadUint32();
-  const uint32_t main_cmds_size = code->ReadUint32();
-  const uint32_t func_cmds_size = code->ReadUint32();
-  const uint32_t global_var_defs_metadata_address = code->ReadUint32();
-  const uint32_t global_var_defs_metadata_size = code->ReadUint32();
-  const uint32_t func_defs_metadata_address = code->ReadUint32();
-  const uint32_t func_defs_metadata_size = code->ReadUint32();
-  const uint32_t native_func_defs_metadata_address = code->ReadUint32();
-  const uint32_t native_func_defs_metadata_size = code->ReadUint32();
-  const uint32_t global_var_refs_metadata_address = code->ReadUint32();
-  const uint32_t global_var_refs_metadata_size = code->ReadUint32();
-  const uint32_t func_refs_metadata_address = code->ReadUint32();
-  const uint32_t func_refs_metadata_size = code->ReadUint32();
-  const uint32_t native_func_refs_metadata_address = code->ReadUint32();
-  const uint32_t native_func_refs_metadata_size = code->ReadUint32();
+  const uint32_t version = code->Read<uint32_t>();
+  const uint32_t cmds_address = code->Read<uint32_t>();
+  const uint32_t main_cmds_size = code->Read<uint32_t>();
+  const uint32_t func_cmds_size = code->Read<uint32_t>();
+  const uint32_t global_var_defs_metadata_address = code->Read<uint32_t>();
+  const uint32_t global_var_defs_metadata_size = code->Read<uint32_t>();
+  const uint32_t func_defs_metadata_address = code->Read<uint32_t>();
+  const uint32_t func_defs_metadata_size = code->Read<uint32_t>();
+  const uint32_t native_func_defs_metadata_address = code->Read<uint32_t>();
+  const uint32_t native_func_defs_metadata_size = code->Read<uint32_t>();
+  const uint32_t global_var_refs_metadata_address = code->Read<uint32_t>();
+  const uint32_t global_var_refs_metadata_size = code->Read<uint32_t>();
+  const uint32_t func_refs_metadata_address = code->Read<uint32_t>();
+  const uint32_t func_refs_metadata_size = code->Read<uint32_t>();
+  const uint32_t native_func_refs_metadata_address = code->Read<uint32_t>();
+  const uint32_t native_func_refs_metadata_size = code->Read<uint32_t>();
 
   code->SetPosition(cmds_address);
   unique_ptr<Code> cmds_code(new Code(
@@ -45,7 +45,7 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition() + global_var_defs_metadata_size;
 
   while (code->GetDataAtPosition() != global_var_defs_metadata_end) {
-    global_var_defs.push_back(code->ReadIdSize());
+    global_var_defs.push_back(code->Read<IdSize>());
   }
 
   code->SetPosition(func_defs_metadata_address);
@@ -54,7 +54,7 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition() + func_defs_metadata_size;
 
   while (code->GetDataAtPosition() != func_defs_metadata_end) {
-    func_defs.push_back(code->ReadIdAddress());
+    func_defs.push_back(code->Read<IdAddress>());
   }
 
   code->SetPosition(native_func_defs_metadata_address);
@@ -63,7 +63,7 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition() + native_func_defs_metadata_size;
 
   while (code->GetDataAtPosition() != native_func_defs_metadata_end) {
-    native_func_defs.push_back(code->ReadString());
+    native_func_defs.push_back(code->Read<string>());
   }
 
   code->SetPosition(global_var_refs_metadata_address);
@@ -72,7 +72,7 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition() + global_var_refs_metadata_size;
 
   while (code->GetDataAtPosition() != global_var_refs_metadata_end) {
-    global_var_refs.push_back(code->ReadIdAddresses());
+    global_var_refs.push_back(code->Read<IdAddresses>());
   }
 
   code->SetPosition(func_refs_metadata_address);
@@ -81,7 +81,7 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition() + func_refs_metadata_size;
 
   while (code->GetDataAtPosition() != func_refs_metadata_end) {
-    func_refs.push_back(code->ReadIdAddresses());
+    func_refs.push_back(code->Read<IdAddresses>());
   }
 
   code->SetPosition(native_func_refs_metadata_address);
@@ -90,7 +90,7 @@ unique_ptr<Module> SimpleModuleReader::ReadFromCode(Code *code) const {
       code->GetDataAtPosition() + native_func_refs_metadata_size;
 
   while (code->GetDataAtPosition() != native_func_refs_metadata_end) {
-    native_func_refs.push_back(code->ReadIdAddresses());
+    native_func_refs.push_back(code->Read<IdAddresses>());
   }
 
   return unique_ptr<Module>(new Module(version,

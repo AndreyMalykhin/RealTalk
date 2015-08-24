@@ -714,37 +714,37 @@ const SimpleVM::FuncFrames &SimpleVM::Impl::GetFuncFrames() const {
 
 void SimpleVM::Impl::VisitCreateGlobalIntVar(
     const CreateGlobalIntVarCmd &cmd) {
-  global_vars_.CreateInt(cmd.GetVarIndex());
+  global_vars_.Create<IntValue>(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalArrayVar(
     const CreateGlobalArrayVarCmd &cmd) {
-  global_vars_.CreateArray<IntValue>(cmd.GetVarIndex());
+  global_vars_.Create< ArrayValue<IntValue> >(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalLongVar(
     const CreateGlobalLongVarCmd &cmd) {
-  global_vars_.CreateLong(cmd.GetVarIndex());
+  global_vars_.Create<LongValue>(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalDoubleVar(
     const CreateGlobalDoubleVarCmd &cmd) {
-  global_vars_.CreateDouble(cmd.GetVarIndex());
+  global_vars_.Create<DoubleValue>(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalCharVar(
     const CreateGlobalCharVarCmd &cmd) {
-  global_vars_.CreateChar(cmd.GetVarIndex());
+  global_vars_.Create<CharValue>(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalStringVar(
     const CreateGlobalStringVarCmd &cmd) {
-  global_vars_.CreateString(cmd.GetVarIndex());
+  global_vars_.Create<StringValue>(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateGlobalBoolVar(
     const CreateGlobalBoolVarCmd &cmd) {
-  global_vars_.CreateBool(cmd.GetVarIndex());
+  global_vars_.Create<BoolValue>(cmd.GetVarIndex());
 }
 
 void SimpleVM::Impl::VisitCreateLocalIntVar(
@@ -842,43 +842,43 @@ void SimpleVM::Impl::VisitUnloadBoolArray(
 
 void SimpleVM::Impl::VisitLoadIntValue(
     const LoadIntValueCmd &cmd) {
-  operands_.PushInt(cmd.GetValue());
+  operands_.Push(cmd.GetValue());
 }
 
 void SimpleVM::Impl::VisitLoadLongValue(
     const LoadLongValueCmd &cmd) {
-  operands_.PushLong(cmd.GetValue());
+  operands_.Push(cmd.GetValue());
 }
 
 void SimpleVM::Impl::VisitLoadBoolValue(
     const LoadBoolValueCmd &cmd) {
-  operands_.PushBool(cmd.GetValue());
+  operands_.Push(cmd.GetValue());
 }
 
 void SimpleVM::Impl::VisitLoadCharValue(
     const LoadCharValueCmd &cmd) {
-  operands_.PushChar(cmd.GetValue());
+  operands_.Push(cmd.GetValue());
 }
 
 void SimpleVM::Impl::VisitLoadStringValue(
     const LoadStringValueCmd &cmd) {
-  operands_.PushString(StringValue(cmd.GetValue()));
+  operands_.Push(StringValue(cmd.GetValue()));
 }
 
 void SimpleVM::Impl::VisitLoadDoubleValue(
     const LoadDoubleValueCmd &cmd) {
-  operands_.PushDouble(cmd.GetValue());
+  operands_.Push(cmd.GetValue());
 }
 
 void SimpleVM::Impl::VisitLoadFuncValue(
     const LoadFuncValueCmd &cmd) {
-  operands_.PushFunc(cmd.GetAddress());
+  operands_.Push(FuncValue(cmd.GetAddress()));
 }
 
 void SimpleVM::Impl::VisitLoadNativeFuncValue(
     const LoadNativeFuncValueCmd &cmd) {
   assert(cmd.GetFuncIndex() < native_funcs_.size());
-  operands_.PushNativeFunc(native_funcs_[cmd.GetFuncIndex()]);
+  operands_.Push(native_funcs_[cmd.GetFuncIndex()]);
 }
 
 void SimpleVM::Impl::VisitCreateAndInitGlobalBoolVar(
@@ -956,42 +956,42 @@ void SimpleVM::Impl::VisitCreateAndInitLocalDoubleArrayVar(
 void SimpleVM::Impl::VisitCreateIntArray(
     const CreateIntArrayCmd &cmd) {
   vector<size_t> dimensions = VisitCreateArray(cmd);
-  operands_.PushArray(ArrayValue<IntValue>::Multidimensional(
+  operands_.Push(ArrayValue<IntValue>::Multidimensional(
       dimensions.begin(), dimensions.end()));
 }
 
 void SimpleVM::Impl::VisitCreateLongArray(
     const CreateLongArrayCmd &cmd) {
   vector<size_t> dimensions = VisitCreateArray(cmd);
-  operands_.PushArray(ArrayValue<LongValue>::Multidimensional(
+  operands_.Push(ArrayValue<LongValue>::Multidimensional(
       dimensions.begin(), dimensions.end()));
 }
 
 void SimpleVM::Impl::VisitCreateBoolArray(
     const CreateBoolArrayCmd &cmd) {
   vector<size_t> dimensions = VisitCreateArray(cmd);
-  operands_.PushArray(ArrayValue<BoolValue>::Multidimensional(
+  operands_.Push(ArrayValue<BoolValue>::Multidimensional(
       dimensions.begin(), dimensions.end()));
 }
 
 void SimpleVM::Impl::VisitCreateCharArray(
     const CreateCharArrayCmd &cmd) {
   vector<size_t> dimensions = VisitCreateArray(cmd);
-  operands_.PushArray(ArrayValue<CharValue>::Multidimensional(
+  operands_.Push(ArrayValue<CharValue>::Multidimensional(
       dimensions.begin(), dimensions.end()));
 }
 
 void SimpleVM::Impl::VisitCreateDoubleArray(
     const CreateDoubleArrayCmd &cmd) {
   vector<size_t> dimensions = VisitCreateArray(cmd);
-  operands_.PushArray(ArrayValue<DoubleValue>::Multidimensional(
+  operands_.Push(ArrayValue<DoubleValue>::Multidimensional(
       dimensions.begin(), dimensions.end()));
 }
 
 void SimpleVM::Impl::VisitCreateStringArray(
     const CreateStringArrayCmd &cmd) {
   vector<size_t> dimensions = VisitCreateArray(cmd);
-  operands_.PushArray(ArrayValue<StringValue>::Multidimensional(
+  operands_.Push(ArrayValue<StringValue>::Multidimensional(
       dimensions.begin(), dimensions.end()));
 }
 
@@ -1025,7 +1025,9 @@ void SimpleVM::Impl::VisitCreateAndInitDoubleArray(
 }
 
 void SimpleVM::Impl::VisitCreateAndInitBoolArray(
-    const CreateAndInitBoolArrayCmd&) {assert(false);}
+    const CreateAndInitBoolArrayCmd &cmd) {
+  VisitCreateAndInitArray<BoolValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitCharArray(
     const CreateAndInitCharArrayCmd &cmd) {
@@ -1043,7 +1045,7 @@ template<typename T> void SimpleVM::Impl::VisitCreateAndInitArray(
       cmd.GetDimensionsCount(),
       static_cast<size_t>(cmd.GetValuesCount()),
       &operands_);
-  operands_.PushArray<T>(move(array));
+  operands_.Push(move(array));
 }
 
 void SimpleVM::Impl::VisitDirectJump(

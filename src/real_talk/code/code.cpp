@@ -91,20 +91,20 @@ void Code::Skip(uint32_t bytes_count) {
   AfterWrite(bytes_count);
 }
 
-uint8_t Code::ReadUint8() noexcept {
+template<> uint8_t Code::Read<uint8_t>() {
   assert(HasEnoughSize(sizeof(uint8_t)));
   const uint8_t value = *reinterpret_cast<uint8_t*>(current_byte_);
   current_byte_ += sizeof(value);
   return value;
 }
 
-void Code::WriteUint8(uint8_t value) {
+template<> void Code::Write<uint8_t>(const uint8_t &value) {
   EnsureCapacity(sizeof(value));
   *reinterpret_cast<uint8_t*>(current_byte_) = value;
   AfterWrite(sizeof(value));
 }
 
-uint32_t Code::ReadUint32() noexcept {
+template<> uint32_t Code::Read<uint32_t>() {
   assert(HasEnoughSize(sizeof(uint32_t)));
   const uint32_t value = real_talk::util::FromLittleEndian32(
       *reinterpret_cast<uint32_t*>(current_byte_));
@@ -112,14 +112,14 @@ uint32_t Code::ReadUint32() noexcept {
   return value;
 }
 
-void Code::WriteUint32(uint32_t value) {
+template<> void Code::Write<uint32_t>(const uint32_t &value) {
   EnsureCapacity(sizeof(value));
   *reinterpret_cast<uint32_t*>(current_byte_) =
       real_talk::util::ToLittleEndian32(value);
   AfterWrite(sizeof(value));
 }
 
-uint64_t Code::ReadUint64() noexcept {
+template<> uint64_t Code::Read<uint64_t>() {
   assert(HasEnoughSize(sizeof(uint64_t)));
   const uint64_t value = real_talk::util::FromLittleEndian64(
       *reinterpret_cast<uint64_t*>(current_byte_));
@@ -127,144 +127,144 @@ uint64_t Code::ReadUint64() noexcept {
   return value;
 }
 
-void Code::WriteUint64(uint64_t value) {
+template<> void Code::Write<uint64_t>(const uint64_t &value) {
   EnsureCapacity(sizeof(value));
   *reinterpret_cast<uint64_t*>(current_byte_) =
       real_talk::util::ToLittleEndian64(value);
   AfterWrite(sizeof(value));
 }
 
-int32_t Code::ReadInt32() noexcept {
-  const uint32_t unsigned_value = ReadUint32();
+template<> int32_t Code::Read<int32_t>() {
+  const uint32_t unsigned_value = Read<uint32_t>();
   return *reinterpret_cast<const int32_t*>(&unsigned_value);
 }
 
-void Code::WriteInt32(int32_t value) {
-  const uint32_t unsigned_value = *reinterpret_cast<uint32_t*>(&value);
-  WriteUint32(unsigned_value);
+template<> void Code::Write<int32_t>(const int32_t &value) {
+  const uint32_t unsigned_value = *reinterpret_cast<const uint32_t*>(&value);
+  Write<uint32_t>(unsigned_value);
 }
 
-int64_t Code::ReadInt64() noexcept {
-  const uint64_t unsigned_value = ReadUint64();
+template<> int64_t Code::Read<int64_t>() {
+  const uint64_t unsigned_value = Read<uint64_t>();
   return *reinterpret_cast<const int64_t*>(&unsigned_value);
 }
 
-void Code::WriteInt64(int64_t value) {
-  const uint64_t unsigned_value = *reinterpret_cast<uint64_t*>(&value);
-  WriteUint64(unsigned_value);
+template<> void Code::Write<int64_t>(const int64_t &value) {
+  const uint64_t unsigned_value = *reinterpret_cast<const uint64_t*>(&value);
+  Write<uint64_t>(unsigned_value);
 }
 
-double Code::ReadDouble() noexcept {
-  const uint64_t unsigned_value = ReadUint64();
+template<> double Code::Read<double>() {
+  const uint64_t unsigned_value = Read<uint64_t>();
   const unsigned char *bytes =
       reinterpret_cast<const unsigned char*>(&unsigned_value);
   return *reinterpret_cast<const double*>(bytes);
 }
 
-void Code::WriteDouble(double value) {
+template<> void Code::Write<double>(const double &value) {
   const unsigned char *bytes = reinterpret_cast<const unsigned char*>(&value);
   const uint64_t unsigned_value = *reinterpret_cast<const uint64_t*>(bytes);
-  WriteUint64(unsigned_value);
+  Write<uint64_t>(unsigned_value);
 }
 
-bool Code::ReadBool() noexcept {
-  return static_cast<bool>(ReadUint8());
+template<> bool Code::Read<bool>() {
+  return static_cast<bool>(Read<uint8_t>());
 }
 
-void Code::WriteBool(bool value) {
-  WriteUint8(static_cast<uint8_t>(value));
+template<> void Code::Write<bool>(const bool &value) {
+  Write<uint8_t>(static_cast<uint8_t>(value));
 }
 
-char Code::ReadChar() noexcept {
-  const uint8_t c = ReadUint8();
+template<> char Code::Read<char>() {
+  const uint8_t c = Read<uint8_t>();
   assert(c <= std::numeric_limits<char>::max());
   return static_cast<char>(c);
 }
 
-void Code::WriteChar(char value) {
+template<> void Code::Write<char>(const char &value) {
   assert(value >= 0);
   assert(value <= std::numeric_limits<uint8_t>::max());
-  WriteUint8(static_cast<uint8_t>(value));
+  Write<uint8_t>(static_cast<uint8_t>(value));
 }
 
-void Code::WriteBytes(const unsigned char *bytes, uint32_t count) {
+void Code::Write(const unsigned char *bytes, uint32_t count) {
   assert(bytes);
   EnsureCapacity(count);
   std::memcpy(current_byte_, bytes, count);
   AfterWrite(count);
 }
 
-std::string Code::ReadString() {
-  const uint32_t size = ReadUint32();
+template<> std::string Code::Read<std::string>() {
+  const uint32_t size = Read<uint32_t>();
   assert(HasEnoughSize(size));
   const std::string str(reinterpret_cast<char*>(current_byte_), size);
   current_byte_ += size;
   return str;
 }
 
-void Code::WriteString(const std::string &str) {
+template<> void Code::Write<std::string>(const std::string &str) {
   assert(str.size() <= std::numeric_limits<uint32_t>::max());
   const uint32_t size = static_cast<uint32_t>(str.size());
-  WriteUint32(size);
-  WriteBytes(reinterpret_cast<const unsigned char*>(str.data()), size);
+  Write<uint32_t>(size);
+  Write(reinterpret_cast<const unsigned char*>(str.data()), size);
 }
 
-CmdId Code::ReadCmdId() noexcept {
-  return static_cast<CmdId>(ReadUint8());
+template<> CmdId Code::Read<CmdId>() {
+  return static_cast<CmdId>(Read<uint8_t>());
 }
 
-void Code::WriteCmdId(CmdId id) {
-  WriteUint8(static_cast<uint8_t>(id));
+template<> void Code::Write<CmdId>(const CmdId &id) {
+  Write<uint8_t>(static_cast<uint8_t>(id));
 }
 
-IdAddresses Code::ReadIdAddresses() {
-  const std::string &id = ReadString();
+template<> IdAddresses Code::Read<IdAddresses>() {
+  const std::string &id = Read<std::string>();
   std::vector<uint32_t> addresses;
-  const uint32_t size = ReadUint32();
+  const uint32_t size = Read<uint32_t>();
   addresses.reserve(size / sizeof(uint32_t));
   const unsigned char * const addresses_end = current_byte_ + size;
 
   while (current_byte_ != addresses_end) {
-    addresses.push_back(ReadUint32());
+    addresses.push_back(Read<uint32_t>());
   }
 
   return IdAddresses(id, addresses);
 }
 
-void Code::WriteIdAddresses(const IdAddresses &id_addresses) {
-  WriteString(id_addresses.GetId());
+template<> void Code::Write<IdAddresses>(const IdAddresses &id_addresses) {
+  Write<std::string>(id_addresses.GetId());
   assert(id_addresses.GetAddresses().size()
          <= std::numeric_limits<uint32_t>::max());
   const uint32_t size = static_cast<uint32_t>(
       id_addresses.GetAddresses().size()) * sizeof(uint32_t);
   assert(size / sizeof(uint32_t) == id_addresses.GetAddresses().size());
-  WriteUint32(size);
+  Write<uint32_t>(size);
 
   for (const uint32_t address: id_addresses.GetAddresses()) {
-    WriteUint32(address);
+    Write<uint32_t>(address);
   }
 }
 
-IdSize Code::ReadIdSize() {
-  const std::string &id = ReadString();
-  const DataTypeSize size = static_cast<DataTypeSize>(ReadUint8());
+template<> IdSize Code::Read<IdSize>() {
+  const std::string &id = Read<std::string>();
+  const DataTypeSize size = static_cast<DataTypeSize>(Read<uint8_t>());
   return IdSize(id, size);
 }
 
-void Code::WriteIdSize(const IdSize &id_size) {
-  WriteString(id_size.GetId());
-  WriteUint8(static_cast<uint8_t>(id_size.GetSize()));
+template<> void Code::Write<IdSize>(const IdSize &id_size) {
+  Write<std::string>(id_size.GetId());
+  Write<uint8_t>(static_cast<uint8_t>(id_size.GetSize()));
 }
 
-IdAddress Code::ReadIdAddress() {
-  const std::string &id = ReadString();
-  const uint32_t address = ReadUint32();
+template<> IdAddress Code::Read<IdAddress>() {
+  const std::string &id = Read<std::string>();
+  const uint32_t address = Read<uint32_t>();
   return IdAddress(id, address);
 }
 
-void Code::WriteIdAddress(const IdAddress &id_address) {
-  WriteString(id_address.GetId());
-  WriteUint32(id_address.GetAddress());
+template<> void Code::Write<IdAddress>(const IdAddress &id_address) {
+  Write<std::string>(id_address.GetId());
+  Write<uint32_t>(id_address.GetAddress());
 }
 
 bool Code::HasEnoughCapacity(uint32_t bytes_count) const noexcept {

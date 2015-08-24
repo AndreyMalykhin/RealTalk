@@ -65,10 +65,10 @@ class SimpleModuleReaderTest: public Test {
 
     {
       unique_ptr<Code> cmds_code(new Code());
-      cmds_code->WriteCmdId(CmdId::kCreateGlobalIntVar);
-      cmds_code->WriteCmdId(CmdId::kCreateGlobalLongVar);
+      cmds_code->Write<CmdId>(CmdId::kCreateGlobalIntVar);
+      cmds_code->Write<CmdId>(CmdId::kCreateGlobalLongVar);
       uint32_t main_cmds_code_size = cmds_code->GetPosition();
-      cmds_code->WriteCmdId(CmdId::kCreateLocalDoubleVar);
+      cmds_code->Write<CmdId>(CmdId::kCreateLocalDoubleVar);
       cmds_code->SetPosition(UINT32_C(0));
       vector<IdSize> global_var_defs =
           {{"var", DataTypeSize::kInt}, {"var2", DataTypeSize::kLong}};

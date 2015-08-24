@@ -39,95 +39,23 @@ class Code {
   uint32_t GetSize() const noexcept;
   uint32_t GetPosition() const noexcept;
   void SetPosition(uint32_t position) noexcept;
-  uint8_t ReadUint8() noexcept;
-  uint32_t ReadUint32() noexcept;
-  uint64_t ReadUint64() noexcept;
-  int32_t ReadInt32() noexcept;
-  int64_t ReadInt64() noexcept;
-  double ReadDouble() noexcept;
-  bool ReadBool() noexcept;
-  char ReadChar() noexcept;
-  std::string ReadString();
-  CmdId ReadCmdId() noexcept;
-  IdAddresses ReadIdAddresses();
-  IdAddress ReadIdAddress();
-  IdSize ReadIdSize();
-  friend bool operator==(const Code &lhs, const Code &rhs);
+  template<typename T> T Read();
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
+  template<typename T> void Write(const T &value);
+
+  /**
+   * @throws real_talk::code::Code::CodeSizeOverflowError
+   */
+  void Write(const unsigned char *bytes, uint32_t count);
 
   /**
    * @throws real_talk::code::Code::CodeSizeOverflowError
    */
   void Skip(uint32_t bytes_count);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteUint8(uint8_t value);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteUint32(uint32_t value);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteUint64(uint64_t value);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteInt32(int32_t value);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteInt64(int64_t value);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteDouble(double value);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteBool(bool value);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteChar(char value);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteBytes(const unsigned char *bytes, uint32_t count);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteString(const std::string &str);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteCmdId(CmdId id);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteIdAddresses(const IdAddresses &id_address);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteIdAddress(const IdAddress &id_address);
-
-  /**
-   * @throws real_talk::code::Code::CodeSizeOverflowError
-   */
-  void WriteIdSize(const IdSize &id_size);
+  friend bool operator==(const Code &lhs, const Code &rhs);
 
  private:
   bool HasEnoughCapacity(uint32_t bytes_count) const noexcept;

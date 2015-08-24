@@ -16,13 +16,13 @@ namespace {
 
 void WriteIds(const vector<string> &ids, Code *code) {
   for (const string &id: ids) {
-    code->WriteString(id);
+    code->Write<string>(id);
   }
 }
 
 void WriteIdAddresses(const vector<IdAddresses> &id_addresses, Code *code) {
   for (const IdAddresses &id_addresses_item: id_addresses) {
-    code->WriteIdAddresses(id_addresses_item);
+    code->Write<IdAddresses>(id_addresses_item);
   }
 }
 }
@@ -37,12 +37,12 @@ void SimpleCodeContainerWriter::Write(
 void SimpleCodeContainerWriter::Write(const Exe &exe, Code *output_code) const {
   assert(output_code);
   output_code_ = output_code;
-  output_code->WriteUint32(exe.GetVersion());
-  output_code->WriteUint32(exe.GetGlobalVarsSize());
+  output_code->Write<uint32_t>(exe.GetVersion());
+  output_code->Write<uint32_t>(exe.GetGlobalVarsSize());
   const uint32_t segments_metadata_address = output_code->GetPosition();
   output_code->Skip(7 * sizeof(uint32_t));
   const uint32_t cmds_address = output_code->GetPosition();
-  output_code->WriteBytes(
+  output_code->Write(
       exe.GetCmdsCode().GetData(), exe.GetCmdsCode().GetSize());
   const uint32_t native_func_defs_metadata_address = output_code->GetPosition();
   WriteIds(exe.GetNativeFuncDefs(), output_code);
@@ -53,29 +53,29 @@ void SimpleCodeContainerWriter::Write(const Exe &exe, Code *output_code) const {
   const uint32_t native_func_refs_metadata_size =
       output_code->GetPosition() - native_func_refs_metadata_address;
   output_code->SetPosition(segments_metadata_address);
-  output_code->WriteUint32(cmds_address);
-  output_code->WriteUint32(exe.GetMainCmdsCodeSize());
-  output_code->WriteUint32(exe.GetFuncCmdsCodeSize());
-  output_code->WriteUint32(native_func_defs_metadata_address);
-  output_code->WriteUint32(native_func_defs_metadata_size);
-  output_code->WriteUint32(native_func_refs_metadata_address);
-  output_code->WriteUint32(native_func_refs_metadata_size);
+  output_code->Write<uint32_t>(cmds_address);
+  output_code->Write<uint32_t>(exe.GetMainCmdsCodeSize());
+  output_code->Write<uint32_t>(exe.GetFuncCmdsCodeSize());
+  output_code->Write<uint32_t>(native_func_defs_metadata_address);
+  output_code->Write<uint32_t>(native_func_defs_metadata_size);
+  output_code->Write<uint32_t>(native_func_refs_metadata_address);
+  output_code->Write<uint32_t>(native_func_refs_metadata_size);
 }
 
 void SimpleCodeContainerWriter::Write(
     const Module &module, Code *output_code) const {
   assert(output_code);
   output_code_ = output_code;
-  output_code->WriteUint32(module.GetVersion());
+  output_code->Write<uint32_t>(module.GetVersion());
   const uint32_t segments_metadata_address = output_code->GetPosition();
   output_code->Skip(15 * sizeof(uint32_t));
   const uint32_t cmds_address = output_code->GetPosition();
-  output_code->WriteBytes(
+  output_code->Write(
       module.GetCmdsCode().GetData(), module.GetCmdsCode().GetSize());
   const uint32_t global_var_defs_metadata_address = output_code->GetPosition();
 
   for (const IdSize &global_var_def: module.GetGlobalVarDefs()) {
-    output_code->WriteIdSize(global_var_def);
+    output_code->Write<IdSize>(global_var_def);
   }
 
   const uint32_t global_var_defs_metadata_size =
@@ -83,7 +83,7 @@ void SimpleCodeContainerWriter::Write(
   const uint32_t func_defs_metadata_address = output_code->GetPosition();
 
   for (const IdAddress &id_address: module.GetFuncDefs()) {
-    output_code->WriteIdAddress(id_address);
+    output_code->Write<IdAddress>(id_address);
   }
 
   const uint32_t func_defs_metadata_size =
@@ -105,21 +105,21 @@ void SimpleCodeContainerWriter::Write(
   const uint32_t native_func_refs_metadata_size =
       output_code->GetPosition() - native_func_refs_metadata_address;
   output_code->SetPosition(segments_metadata_address);
-  output_code->WriteUint32(cmds_address);
-  output_code->WriteUint32(module.GetMainCmdsCodeSize());
-  output_code->WriteUint32(module.GetFuncCmdsCodeSize());
-  output_code->WriteUint32(global_var_defs_metadata_address);
-  output_code->WriteUint32(global_var_defs_metadata_size);
-  output_code->WriteUint32(func_defs_metadata_address);
-  output_code->WriteUint32(func_defs_metadata_size);
-  output_code->WriteUint32(native_func_defs_metadata_address);
-  output_code->WriteUint32(native_func_defs_metadata_size);
-  output_code->WriteUint32(global_var_refs_metadata_address);
-  output_code->WriteUint32(global_var_refs_metadata_size);
-  output_code->WriteUint32(func_refs_metadata_address);
-  output_code->WriteUint32(func_refs_metadata_size);
-  output_code->WriteUint32(native_func_refs_metadata_address);
-  output_code->WriteUint32(native_func_refs_metadata_size);
+  output_code->Write<uint32_t>(cmds_address);
+  output_code->Write<uint32_t>(module.GetMainCmdsCodeSize());
+  output_code->Write<uint32_t>(module.GetFuncCmdsCodeSize());
+  output_code->Write<uint32_t>(global_var_defs_metadata_address);
+  output_code->Write<uint32_t>(global_var_defs_metadata_size);
+  output_code->Write<uint32_t>(func_defs_metadata_address);
+  output_code->Write<uint32_t>(func_defs_metadata_size);
+  output_code->Write<uint32_t>(native_func_defs_metadata_address);
+  output_code->Write<uint32_t>(native_func_defs_metadata_size);
+  output_code->Write<uint32_t>(global_var_refs_metadata_address);
+  output_code->Write<uint32_t>(global_var_refs_metadata_size);
+  output_code->Write<uint32_t>(func_refs_metadata_address);
+  output_code->Write<uint32_t>(func_refs_metadata_size);
+  output_code->Write<uint32_t>(native_func_refs_metadata_address);
+  output_code->Write<uint32_t>(native_func_refs_metadata_size);
 }
 
 void SimpleCodeContainerWriter::VisitModule(const Module &module) const {
