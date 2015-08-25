@@ -2,12 +2,14 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <vector>
+#include <deque>
 #include <string>
 #include "real_talk/code/exe.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
 using std::vector;
+using std::deque;
 using std::string;
 using std::unique_ptr;
 using std::stringstream;
@@ -29,6 +31,14 @@ template<typename T> string PrintArray(
   stringstream stream;
   array.Print(stream, dimensions_count);
   return stream.str();
+}
+
+template<typename T> void AssertArraysEqual(const ArrayValue<T> &expected,
+                                            const ArrayValue<T> &actual,
+                                            uint8_t dimensions_count) {
+  ASSERT_TRUE(expected.IsDeeplyEqual(actual, dimensions_count))
+        << "[expected]\n" << PrintArray(expected, dimensions_count)
+        << "\n[actual]\n" << PrintArray(actual, dimensions_count);
 }
 }
 
@@ -91,14 +101,15 @@ class SimpleVMTest: public Test {
     }
   }
 
-  void TestCreateGlobalVarCmd(
-      CmdId cmd_id,
-      uint32_t var_index,
-      const DataStorage &expected_global_vars,
-      DataStorageAsserter global_vars_asserter) {
+  template<typename T> void TestCreateGlobalVarCmd(
+      CmdId cmd_id, DataStorageAsserter global_vars_asserter) {
     unique_ptr<Code> cmds(new Code());
     cmds->Write<CmdId>(cmd_id);
+    uint32_t var_index = UINT32_C(7);
     cmds->Write<uint32_t>(var_index);
+    size_t global_vars_size = 77;
+    DataStorage expected_global_vars(global_vars_size);
+    expected_global_vars.Create<T>(var_index);
     uint32_t main_cmds_code_size = cmds->GetPosition();
     SimpleVM::FuncFrames expected_func_frames;
     TestExecute(move(cmds),
@@ -108,10 +119,22 @@ class SimpleVMTest: public Test {
                 global_vars_asserter);
   }
 
-  void TestLoadValueCmd(unique_ptr<Code> cmds,
-                        const DataStorage &expected_operands,
-                        DataStorageAsserter operands_asserter,
-                        vector<NativeFuncValue> native_funcs = {}) {
+  template<typename TType, typename TSerializableType> void TestLoadValueCmd(
+      CmdId cmd_id,
+      TType value,
+      TSerializableType serializable_value,
+      vector<NativeFuncValue> native_funcs = {}) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      uint32_t operand_index = UINT32_C(0);
+      ASSERT_EQ(expected_operands.Get<TType>(operand_index),
+                actual_operands.Get<TType>(operand_index));
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(cmd_id);
+    cmds->Write<TSerializableType>(serializable_value);
+    DataStorage expected_operands;
+    expected_operands.Push(value);
     uint32_t main_cmds_code_size = cmds->GetPosition();
     DataStorage expected_global_vars;
     DataStorageAsserter global_vars_asserter = nullptr;
@@ -139,9 +162,7 @@ class SimpleVMTest: public Test {
       const auto &actual_array =
         actual_operands.Get< ArrayValue<T> >(operand_index);
       uint8_t dimensions_count = UINT8_C(2);
-      ASSERT_TRUE(expected_array.IsDeeplyEqual(actual_array, dimensions_count))
-        << "[expected]\n" << PrintArray(expected_array, dimensions_count)
-        << "\n[actual]\n" << PrintArray(actual_array, dimensions_count);
+      AssertArraysEqual(expected_array, actual_array, dimensions_count);
     };
     unique_ptr<Code> cmds(new Code());
     cmds->Write<CmdId>(CmdId::kLoadIntValue);
@@ -175,51 +196,55 @@ class SimpleVMTest: public Test {
                 operands_asserter);
   }
 
-  template<typename T> void TestCreateAndInitArrayCmd(
-      const vector<Code> &value_codes, const vector<T> &values, CmdId cmd_id) {
+  template<typename TType, typename TSerializableType>
+  void TestCreateAndInitArrayCmd(const deque<TSerializableType> &values,
+                                 CmdId load_value_cmd_id,
+                                 CmdId create_array_cmd_id) {
     auto operands_asserter = [](const DataStorage &expected_operands,
                                 const DataStorage &actual_operands) {
       uint32_t operand_index = UINT32_C(0);
       const auto &expected_array =
-        expected_operands.Get< ArrayValue<T> >(operand_index);
+        expected_operands.Get< ArrayValue<TType> >(operand_index);
       const auto &actual_array =
-        actual_operands.Get< ArrayValue<T> >(operand_index);
+        actual_operands.Get< ArrayValue<TType> >(operand_index);
       uint8_t dimensions_count = UINT8_C(2);
-      ASSERT_TRUE(expected_array.IsDeeplyEqual(actual_array, dimensions_count))
-        << "[expected]\n" << PrintArray(expected_array, dimensions_count)
-        << "\n[actual]\n" << PrintArray(actual_array, dimensions_count);
+      AssertArraysEqual(expected_array, actual_array, dimensions_count);
     };
 
     unique_ptr<Code> cmds(new Code());
-    cmds->Write(value_codes.at(0).GetData(), value_codes.at(0).GetSize());
-    cmds->Write(value_codes.at(1).GetData(), value_codes.at(1).GetSize());
-    cmds->Write<CmdId>(cmd_id);
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(values.at(0));
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(values.at(1));
+    cmds->Write<CmdId>(create_array_cmd_id);
     uint8_t inner_array_dimensions_count = UINT8_C(1);
     cmds->Write<uint8_t>(inner_array_dimensions_count);
     int32_t inner_array_values_count = INT32_C(2);
     cmds->Write<int32_t>(inner_array_values_count);
 
-    cmds->Write(value_codes.at(2).GetData(), value_codes.at(2).GetSize());
-    cmds->Write<CmdId>(cmd_id);
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(values.at(2));
+    cmds->Write<CmdId>(create_array_cmd_id);
     cmds->Write<uint8_t>(inner_array_dimensions_count);
     int32_t inner_array_values_count2 = INT32_C(1);
     cmds->Write<int32_t>(inner_array_values_count2);
 
-    cmds->Write<CmdId>(cmd_id);
+    cmds->Write<CmdId>(create_array_cmd_id);
     uint8_t outer_array_dimensions_count = UINT8_C(2);
     cmds->Write<uint8_t>(outer_array_dimensions_count);
     int32_t outer_array_values_count = INT32_C(2);
     cmds->Write<int32_t>(outer_array_values_count);
 
     DataStorage expected_operands;
-    vector< ArrayValue<T> > outer_array_values;
-    vector<T> inner_array_values = {values.at(2)};
-    auto inner_array = ArrayValue<T>::Unidimensional(inner_array_values);
+    vector< ArrayValue<TType> > outer_array_values;
+    vector<TType> inner_array_values = {TType(values.at(2))};
+    auto inner_array = ArrayValue<TType>::Unidimensional(inner_array_values);
     outer_array_values.push_back(move(inner_array));
-    vector<T> inner_array_values2 = {values.at(1), values.at(0)};
-    auto inner_array2 = ArrayValue<T>::Unidimensional(inner_array_values2);
+    vector<TType> inner_array_values2 =
+        {TType(values.at(1)), TType(values.at(0))};
+    auto inner_array2 = ArrayValue<TType>::Unidimensional(inner_array_values2);
     outer_array_values.push_back(move(inner_array2));
-    auto outer_array = ArrayValue<T>::Multidimensional(
+    auto outer_array = ArrayValue<TType>::Multidimensional(
         move(outer_array_values));
     expected_operands.Push(move(outer_array));
 
@@ -248,14 +273,8 @@ TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
     ASSERT_EQ(expected_global_vars.Get<IntValue>(var_index),
               actual_global_vars.Get<IntValue>(var_index));
   };
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  uint32_t var_index = UINT32_C(7);
-  expected_global_vars.Create<IntValue>(var_index);
-  TestCreateGlobalVarCmd(CmdId::kCreateGlobalIntVar,
-                         var_index,
-                         expected_global_vars,
-                         global_vars_asserter);
+  TestCreateGlobalVarCmd<IntValue>(
+      CmdId::kCreateGlobalIntVar, global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, CreateGlobalLongVarCmd) {
@@ -265,14 +284,8 @@ TEST_F(SimpleVMTest, CreateGlobalLongVarCmd) {
     ASSERT_EQ(expected_global_vars.Get<LongValue>(var_index),
               actual_global_vars.Get<LongValue>(var_index));
   };
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  uint32_t var_index = UINT32_C(7);
-  expected_global_vars.Create<LongValue>(var_index);
-  TestCreateGlobalVarCmd(CmdId::kCreateGlobalLongVar,
-                         var_index,
-                         expected_global_vars,
-                         global_vars_asserter);
+  TestCreateGlobalVarCmd<LongValue>(
+      CmdId::kCreateGlobalLongVar, global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, CreateGlobalDoubleVarCmd) {
@@ -282,14 +295,8 @@ TEST_F(SimpleVMTest, CreateGlobalDoubleVarCmd) {
     ASSERT_DOUBLE_EQ(expected_global_vars.Get<DoubleValue>(var_index),
                      actual_global_vars.Get<DoubleValue>(var_index));
   };
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  uint32_t var_index = UINT32_C(7);
-  expected_global_vars.Create<DoubleValue>(var_index);
-  TestCreateGlobalVarCmd(CmdId::kCreateGlobalDoubleVar,
-                         var_index,
-                         expected_global_vars,
-                         global_vars_asserter);
+  TestCreateGlobalVarCmd<DoubleValue>(
+      CmdId::kCreateGlobalDoubleVar, global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, CreateGlobalBoolVarCmd) {
@@ -299,14 +306,8 @@ TEST_F(SimpleVMTest, CreateGlobalBoolVarCmd) {
     ASSERT_EQ(expected_global_vars.Get<BoolValue>(var_index),
               actual_global_vars.Get<BoolValue>(var_index));
   };
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  uint32_t var_index = UINT32_C(7);
-  expected_global_vars.Create<BoolValue>(var_index);
-  TestCreateGlobalVarCmd(CmdId::kCreateGlobalBoolVar,
-                         var_index,
-                         expected_global_vars,
-                         global_vars_asserter);
+  TestCreateGlobalVarCmd<BoolValue>(
+      CmdId::kCreateGlobalBoolVar, global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, CreateGlobalCharVarCmd) {
@@ -316,14 +317,8 @@ TEST_F(SimpleVMTest, CreateGlobalCharVarCmd) {
     ASSERT_EQ(expected_global_vars.Get<CharValue>(var_index),
               actual_global_vars.Get<CharValue>(var_index));
   };
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  uint32_t var_index = UINT32_C(7);
-  expected_global_vars.Create<CharValue>(var_index);
-  TestCreateGlobalVarCmd(CmdId::kCreateGlobalCharVar,
-                         var_index,
-                         expected_global_vars,
-                         global_vars_asserter);
+  TestCreateGlobalVarCmd<CharValue>(
+      CmdId::kCreateGlobalCharVar, global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, CreateGlobalStringVarCmd) {
@@ -333,14 +328,8 @@ TEST_F(SimpleVMTest, CreateGlobalStringVarCmd) {
     ASSERT_EQ(expected_global_vars.Get<StringValue>(var_index),
               actual_global_vars.Get<StringValue>(var_index));
   };
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  uint32_t var_index = UINT32_C(7);
-  expected_global_vars.Create<StringValue>(var_index);
-  TestCreateGlobalVarCmd(CmdId::kCreateGlobalStringVar,
-                         var_index,
-                         expected_global_vars,
-                         global_vars_asserter);
+  TestCreateGlobalVarCmd<StringValue>(
+      CmdId::kCreateGlobalStringVar, global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, CreateGlobalArrayVarCmd) {
@@ -352,148 +341,67 @@ TEST_F(SimpleVMTest, CreateGlobalArrayVarCmd) {
     const auto &actual_var =
       actual_global_vars.Get< ArrayValue<IntValue> >(var_index);
     uint8_t dimensions_count = UINT8_C(1);
-    ASSERT_TRUE(actual_var.IsDeeplyEqual(expected_var, dimensions_count));
+    AssertArraysEqual(expected_var, actual_var, dimensions_count);
   };
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  uint32_t var_index = UINT32_C(7);
-  expected_global_vars.Create< ArrayValue<IntValue> >(var_index);
-  TestCreateGlobalVarCmd(CmdId::kCreateGlobalArrayVar,
-                         var_index,
-                         expected_global_vars,
-                         global_vars_asserter);
+  TestCreateGlobalVarCmd< ArrayValue<IntValue> >(
+      CmdId::kCreateGlobalArrayVar, global_vars_asserter);
 }
 
 TEST_F(SimpleVMTest, LoadIntValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    ASSERT_EQ(expected_operands.Get<IntValue>(operand_index),
-              actual_operands.Get<IntValue>(operand_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadIntValue);
-  int32_t value = INT32_C(7);
-  cmds->Write<int32_t>(value);
-  DataStorage expected_operands;
-  expected_operands.Push(value);
-  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+  int32_t serializable_value = INT32_C(7);
+  TestLoadValueCmd(CmdId::kLoadIntValue,
+                   IntValue(serializable_value),
+                   serializable_value);
 }
 
 TEST_F(SimpleVMTest, LoadLongValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    ASSERT_EQ(expected_operands.Get<LongValue>(operand_index),
-              actual_operands.Get<LongValue>(operand_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadLongValue);
-  int64_t value = INT64_C(7);
-  cmds->Write<int64_t>(value);
-  DataStorage expected_operands;
-  expected_operands.Push(value);
-  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+  int64_t serializable_value = INT64_C(7);
+  TestLoadValueCmd(CmdId::kLoadLongValue,
+                   LongValue(serializable_value),
+                   serializable_value);
 }
 
 TEST_F(SimpleVMTest, LoadDoubleValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    ASSERT_DOUBLE_EQ(expected_operands.Get<DoubleValue>(operand_index),
-                     actual_operands.Get<DoubleValue>(operand_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadDoubleValue);
-  double value = 7.7;
-  cmds->Write<double>(value);
-  DataStorage expected_operands;
-  expected_operands.Push(value);
-  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+  double serializable_value = 7.7;
+  TestLoadValueCmd(CmdId::kLoadDoubleValue,
+                   DoubleValue(serializable_value),
+                   serializable_value);
 }
 
 TEST_F(SimpleVMTest, LoadCharValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    ASSERT_EQ(expected_operands.Get<CharValue>(operand_index),
-              actual_operands.Get<CharValue>(operand_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadCharValue);
-  char value = 'a';
-  cmds->Write<char>(value);
-  DataStorage expected_operands;
-  expected_operands.Push(value);
-  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+  char serializable_value = 'a';
+  TestLoadValueCmd(CmdId::kLoadCharValue,
+                   CharValue(serializable_value),
+                   serializable_value);
 }
 
 TEST_F(SimpleVMTest, LoadBoolValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    ASSERT_EQ(expected_operands.Get<BoolValue>(operand_index),
-              actual_operands.Get<BoolValue>(operand_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadBoolValue);
-  bool value = true;
-  cmds->Write<bool>(value);
-  DataStorage expected_operands;
-  expected_operands.Push(value);
-  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+  bool serializable_value = true;
+  TestLoadValueCmd(CmdId::kLoadBoolValue,
+                   BoolValue(serializable_value),
+                   serializable_value);
 }
 
 TEST_F(SimpleVMTest, LoadStringValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    ASSERT_EQ(expected_operands.Get<StringValue>(operand_index),
-              actual_operands.Get<StringValue>(operand_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadStringValue);
-  const string value = "abc";
-  cmds->Write<string>(value);
-  DataStorage expected_operands;
-  expected_operands.Push(StringValue(value));
-  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+  string serializable_value = "abc";
+  TestLoadValueCmd(CmdId::kLoadStringValue,
+                   StringValue(serializable_value),
+                   serializable_value);
 }
 
 TEST_F(SimpleVMTest, LoadFuncValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    ASSERT_EQ(expected_operands.Get<FuncValue>(operand_index),
-              actual_operands.Get<FuncValue>(operand_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadFuncValue);
   uint32_t func_address = UINT32_C(7);
-  cmds->Write<uint32_t>(func_address);
-  DataStorage expected_operands;
-  expected_operands.Push(FuncValue(func_address));
-  TestLoadValueCmd(move(cmds), expected_operands, operands_asserter);
+  TestLoadValueCmd(
+      CmdId::kLoadFuncValue, FuncValue(func_address), func_address);
 }
 
 TEST_F(SimpleVMTest, LoadNativeFuncValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    uint32_t operand_index = UINT32_C(0);
-    ASSERT_EQ(expected_operands.Get<NativeFuncValue>(operand_index),
-              actual_operands.Get<NativeFuncValue>(operand_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadNativeFuncValue);
   uint32_t func_index = UINT32_C(5);
-  cmds->Write<uint32_t>(func_index);
-  DataStorage expected_operands;
   NativeFuncValue value = []() {};
-  expected_operands.Push(value);
   vector<NativeFuncValue> native_funcs(7);
   native_funcs[func_index] = value;
   TestLoadValueCmd(
-      move(cmds), expected_operands, operands_asserter, native_funcs);
+      CmdId::kLoadNativeFuncValue, value, func_index, native_funcs);
 }
 
 TEST_F(SimpleVMTest, CreateIntArrayCmd) {
@@ -521,136 +429,102 @@ TEST_F(SimpleVMTest, CreateStringArrayCmd) {
 }
 
 TEST_F(SimpleVMTest, CreateAndInitIntArrayCmd) {
-  vector<Code> value_codes;
-  Code value_code;
-  value_code.Write<CmdId>(CmdId::kLoadIntValue);
-  int32_t value = INT32_C(1);
-  value_code.Write<int32_t>(value);
-  value_codes.push_back(move(value_code));
-  Code value_code2;
-  value_code2.Write<CmdId>(CmdId::kLoadIntValue);
-  int32_t value2 = INT32_C(2);
-  value_code2.Write<int32_t>(value2);
-  value_codes.push_back(move(value_code2));
-  Code value_code3;
-  value_code3.Write<CmdId>(CmdId::kLoadIntValue);
-  int32_t value3 = INT32_C(3);
-  value_code3.Write<int32_t>(value3);
-  value_codes.push_back(move(value_code3));
-  vector<IntValue> values = {value, value2, value3};
+  deque<int32_t> values = {INT32_C(1), INT32_C(2), INT32_C(3)};
   TestCreateAndInitArrayCmd<IntValue>(
-      value_codes, values, CmdId::kCreateAndInitIntArray);
+      values, CmdId::kLoadIntValue, CmdId::kCreateAndInitIntArray);
 }
 
 TEST_F(SimpleVMTest, CreateAndInitLongArrayCmd) {
-  vector<Code> value_codes;
-  Code value_code;
-  value_code.Write<CmdId>(CmdId::kLoadLongValue);
-  int64_t value = INT64_C(1);
-  value_code.Write<int64_t>(value);
-  value_codes.push_back(move(value_code));
-  Code value_code2;
-  value_code2.Write<CmdId>(CmdId::kLoadLongValue);
-  int64_t value2 = INT64_C(2);
-  value_code2.Write<int64_t>(value2);
-  value_codes.push_back(move(value_code2));
-  Code value_code3;
-  value_code3.Write<CmdId>(CmdId::kLoadLongValue);
-  int64_t value3 = INT64_C(3);
-  value_code3.Write<int64_t>(value3);
-  value_codes.push_back(move(value_code3));
-  vector<LongValue> values = {value, value2, value3};
+  deque<int64_t> values = {INT64_C(1), INT64_C(2), INT64_C(3)};
   TestCreateAndInitArrayCmd<LongValue>(
-      value_codes, values, CmdId::kCreateAndInitLongArray);
+      values, CmdId::kLoadLongValue, CmdId::kCreateAndInitLongArray);
 }
 
 TEST_F(SimpleVMTest, CreateAndInitDoubleArrayCmd) {
-  vector<Code> value_codes;
-  Code value_code;
-  value_code.Write<CmdId>(CmdId::kLoadDoubleValue);
-  double value = 1.1;
-  value_code.Write<double>(value);
-  value_codes.push_back(move(value_code));
-  Code value_code2;
-  value_code2.Write<CmdId>(CmdId::kLoadDoubleValue);
-  double value2 = 2.2;
-  value_code2.Write<double>(value2);
-  value_codes.push_back(move(value_code2));
-  Code value_code3;
-  value_code3.Write<CmdId>(CmdId::kLoadDoubleValue);
-  double value3 = 3.3;
-  value_code3.Write<double>(value3);
-  value_codes.push_back(move(value_code3));
-  vector<DoubleValue> values = {value, value2, value3};
+  deque<double> values = {1.1, 2.2, 3.3};
   TestCreateAndInitArrayCmd<DoubleValue>(
-      value_codes, values, CmdId::kCreateAndInitDoubleArray);
+      values, CmdId::kLoadDoubleValue, CmdId::kCreateAndInitDoubleArray);
 }
 
 TEST_F(SimpleVMTest, CreateAndInitCharArrayCmd) {
-  vector<Code> value_codes;
-  Code value_code;
-  value_code.Write<CmdId>(CmdId::kLoadCharValue);
-  char value = 'a';
-  value_code.Write<char>(value);
-  value_codes.push_back(move(value_code));
-  Code value_code2;
-  value_code2.Write<CmdId>(CmdId::kLoadCharValue);
-  char value2 = 'b';
-  value_code2.Write<char>(value2);
-  value_codes.push_back(move(value_code2));
-  Code value_code3;
-  value_code3.Write<CmdId>(CmdId::kLoadCharValue);
-  char value3 = 'c';
-  value_code3.Write<char>(value3);
-  value_codes.push_back(move(value_code3));
-  vector<CharValue> values = {value, value2, value3};
+  deque<char> values = {'a', 'b', 'c'};
   TestCreateAndInitArrayCmd<CharValue>(
-      value_codes, values, CmdId::kCreateAndInitCharArray);
+      values, CmdId::kLoadCharValue, CmdId::kCreateAndInitCharArray);
 }
 
 TEST_F(SimpleVMTest, CreateAndInitBoolArrayCmd) {
-  vector<Code> value_codes;
-  Code value_code;
-  value_code.Write<CmdId>(CmdId::kLoadBoolValue);
-  bool value = true;
-  value_code.Write<bool>(value);
-  value_codes.push_back(move(value_code));
-  Code value_code2;
-  value_code2.Write<CmdId>(CmdId::kLoadBoolValue);
-  bool value2 = false;
-  value_code2.Write<bool>(value2);
-  value_codes.push_back(move(value_code2));
-  Code value_code3;
-  value_code3.Write<CmdId>(CmdId::kLoadBoolValue);
-  bool value3 = true;
-  value_code3.Write<bool>(value3);
-  value_codes.push_back(move(value_code3));
-  vector<BoolValue> values = {value, value2, value3};
+  deque<bool> values = {true, false, true};
   TestCreateAndInitArrayCmd<BoolValue>(
-      value_codes, values, CmdId::kCreateAndInitBoolArray);
+      values, CmdId::kLoadBoolValue, CmdId::kCreateAndInitBoolArray);
 }
 
 TEST_F(SimpleVMTest, CreateAndInitStringArrayCmd) {
-  vector<Code> value_codes;
-  Code value_code;
-  value_code.Write<CmdId>(CmdId::kLoadStringValue);
-  string value = "ab";
-  value_code.Write<string>(value);
-  value_codes.push_back(move(value_code));
-  Code value_code2;
-  value_code2.Write<CmdId>(CmdId::kLoadStringValue);
-  string value2 = "cd";
-  value_code2.Write<string>(value2);
-  value_codes.push_back(move(value_code2));
-  Code value_code3;
-  value_code3.Write<CmdId>(CmdId::kLoadStringValue);
-  string value3 = "ef";
-  value_code3.Write<string>(value3);
-  value_codes.push_back(move(value_code3));
-  vector<StringValue> values =
-      {StringValue(value), StringValue(value2), StringValue(value3)};
+  deque<string> values = {"ab", "cd", "ef"};
   TestCreateAndInitArrayCmd<StringValue>(
-      value_codes, values, CmdId::kCreateAndInitStringArray);
+      values, CmdId::kLoadStringValue, CmdId::kCreateAndInitStringArray);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalIntVarCmd) {
+  auto global_vars_asserter = [](const DataStorage &expected_vars,
+                                 const DataStorage &actual_vars) {
+    uint32_t var_index = UINT32_C(7);
+    ASSERT_EQ(expected_vars.Get<IntValue>(var_index),
+              actual_vars.Get<IntValue>(var_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  int32_t value = INT32_C(777);
+  cmds->Write<int32_t>(value);
+  cmds->Write<CmdId>(CmdId::kCreateAndInitGlobalIntVar);
+  uint32_t var_index = UINT32_C(7);
+  cmds->Write<uint32_t>(var_index);
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  size_t global_vars_size = 77;
+  DataStorage expected_global_vars(global_vars_size);
+  expected_global_vars.Create<IntValue>(var_index, value);
+  SimpleVM::FuncFrames expected_func_frames;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalIntArrayVarCmd) {
+  auto global_vars_asserter = [](const DataStorage &expected_vars,
+                                 const DataStorage &actual_vars) {
+    uint32_t var_index = UINT32_C(7);
+    uint8_t dimensions_count = UINT8_C(1);
+    AssertArraysEqual(expected_vars.Get< ArrayValue<IntValue> >(var_index),
+                      actual_vars.Get< ArrayValue<IntValue> >(var_index),
+                      dimensions_count);
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  int32_t array_item = INT32_C(777);
+  cmds->Write<int32_t>(array_item);
+  cmds->Write<CmdId>(CmdId::kCreateAndInitIntArray);
+  uint8_t dimensions_count = UINT8_C(1);
+  cmds->Write<uint8_t>(dimensions_count);
+  int32_t values_count = INT32_C(1);
+  cmds->Write<int32_t>(values_count);
+  cmds->Write<CmdId>(CmdId::kCreateAndInitGlobalIntArrayVar);
+  uint32_t var_index = UINT32_C(7);
+  cmds->Write<uint32_t>(var_index);
+  cmds->Write<uint8_t>(dimensions_count);
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  size_t global_vars_size = 77;
+  DataStorage expected_global_vars(global_vars_size);
+  vector<IntValue> array_items = {array_item};
+  auto var_value = ArrayValue<IntValue>::Unidimensional(array_items);
+  expected_global_vars.Create< ArrayValue<IntValue> >(
+      var_index, move(var_value));
+  SimpleVM::FuncFrames expected_func_frames;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter);
 }
 }
 }

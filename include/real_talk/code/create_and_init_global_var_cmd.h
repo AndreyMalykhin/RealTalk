@@ -12,13 +12,13 @@ namespace code {
 
 class CreateAndInitGlobalVarCmd: public Cmd {
  public:
+  inline explicit CreateAndInitGlobalVarCmd(uint32_t var_index) noexcept
+      : var_index_(var_index) {}
+
   inline void SetVarIndex(uint32_t var_index) noexcept {var_index_ = var_index;}
   inline uint32_t GetVarIndex() const noexcept {return var_index_;}
 
  protected:
-  inline explicit CreateAndInitGlobalVarCmd(uint32_t var_index) noexcept
-      : var_index_(var_index) {}
-
   virtual void Print(std::ostream &stream) const override {
     stream << "var_index=" << var_index_;
   }
@@ -35,8 +35,7 @@ class CreateAndInitGlobalVarCmd: public Cmd {
 
 class CreateAndInitGlobalIntVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  inline explicit CreateAndInitGlobalIntVarCmd(uint32_t var_index) noexcept
-      : CreateAndInitGlobalVarCmd(var_index) {}
+  using CreateAndInitGlobalVarCmd::CreateAndInitGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalIntVar(*this);
@@ -45,8 +44,7 @@ class CreateAndInitGlobalIntVarCmd: public CreateAndInitGlobalVarCmd {
 
 class CreateAndInitGlobalLongVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  inline explicit CreateAndInitGlobalLongVarCmd(uint32_t var_index) noexcept
-      : CreateAndInitGlobalVarCmd(var_index) {}
+  using CreateAndInitGlobalVarCmd::CreateAndInitGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalLongVar(*this);
@@ -55,8 +53,7 @@ class CreateAndInitGlobalLongVarCmd: public CreateAndInitGlobalVarCmd {
 
 class CreateAndInitGlobalDoubleVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  inline explicit CreateAndInitGlobalDoubleVarCmd(uint32_t var_index) noexcept
-      : CreateAndInitGlobalVarCmd(var_index) {}
+  using CreateAndInitGlobalVarCmd::CreateAndInitGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalDoubleVar(*this);
@@ -65,8 +62,7 @@ class CreateAndInitGlobalDoubleVarCmd: public CreateAndInitGlobalVarCmd {
 
 class CreateAndInitGlobalCharVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  inline explicit CreateAndInitGlobalCharVarCmd(uint32_t var_index) noexcept
-      : CreateAndInitGlobalVarCmd(var_index) {}
+  using CreateAndInitGlobalVarCmd::CreateAndInitGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalCharVar(*this);
@@ -75,8 +71,7 @@ class CreateAndInitGlobalCharVarCmd: public CreateAndInitGlobalVarCmd {
 
 class CreateAndInitGlobalStringVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  inline explicit CreateAndInitGlobalStringVarCmd(uint32_t var_index) noexcept
-      : CreateAndInitGlobalVarCmd(var_index) {}
+  using CreateAndInitGlobalVarCmd::CreateAndInitGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalStringVar(*this);
@@ -85,8 +80,7 @@ class CreateAndInitGlobalStringVarCmd: public CreateAndInitGlobalVarCmd {
 
 class CreateAndInitGlobalBoolVarCmd: public CreateAndInitGlobalVarCmd {
  public:
-  inline explicit CreateAndInitGlobalBoolVarCmd(uint32_t var_index) noexcept
-      : CreateAndInitGlobalVarCmd(var_index) {}
+  using CreateAndInitGlobalVarCmd::CreateAndInitGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateAndInitGlobalBoolVar(*this);

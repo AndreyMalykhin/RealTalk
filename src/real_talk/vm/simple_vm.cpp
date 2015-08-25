@@ -5,6 +5,7 @@
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/create_global_var_cmd.h"
+#include "real_talk/code/create_and_init_global_var_cmd.h"
 #include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/create_and_init_array_cmd.h"
@@ -897,7 +898,9 @@ void SimpleVM::Impl::VisitCreateAndInitGlobalLongVar(
     const CreateAndInitGlobalLongVarCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCreateAndInitGlobalIntVar(
-    const CreateAndInitGlobalIntVarCmd&) {assert(false);}
+    const CreateAndInitGlobalIntVarCmd &cmd) {
+  global_vars_.Create<IntValue>(cmd.GetVarIndex(), operands_.Pop<IntValue>());
+}
 
 void SimpleVM::Impl::VisitCreateAndInitGlobalBoolArrayVar(
     const CreateAndInitGlobalBoolArrayVarCmd&) {assert(false);}
@@ -915,7 +918,10 @@ void SimpleVM::Impl::VisitCreateAndInitGlobalLongArrayVar(
     const CreateAndInitGlobalLongArrayVarCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCreateAndInitGlobalIntArrayVar(
-    const CreateAndInitGlobalIntArrayVarCmd&) {assert(false);}
+    const CreateAndInitGlobalIntArrayVarCmd &cmd) {
+  global_vars_.Create< ArrayValue<IntValue> >(
+      cmd.GetVarIndex(), operands_.Pop< ArrayValue<IntValue> >());
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalIntVar(
     const CreateAndInitLocalIntVarCmd&) {assert(false);}

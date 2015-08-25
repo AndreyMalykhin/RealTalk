@@ -32,7 +32,7 @@ class DataStorage {
   DataStorage();
   explicit DataStorage(size_t size);
   size_t GetSize() const noexcept;
-  template<typename T> void Create(size_t index);
+  template<typename T> void Create(size_t index, T value = T());
   template<typename T> const T &Get(size_t index) const noexcept;
   template<typename T> void Push(T value);
   template<typename T> T Pop() noexcept;
@@ -46,7 +46,6 @@ class DataStorage {
   void AfterPush(size_t pushed_slots_count) noexcept;
   Slot *GetSlot(size_t index) const noexcept;
   bool HasSlots(size_t count) const noexcept;
-  template<typename T> void CreateArray(size_t index);
   template<typename TType, real_talk::code::DataTypeSize TSize> void DoPush(
       TType value);
   template<typename T, real_talk::code::DataTypeSize TSize> T DoPop() noexcept;

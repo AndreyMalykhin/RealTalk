@@ -80,19 +80,6 @@ template<typename T> ArrayValue<T> ArrayValue<T>::Unidimensional(
   return array;
 }
 
-template<typename T> void ArrayValue<T>::UnidimensionalAt(
-    size_t size, void *address) {
-  assert(address);
-  auto array = new(address) ArrayValue<T>(CreateStorage(size, sizeof(T)));
-  const T *items_end_it = array->storage_->GetItems() + size;
-
-  for (T *items_it = array->storage_->GetItems();
-       items_it != items_end_it;
-       ++items_it) {
-    new(items_it) T();
-  }
-}
-
 template<typename T> ArrayValue<T> ArrayValue<T>::Multidimensional(
     vector<size_t>::iterator dimensions_start,
     vector<size_t>::iterator dimensions_end) {
@@ -155,6 +142,9 @@ template<typename T> ArrayValue<T> ArrayValue<T>::Multidimensional(
 
   return array;
 }
+
+template<typename T> ArrayValue<T>::ArrayValue()
+    : storage_(CreateStorage(0, sizeof(T))) {}
 
 template<typename T> ArrayValue<T>::ArrayValue(Storage *storage) noexcept
     : storage_(storage) {

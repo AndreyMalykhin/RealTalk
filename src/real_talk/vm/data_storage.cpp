@@ -76,48 +76,28 @@ DataStorage::DataStorage(size_t size): capacity_(size * 2),
 
 DataStorage::DataStorage(): DataStorage(0) {}
 
-template<typename T> void DataStorage::Create(size_t) {
-  // slot already filled with zeros
+template<typename T> void DataStorage::Create(size_t index, T value) {
+  new(GetSlot(index)) T(move(value));
 }
 
-template<> void DataStorage::Create<StringValue>(size_t index) {
-  new(GetSlot(index)) StringValue();
-}
-
-template<> void DataStorage::Create< ArrayValue<IntValue> >(size_t index) {
-  CreateArray<IntValue>(index);
-}
-
-template<> void DataStorage::Create< ArrayValue<LongValue> >(size_t index) {
-  CreateArray<LongValue>(index);
-}
-
-template<> void DataStorage::Create< ArrayValue<DoubleValue> >(size_t index) {
-  CreateArray<DoubleValue>(index);
-}
-
-template<> void DataStorage::Create< ArrayValue<CharValue> >(size_t index) {
-  CreateArray<CharValue>(index);
-}
-
-template<> void DataStorage::Create< ArrayValue<BoolValue> >(size_t index) {
-  CreateArray<BoolValue>(index);
-}
-
-template<> void DataStorage::Create< ArrayValue<StringValue> >(size_t index) {
-  CreateArray<StringValue>(index);
-}
-
-template<typename T> void DataStorage::CreateArray(size_t index) {
-  const size_t size = 0;
-  ArrayValue<T>::UnidimensionalAt(size, GetSlot(index));
-}
-
-template void DataStorage::Create<IntValue>(size_t index);
-template void DataStorage::Create<LongValue>(size_t index);
-template void DataStorage::Create<DoubleValue>(size_t index);
-template void DataStorage::Create<CharValue>(size_t index);
-template void DataStorage::Create<BoolValue>(size_t index);
+template void DataStorage::Create<IntValue>(size_t index, IntValue value);
+template void DataStorage::Create<LongValue>(size_t index, LongValue value);
+template void DataStorage::Create<DoubleValue>(size_t index, DoubleValue value);
+template void DataStorage::Create<CharValue>(size_t index, CharValue value);
+template void DataStorage::Create<BoolValue>(size_t index, BoolValue value);
+template void DataStorage::Create<StringValue>(size_t index, StringValue value);
+template void DataStorage::Create< ArrayValue<IntValue> >(
+    size_t index, ArrayValue<IntValue> value);
+template void DataStorage::Create< ArrayValue<LongValue> >(
+    size_t index, ArrayValue<LongValue> value);
+template void DataStorage::Create< ArrayValue<DoubleValue> >(
+    size_t index, ArrayValue<DoubleValue> value);
+template void DataStorage::Create< ArrayValue<CharValue> >(
+    size_t index, ArrayValue<CharValue> value);
+template void DataStorage::Create< ArrayValue<BoolValue> >(
+    size_t index, ArrayValue<BoolValue> value);
+template void DataStorage::Create< ArrayValue<StringValue> >(
+    size_t index, ArrayValue<StringValue> value);
 
 template<typename T> const T &DataStorage::Get(size_t index) const noexcept {
   return *(reinterpret_cast<T*>(GetSlot(index)));
