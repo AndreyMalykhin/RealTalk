@@ -264,6 +264,74 @@ class SimpleVMTest: public Test {
                 expected_operands,
                 operands_asserter);
   }
+
+  template<typename TType, typename TSerializableType>
+  void TestCreateAndInitGlobalVarCmd(
+      CmdId load_value_cmd_id,
+      CmdId create_var_cmd_id,
+      TSerializableType value) {
+    auto global_vars_asserter = [](const DataStorage &expected_vars,
+                                   const DataStorage &actual_vars) {
+      uint32_t var_index = UINT32_C(7);
+      ASSERT_EQ(expected_vars.Get<TType>(var_index),
+                actual_vars.Get<TType>(var_index));
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(value);
+    cmds->Write<CmdId>(create_var_cmd_id);
+    uint32_t var_index = UINT32_C(7);
+    cmds->Write<uint32_t>(var_index);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    size_t global_vars_size = 77;
+    DataStorage expected_global_vars(global_vars_size);
+    expected_global_vars.Create(var_index, TType(value));
+    SimpleVM::FuncFrames expected_func_frames;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_func_frames,
+                expected_global_vars,
+                global_vars_asserter);
+  }
+
+  template<typename TType, typename TSerializableType>
+  void TestCreateAndInitGlobalArrayVarCmd(CmdId load_value_cmd_id,
+                                          CmdId create_array_cmd_id,
+                                          CmdId create_var_cmd_id,
+                                          TSerializableType array_item) {
+    auto global_vars_asserter = [](const DataStorage &expected_vars,
+                                   const DataStorage &actual_vars) {
+      uint32_t var_index = UINT32_C(7);
+      uint8_t dimensions_count = UINT8_C(1);
+      AssertArraysEqual(expected_vars.Get< ArrayValue<TType> >(var_index),
+                        actual_vars.Get< ArrayValue<TType> >(var_index),
+                        dimensions_count);
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(array_item);
+    cmds->Write<CmdId>(create_array_cmd_id);
+    uint8_t dimensions_count = UINT8_C(1);
+    cmds->Write<uint8_t>(dimensions_count);
+    int32_t values_count = INT32_C(1);
+    cmds->Write<int32_t>(values_count);
+    cmds->Write<CmdId>(create_var_cmd_id);
+    uint32_t var_index = UINT32_C(7);
+    cmds->Write<uint32_t>(var_index);
+    cmds->Write<uint8_t>(dimensions_count);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    size_t global_vars_size = 77;
+    DataStorage expected_global_vars(global_vars_size);
+    vector<TType> array_items = {TType(array_item)};
+    auto var_value = ArrayValue<TType>::Unidimensional(array_items);
+    expected_global_vars.Create(var_index, move(var_value));
+    SimpleVM::FuncFrames expected_func_frames;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_func_frames,
+                expected_global_vars,
+                global_vars_asserter);
+  }
 };
 
 TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
@@ -465,66 +533,93 @@ TEST_F(SimpleVMTest, CreateAndInitStringArrayCmd) {
 }
 
 TEST_F(SimpleVMTest, CreateAndInitGlobalIntVarCmd) {
-  auto global_vars_asserter = [](const DataStorage &expected_vars,
-                                 const DataStorage &actual_vars) {
-    uint32_t var_index = UINT32_C(7);
-    ASSERT_EQ(expected_vars.Get<IntValue>(var_index),
-              actual_vars.Get<IntValue>(var_index));
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadIntValue);
   int32_t value = INT32_C(777);
-  cmds->Write<int32_t>(value);
-  cmds->Write<CmdId>(CmdId::kCreateAndInitGlobalIntVar);
-  uint32_t var_index = UINT32_C(7);
-  cmds->Write<uint32_t>(var_index);
-  uint32_t main_cmds_code_size = cmds->GetPosition();
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  expected_global_vars.Create<IntValue>(var_index, value);
-  SimpleVM::FuncFrames expected_func_frames;
-  TestExecute(move(cmds),
-              main_cmds_code_size,
-              expected_func_frames,
-              expected_global_vars,
-              global_vars_asserter);
+  TestCreateAndInitGlobalVarCmd<IntValue>(
+      CmdId::kLoadIntValue, CmdId::kCreateAndInitGlobalIntVar, value);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalLongVarCmd) {
+  int64_t value = INT64_C(777);
+  TestCreateAndInitGlobalVarCmd<LongValue>(
+      CmdId::kLoadLongValue, CmdId::kCreateAndInitGlobalLongVar, value);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalDoubleVarCmd) {
+  double value = 7.7;
+  TestCreateAndInitGlobalVarCmd<DoubleValue>(
+      CmdId::kLoadDoubleValue, CmdId::kCreateAndInitGlobalDoubleVar, value);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalCharVarCmd) {
+  char value = 'a';
+  TestCreateAndInitGlobalVarCmd<CharValue>(
+      CmdId::kLoadCharValue, CmdId::kCreateAndInitGlobalCharVar, value);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalBoolVarCmd) {
+  bool value = true;
+  TestCreateAndInitGlobalVarCmd<BoolValue>(
+      CmdId::kLoadBoolValue, CmdId::kCreateAndInitGlobalBoolVar, value);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalStringVarCmd) {
+  string value = "swag";
+  TestCreateAndInitGlobalVarCmd<StringValue>(
+      CmdId::kLoadStringValue, CmdId::kCreateAndInitGlobalStringVar, value);
 }
 
 TEST_F(SimpleVMTest, CreateAndInitGlobalIntArrayVarCmd) {
-  auto global_vars_asserter = [](const DataStorage &expected_vars,
-                                 const DataStorage &actual_vars) {
-    uint32_t var_index = UINT32_C(7);
-    uint8_t dimensions_count = UINT8_C(1);
-    AssertArraysEqual(expected_vars.Get< ArrayValue<IntValue> >(var_index),
-                      actual_vars.Get< ArrayValue<IntValue> >(var_index),
-                      dimensions_count);
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kLoadIntValue);
   int32_t array_item = INT32_C(777);
-  cmds->Write<int32_t>(array_item);
-  cmds->Write<CmdId>(CmdId::kCreateAndInitIntArray);
-  uint8_t dimensions_count = UINT8_C(1);
-  cmds->Write<uint8_t>(dimensions_count);
-  int32_t values_count = INT32_C(1);
-  cmds->Write<int32_t>(values_count);
-  cmds->Write<CmdId>(CmdId::kCreateAndInitGlobalIntArrayVar);
-  uint32_t var_index = UINT32_C(7);
-  cmds->Write<uint32_t>(var_index);
-  cmds->Write<uint8_t>(dimensions_count);
-  uint32_t main_cmds_code_size = cmds->GetPosition();
-  size_t global_vars_size = 77;
-  DataStorage expected_global_vars(global_vars_size);
-  vector<IntValue> array_items = {array_item};
-  auto var_value = ArrayValue<IntValue>::Unidimensional(array_items);
-  expected_global_vars.Create< ArrayValue<IntValue> >(
-      var_index, move(var_value));
-  SimpleVM::FuncFrames expected_func_frames;
-  TestExecute(move(cmds),
-              main_cmds_code_size,
-              expected_func_frames,
-              expected_global_vars,
-              global_vars_asserter);
+  TestCreateAndInitGlobalArrayVarCmd<IntValue>(
+      CmdId::kLoadIntValue,
+      CmdId::kCreateAndInitIntArray,
+      CmdId::kCreateAndInitGlobalIntArrayVar,
+      array_item);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalLongArrayVarCmd) {
+  int64_t array_item = INT64_C(777);
+  TestCreateAndInitGlobalArrayVarCmd<LongValue>(
+      CmdId::kLoadLongValue,
+      CmdId::kCreateAndInitLongArray,
+      CmdId::kCreateAndInitGlobalLongArrayVar,
+      array_item);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalDoubleArrayVarCmd) {
+  double array_item = 7.7;
+  TestCreateAndInitGlobalArrayVarCmd<DoubleValue>(
+      CmdId::kLoadDoubleValue,
+      CmdId::kCreateAndInitDoubleArray,
+      CmdId::kCreateAndInitGlobalDoubleArrayVar,
+      array_item);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalCharArrayVarCmd) {
+  char array_item = 'a';
+  TestCreateAndInitGlobalArrayVarCmd<CharValue>(
+      CmdId::kLoadCharValue,
+      CmdId::kCreateAndInitCharArray,
+      CmdId::kCreateAndInitGlobalCharArrayVar,
+      array_item);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalBoolArrayVarCmd) {
+  bool array_item = true;
+  TestCreateAndInitGlobalArrayVarCmd<BoolValue>(
+      CmdId::kLoadBoolValue,
+      CmdId::kCreateAndInitBoolArray,
+      CmdId::kCreateAndInitGlobalBoolArrayVar,
+      array_item);
+}
+
+TEST_F(SimpleVMTest, CreateAndInitGlobalStringArrayVarCmd) {
+  string array_item = "swag";
+  TestCreateAndInitGlobalArrayVarCmd<StringValue>(
+      CmdId::kLoadStringValue,
+      CmdId::kCreateAndInitStringArray,
+      CmdId::kCreateAndInitGlobalStringArrayVar,
+      array_item);
 }
 }
 }
