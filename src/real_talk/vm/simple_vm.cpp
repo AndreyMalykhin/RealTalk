@@ -6,6 +6,8 @@
 #include "real_talk/code/cmd_reader.h"
 #include "real_talk/code/create_global_var_cmd.h"
 #include "real_talk/code/create_and_init_global_var_cmd.h"
+#include "real_talk/code/create_local_var_cmd.h"
+#include "real_talk/code/create_and_init_local_var_cmd.h"
 #include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/create_and_init_array_cmd.h"
@@ -28,6 +30,7 @@ using real_talk::code::CreateGlobalDoubleVarCmd;
 using real_talk::code::CreateGlobalCharVarCmd;
 using real_talk::code::CreateGlobalStringVarCmd;
 using real_talk::code::CreateGlobalBoolVarCmd;
+using real_talk::code::CreateLocalVarCmd;
 using real_talk::code::CreateLocalIntVarCmd;
 using real_talk::code::CreateLocalArrayVarCmd;
 using real_talk::code::CreateLocalLongVarCmd;
@@ -81,12 +84,14 @@ using real_talk::code::CreateAndInitGlobalCharArrayVarCmd;
 using real_talk::code::CreateAndInitGlobalDoubleArrayVarCmd;
 using real_talk::code::CreateAndInitGlobalLongArrayVarCmd;
 using real_talk::code::CreateAndInitGlobalIntArrayVarCmd;
+using real_talk::code::CreateAndInitLocalVarCmd;
 using real_talk::code::CreateAndInitLocalIntVarCmd;
 using real_talk::code::CreateAndInitLocalCharVarCmd;
 using real_talk::code::CreateAndInitLocalStringVarCmd;
 using real_talk::code::CreateAndInitLocalBoolVarCmd;
 using real_talk::code::CreateAndInitLocalLongVarCmd;
 using real_talk::code::CreateAndInitLocalDoubleVarCmd;
+using real_talk::code::CreateAndInitLocalArrayVarCmd;
 using real_talk::code::CreateAndInitLocalIntArrayVarCmd;
 using real_talk::code::CreateAndInitLocalCharArrayVarCmd;
 using real_talk::code::CreateAndInitLocalStringArrayVarCmd;
@@ -671,6 +676,12 @@ class SimpleVM::Impl: private CmdVisitor {
       const CreateAndInitGlobalVarCmd &cmd);
   template<typename T> void VisitCreateGlobalVar(
       const CreateGlobalVarCmd &cmd);
+  template<typename T> void VisitCreateLocalVar(
+      const CreateLocalVarCmd &cmd);
+  template<typename T> void VisitCreateAndInitLocalVar(
+      const CreateAndInitLocalVarCmd &cmd);
+  template<typename T> void VisitCreateAndInitLocalArrayVar(
+      const CreateAndInitLocalArrayVarCmd &cmd);
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
@@ -764,25 +775,44 @@ template<typename T> void SimpleVM::Impl::VisitCreateGlobalVar(
 }
 
 void SimpleVM::Impl::VisitCreateLocalIntVar(
-    const CreateLocalIntVarCmd&) {assert(false);}
+    const CreateLocalIntVarCmd &cmd) {
+  VisitCreateLocalVar<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateLocalArrayVar(
-    const CreateLocalArrayVarCmd&) {assert(false);}
+    const CreateLocalArrayVarCmd &cmd) {
+  VisitCreateLocalVar< ArrayValue<IntValue> >(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateLocalLongVar(
-    const CreateLocalLongVarCmd&) {assert(false);}
+    const CreateLocalLongVarCmd &cmd) {
+  VisitCreateLocalVar<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateLocalDoubleVar(
-    const CreateLocalDoubleVarCmd&) {assert(false);}
+    const CreateLocalDoubleVarCmd &cmd) {
+  VisitCreateLocalVar<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateLocalCharVar(
-    const CreateLocalCharVarCmd&) {assert(false);}
+    const CreateLocalCharVarCmd &cmd) {
+  VisitCreateLocalVar<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateLocalStringVar(
-    const CreateLocalStringVarCmd&) {assert(false);}
+    const CreateLocalStringVarCmd &cmd) {
+  VisitCreateLocalVar<StringValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateLocalBoolVar(
-    const CreateLocalBoolVarCmd&) {assert(false);}
+    const CreateLocalBoolVarCmd &cmd) {
+  VisitCreateLocalVar<BoolValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitCreateLocalVar(
+    const CreateLocalVarCmd&) {
+  local_vars_.Push(T());
+}
 
 void SimpleVM::Impl::VisitDestroyLocalIntVar(
     const DestroyLocalIntVarCmd&) {assert(false);}
@@ -969,40 +999,74 @@ template<typename T> void SimpleVM::Impl::VisitCreateAndInitGlobalArrayVar(
 }
 
 void SimpleVM::Impl::VisitCreateAndInitLocalIntVar(
-    const CreateAndInitLocalIntVarCmd&) {assert(false);}
+    const CreateAndInitLocalIntVarCmd &cmd) {
+  VisitCreateAndInitLocalVar<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalCharVar(
-    const CreateAndInitLocalCharVarCmd&) {assert(false);}
+    const CreateAndInitLocalCharVarCmd &cmd) {
+  VisitCreateAndInitLocalVar<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalStringVar(
-    const CreateAndInitLocalStringVarCmd&) {assert(false);}
+    const CreateAndInitLocalStringVarCmd &cmd) {
+  VisitCreateAndInitLocalVar<StringValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalBoolVar(
-    const CreateAndInitLocalBoolVarCmd&) {assert(false);}
+    const CreateAndInitLocalBoolVarCmd &cmd) {
+  VisitCreateAndInitLocalVar<BoolValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalLongVar(
-    const CreateAndInitLocalLongVarCmd&) {assert(false);}
+    const CreateAndInitLocalLongVarCmd &cmd) {
+  VisitCreateAndInitLocalVar<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalDoubleVar(
-    const CreateAndInitLocalDoubleVarCmd&) {assert(false);}
+    const CreateAndInitLocalDoubleVarCmd &cmd) {
+  VisitCreateAndInitLocalVar<DoubleValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitCreateAndInitLocalVar(
+    const CreateAndInitLocalVarCmd&) {
+  local_vars_.Push(operands_.Pop<T>());
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalIntArrayVar(
-    const CreateAndInitLocalIntArrayVarCmd&) {assert(false);}
+    const CreateAndInitLocalIntArrayVarCmd &cmd) {
+  VisitCreateAndInitLocalArrayVar<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalCharArrayVar(
-    const CreateAndInitLocalCharArrayVarCmd&) {assert(false);}
+    const CreateAndInitLocalCharArrayVarCmd &cmd) {
+  VisitCreateAndInitLocalArrayVar<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalStringArrayVar(
-    const CreateAndInitLocalStringArrayVarCmd&) {assert(false);}
+    const CreateAndInitLocalStringArrayVarCmd &cmd) {
+  VisitCreateAndInitLocalArrayVar<StringValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalBoolArrayVar(
-    const CreateAndInitLocalBoolArrayVarCmd&) {assert(false);}
+    const CreateAndInitLocalBoolArrayVarCmd &cmd) {
+  VisitCreateAndInitLocalArrayVar<BoolValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalLongArrayVar(
-    const CreateAndInitLocalLongArrayVarCmd&) {assert(false);}
+    const CreateAndInitLocalLongArrayVarCmd &cmd) {
+  VisitCreateAndInitLocalArrayVar<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitCreateAndInitLocalDoubleArrayVar(
-    const CreateAndInitLocalDoubleArrayVarCmd&) {assert(false);}
+    const CreateAndInitLocalDoubleArrayVarCmd &cmd) {
+  VisitCreateAndInitLocalArrayVar<DoubleValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitCreateAndInitLocalArrayVar(
+    const CreateAndInitLocalArrayVarCmd&) {
+  local_vars_.Push(operands_.Pop< ArrayValue<T> >());
+}
 
 void SimpleVM::Impl::VisitCreateIntArray(
     const CreateIntArrayCmd &cmd) {
