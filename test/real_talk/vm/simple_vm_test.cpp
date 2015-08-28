@@ -421,6 +421,36 @@ class SimpleVMTest: public Test {
                 expected_local_vars,
                 local_vars_asserter);
   }
+
+  void TestDestroyLocalVarCmd(
+      CmdId create_var_cmd_id, CmdId destroy_var_cmd_id) {
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(create_var_cmd_id);
+    cmds->Write<CmdId>(destroy_var_cmd_id);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    TestExecute(move(cmds), main_cmds_code_size);
+  }
+
+  void TestDestroyLocalArrayVarCmd(CmdId create_array_cmd_id,
+                                   CmdId create_var_cmd_id,
+                                   CmdId destroy_var_cmd_id) {
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(CmdId::kLoadIntValue);
+    int32_t array_size = INT32_C(2);
+    cmds->Write<int32_t>(array_size);
+    cmds->Write<CmdId>(CmdId::kLoadIntValue);
+    int32_t array_size2 = INT32_C(3);
+    cmds->Write<int32_t>(array_size2);
+    cmds->Write<CmdId>(create_array_cmd_id);
+    uint8_t dimensions_count = UINT8_C(2);
+    cmds->Write<uint8_t>(dimensions_count);
+    cmds->Write<CmdId>(create_var_cmd_id);
+    cmds->Write<uint8_t>(dimensions_count);
+    cmds->Write<CmdId>(destroy_var_cmd_id);
+    cmds->Write<uint8_t>(dimensions_count);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    TestExecute(move(cmds), main_cmds_code_size);
+  }
 };
 
 TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
@@ -879,6 +909,72 @@ TEST_F(SimpleVMTest, CreateAndInitLocalStringArrayVarCmd) {
       CmdId::kCreateAndInitStringArray,
       CmdId::kCreateAndInitLocalStringArrayVar,
       array_item);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalIntVarCmd) {
+  TestDestroyLocalVarCmd(
+      CmdId::kCreateLocalIntVar, CmdId::kDestroyLocalIntVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalLongVarCmd) {
+  TestDestroyLocalVarCmd(
+      CmdId::kCreateLocalLongVar, CmdId::kDestroyLocalLongVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalDoubleVarCmd) {
+  TestDestroyLocalVarCmd(
+      CmdId::kCreateLocalDoubleVar, CmdId::kDestroyLocalDoubleVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalCharVarCmd) {
+  TestDestroyLocalVarCmd(
+      CmdId::kCreateLocalCharVar, CmdId::kDestroyLocalCharVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalBoolVarCmd) {
+  TestDestroyLocalVarCmd(
+      CmdId::kCreateLocalBoolVar, CmdId::kDestroyLocalBoolVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalStringVarCmd) {
+  TestDestroyLocalVarCmd(
+      CmdId::kCreateLocalStringVar, CmdId::kDestroyLocalStringVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalIntArrayVarCmd) {
+  TestDestroyLocalArrayVarCmd(CmdId::kCreateIntArray,
+                              CmdId::kCreateAndInitLocalIntArrayVar,
+                              CmdId::kDestroyLocalIntArrayVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalLongArrayVarCmd) {
+  TestDestroyLocalArrayVarCmd(CmdId::kCreateLongArray,
+                              CmdId::kCreateAndInitLocalLongArrayVar,
+                              CmdId::kDestroyLocalLongArrayVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalDoubleArrayVarCmd) {
+  TestDestroyLocalArrayVarCmd(CmdId::kCreateDoubleArray,
+                              CmdId::kCreateAndInitLocalDoubleArrayVar,
+                              CmdId::kDestroyLocalDoubleArrayVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalCharArrayVarCmd) {
+  TestDestroyLocalArrayVarCmd(CmdId::kCreateCharArray,
+                              CmdId::kCreateAndInitLocalCharArrayVar,
+                              CmdId::kDestroyLocalCharArrayVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalBoolArrayVarCmd) {
+  TestDestroyLocalArrayVarCmd(CmdId::kCreateBoolArray,
+                              CmdId::kCreateAndInitLocalBoolArrayVar,
+                              CmdId::kDestroyLocalBoolArrayVar);
+}
+
+TEST_F(SimpleVMTest, DestroyLocalStringArrayVarCmd) {
+  TestDestroyLocalArrayVarCmd(CmdId::kCreateStringArray,
+                              CmdId::kCreateAndInitLocalStringArrayVar,
+                              CmdId::kDestroyLocalStringArrayVar);
 }
 }
 }

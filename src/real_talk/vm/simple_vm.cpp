@@ -11,6 +11,7 @@
 #include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/create_and_init_array_cmd.h"
+#include "real_talk/code/destroy_local_var_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
@@ -38,12 +39,14 @@ using real_talk::code::CreateLocalDoubleVarCmd;
 using real_talk::code::CreateLocalCharVarCmd;
 using real_talk::code::CreateLocalStringVarCmd;
 using real_talk::code::CreateLocalBoolVarCmd;
+using real_talk::code::DestroyLocalVarCmd;
 using real_talk::code::DestroyLocalIntVarCmd;
 using real_talk::code::DestroyLocalLongVarCmd;
 using real_talk::code::DestroyLocalDoubleVarCmd;
 using real_talk::code::DestroyLocalCharVarCmd;
 using real_talk::code::DestroyLocalStringVarCmd;
 using real_talk::code::DestroyLocalBoolVarCmd;
+using real_talk::code::DestroyLocalArrayVarCmd;
 using real_talk::code::DestroyLocalIntArrayVarCmd;
 using real_talk::code::DestroyLocalLongArrayVarCmd;
 using real_talk::code::DestroyLocalDoubleArrayVarCmd;
@@ -682,6 +685,10 @@ class SimpleVM::Impl: private CmdVisitor {
       const CreateAndInitLocalVarCmd &cmd);
   template<typename T> void VisitCreateAndInitLocalArrayVar(
       const CreateAndInitLocalArrayVarCmd &cmd);
+  template<typename T> void VisitDestroyLocalVar(
+      const DestroyLocalVarCmd &cmd);
+  template<typename T> void VisitDestroyLocalArrayVar(
+      const DestroyLocalArrayVarCmd &cmd);
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
@@ -692,6 +699,29 @@ class SimpleVM::Impl: private CmdVisitor {
   DataStorage operands_;
   FuncFrames func_frames_;
 };
+
+SimpleVM::SimpleVM(Exe *exe, const vector<NativeFuncValue> &native_funcs)
+    : impl_(new Impl(exe, native_funcs)) {}
+
+SimpleVM::~SimpleVM() {}
+
+void SimpleVM::Execute() {impl_->Execute();}
+
+const DataStorage &SimpleVM::GetGlobalVars() const {
+  return impl_->GetGlobalVars();
+}
+
+const DataStorage &SimpleVM::GetLocalVars() const {
+  return impl_->GetLocalVars();
+}
+
+const DataStorage &SimpleVM::GetOperands() const {
+  return impl_->GetOperands();
+}
+
+const SimpleVM::FuncFrames &SimpleVM::GetFuncFrames() const {
+  return impl_->GetFuncFrames();
+}
 
 SimpleVM::Impl::Impl(Exe *exe, const vector<NativeFuncValue> &native_funcs)
     : exe_(exe),
@@ -815,40 +845,74 @@ template<typename T> void SimpleVM::Impl::VisitCreateLocalVar(
 }
 
 void SimpleVM::Impl::VisitDestroyLocalIntVar(
-    const DestroyLocalIntVarCmd&) {assert(false);}
+    const DestroyLocalIntVarCmd &cmd) {
+  VisitDestroyLocalVar<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalLongVar(
-    const DestroyLocalLongVarCmd&) {assert(false);}
+    const DestroyLocalLongVarCmd &cmd) {
+  VisitDestroyLocalVar<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalDoubleVar(
-    const DestroyLocalDoubleVarCmd&) {assert(false);}
+    const DestroyLocalDoubleVarCmd &cmd) {
+  VisitDestroyLocalVar<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalCharVar(
-    const DestroyLocalCharVarCmd&) {assert(false);}
+    const DestroyLocalCharVarCmd &cmd) {
+  VisitDestroyLocalVar<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalStringVar(
-    const DestroyLocalStringVarCmd&) {assert(false);}
+    const DestroyLocalStringVarCmd &cmd) {
+  VisitDestroyLocalVar<StringValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalBoolVar(
-    const DestroyLocalBoolVarCmd&) {assert(false);}
+    const DestroyLocalBoolVarCmd &cmd) {
+  VisitDestroyLocalVar<BoolValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitDestroyLocalVar(
+    const DestroyLocalVarCmd&) {
+  local_vars_.Pop<T>();
+}
 
 void SimpleVM::Impl::VisitDestroyLocalIntArrayVar(
-    const DestroyLocalIntArrayVarCmd&) {assert(false);}
+    const DestroyLocalIntArrayVarCmd &cmd) {
+  VisitDestroyLocalArrayVar<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalLongArrayVar(
-    const DestroyLocalLongArrayVarCmd&) {assert(false);}
+    const DestroyLocalLongArrayVarCmd &cmd) {
+  VisitDestroyLocalArrayVar<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalDoubleArrayVar(
-    const DestroyLocalDoubleArrayVarCmd&) {assert(false);}
+    const DestroyLocalDoubleArrayVarCmd &cmd) {
+  VisitDestroyLocalArrayVar<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalCharArrayVar(
-    const DestroyLocalCharArrayVarCmd&) {assert(false);}
+    const DestroyLocalCharArrayVarCmd &cmd) {
+  VisitDestroyLocalArrayVar<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalStringArrayVar(
-    const DestroyLocalStringArrayVarCmd&) {assert(false);}
+    const DestroyLocalStringArrayVarCmd &cmd) {
+  VisitDestroyLocalArrayVar<StringValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitDestroyLocalBoolArrayVar(
-    const DestroyLocalBoolArrayVarCmd&) {assert(false);}
+    const DestroyLocalBoolArrayVarCmd &cmd) {
+  VisitDestroyLocalArrayVar<BoolValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitDestroyLocalArrayVar(
+    const DestroyLocalArrayVarCmd &cmd) {
+  local_vars_.Pop< ArrayValue<T> >().Destroy(cmd.GetDimensionsCount());
+}
 
 void SimpleVM::Impl::VisitUnloadInt(
     const UnloadIntCmd&) {assert(false);}
@@ -1535,30 +1599,5 @@ void SimpleVM::Impl::VisitAnd(
 
 void SimpleVM::Impl::VisitOr(
     const OrCmd&) {assert(false);}
-
-SimpleVM::SimpleVM(Exe *exe, const vector<NativeFuncValue> &native_funcs)
-    : impl_(new Impl(exe, native_funcs)) {}
-
-SimpleVM::~SimpleVM() {}
-
-void SimpleVM::Execute() {
-  impl_->Execute();
-}
-
-const DataStorage &SimpleVM::GetGlobalVars() const {
-  return impl_->GetGlobalVars();
-}
-
-const DataStorage &SimpleVM::GetLocalVars() const {
-  return impl_->GetLocalVars();
-}
-
-const DataStorage &SimpleVM::GetOperands() const {
-  return impl_->GetOperands();
-}
-
-const SimpleVM::FuncFrames &SimpleVM::GetFuncFrames() const {
-  return impl_->GetFuncFrames();
-}
 }
 }

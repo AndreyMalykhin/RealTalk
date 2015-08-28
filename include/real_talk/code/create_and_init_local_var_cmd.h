@@ -57,7 +57,6 @@ class CreateAndInitLocalBoolVarCmd: public CreateAndInitLocalVarCmd {
   }
 };
 
-
 class CreateAndInitLocalArrayVarCmd: public CreateAndInitLocalVarCmd,
                                      public ArrayCmdTrait {
  public:
