@@ -12,6 +12,7 @@
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/create_and_init_array_cmd.h"
 #include "real_talk/code/destroy_local_var_cmd.h"
+#include "real_talk/code/jump_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
@@ -115,6 +116,7 @@ using real_talk::code::CreateAndInitDoubleArrayCmd;
 using real_talk::code::CreateAndInitBoolArrayCmd;
 using real_talk::code::CreateAndInitCharArrayCmd;
 using real_talk::code::CreateAndInitStringArrayCmd;
+using real_talk::code::JumpCmd;
 using real_talk::code::DirectJumpCmd;
 using real_talk::code::ImplicitJumpIfCmd;
 using real_talk::code::JumpIfNotCmd;
@@ -669,6 +671,7 @@ class SimpleVM::Impl: private CmdVisitor {
       const AndCmd &cmd) override;
   virtual void VisitOr(
       const OrCmd &cmd) override;
+  void Jump(const JumpCmd &cmd);
   vector<size_t> GetArrayDimensions(const CreateArrayCmd &cmd);
   template<typename T> void VisitCreateArray(const CreateArrayCmd &cmd);
   template<typename T> void VisitCreateAndInitArray(
@@ -1223,16 +1226,28 @@ template<typename T> void SimpleVM::Impl::VisitCreateAndInitArray(
 }
 
 void SimpleVM::Impl::VisitDirectJump(
-    const DirectJumpCmd&) {assert(false);}
+    const DirectJumpCmd &cmd) {
+  Jump(cmd);
+}
+
+void SimpleVM::Impl::VisitJumpIfNot(
+    const JumpIfNotCmd &cmd) {
+  if (operands_.Pop<BoolValue>()) {
+    return;
+  }
+
+  Jump(cmd);
+}
+
+void SimpleVM::Impl::VisitImplicitJumpIfNot(
+    const ImplicitJumpIfNotCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitImplicitJumpIf(
     const ImplicitJumpIfCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitJumpIfNot(
-    const JumpIfNotCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitImplicitJumpIfNot(
-    const ImplicitJumpIfNotCmd&) {assert(false);}
+void SimpleVM::Impl::Jump(const JumpCmd &cmd) {
+  cmd_reader_.GetCode()->MovePosition(cmd.GetOffset());
+}
 
 void SimpleVM::Impl::VisitReturn(
     const ReturnCmd&) {assert(false);}

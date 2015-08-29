@@ -29,7 +29,7 @@ class JumpCmd: public Cmd {
 
 class JumpIfNotCmd: public JumpCmd {
  public:
-  inline explicit JumpIfNotCmd(int32_t offset) noexcept: JumpCmd(offset) {}
+  using JumpCmd::JumpCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitJumpIfNot(*this);
@@ -38,7 +38,7 @@ class JumpIfNotCmd: public JumpCmd {
 
 class DirectJumpCmd: public JumpCmd {
  public:
-  inline explicit DirectJumpCmd(int32_t offset) noexcept: JumpCmd(offset) {}
+  using JumpCmd::JumpCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitDirectJump(*this);
@@ -47,8 +47,7 @@ class DirectJumpCmd: public JumpCmd {
 
 class ImplicitJumpIfNotCmd: public JumpCmd {
  public:
-  inline explicit ImplicitJumpIfNotCmd(int32_t offset) noexcept
-      : JumpCmd(offset) {}
+  using JumpCmd::JumpCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitImplicitJumpIfNot(*this);
@@ -57,8 +56,7 @@ class ImplicitJumpIfNotCmd: public JumpCmd {
 
 class ImplicitJumpIfCmd: public JumpCmd {
  public:
-  inline explicit ImplicitJumpIfCmd(int32_t offset) noexcept
-      : JumpCmd(offset) {}
+  using JumpCmd::JumpCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitImplicitJumpIf(*this);

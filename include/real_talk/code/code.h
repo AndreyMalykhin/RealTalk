@@ -39,6 +39,7 @@ class Code {
   uint32_t GetSize() const noexcept;
   uint32_t GetPosition() const noexcept;
   void SetPosition(uint32_t position) noexcept;
+  void MovePosition(int32_t offset) noexcept;
   template<typename T> T Read();
 
   /**

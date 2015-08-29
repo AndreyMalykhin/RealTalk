@@ -78,6 +78,14 @@ void Code::SetPosition(uint32_t position) noexcept {
   current_byte_ = bytes_.get() + position;
 }
 
+void Code::MovePosition(int32_t offset) noexcept {
+  assert((offset >= INT32_C(0)
+          && static_cast<uint32_t>(offset) <= size_ - GetPosition())
+         || (offset < INT32_C(0)
+          && GetPosition() >= static_cast<uint32_t>(-offset)));
+  current_byte_ += offset;
+}
+
 unsigned char *Code::GetDataAtPosition() noexcept {
   return current_byte_;
 }

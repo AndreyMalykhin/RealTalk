@@ -976,5 +976,64 @@ TEST_F(SimpleVMTest, DestroyLocalStringArrayVarCmd) {
                               CmdId::kCreateAndInitLocalStringArrayVar,
                               CmdId::kDestroyLocalStringArrayVar);
 }
+
+TEST_F(SimpleVMTest, JumpIfNotCmdWithFalseCondition) {
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kLoadBoolValue);
+  cmds->Write<bool>(false);
+  cmds->Write<CmdId>(CmdId::kJumpIfNot);
+  int32_t offset = INT32_C(5);
+  cmds->Write<int32_t>(offset);
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  cmds->Write<int32_t>(INT32_C(7));
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  TestExecute(move(cmds), main_cmds_code_size);
+}
+
+TEST_F(SimpleVMTest, JumpIfNotCmdWithTrueCondition) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    size_t operand_index = 0;
+    ASSERT_EQ(expected_operands.Get<IntValue>(operand_index),
+              actual_operands.Get<IntValue>(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kLoadBoolValue);
+  cmds->Write<bool>(true);
+  cmds->Write<CmdId>(CmdId::kJumpIfNot);
+  int32_t offset = INT32_C(5);
+  cmds->Write<int32_t>(offset);
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  int32_t value = INT32_C(7);
+  cmds->Write<int32_t>(value);
+  DataStorage expected_operands;
+  expected_operands.Push(IntValue(value));
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  SimpleVM::FuncFrames expected_func_frames;
+  DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
+}
+
+TEST_F(SimpleVMTest, DirectJumpCmd) {
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kDirectJump);
+  int32_t offset = INT32_C(5);
+  cmds->Write<int32_t>(offset);
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  cmds->Write<int32_t>(INT32_C(7));
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  TestExecute(move(cmds), main_cmds_code_size);
+}
 }
 }
