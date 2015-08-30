@@ -34,6 +34,7 @@ class DataStorage {
   size_t GetSize() const noexcept;
   template<typename T> void Create(size_t index, T value = T());
   template<typename T> const T &Get(size_t index) const noexcept;
+  template<typename T> const T &GetTop() const noexcept;
   template<typename T> void Push(T value);
   template<typename T> T Pop() noexcept;
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
@@ -48,7 +49,10 @@ class DataStorage {
   bool HasSlots(size_t count) const noexcept;
   template<typename TType, real_talk::code::DataTypeSize TSize> void DoPush(
       TType value);
-  template<typename T, real_talk::code::DataTypeSize TSize> T DoPop() noexcept;
+  template<typename TType, real_talk::code::DataTypeSize TSize> TType DoPop()
+      noexcept;
+  template<typename TType, real_talk::code::DataTypeSize TSize>
+  const TType &DoGetTop() const noexcept;
 
   size_t capacity_;
   std::unique_ptr<Slot[]> data_;

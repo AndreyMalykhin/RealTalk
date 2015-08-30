@@ -145,9 +145,8 @@ class SimpleVMTest: public Test {
       vector<NativeFuncValue> native_funcs = {}) {
     auto operands_asserter = [](const DataStorage &expected_operands,
                                 const DataStorage &actual_operands) {
-      uint32_t operand_index = UINT32_C(0);
-      ASSERT_EQ(expected_operands.Get<TType>(operand_index),
-                actual_operands.Get<TType>(operand_index));
+      ASSERT_EQ(expected_operands.GetTop<TType>(),
+                actual_operands.GetTop<TType>());
     };
     unique_ptr<Code> cmds(new Code());
     cmds->Write<CmdId>(cmd_id);
@@ -320,9 +319,7 @@ class SimpleVMTest: public Test {
       TSerializableType value) {
     auto local_vars_asserter = [](const DataStorage &expected_vars,
                                   const DataStorage &actual_vars) {
-      uint32_t var_index = UINT32_C(0);
-      ASSERT_EQ(expected_vars.Get<TType>(var_index),
-                actual_vars.Get<TType>(var_index));
+      ASSERT_EQ(expected_vars.GetTop<TType>(), actual_vars.GetTop<TType>());
     };
     unique_ptr<Code> cmds(new Code());
     cmds->Write<CmdId>(load_value_cmd_id);
@@ -389,10 +386,9 @@ class SimpleVMTest: public Test {
                                          TSerializableType array_item) {
     auto local_vars_asserter = [](const DataStorage &expected_vars,
                                   const DataStorage &actual_vars) {
-      uint32_t var_index = UINT32_C(0);
       uint8_t dimensions_count = UINT8_C(1);
-      AssertArraysEqual(expected_vars.Get< ArrayValue<TType> >(var_index),
-                        actual_vars.Get< ArrayValue<TType> >(var_index),
+      AssertArraysEqual(expected_vars.GetTop< ArrayValue<TType> >(),
+                        actual_vars.GetTop< ArrayValue<TType> >(),
                         dimensions_count);
     };
     unique_ptr<Code> cmds(new Code());
@@ -744,9 +740,8 @@ TEST_F(SimpleVMTest, CreateAndInitGlobalStringArrayVarCmd) {
 TEST_F(SimpleVMTest, CreateLocalIntVarCmd) {
   auto local_vars_asserter = [](const DataStorage &expected_local_vars,
                                 const DataStorage &actual_local_vars) {
-    uint32_t var_index = UINT32_C(0);
-    ASSERT_EQ(expected_local_vars.Get<IntValue>(var_index),
-              actual_local_vars.Get<IntValue>(var_index));
+    ASSERT_EQ(expected_local_vars.GetTop<IntValue>(),
+              actual_local_vars.GetTop<IntValue>());
   };
   TestCreateLocalVarCmd<IntValue>(
       CmdId::kCreateLocalIntVar, local_vars_asserter);
@@ -755,9 +750,8 @@ TEST_F(SimpleVMTest, CreateLocalIntVarCmd) {
 TEST_F(SimpleVMTest, CreateLocalLongVarCmd) {
   auto local_vars_asserter = [](const DataStorage &expected_local_vars,
                                 const DataStorage &actual_local_vars) {
-    uint32_t var_index = UINT32_C(0);
-    ASSERT_EQ(expected_local_vars.Get<LongValue>(var_index),
-              actual_local_vars.Get<LongValue>(var_index));
+    ASSERT_EQ(expected_local_vars.GetTop<LongValue>(),
+              actual_local_vars.GetTop<LongValue>());
   };
   TestCreateLocalVarCmd<LongValue>(
       CmdId::kCreateLocalLongVar, local_vars_asserter);
@@ -766,9 +760,8 @@ TEST_F(SimpleVMTest, CreateLocalLongVarCmd) {
 TEST_F(SimpleVMTest, CreateLocalDoubleVarCmd) {
   auto local_vars_asserter = [](const DataStorage &expected_local_vars,
                                 const DataStorage &actual_local_vars) {
-    uint32_t var_index = UINT32_C(0);
-    ASSERT_EQ(expected_local_vars.Get<DoubleValue>(var_index),
-              actual_local_vars.Get<DoubleValue>(var_index));
+    ASSERT_EQ(expected_local_vars.GetTop<DoubleValue>(),
+              actual_local_vars.GetTop<DoubleValue>());
   };
   TestCreateLocalVarCmd<DoubleValue>(
       CmdId::kCreateLocalDoubleVar, local_vars_asserter);
@@ -777,9 +770,8 @@ TEST_F(SimpleVMTest, CreateLocalDoubleVarCmd) {
 TEST_F(SimpleVMTest, CreateLocalCharVarCmd) {
   auto local_vars_asserter = [](const DataStorage &expected_local_vars,
                                 const DataStorage &actual_local_vars) {
-    uint32_t var_index = UINT32_C(0);
-    ASSERT_EQ(expected_local_vars.Get<CharValue>(var_index),
-              actual_local_vars.Get<CharValue>(var_index));
+    ASSERT_EQ(expected_local_vars.GetTop<CharValue>(),
+              actual_local_vars.GetTop<CharValue>());
   };
   TestCreateLocalVarCmd<CharValue>(
       CmdId::kCreateLocalCharVar, local_vars_asserter);
@@ -788,9 +780,8 @@ TEST_F(SimpleVMTest, CreateLocalCharVarCmd) {
 TEST_F(SimpleVMTest, CreateLocalBoolVarCmd) {
   auto local_vars_asserter = [](const DataStorage &expected_local_vars,
                                 const DataStorage &actual_local_vars) {
-    uint32_t var_index = UINT32_C(0);
-    ASSERT_EQ(expected_local_vars.Get<BoolValue>(var_index),
-              actual_local_vars.Get<BoolValue>(var_index));
+    ASSERT_EQ(expected_local_vars.GetTop<BoolValue>(),
+              actual_local_vars.GetTop<BoolValue>());
   };
   TestCreateLocalVarCmd<BoolValue>(
       CmdId::kCreateLocalBoolVar, local_vars_asserter);
@@ -799,9 +790,8 @@ TEST_F(SimpleVMTest, CreateLocalBoolVarCmd) {
 TEST_F(SimpleVMTest, CreateLocalStringVarCmd) {
   auto local_vars_asserter = [](const DataStorage &expected_local_vars,
                                 const DataStorage &actual_local_vars) {
-    uint32_t var_index = UINT32_C(0);
-    ASSERT_EQ(expected_local_vars.Get<StringValue>(var_index),
-              actual_local_vars.Get<StringValue>(var_index));
+    ASSERT_EQ(expected_local_vars.GetTop<StringValue>(),
+              actual_local_vars.GetTop<StringValue>());
   };
   TestCreateLocalVarCmd<StringValue>(
       CmdId::kCreateLocalStringVar, local_vars_asserter);
@@ -810,11 +800,10 @@ TEST_F(SimpleVMTest, CreateLocalStringVarCmd) {
 TEST_F(SimpleVMTest, CreateLocalArrayVarCmd) {
   auto local_vars_asserter = [](const DataStorage &expected_local_vars,
                                 const DataStorage &actual_local_vars) {
-    uint32_t var_index = UINT32_C(0);
     uint8_t dimensions_count = UINT8_C(1);
     AssertArraysEqual(
-        expected_local_vars.Get< ArrayValue<IntValue> >(var_index),
-        actual_local_vars.Get< ArrayValue<IntValue> >(var_index),
+        expected_local_vars.GetTop< ArrayValue<IntValue> >(),
+        actual_local_vars.GetTop< ArrayValue<IntValue> >(),
         dimensions_count);
   };
   TestCreateLocalVarCmd< ArrayValue<IntValue> >(
@@ -993,9 +982,8 @@ TEST_F(SimpleVMTest, JumpIfNotCmdWithFalseCondition) {
 TEST_F(SimpleVMTest, JumpIfNotCmdWithTrueCondition) {
   auto operands_asserter = [](const DataStorage &expected_operands,
                               const DataStorage &actual_operands) {
-    size_t operand_index = 0;
-    ASSERT_EQ(expected_operands.Get<IntValue>(operand_index),
-              actual_operands.Get<IntValue>(operand_index));
+    ASSERT_EQ(expected_operands.GetTop<IntValue>(),
+              actual_operands.GetTop<IntValue>());
   };
   unique_ptr<Code> cmds(new Code());
   cmds->Write<CmdId>(CmdId::kLoadBoolValue);
@@ -1007,6 +995,154 @@ TEST_F(SimpleVMTest, JumpIfNotCmdWithTrueCondition) {
   int32_t value = INT32_C(7);
   cmds->Write<int32_t>(value);
   DataStorage expected_operands;
+  expected_operands.Push(IntValue(value));
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  SimpleVM::FuncFrames expected_func_frames;
+  DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
+}
+
+TEST_F(SimpleVMTest, ImplicitJumpIfNotCmdWithFalseCondition) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    ASSERT_EQ(expected_operands.GetTop<BoolValue>(),
+              actual_operands.GetTop<BoolValue>());
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kLoadBoolValue);
+  bool condition = false;
+  cmds->Write<bool>(condition);
+  cmds->Write<CmdId>(CmdId::kImplicitJumpIfNot);
+  int32_t offset = INT32_C(5);
+  cmds->Write<int32_t>(offset);
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  cmds->Write<int32_t>(INT32_C(7));
+  DataStorage expected_operands;
+  expected_operands.Push(BoolValue(condition));
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  SimpleVM::FuncFrames expected_func_frames;
+  DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
+}
+
+TEST_F(SimpleVMTest, ImplicitJumpIfNotCmdWithTrueCondition) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    size_t operand_index = 0;
+    ASSERT_EQ(expected_operands.Get<BoolValue>(operand_index),
+              actual_operands.Get<BoolValue>(operand_index));
+    operand_index = 1;
+    ASSERT_EQ(expected_operands.Get<IntValue>(operand_index),
+              actual_operands.Get<IntValue>(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kLoadBoolValue);
+  bool condition = true;
+  cmds->Write<bool>(condition);
+  cmds->Write<CmdId>(CmdId::kImplicitJumpIfNot);
+  int32_t offset = INT32_C(5);
+  cmds->Write<int32_t>(offset);
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  int32_t value = INT32_C(7);
+  cmds->Write<int32_t>(value);
+  DataStorage expected_operands;
+  expected_operands.Push(BoolValue(condition));
+  expected_operands.Push(IntValue(value));
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  SimpleVM::FuncFrames expected_func_frames;
+  DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
+}
+
+TEST_F(SimpleVMTest, ImplicitJumpIfCmdWithTrueCondition) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    ASSERT_EQ(expected_operands.GetTop<BoolValue>(),
+              actual_operands.GetTop<BoolValue>());
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kLoadBoolValue);
+  bool condition = true;
+  cmds->Write<bool>(condition);
+  cmds->Write<CmdId>(CmdId::kImplicitJumpIf);
+  int32_t offset = INT32_C(5);
+  cmds->Write<int32_t>(offset);
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  cmds->Write<int32_t>(INT32_C(7));
+  DataStorage expected_operands;
+  expected_operands.Push(BoolValue(condition));
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  SimpleVM::FuncFrames expected_func_frames;
+  DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
+}
+
+TEST_F(SimpleVMTest, ImplicitJumpIfCmdWithFalseCondition) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    size_t operand_index = 0;
+    ASSERT_EQ(expected_operands.Get<BoolValue>(operand_index),
+              actual_operands.Get<BoolValue>(operand_index));
+    operand_index = 1;
+    ASSERT_EQ(expected_operands.Get<IntValue>(operand_index),
+              actual_operands.Get<IntValue>(operand_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kLoadBoolValue);
+  bool condition = false;
+  cmds->Write<bool>(condition);
+  cmds->Write<CmdId>(CmdId::kImplicitJumpIf);
+  int32_t offset = INT32_C(5);
+  cmds->Write<int32_t>(offset);
+  cmds->Write<CmdId>(CmdId::kLoadIntValue);
+  int32_t value = INT32_C(7);
+  cmds->Write<int32_t>(value);
+  DataStorage expected_operands;
+  expected_operands.Push(BoolValue(condition));
   expected_operands.Push(IntValue(value));
   uint32_t main_cmds_code_size = cmds->GetPosition();
   SimpleVM::FuncFrames expected_func_frames;

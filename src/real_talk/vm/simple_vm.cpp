@@ -1240,10 +1240,22 @@ void SimpleVM::Impl::VisitJumpIfNot(
 }
 
 void SimpleVM::Impl::VisitImplicitJumpIfNot(
-    const ImplicitJumpIfNotCmd&) {assert(false);}
+    const ImplicitJumpIfNotCmd &cmd) {
+  if (operands_.GetTop<BoolValue>()) {
+    return;
+  }
+
+  Jump(cmd);
+}
 
 void SimpleVM::Impl::VisitImplicitJumpIf(
-    const ImplicitJumpIfCmd&) {assert(false);}
+    const ImplicitJumpIfCmd &cmd) {
+  if (!operands_.GetTop<BoolValue>()) {
+    return;
+  }
+
+  Jump(cmd);
+}
 
 void SimpleVM::Impl::Jump(const JumpCmd &cmd) {
   cmd_reader_.GetCode()->MovePosition(cmd.GetOffset());

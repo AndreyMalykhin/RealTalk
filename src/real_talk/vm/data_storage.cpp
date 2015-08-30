@@ -132,6 +132,79 @@ template const ArrayValue<BoolValue> &DataStorage::Get< ArrayValue<BoolValue> >(
 template const ArrayValue<StringValue>
 &DataStorage::Get< ArrayValue<StringValue> >(size_t index) const noexcept;
 
+template<> const IntValue &DataStorage::GetTop<IntValue>() const noexcept {
+  return DoGetTop<IntValue, DataTypeSize::kInt>();
+}
+
+template<> const LongValue &DataStorage::GetTop<LongValue>() const noexcept {
+  return DoGetTop<LongValue, DataTypeSize::kLong>();
+}
+
+template<> const DoubleValue &DataStorage::GetTop<DoubleValue>()
+    const noexcept {
+  return DoGetTop<DoubleValue, DataTypeSize::kDouble>();
+}
+
+template<> const CharValue &DataStorage::GetTop<CharValue>() const noexcept {
+  return DoGetTop<CharValue, DataTypeSize::kChar>();
+}
+
+template<> const BoolValue &DataStorage::GetTop<BoolValue>() const noexcept {
+  return DoGetTop<BoolValue, DataTypeSize::kBool>();
+}
+
+template<> const StringValue &DataStorage::GetTop<StringValue>()
+    const noexcept {
+  return DoGetTop<StringValue, DataTypeSize::kString>();
+}
+
+template<> const FuncValue &DataStorage::GetTop<FuncValue>()
+    const noexcept {
+  return DoGetTop<FuncValue, DataTypeSize::kFunc>();
+}
+
+template<> const NativeFuncValue &DataStorage::GetTop<NativeFuncValue>()
+    const noexcept {
+  return DoGetTop<NativeFuncValue, DataTypeSize::kNativeFunc>();
+}
+
+template<> const ArrayValue<IntValue>
+&DataStorage::GetTop<ArrayValue< IntValue> >() const noexcept {
+  return DoGetTop<ArrayValue<IntValue>, DataTypeSize::kArray>();
+}
+
+template<> const ArrayValue<LongValue>
+&DataStorage::GetTop< ArrayValue<LongValue> >() const noexcept {
+  return DoGetTop<ArrayValue<LongValue>, DataTypeSize::kArray>();
+}
+
+template<> const ArrayValue<DoubleValue>
+&DataStorage::GetTop< ArrayValue<DoubleValue> >() const noexcept {
+  return DoGetTop<ArrayValue<DoubleValue>, DataTypeSize::kArray>();
+}
+
+template<> const ArrayValue<CharValue>
+&DataStorage::GetTop< ArrayValue<CharValue> >() const noexcept {
+  return DoGetTop<ArrayValue<CharValue>, DataTypeSize::kArray>();
+}
+
+template<> const ArrayValue<BoolValue>
+&DataStorage::GetTop< ArrayValue<BoolValue> >() const noexcept {
+  return DoGetTop<ArrayValue<BoolValue>, DataTypeSize::kArray>();
+}
+
+template<> const ArrayValue<StringValue>
+&DataStorage::GetTop< ArrayValue<StringValue> >() const noexcept {
+  return DoGetTop<ArrayValue<StringValue>, DataTypeSize::kArray>();
+}
+
+template<typename TType, DataTypeSize TSize>
+const TType &DataStorage::DoGetTop() const noexcept {
+  const size_t casted_size = static_cast<size_t>(TSize);
+  assert(HasSlots(casted_size));
+  return *(reinterpret_cast<TType*>(current_slot_ - casted_size));
+}
+
 template<> void DataStorage::Push<IntValue>(IntValue value) {
   DoPush<IntValue, DataTypeSize::kInt>(value);
 }
