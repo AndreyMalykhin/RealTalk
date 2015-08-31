@@ -32,8 +32,7 @@ class LoadLocalVarValueCmd: public Cmd {
 
 class LoadLocalIntVarValueCmd: public LoadLocalVarValueCmd {
  public:
-  inline explicit LoadLocalIntVarValueCmd(uint32_t var_index) noexcept
-      : LoadLocalVarValueCmd(var_index) {}
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLocalIntVarValue(*this);
@@ -42,8 +41,7 @@ class LoadLocalIntVarValueCmd: public LoadLocalVarValueCmd {
 
 class LoadLocalArrayVarValueCmd: public LoadLocalVarValueCmd {
  public:
-  inline explicit LoadLocalArrayVarValueCmd(uint32_t var_index) noexcept
-      : LoadLocalVarValueCmd(var_index) {}
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLocalArrayVarValue(*this);
@@ -52,8 +50,7 @@ class LoadLocalArrayVarValueCmd: public LoadLocalVarValueCmd {
 
 class LoadLocalLongVarValueCmd: public LoadLocalVarValueCmd {
  public:
-  inline explicit LoadLocalLongVarValueCmd(uint32_t var_index) noexcept
-      : LoadLocalVarValueCmd(var_index) {}
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLocalLongVarValue(*this);
@@ -62,8 +59,7 @@ class LoadLocalLongVarValueCmd: public LoadLocalVarValueCmd {
 
 class LoadLocalDoubleVarValueCmd: public LoadLocalVarValueCmd {
  public:
-  inline explicit LoadLocalDoubleVarValueCmd(uint32_t var_index) noexcept
-      : LoadLocalVarValueCmd(var_index) {}
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLocalDoubleVarValue(*this);
@@ -72,8 +68,7 @@ class LoadLocalDoubleVarValueCmd: public LoadLocalVarValueCmd {
 
 class LoadLocalCharVarValueCmd: public LoadLocalVarValueCmd {
  public:
-  inline explicit LoadLocalCharVarValueCmd(uint32_t var_index) noexcept
-      : LoadLocalVarValueCmd(var_index) {}
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLocalCharVarValue(*this);
@@ -82,8 +77,7 @@ class LoadLocalCharVarValueCmd: public LoadLocalVarValueCmd {
 
 class LoadLocalStringVarValueCmd: public LoadLocalVarValueCmd {
  public:
-  inline explicit LoadLocalStringVarValueCmd(uint32_t var_index) noexcept
-      : LoadLocalVarValueCmd(var_index) {}
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLocalStringVarValue(*this);
@@ -92,8 +86,7 @@ class LoadLocalStringVarValueCmd: public LoadLocalVarValueCmd {
 
 class LoadLocalBoolVarValueCmd: public LoadLocalVarValueCmd {
  public:
-  inline explicit LoadLocalBoolVarValueCmd(uint32_t var_index) noexcept
-      : LoadLocalVarValueCmd(var_index) {}
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLocalBoolVarValue(*this);

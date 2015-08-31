@@ -81,8 +81,7 @@ class SimpleVMTest: public Test {
     uint32_t expected_cmds_position = main_cmds_code_size;
     SimpleVM vm(&exe, native_funcs);
     vm.Execute();
-    uint32_t actual_cmds_position = exe.GetCmdsCode().GetPosition();
-    ASSERT_EQ(expected_cmds_position, actual_cmds_position);
+    ASSERT_EQ(expected_cmds_position, exe.GetCmdsCode().GetPosition());
     ASSERT_EQ(expected_global_vars.GetSize(), vm.GetGlobalVars().GetSize());
     ASSERT_EQ(expected_local_vars.GetSize(), vm.GetLocalVars().GetSize());
     ASSERT_EQ(expected_operands.GetSize(), vm.GetOperands().GetSize());
@@ -1171,5 +1170,79 @@ TEST_F(SimpleVMTest, DirectJumpCmd) {
   uint32_t main_cmds_code_size = cmds->GetPosition();
   TestExecute(move(cmds), main_cmds_code_size);
 }
+
+TEST_F(SimpleVMTest, LoadLocalStringVarValueCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    ASSERT_EQ(expected_operands.GetTop<StringValue>(),
+              actual_operands.GetTop<StringValue>());
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kCreateLocalStringVar);
+  cmds->Write<CmdId>(CmdId::kLoadLocalStringVarValue);
+  uint32_t var_index = UINT32_C(0);
+  cmds->Write<uint32_t>(var_index);
+  cmds->Write<CmdId>(CmdId::kDestroyLocalStringVar);
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  DataStorage expected_operands;
+  expected_operands.Push(StringValue());
+  SimpleVM::FuncFrames expected_func_frames;
+  DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
+}
+/*
+TEST_F(SimpleVMTest, CallAndReturnCmds) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    ASSERT_EQ(expected_operands.GetTop<StringValue>(),
+              actual_operands.GetTop<StringValue>());
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kCreateLocalIntVar);
+  cmds->Write<CmdId>(CmdId::kLoadFuncValue);
+  uint32_t func_address_placeholder = cmds->GetPosition();
+  cmds->Skip(sizeof(uint32_t));
+  cmds->Write<CmdId>(CmdId::kCall);
+  cmds->Write<CmdId>(CmdId::kDestroyLocalIntVar);
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  cmds->Write<CmdId>(CmdId::kReturn);
+  uint32_t func_address = cmds->GetPosition();
+  cmds->Write<CmdId>(CmdId::kCreateLocalStringVar);
+  cmds->Write<CmdId>(CmdId::kLoadLocalStringVarValue);
+  uint32_t var_index = UINT32_C(0);
+  cmds->Write<uint32_t>(var_index);
+  cmds->Write<CmdId>(CmdId::kDestroyLocalStringVar);
+  cmds->Write<CmdId>(CmdId::kReturn);
+  cmds->SetPosition(func_address_placeholder);
+  cmds->Write<uint32_t>(func_address);
+  DataStorage expected_operands;
+  expected_operands.Push(StringValue());
+  SimpleVM::FuncFrames expected_func_frames;
+  DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_func_frames,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
+}
+*/
 }
 }

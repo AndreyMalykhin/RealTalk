@@ -13,6 +13,7 @@
 #include "real_talk/code/create_and_init_array_cmd.h"
 #include "real_talk/code/destroy_local_var_cmd.h"
 #include "real_talk/code/jump_cmd.h"
+#include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
@@ -1298,7 +1299,9 @@ void SimpleVM::Impl::VisitLoadLocalCharVarValue(
     const LoadLocalCharVarValueCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadLocalStringVarValue(
-    const LoadLocalStringVarValueCmd&) {assert(false);}
+    const LoadLocalStringVarValueCmd &cmd) {
+  operands_.Push(local_vars_.Get<StringValue>(cmd.GetVarIndex()));
+}
 
 void SimpleVM::Impl::VisitLoadLocalBoolVarValue(
     const LoadLocalBoolVarValueCmd&) {assert(false);}
