@@ -793,10 +793,40 @@ TEST_F(CmdReaderTest, LoadLocalStringVarValueCmd) {
   TestLoadLocalVarValueCmd(CmdId::kLoadLocalStringVarValue, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadLocalArrayVarValueCmd) {
+TEST_F(CmdReaderTest, LoadLocalIntArrayVarValueCmd) {
   uint32_t var_index = UINT32_C(7);
-  LoadLocalArrayVarValueCmd expected_cmd(var_index);
-  TestLoadLocalVarValueCmd(CmdId::kLoadLocalArrayVarValue, expected_cmd);
+  LoadLocalIntArrayVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalIntArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalLongArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalLongArrayVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalLongArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalDoubleArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalDoubleArrayVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalDoubleArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalCharArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalCharArrayVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalCharArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalBoolArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalBoolArrayVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalBoolArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadLocalStringArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadLocalStringArrayVarValueCmd expected_cmd(var_index);
+  TestLoadLocalVarValueCmd(CmdId::kLoadLocalStringArrayVarValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadGlobalVarAddressCmd) {

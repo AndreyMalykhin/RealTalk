@@ -215,6 +215,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class DestroyLocalArrayVarCmdGenerator;
   class LoadGlobalVarValueCmdGenerator;
   class LoadLocalVarValueCmdGenerator;
+  class LoadLocalArrayVarValueCmdGenerator;
   class LoadElementValueCmdGenerator;
   class LoadArrayElementValueCmdGenerator;
   class LoadElementAddressCmdGenerator;
@@ -1044,18 +1045,63 @@ class SimpleCodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
   Code *code_;
 };
 
+class SimpleCodeGenerator::Impl::LoadLocalArrayVarValueCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const ArrayDataType &data_type, Code *code) {
+    assert(code);
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadLocalBoolArrayVarValue);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadLocalIntArrayVarValue);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadLocalLongArrayVarValue);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadLocalDoubleArrayVarValue);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadLocalCharArrayVarValue);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadLocalStringArrayVarValue);
+  }
+
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 class SimpleCodeGenerator::Impl::LoadLocalVarValueCmdGenerator
     : private DataTypeVisitor {
  public:
   void Generate(const DataType &data_type, uint32_t var_index, Code *code) {
+    assert(code);
     code_ = code;
     data_type.Accept(*this);
     code_->Write<uint32_t>(var_index);
   }
 
  private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->Write<CmdId>(CmdId::kLoadLocalArrayVarValue);
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    LoadLocalArrayVarValueCmdGenerator().Generate(data_type, code_);
   }
 
   virtual void VisitBool(const BoolDataType&) override {

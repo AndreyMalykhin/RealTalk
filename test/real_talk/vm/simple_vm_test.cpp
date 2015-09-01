@@ -446,6 +446,39 @@ class SimpleVMTest: public Test {
     uint32_t main_cmds_code_size = cmds->GetPosition();
     TestExecute(move(cmds), main_cmds_code_size);
   }
+
+  template<typename T> void TestLoadLocalVarValueCmd(
+      CmdId create_var_cmd_id,
+      CmdId destroy_var_cmd_id,
+      CmdId load_var_value_cmd_id) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      ASSERT_EQ(expected_operands.GetTop<T>(), actual_operands.GetTop<T>());
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(create_var_cmd_id);
+    cmds->Write<CmdId>(load_var_value_cmd_id);
+    uint32_t var_index = UINT32_C(0);
+    cmds->Write<uint32_t>(var_index);
+    cmds->Write<CmdId>(destroy_var_cmd_id);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_operands;
+    expected_operands.Push(T());
+    SimpleVM::FuncFrames expected_func_frames;
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_func_frames,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
 };
 
 TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
@@ -1171,36 +1204,42 @@ TEST_F(SimpleVMTest, DirectJumpCmd) {
   TestExecute(move(cmds), main_cmds_code_size);
 }
 
-TEST_F(SimpleVMTest, LoadLocalStringVarValueCmd) {
-  auto operands_asserter = [](const DataStorage &expected_operands,
-                              const DataStorage &actual_operands) {
-    ASSERT_EQ(expected_operands.GetTop<StringValue>(),
-              actual_operands.GetTop<StringValue>());
-  };
-  unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kCreateLocalStringVar);
-  cmds->Write<CmdId>(CmdId::kLoadLocalStringVarValue);
-  uint32_t var_index = UINT32_C(0);
-  cmds->Write<uint32_t>(var_index);
-  cmds->Write<CmdId>(CmdId::kDestroyLocalStringVar);
-  uint32_t main_cmds_code_size = cmds->GetPosition();
-  DataStorage expected_operands;
-  expected_operands.Push(StringValue());
-  SimpleVM::FuncFrames expected_func_frames;
-  DataStorage expected_global_vars;
-  DataStorageAsserter global_vars_asserter = nullptr;
-  DataStorage expected_local_vars;
-  DataStorageAsserter local_vars_asserter = nullptr;
-  TestExecute(move(cmds),
-              main_cmds_code_size,
-              expected_func_frames,
-              expected_global_vars,
-              global_vars_asserter,
-              expected_local_vars,
-              local_vars_asserter,
-              expected_operands,
-              operands_asserter);
+TEST_F(SimpleVMTest, LoadLocalIntVarValueCmd) {
+  TestLoadLocalVarValueCmd<IntValue>(CmdId::kCreateLocalIntVar,
+                                     CmdId::kDestroyLocalIntVar,
+                                     CmdId::kLoadLocalIntVarValue);
 }
+
+TEST_F(SimpleVMTest, LoadLocalLongVarValueCmd) {
+  TestLoadLocalVarValueCmd<LongValue>(CmdId::kCreateLocalLongVar,
+                                      CmdId::kDestroyLocalLongVar,
+                                      CmdId::kLoadLocalLongVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadLocalDoubleVarValueCmd) {
+  TestLoadLocalVarValueCmd<DoubleValue>(CmdId::kCreateLocalDoubleVar,
+                                        CmdId::kDestroyLocalDoubleVar,
+                                        CmdId::kLoadLocalDoubleVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadLocalCharVarValueCmd) {
+  TestLoadLocalVarValueCmd<CharValue>(CmdId::kCreateLocalCharVar,
+                                      CmdId::kDestroyLocalCharVar,
+                                      CmdId::kLoadLocalCharVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadLocalBoolVarValueCmd) {
+  TestLoadLocalVarValueCmd<BoolValue>(CmdId::kCreateLocalBoolVar,
+                                      CmdId::kDestroyLocalBoolVar,
+                                      CmdId::kLoadLocalBoolVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadLocalStringVarValueCmd) {
+  TestLoadLocalVarValueCmd<StringValue>(CmdId::kCreateLocalStringVar,
+                                        CmdId::kDestroyLocalStringVar,
+                                        CmdId::kLoadLocalStringVarValue);
+}
+
 /*
 TEST_F(SimpleVMTest, CallAndReturnCmds) {
   auto operands_asserter = [](const DataStorage &expected_operands,

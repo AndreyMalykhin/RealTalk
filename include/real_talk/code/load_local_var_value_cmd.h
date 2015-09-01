@@ -39,15 +39,6 @@ class LoadLocalIntVarValueCmd: public LoadLocalVarValueCmd {
   }
 };
 
-class LoadLocalArrayVarValueCmd: public LoadLocalVarValueCmd {
- public:
-  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
-
-  virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitLoadLocalArrayVarValue(*this);
-  }
-};
-
 class LoadLocalLongVarValueCmd: public LoadLocalVarValueCmd {
  public:
   using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
@@ -90,6 +81,60 @@ class LoadLocalBoolVarValueCmd: public LoadLocalVarValueCmd {
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadLocalBoolVarValue(*this);
+  }
+};
+
+class LoadLocalIntArrayVarValueCmd: public LoadLocalVarValueCmd {
+ public:
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalIntArrayVarValue(*this);
+  }
+};
+
+class LoadLocalLongArrayVarValueCmd: public LoadLocalVarValueCmd {
+ public:
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalLongArrayVarValue(*this);
+  }
+};
+
+class LoadLocalDoubleArrayVarValueCmd: public LoadLocalVarValueCmd {
+ public:
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalDoubleArrayVarValue(*this);
+  }
+};
+
+class LoadLocalCharArrayVarValueCmd: public LoadLocalVarValueCmd {
+ public:
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalCharArrayVarValue(*this);
+  }
+};
+
+class LoadLocalBoolArrayVarValueCmd: public LoadLocalVarValueCmd {
+ public:
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalBoolArrayVarValue(*this);
+  }
+};
+
+class LoadLocalStringArrayVarValueCmd: public LoadLocalVarValueCmd {
+ public:
+  using LoadLocalVarValueCmd::LoadLocalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadLocalStringArrayVarValue(*this);
   }
 };
 }

@@ -102,12 +102,17 @@ class LoadGlobalCharVarValueCmd;
 class LoadGlobalStringVarValueCmd;
 class LoadGlobalBoolVarValueCmd;
 class LoadLocalIntVarValueCmd;
-class LoadLocalArrayVarValueCmd;
 class LoadLocalLongVarValueCmd;
 class LoadLocalCharVarValueCmd;
 class LoadLocalStringVarValueCmd;
 class LoadLocalBoolVarValueCmd;
 class LoadLocalDoubleVarValueCmd;
+class LoadLocalIntArrayVarValueCmd;
+class LoadLocalLongArrayVarValueCmd;
+class LoadLocalDoubleArrayVarValueCmd;
+class LoadLocalCharArrayVarValueCmd;
+class LoadLocalBoolArrayVarValueCmd;
+class LoadLocalStringArrayVarValueCmd;
 class LoadGlobalVarAddressCmd;
 class LoadLocalVarAddressCmd;
 class LoadIntArrayElementValueCmd;
@@ -407,8 +412,6 @@ class CmdVisitor {
       const LoadGlobalBoolVarValueCmd &cmd) = 0;
   virtual void VisitLoadLocalIntVarValue(
       const LoadLocalIntVarValueCmd &cmd) = 0;
-  virtual void VisitLoadLocalArrayVarValue(
-      const LoadLocalArrayVarValueCmd &cmd) = 0;
   virtual void VisitLoadLocalLongVarValue(
       const LoadLocalLongVarValueCmd &cmd) = 0;
   virtual void VisitLoadLocalCharVarValue(
@@ -419,6 +422,18 @@ class CmdVisitor {
       const LoadLocalBoolVarValueCmd &cmd) = 0;
   virtual void VisitLoadLocalDoubleVarValue(
       const LoadLocalDoubleVarValueCmd &cmd) = 0;
+  virtual void VisitLoadLocalIntArrayVarValue(
+      const LoadLocalIntArrayVarValueCmd &cmd) = 0;
+  virtual void VisitLoadLocalLongArrayVarValue(
+      const LoadLocalLongArrayVarValueCmd &cmd) = 0;
+  virtual void VisitLoadLocalDoubleArrayVarValue(
+      const LoadLocalDoubleArrayVarValueCmd &cmd) = 0;
+  virtual void VisitLoadLocalCharArrayVarValue(
+      const LoadLocalCharArrayVarValueCmd &cmd) = 0;
+  virtual void VisitLoadLocalBoolArrayVarValue(
+      const LoadLocalBoolArrayVarValueCmd &cmd) = 0;
+  virtual void VisitLoadLocalStringArrayVarValue(
+      const LoadLocalStringArrayVarValueCmd &cmd) = 0;
   virtual void VisitLoadGlobalVarAddress(
       const LoadGlobalVarAddressCmd &cmd) = 0;
   virtual void VisitLoadLocalVarAddress(

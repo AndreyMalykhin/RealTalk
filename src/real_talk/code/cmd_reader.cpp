@@ -229,8 +229,6 @@ LoadGlobalBoolVarValueCmd &kLoadGlobalBoolVarValueCmd =
 
 LoadLocalIntVarValueCmd &kLoadLocalIntVarValueCmd =
     *new LoadLocalIntVarValueCmd(UINT32_C(0));
-LoadLocalArrayVarValueCmd &kLoadLocalArrayVarValueCmd =
-    *new LoadLocalArrayVarValueCmd(UINT32_C(0));
 LoadLocalLongVarValueCmd &kLoadLocalLongVarValueCmd =
     *new LoadLocalLongVarValueCmd(UINT32_C(0));
 LoadLocalDoubleVarValueCmd &kLoadLocalDoubleVarValueCmd =
@@ -241,6 +239,19 @@ LoadLocalStringVarValueCmd &kLoadLocalStringVarValueCmd =
     *new LoadLocalStringVarValueCmd(UINT32_C(0));
 LoadLocalBoolVarValueCmd &kLoadLocalBoolVarValueCmd =
     *new LoadLocalBoolVarValueCmd(UINT32_C(0));
+
+LoadLocalIntArrayVarValueCmd &kLoadLocalIntArrayVarValueCmd =
+    *new LoadLocalIntArrayVarValueCmd(UINT32_C(0));
+LoadLocalLongArrayVarValueCmd &kLoadLocalLongArrayVarValueCmd =
+    *new LoadLocalLongArrayVarValueCmd(UINT32_C(0));
+LoadLocalDoubleArrayVarValueCmd &kLoadLocalDoubleArrayVarValueCmd =
+    *new LoadLocalDoubleArrayVarValueCmd(UINT32_C(0));
+LoadLocalCharArrayVarValueCmd &kLoadLocalCharArrayVarValueCmd =
+    *new LoadLocalCharArrayVarValueCmd(UINT32_C(0));
+LoadLocalStringArrayVarValueCmd &kLoadLocalStringArrayVarValueCmd =
+    *new LoadLocalStringArrayVarValueCmd(UINT32_C(0));
+LoadLocalBoolArrayVarValueCmd &kLoadLocalBoolArrayVarValueCmd =
+    *new LoadLocalBoolArrayVarValueCmd(UINT32_C(0));
 
 LoadGlobalVarAddressCmd &kLoadGlobalVarAddressCmd =
     *new LoadGlobalVarAddressCmd(UINT32_C(0));
@@ -783,10 +794,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       ReadLoadLocalVarValueCmd(kLoadLocalIntVarValueCmd);
       cmd = &kLoadLocalIntVarValueCmd;
       break;
-    case CmdId::kLoadLocalArrayVarValue:
-      ReadLoadLocalVarValueCmd(kLoadLocalArrayVarValueCmd);
-      cmd = &kLoadLocalArrayVarValueCmd;
-      break;
     case CmdId::kLoadLocalLongVarValue:
       ReadLoadLocalVarValueCmd(kLoadLocalLongVarValueCmd);
       cmd = &kLoadLocalLongVarValueCmd;
@@ -806,6 +813,30 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kLoadLocalBoolVarValue:
       ReadLoadLocalVarValueCmd(kLoadLocalBoolVarValueCmd);
       cmd = &kLoadLocalBoolVarValueCmd;
+      break;
+    case CmdId::kLoadLocalIntArrayVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalIntArrayVarValueCmd);
+      cmd = &kLoadLocalIntArrayVarValueCmd;
+      break;
+    case CmdId::kLoadLocalLongArrayVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalLongArrayVarValueCmd);
+      cmd = &kLoadLocalLongArrayVarValueCmd;
+      break;
+    case CmdId::kLoadLocalDoubleArrayVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalDoubleArrayVarValueCmd);
+      cmd = &kLoadLocalDoubleArrayVarValueCmd;
+      break;
+    case CmdId::kLoadLocalCharArrayVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalCharArrayVarValueCmd);
+      cmd = &kLoadLocalCharArrayVarValueCmd;
+      break;
+    case CmdId::kLoadLocalStringArrayVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalStringArrayVarValueCmd);
+      cmd = &kLoadLocalStringArrayVarValueCmd;
+      break;
+    case CmdId::kLoadLocalBoolArrayVarValue:
+      ReadLoadLocalVarValueCmd(kLoadLocalBoolArrayVarValueCmd);
+      cmd = &kLoadLocalBoolArrayVarValueCmd;
       break;
     case CmdId::kStoreInt:
       cmd = &kStoreIntCmd;

@@ -130,13 +130,19 @@ using real_talk::code::LoadGlobalDoubleVarValueCmd;
 using real_talk::code::LoadGlobalCharVarValueCmd;
 using real_talk::code::LoadGlobalStringVarValueCmd;
 using real_talk::code::LoadGlobalBoolVarValueCmd;
+using real_talk::code::LoadLocalVarValueCmd;
 using real_talk::code::LoadLocalIntVarValueCmd;
-using real_talk::code::LoadLocalArrayVarValueCmd;
 using real_talk::code::LoadLocalLongVarValueCmd;
 using real_talk::code::LoadLocalCharVarValueCmd;
 using real_talk::code::LoadLocalStringVarValueCmd;
 using real_talk::code::LoadLocalBoolVarValueCmd;
 using real_talk::code::LoadLocalDoubleVarValueCmd;
+using real_talk::code::LoadLocalIntArrayVarValueCmd;
+using real_talk::code::LoadLocalLongArrayVarValueCmd;
+using real_talk::code::LoadLocalCharArrayVarValueCmd;
+using real_talk::code::LoadLocalStringArrayVarValueCmd;
+using real_talk::code::LoadLocalBoolArrayVarValueCmd;
+using real_talk::code::LoadLocalDoubleArrayVarValueCmd;
 using real_talk::code::LoadGlobalVarAddressCmd;
 using real_talk::code::LoadLocalVarAddressCmd;
 using real_talk::code::LoadIntArrayElementValueCmd;
@@ -446,8 +452,6 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadGlobalBoolVarValueCmd &cmd) override;
   virtual void VisitLoadLocalIntVarValue(
       const LoadLocalIntVarValueCmd &cmd) override;
-  virtual void VisitLoadLocalArrayVarValue(
-      const LoadLocalArrayVarValueCmd &cmd) override;
   virtual void VisitLoadLocalLongVarValue(
       const LoadLocalLongVarValueCmd &cmd) override;
   virtual void VisitLoadLocalCharVarValue(
@@ -458,6 +462,18 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadLocalBoolVarValueCmd &cmd) override;
   virtual void VisitLoadLocalDoubleVarValue(
       const LoadLocalDoubleVarValueCmd &cmd) override;
+  virtual void VisitLoadLocalIntArrayVarValue(
+      const LoadLocalIntArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadLocalLongArrayVarValue(
+      const LoadLocalLongArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadLocalDoubleArrayVarValue(
+      const LoadLocalDoubleArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadLocalCharArrayVarValue(
+      const LoadLocalCharArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadLocalBoolArrayVarValue(
+      const LoadLocalBoolArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadLocalStringArrayVarValue(
+      const LoadLocalStringArrayVarValueCmd &cmd) override;
   virtual void VisitLoadGlobalVarAddress(
       const LoadGlobalVarAddressCmd &cmd) override;
   virtual void VisitLoadLocalVarAddress(
@@ -693,6 +709,8 @@ class SimpleVM::Impl: private CmdVisitor {
       const DestroyLocalVarCmd &cmd);
   template<typename T> void VisitDestroyLocalArrayVar(
       const DestroyLocalArrayVarCmd &cmd);
+  template<typename T> void VisitLoadLocalVarValue(
+      const LoadLocalVarValueCmd &cmd);
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
@@ -1287,27 +1305,57 @@ void SimpleVM::Impl::VisitLoadGlobalBoolVarValue(
     const LoadGlobalBoolVarValueCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadLocalIntVarValue(
-    const LoadLocalIntVarValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitLoadLocalArrayVarValue(
-    const LoadLocalArrayVarValueCmd&) {assert(false);}
+    const LoadLocalIntVarValueCmd &cmd) {
+  VisitLoadLocalVarValue<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadLocalLongVarValue(
-    const LoadLocalLongVarValueCmd&) {assert(false);}
+    const LoadLocalLongVarValueCmd &cmd) {
+  VisitLoadLocalVarValue<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadLocalCharVarValue(
-    const LoadLocalCharVarValueCmd&) {assert(false);}
+    const LoadLocalCharVarValueCmd &cmd) {
+  VisitLoadLocalVarValue<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadLocalStringVarValue(
     const LoadLocalStringVarValueCmd &cmd) {
-  operands_.Push(local_vars_.Get<StringValue>(cmd.GetVarIndex()));
+  VisitLoadLocalVarValue<StringValue>(cmd);
 }
 
 void SimpleVM::Impl::VisitLoadLocalBoolVarValue(
-    const LoadLocalBoolVarValueCmd&) {assert(false);}
+    const LoadLocalBoolVarValueCmd &cmd) {
+  VisitLoadLocalVarValue<BoolValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadLocalDoubleVarValue(
-    const LoadLocalDoubleVarValueCmd&) {assert(false);}
+    const LoadLocalDoubleVarValueCmd &cmd) {
+  VisitLoadLocalVarValue<DoubleValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitLoadLocalIntArrayVarValue(
+    const LoadLocalIntArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadLocalLongArrayVarValue(
+    const LoadLocalLongArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadLocalDoubleArrayVarValue(
+    const LoadLocalDoubleArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadLocalCharArrayVarValue(
+    const LoadLocalCharArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadLocalBoolArrayVarValue(
+    const LoadLocalBoolArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadLocalStringArrayVarValue(
+    const LoadLocalStringArrayVarValueCmd&) {assert(false);}
+
+template<typename T> void SimpleVM::Impl::VisitLoadLocalVarValue(
+    const LoadLocalVarValueCmd &cmd) {
+  operands_.Push(local_vars_.Get<T>(cmd.GetVarIndex()));
+}
 
 void SimpleVM::Impl::VisitLoadGlobalVarAddress(
     const LoadGlobalVarAddressCmd&) {assert(false);}
