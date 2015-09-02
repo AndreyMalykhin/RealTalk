@@ -124,12 +124,17 @@ using real_talk::code::JumpIfNotCmd;
 using real_talk::code::ImplicitJumpIfNotCmd;
 using real_talk::code::ReturnCmd;
 using real_talk::code::LoadGlobalIntVarValueCmd;
-using real_talk::code::LoadGlobalArrayVarValueCmd;
 using real_talk::code::LoadGlobalLongVarValueCmd;
 using real_talk::code::LoadGlobalDoubleVarValueCmd;
 using real_talk::code::LoadGlobalCharVarValueCmd;
 using real_talk::code::LoadGlobalStringVarValueCmd;
 using real_talk::code::LoadGlobalBoolVarValueCmd;
+using real_talk::code::LoadGlobalIntArrayVarValueCmd;
+using real_talk::code::LoadGlobalLongArrayVarValueCmd;
+using real_talk::code::LoadGlobalCharArrayVarValueCmd;
+using real_talk::code::LoadGlobalStringArrayVarValueCmd;
+using real_talk::code::LoadGlobalBoolArrayVarValueCmd;
+using real_talk::code::LoadGlobalDoubleArrayVarValueCmd;
 using real_talk::code::LoadLocalVarValueCmd;
 using real_talk::code::LoadLocalIntVarValueCmd;
 using real_talk::code::LoadLocalLongVarValueCmd;
@@ -438,8 +443,6 @@ class SimpleVM::Impl: private CmdVisitor {
       const ReturnCmd &cmd) override;
   virtual void VisitLoadGlobalIntVarValue(
       const LoadGlobalIntVarValueCmd &cmd) override;
-  virtual void VisitLoadGlobalArrayVarValue(
-      const LoadGlobalArrayVarValueCmd &cmd) override;
   virtual void VisitLoadGlobalLongVarValue(
       const LoadGlobalLongVarValueCmd &cmd) override;
   virtual void VisitLoadGlobalDoubleVarValue(
@@ -450,6 +453,18 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadGlobalStringVarValueCmd &cmd) override;
   virtual void VisitLoadGlobalBoolVarValue(
       const LoadGlobalBoolVarValueCmd &cmd) override;
+  virtual void VisitLoadGlobalIntArrayVarValue(
+      const LoadGlobalIntArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadGlobalLongArrayVarValue(
+      const LoadGlobalLongArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadGlobalDoubleArrayVarValue(
+      const LoadGlobalDoubleArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadGlobalCharArrayVarValue(
+      const LoadGlobalCharArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadGlobalBoolArrayVarValue(
+      const LoadGlobalBoolArrayVarValueCmd &cmd) override;
+  virtual void VisitLoadGlobalStringArrayVarValue(
+      const LoadGlobalStringArrayVarValueCmd &cmd) override;
   virtual void VisitLoadLocalIntVarValue(
       const LoadLocalIntVarValueCmd &cmd) override;
   virtual void VisitLoadLocalLongVarValue(
@@ -1286,9 +1301,6 @@ void SimpleVM::Impl::VisitReturn(
 void SimpleVM::Impl::VisitLoadGlobalIntVarValue(
     const LoadGlobalIntVarValueCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitLoadGlobalArrayVarValue(
-    const LoadGlobalArrayVarValueCmd&) {assert(false);}
-
 void SimpleVM::Impl::VisitLoadGlobalLongVarValue(
     const LoadGlobalLongVarValueCmd&) {assert(false);}
 
@@ -1303,6 +1315,24 @@ void SimpleVM::Impl::VisitLoadGlobalStringVarValue(
 
 void SimpleVM::Impl::VisitLoadGlobalBoolVarValue(
     const LoadGlobalBoolVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadGlobalIntArrayVarValue(
+    const LoadGlobalIntArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadGlobalLongArrayVarValue(
+    const LoadGlobalLongArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadGlobalDoubleArrayVarValue(
+    const LoadGlobalDoubleArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadGlobalCharArrayVarValue(
+    const LoadGlobalCharArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadGlobalBoolArrayVarValue(
+    const LoadGlobalBoolArrayVarValueCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitLoadGlobalStringArrayVarValue(
+    const LoadGlobalStringArrayVarValueCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitLoadLocalIntVarValue(
     const LoadLocalIntVarValueCmd &cmd) {

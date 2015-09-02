@@ -32,28 +32,16 @@ class LoadGlobalVarValueCmd: public Cmd {
 
 class LoadGlobalIntVarValueCmd: public LoadGlobalVarValueCmd {
  public:
-  inline explicit LoadGlobalIntVarValueCmd(uint32_t var_index) noexcept
-      : LoadGlobalVarValueCmd(var_index) {}
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadGlobalIntVarValue(*this);
   }
 };
 
-class LoadGlobalArrayVarValueCmd: public LoadGlobalVarValueCmd {
- public:
-  inline explicit LoadGlobalArrayVarValueCmd(uint32_t var_index) noexcept
-      : LoadGlobalVarValueCmd(var_index) {}
-
-  virtual void Accept(CmdVisitor *visitor) const override {
-    visitor->VisitLoadGlobalArrayVarValue(*this);
-  }
-};
-
 class LoadGlobalLongVarValueCmd: public LoadGlobalVarValueCmd {
  public:
-  inline explicit LoadGlobalLongVarValueCmd(uint32_t var_index) noexcept
-      : LoadGlobalVarValueCmd(var_index) {}
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadGlobalLongVarValue(*this);
@@ -62,8 +50,7 @@ class LoadGlobalLongVarValueCmd: public LoadGlobalVarValueCmd {
 
 class LoadGlobalDoubleVarValueCmd: public LoadGlobalVarValueCmd {
  public:
-  inline explicit LoadGlobalDoubleVarValueCmd(uint32_t var_index) noexcept
-      : LoadGlobalVarValueCmd(var_index) {}
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadGlobalDoubleVarValue(*this);
@@ -72,8 +59,7 @@ class LoadGlobalDoubleVarValueCmd: public LoadGlobalVarValueCmd {
 
 class LoadGlobalCharVarValueCmd: public LoadGlobalVarValueCmd {
  public:
-  inline explicit LoadGlobalCharVarValueCmd(uint32_t var_index) noexcept
-      : LoadGlobalVarValueCmd(var_index) {}
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadGlobalCharVarValue(*this);
@@ -82,8 +68,7 @@ class LoadGlobalCharVarValueCmd: public LoadGlobalVarValueCmd {
 
 class LoadGlobalStringVarValueCmd: public LoadGlobalVarValueCmd {
  public:
-  inline explicit LoadGlobalStringVarValueCmd(uint32_t var_index) noexcept
-      : LoadGlobalVarValueCmd(var_index) {}
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadGlobalStringVarValue(*this);
@@ -92,11 +77,64 @@ class LoadGlobalStringVarValueCmd: public LoadGlobalVarValueCmd {
 
 class LoadGlobalBoolVarValueCmd: public LoadGlobalVarValueCmd {
  public:
-  inline explicit LoadGlobalBoolVarValueCmd(uint32_t var_index) noexcept
-      : LoadGlobalVarValueCmd(var_index) {}
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitLoadGlobalBoolVarValue(*this);
+  }
+};
+
+class LoadGlobalIntArrayVarValueCmd: public LoadGlobalVarValueCmd {
+ public:
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalIntArrayVarValue(*this);
+  }
+};
+
+class LoadGlobalLongArrayVarValueCmd: public LoadGlobalVarValueCmd {
+ public:
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalLongArrayVarValue(*this);
+  }
+};
+
+class LoadGlobalDoubleArrayVarValueCmd: public LoadGlobalVarValueCmd {
+ public:
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalDoubleArrayVarValue(*this);
+  }
+};
+
+class LoadGlobalCharArrayVarValueCmd: public LoadGlobalVarValueCmd {
+ public:
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalCharArrayVarValue(*this);
+  }
+};
+
+class LoadGlobalBoolArrayVarValueCmd: public LoadGlobalVarValueCmd {
+ public:
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalBoolArrayVarValue(*this);
+  }
+};
+
+class LoadGlobalStringArrayVarValueCmd: public LoadGlobalVarValueCmd {
+ public:
+  using LoadGlobalVarValueCmd::LoadGlobalVarValueCmd;
+
+  virtual void Accept(CmdVisitor *visitor) const override {
+    visitor->VisitLoadGlobalStringArrayVarValue(*this);
   }
 };
 }

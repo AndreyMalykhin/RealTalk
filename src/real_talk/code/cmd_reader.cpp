@@ -214,8 +214,6 @@ const ReturnCmd &kReturnCmd = *new ReturnCmd();
 
 LoadGlobalIntVarValueCmd &kLoadGlobalIntVarValueCmd =
     *new LoadGlobalIntVarValueCmd(UINT32_C(0));
-LoadGlobalArrayVarValueCmd &kLoadGlobalArrayVarValueCmd =
-    *new LoadGlobalArrayVarValueCmd(UINT32_C(0));
 LoadGlobalLongVarValueCmd &kLoadGlobalLongVarValueCmd =
     *new LoadGlobalLongVarValueCmd(UINT32_C(0));
 LoadGlobalDoubleVarValueCmd &kLoadGlobalDoubleVarValueCmd =
@@ -226,6 +224,19 @@ LoadGlobalStringVarValueCmd &kLoadGlobalStringVarValueCmd =
     *new LoadGlobalStringVarValueCmd(UINT32_C(0));
 LoadGlobalBoolVarValueCmd &kLoadGlobalBoolVarValueCmd =
     *new LoadGlobalBoolVarValueCmd(UINT32_C(0));
+
+LoadGlobalIntArrayVarValueCmd &kLoadGlobalIntArrayVarValueCmd =
+    *new LoadGlobalIntArrayVarValueCmd(UINT32_C(0));
+LoadGlobalLongArrayVarValueCmd &kLoadGlobalLongArrayVarValueCmd =
+    *new LoadGlobalLongArrayVarValueCmd(UINT32_C(0));
+LoadGlobalDoubleArrayVarValueCmd &kLoadGlobalDoubleArrayVarValueCmd =
+    *new LoadGlobalDoubleArrayVarValueCmd(UINT32_C(0));
+LoadGlobalCharArrayVarValueCmd &kLoadGlobalCharArrayVarValueCmd =
+    *new LoadGlobalCharArrayVarValueCmd(UINT32_C(0));
+LoadGlobalStringArrayVarValueCmd &kLoadGlobalStringArrayVarValueCmd =
+    *new LoadGlobalStringArrayVarValueCmd(UINT32_C(0));
+LoadGlobalBoolArrayVarValueCmd &kLoadGlobalBoolArrayVarValueCmd =
+    *new LoadGlobalBoolArrayVarValueCmd(UINT32_C(0));
 
 LoadLocalIntVarValueCmd &kLoadLocalIntVarValueCmd =
     *new LoadLocalIntVarValueCmd(UINT32_C(0));
@@ -750,10 +761,6 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
       ReadLoadGlobalVarValueCmd(kLoadGlobalIntVarValueCmd);
       cmd = &kLoadGlobalIntVarValueCmd;
       break;
-    case CmdId::kLoadGlobalArrayVarValue:
-      ReadLoadGlobalVarValueCmd(kLoadGlobalArrayVarValueCmd);
-      cmd = &kLoadGlobalArrayVarValueCmd;
-      break;
     case CmdId::kLoadGlobalLongVarValue:
       ReadLoadGlobalVarValueCmd(kLoadGlobalLongVarValueCmd);
       cmd = &kLoadGlobalLongVarValueCmd;
@@ -773,6 +780,30 @@ const Cmd &CmdReader::GetNextCmd() noexcept {
     case CmdId::kLoadGlobalBoolVarValue:
       ReadLoadGlobalVarValueCmd(kLoadGlobalBoolVarValueCmd);
       cmd = &kLoadGlobalBoolVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalIntArrayVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalIntArrayVarValueCmd);
+      cmd = &kLoadGlobalIntArrayVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalLongArrayVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalLongArrayVarValueCmd);
+      cmd = &kLoadGlobalLongArrayVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalDoubleArrayVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalDoubleArrayVarValueCmd);
+      cmd = &kLoadGlobalDoubleArrayVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalCharArrayVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalCharArrayVarValueCmd);
+      cmd = &kLoadGlobalCharArrayVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalStringArrayVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalStringArrayVarValueCmd);
+      cmd = &kLoadGlobalStringArrayVarValueCmd;
+      break;
+    case CmdId::kLoadGlobalBoolArrayVarValue:
+      ReadLoadGlobalVarValueCmd(kLoadGlobalBoolArrayVarValueCmd);
+      cmd = &kLoadGlobalBoolArrayVarValueCmd;
       break;
     case CmdId::kLoadGlobalVarAddress:
       kLoadGlobalVarAddressCmd.SetVarIndex(code_->Read<uint32_t>());

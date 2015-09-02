@@ -214,6 +214,7 @@ class SimpleCodeGenerator::Impl: private NodeVisitor {
   class DestroyLocalVarCmdGenerator;
   class DestroyLocalArrayVarCmdGenerator;
   class LoadGlobalVarValueCmdGenerator;
+  class LoadGlobalArrayVarValueCmdGenerator;
   class LoadLocalVarValueCmdGenerator;
   class LoadLocalArrayVarValueCmdGenerator;
   class LoadElementValueCmdGenerator;
@@ -996,6 +997,50 @@ class SimpleCodeGenerator::Impl::CreateAndInitArrayCmdGenerator
   Code *code_;
 };
 
+class SimpleCodeGenerator::Impl::LoadGlobalArrayVarValueCmdGenerator
+    : private DataTypeVisitor {
+ public:
+  void Generate(const ArrayDataType &data_type, Code *code) {
+    assert(code);
+    code_ = code;
+    data_type.Accept(*this);
+  }
+
+ private:
+  virtual void VisitBool(const BoolDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadGlobalBoolArrayVarValue);
+  }
+
+  virtual void VisitInt(const IntDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadGlobalIntArrayVarValue);
+  }
+
+  virtual void VisitLong(const LongDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadGlobalLongArrayVarValue);
+  }
+
+  virtual void VisitDouble(const DoubleDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadGlobalDoubleArrayVarValue);
+  }
+
+  virtual void VisitChar(const CharDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadGlobalCharArrayVarValue);
+  }
+
+  virtual void VisitString(const StringDataType&) override {
+    code_->Write<CmdId>(CmdId::kLoadGlobalStringArrayVarValue);
+  }
+
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    data_type.GetElementDataType().Accept(*this);
+  }
+
+  virtual void VisitVoid(const VoidDataType&) override {assert(false);}
+  virtual void VisitFunc(const FuncDataType&) override {assert(false);}
+
+  Code *code_;
+};
+
 class SimpleCodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
     : private DataTypeVisitor {
  public:
@@ -1011,8 +1056,8 @@ class SimpleCodeGenerator::Impl::LoadGlobalVarValueCmdGenerator
   }
 
  private:
-  virtual void VisitArray(const ArrayDataType&) override {
-    code_->Write<CmdId>(CmdId::kLoadGlobalArrayVarValue);
+  virtual void VisitArray(const ArrayDataType &data_type) override {
+    LoadGlobalArrayVarValueCmdGenerator().Generate(data_type, code_);
   }
 
   virtual void VisitBool(const BoolDataType&) override {

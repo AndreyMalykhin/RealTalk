@@ -751,10 +751,42 @@ TEST_F(CmdReaderTest, LoadGlobalStringVarValueCmd) {
   TestLoadGlobalVarValueCmd(CmdId::kLoadGlobalStringVarValue, expected_cmd);
 }
 
-TEST_F(CmdReaderTest, LoadGlobalArrayVarValueCmd) {
+TEST_F(CmdReaderTest, LoadGlobalIntArrayVarValueCmd) {
   uint32_t var_index = UINT32_C(7);
-  LoadGlobalArrayVarValueCmd expected_cmd(var_index);
-  TestLoadGlobalVarValueCmd(CmdId::kLoadGlobalArrayVarValue, expected_cmd);
+  LoadGlobalIntArrayVarValueCmd expected_cmd(var_index);
+  TestLoadGlobalVarValueCmd(CmdId::kLoadGlobalIntArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadGlobalLongArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadGlobalLongArrayVarValueCmd expected_cmd(var_index);
+  TestLoadGlobalVarValueCmd(CmdId::kLoadGlobalLongArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadGlobalDoubleArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadGlobalDoubleArrayVarValueCmd expected_cmd(var_index);
+  TestLoadGlobalVarValueCmd(
+      CmdId::kLoadGlobalDoubleArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadGlobalCharArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadGlobalCharArrayVarValueCmd expected_cmd(var_index);
+  TestLoadGlobalVarValueCmd(CmdId::kLoadGlobalCharArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadGlobalBoolArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadGlobalBoolArrayVarValueCmd expected_cmd(var_index);
+  TestLoadGlobalVarValueCmd(CmdId::kLoadGlobalBoolArrayVarValue, expected_cmd);
+}
+
+TEST_F(CmdReaderTest, LoadGlobalStringArrayVarValueCmd) {
+  uint32_t var_index = UINT32_C(7);
+  LoadGlobalStringArrayVarValueCmd expected_cmd(var_index);
+  TestLoadGlobalVarValueCmd(
+      CmdId::kLoadGlobalStringArrayVarValue, expected_cmd);
 }
 
 TEST_F(CmdReaderTest, LoadLocalIntVarValueCmd) {
