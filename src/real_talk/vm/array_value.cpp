@@ -191,7 +191,7 @@ template<typename T> void ArrayValue<T>::DecRefsCount(uint8_t dimensions_count)
   }
 }
 
-template<typename T> ArrayValue<T> ArrayValue<T>::Clone() noexcept {
+template<typename T> ArrayValue<T> ArrayValue<T>::Clone() const noexcept {
   ++(storage_->GetRefsCount());
   return ArrayValue<T>(storage_);
 }

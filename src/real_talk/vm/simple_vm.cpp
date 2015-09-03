@@ -726,6 +726,8 @@ class SimpleVM::Impl: private CmdVisitor {
       const DestroyLocalArrayVarCmd &cmd);
   template<typename T> void VisitLoadLocalVarValue(
       const LoadLocalVarValueCmd &cmd);
+  template<typename T> void VisitLoadLocalArrayVarValue(
+      const LoadLocalVarValueCmd &cmd);
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
@@ -1364,27 +1366,44 @@ void SimpleVM::Impl::VisitLoadLocalDoubleVarValue(
   VisitLoadLocalVarValue<DoubleValue>(cmd);
 }
 
-void SimpleVM::Impl::VisitLoadLocalIntArrayVarValue(
-    const LoadLocalIntArrayVarValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitLoadLocalLongArrayVarValue(
-    const LoadLocalLongArrayVarValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitLoadLocalDoubleArrayVarValue(
-    const LoadLocalDoubleArrayVarValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitLoadLocalCharArrayVarValue(
-    const LoadLocalCharArrayVarValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitLoadLocalBoolArrayVarValue(
-    const LoadLocalBoolArrayVarValueCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitLoadLocalStringArrayVarValue(
-    const LoadLocalStringArrayVarValueCmd&) {assert(false);}
-
 template<typename T> void SimpleVM::Impl::VisitLoadLocalVarValue(
     const LoadLocalVarValueCmd &cmd) {
   operands_.Push(local_vars_.Get<T>(cmd.GetVarIndex()));
+}
+
+void SimpleVM::Impl::VisitLoadLocalIntArrayVarValue(
+    const LoadLocalIntArrayVarValueCmd &cmd) {
+  VisitLoadLocalArrayVarValue<IntValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitLoadLocalLongArrayVarValue(
+    const LoadLocalLongArrayVarValueCmd &cmd) {
+  VisitLoadLocalArrayVarValue<LongValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitLoadLocalDoubleArrayVarValue(
+    const LoadLocalDoubleArrayVarValueCmd &cmd) {
+  VisitLoadLocalArrayVarValue<DoubleValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitLoadLocalCharArrayVarValue(
+    const LoadLocalCharArrayVarValueCmd &cmd) {
+  VisitLoadLocalArrayVarValue<CharValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitLoadLocalBoolArrayVarValue(
+    const LoadLocalBoolArrayVarValueCmd &cmd) {
+  VisitLoadLocalArrayVarValue<BoolValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitLoadLocalStringArrayVarValue(
+    const LoadLocalStringArrayVarValueCmd &cmd) {
+  VisitLoadLocalArrayVarValue<StringValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitLoadLocalArrayVarValue(
+    const LoadLocalVarValueCmd &cmd) {
+  operands_.Push(local_vars_.Get< ArrayValue<T> >(cmd.GetVarIndex()).Clone());
 }
 
 void SimpleVM::Impl::VisitLoadGlobalVarAddress(

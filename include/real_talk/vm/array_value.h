@@ -30,7 +30,7 @@ template<typename T> class ArrayValue {
   ArrayValue(const ArrayValue<T>&) = delete;
   ArrayValue<T> &operator=(const ArrayValue<T>&) = delete;
   void Set(ArrayValue<T> &&value, uint8_t dimensions_count) noexcept;
-  ArrayValue<T> Clone() noexcept;
+  ArrayValue<T> Clone() const noexcept;
   void Destroy(uint8_t dimensions_count) noexcept;
   T &GetItem(size_t index) noexcept;
   const T &GetItem(size_t index) const noexcept;
