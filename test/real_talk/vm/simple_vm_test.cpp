@@ -1316,7 +1316,6 @@ TEST_F(SimpleVMTest, LoadLocalStringArrayVarValueCmd) {
       CmdId::kLoadLocalStringArrayVarValue);
 }
 
-/*
 TEST_F(SimpleVMTest, CallAndReturnCmds) {
   auto operands_asserter = [](const DataStorage &expected_operands,
                               const DataStorage &actual_operands) {
@@ -1358,6 +1357,5 @@ TEST_F(SimpleVMTest, CallAndReturnCmds) {
               expected_operands,
               operands_asserter);
 }
-*/
 }
 }

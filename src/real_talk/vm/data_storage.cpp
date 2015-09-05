@@ -299,6 +299,14 @@ template<> StringValue DataStorage::Pop<StringValue>() noexcept {
   return DoPop<StringValue, DataTypeSize::kString>();
 }
 
+template<> FuncValue DataStorage::Pop<FuncValue>() noexcept {
+  return DoPop<FuncValue, DataTypeSize::kFunc>();
+}
+
+template<> NativeFuncValue DataStorage::Pop<NativeFuncValue>() noexcept {
+  return DoPop<NativeFuncValue, DataTypeSize::kNativeFunc>();
+}
+
 template<> ArrayValue<IntValue> DataStorage::Pop<ArrayValue< IntValue> >()
     noexcept {
   return DoPop<ArrayValue<IntValue>, DataTypeSize::kArray>();

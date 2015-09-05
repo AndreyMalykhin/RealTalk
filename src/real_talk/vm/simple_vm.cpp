@@ -703,7 +703,7 @@ class SimpleVM::Impl: private CmdVisitor {
       const AndCmd &cmd) override;
   virtual void VisitOr(
       const OrCmd &cmd) override;
-  void Jump(const JumpCmd &cmd);
+  void Jump(const JumpCmd &cmd) noexcept;
   vector<size_t> GetArrayDimensions(const CreateArrayCmd &cmd);
   template<typename T> void VisitCreateArray(const CreateArrayCmd &cmd);
   template<typename T> void VisitCreateAndInitArray(
@@ -721,13 +721,14 @@ class SimpleVM::Impl: private CmdVisitor {
   template<typename T> void VisitCreateAndInitLocalArrayVar(
       const CreateAndInitLocalArrayVarCmd &cmd);
   template<typename T> void VisitDestroyLocalVar(
-      const DestroyLocalVarCmd &cmd);
+      const DestroyLocalVarCmd &cmd) noexcept;
   template<typename T> void VisitDestroyLocalArrayVar(
-      const DestroyLocalArrayVarCmd &cmd);
+      const DestroyLocalArrayVarCmd &cmd) noexcept;
   template<typename T> void VisitLoadLocalVarValue(
       const LoadLocalVarValueCmd &cmd);
   template<typename T> void VisitLoadLocalArrayVarValue(
       const LoadLocalVarValueCmd &cmd);
+  size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
@@ -914,7 +915,7 @@ void SimpleVM::Impl::VisitDestroyLocalBoolVar(
 }
 
 template<typename T> void SimpleVM::Impl::VisitDestroyLocalVar(
-    const DestroyLocalVarCmd&) {
+    const DestroyLocalVarCmd&) noexcept {
   local_vars_.Pop<T>();
 }
 
@@ -949,7 +950,7 @@ void SimpleVM::Impl::VisitDestroyLocalBoolArrayVar(
 }
 
 template<typename T> void SimpleVM::Impl::VisitDestroyLocalArrayVar(
-    const DestroyLocalArrayVarCmd &cmd) {
+    const DestroyLocalArrayVarCmd &cmd) noexcept {
   local_vars_.Pop< ArrayValue<T> >().Destroy(cmd.GetDimensionsCount());
 }
 
@@ -1261,13 +1262,11 @@ template<typename T> void SimpleVM::Impl::VisitCreateAndInitArray(
   operands_.Push(move(array));
 }
 
-void SimpleVM::Impl::VisitDirectJump(
-    const DirectJumpCmd &cmd) {
+void SimpleVM::Impl::VisitDirectJump(const DirectJumpCmd &cmd) {
   Jump(cmd);
 }
 
-void SimpleVM::Impl::VisitJumpIfNot(
-    const JumpIfNotCmd &cmd) {
+void SimpleVM::Impl::VisitJumpIfNot(const JumpIfNotCmd &cmd) {
   if (operands_.Pop<BoolValue>()) {
     return;
   }
@@ -1275,8 +1274,7 @@ void SimpleVM::Impl::VisitJumpIfNot(
   Jump(cmd);
 }
 
-void SimpleVM::Impl::VisitImplicitJumpIfNot(
-    const ImplicitJumpIfNotCmd &cmd) {
+void SimpleVM::Impl::VisitImplicitJumpIfNot(const ImplicitJumpIfNotCmd &cmd) {
   if (operands_.GetTop<BoolValue>()) {
     return;
   }
@@ -1284,8 +1282,7 @@ void SimpleVM::Impl::VisitImplicitJumpIfNot(
   Jump(cmd);
 }
 
-void SimpleVM::Impl::VisitImplicitJumpIf(
-    const ImplicitJumpIfCmd &cmd) {
+void SimpleVM::Impl::VisitImplicitJumpIf(const ImplicitJumpIfCmd &cmd) {
   if (!operands_.GetTop<BoolValue>()) {
     return;
   }
@@ -1293,12 +1290,15 @@ void SimpleVM::Impl::VisitImplicitJumpIf(
   Jump(cmd);
 }
 
-void SimpleVM::Impl::Jump(const JumpCmd &cmd) {
+void SimpleVM::Impl::Jump(const JumpCmd &cmd) noexcept {
   cmd_reader_.GetCode()->MovePosition(cmd.GetOffset());
 }
 
-void SimpleVM::Impl::VisitReturn(
-    const ReturnCmd&) {assert(false);}
+void SimpleVM::Impl::VisitReturn(const ReturnCmd&) {
+  const uint32_t return_address = func_frames_.back().GetReturnAddress();
+  func_frames_.pop_back();
+  cmd_reader_.GetCode()->SetPosition(return_address);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalIntVarValue(
     const LoadGlobalIntVarValueCmd&) {assert(false);}
@@ -1368,7 +1368,13 @@ void SimpleVM::Impl::VisitLoadLocalDoubleVarValue(
 
 template<typename T> void SimpleVM::Impl::VisitLoadLocalVarValue(
     const LoadLocalVarValueCmd &cmd) {
-  operands_.Push(local_vars_.Get<T>(cmd.GetVarIndex()));
+  operands_.Push(local_vars_.Get<T>(GetLocalVarIndex(cmd)));
+}
+
+size_t SimpleVM::Impl::GetLocalVarIndex(const LoadLocalVarValueCmd &cmd)
+    const noexcept {
+  assert(!func_frames_.empty());
+  return func_frames_.back().GetLocalVarsStartIndex() + cmd.GetVarIndex();
 }
 
 void SimpleVM::Impl::VisitLoadLocalIntArrayVarValue(
@@ -1403,7 +1409,8 @@ void SimpleVM::Impl::VisitLoadLocalStringArrayVarValue(
 
 template<typename T> void SimpleVM::Impl::VisitLoadLocalArrayVarValue(
     const LoadLocalVarValueCmd &cmd) {
-  operands_.Push(local_vars_.Get< ArrayValue<T> >(cmd.GetVarIndex()).Clone());
+  operands_.Push(
+      local_vars_.Get< ArrayValue<T> >(GetLocalVarIndex(cmd)).Clone());
 }
 
 void SimpleVM::Impl::VisitLoadGlobalVarAddress(
@@ -1511,8 +1518,12 @@ void SimpleVM::Impl::VisitCastLongToDouble(
 void SimpleVM::Impl::VisitCallNative(
     const CallNativeCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCall(
-    const CallCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCall(const CallCmd&) {
+  const size_t local_vars_start_index = local_vars_.GetSize();
+  const uint32_t return_address = cmd_reader_.GetCode()->GetPosition();
+  func_frames_.push_back(FuncFrame(local_vars_start_index, return_address));
+  cmd_reader_.GetCode()->SetPosition(operands_.Pop<FuncValue>());
+}
 
 void SimpleVM::Impl::VisitMulChar(
     const MulCharCmd&) {assert(false);}
