@@ -14,6 +14,7 @@
 #include "real_talk/code/destroy_local_var_cmd.h"
 #include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
+#include "real_talk/code/unload_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
@@ -55,12 +56,14 @@ using real_talk::code::DestroyLocalDoubleArrayVarCmd;
 using real_talk::code::DestroyLocalCharArrayVarCmd;
 using real_talk::code::DestroyLocalStringArrayVarCmd;
 using real_talk::code::DestroyLocalBoolArrayVarCmd;
+using real_talk::code::UnloadCmd;
 using real_talk::code::UnloadIntCmd;
 using real_talk::code::UnloadLongCmd;
 using real_talk::code::UnloadDoubleCmd;
 using real_talk::code::UnloadCharCmd;
 using real_talk::code::UnloadStringCmd;
 using real_talk::code::UnloadBoolCmd;
+using real_talk::code::UnloadArrayCmd;
 using real_talk::code::UnloadIntArrayCmd;
 using real_talk::code::UnloadLongArrayCmd;
 using real_talk::code::UnloadDoubleArrayCmd;
@@ -728,6 +731,9 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadLocalVarValueCmd &cmd);
   template<typename T> void VisitLoadLocalArrayVarValue(
       const LoadLocalVarValueCmd &cmd);
+  template<typename T> void VisitUnload(const UnloadCmd &cmd) noexcept;
+  template<typename T> void VisitUnloadArray(const UnloadArrayCmd &cmd)
+      noexcept;
   size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
@@ -954,41 +960,63 @@ template<typename T> void SimpleVM::Impl::VisitDestroyLocalArrayVar(
   local_vars_.Pop< ArrayValue<T> >().Destroy(cmd.GetDimensionsCount());
 }
 
-void SimpleVM::Impl::VisitUnloadInt(
-    const UnloadIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadInt(const UnloadIntCmd &cmd) {
+  VisitUnload<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadLong(
-    const UnloadLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadLong(const UnloadLongCmd &cmd) {
+  VisitUnload<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadDouble(
-    const UnloadDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadDouble(const UnloadDoubleCmd &cmd) {
+  VisitUnload<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadChar(
-    const UnloadCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadChar(const UnloadCharCmd &cmd) {
+  VisitUnload<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadString(
-    const UnloadStringCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadString(const UnloadStringCmd &cmd) {
+  VisitUnload<StringValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadBool(
-    const UnloadBoolCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadBool(const UnloadBoolCmd &cmd) {
+  VisitUnload<BoolValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadIntArray(
-    const UnloadIntArrayCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitUnload(const UnloadCmd&)
+    noexcept {
+  operands_.Pop<T>();
+}
 
-void SimpleVM::Impl::VisitUnloadLongArray(
-    const UnloadLongArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadIntArray(const UnloadIntArrayCmd &cmd) {
+  VisitUnloadArray<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadDoubleArray(
-    const UnloadDoubleArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadLongArray(const UnloadLongArrayCmd &cmd) {
+  VisitUnloadArray<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadCharArray(
-    const UnloadCharArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadDoubleArray(const UnloadDoubleArrayCmd &cmd) {
+  VisitUnloadArray<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadStringArray(
-    const UnloadStringArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadCharArray(const UnloadCharArrayCmd &cmd) {
+  VisitUnloadArray<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitUnloadBoolArray(
-    const UnloadBoolArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitUnloadStringArray(const UnloadStringArrayCmd &cmd) {
+  VisitUnloadArray<StringValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitUnloadBoolArray(const UnloadBoolArrayCmd &cmd) {
+  VisitUnloadArray<BoolValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitUnloadArray(
+    const UnloadArrayCmd &cmd) noexcept {
+  operands_.Pop< ArrayValue<T> >().Destroy(cmd.GetDimensionsCount());
+}
 
 void SimpleVM::Impl::VisitLoadIntValue(
     const LoadIntValueCmd &cmd) {
