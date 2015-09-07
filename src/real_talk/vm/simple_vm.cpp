@@ -262,7 +262,7 @@ namespace vm {
 
 class SimpleVM::Impl: private CmdVisitor {
  public:
-  Impl(Exe *exe, const vector<NativeFuncValue> &native_funcs);
+  Impl(Exe *exe, const vector<NativeFuncValue> &native_funcs, SimpleVM *vm);
   void Execute();
   const DataStorage &GetGlobalVars() const;
   const DataStorage &GetLocalVars() const;
@@ -738,6 +738,7 @@ class SimpleVM::Impl: private CmdVisitor {
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
+  SimpleVM *vm_;
   Code &cmds_code_;
   CmdReader cmd_reader_;
   DataStorage global_vars_;
@@ -747,7 +748,7 @@ class SimpleVM::Impl: private CmdVisitor {
 };
 
 SimpleVM::SimpleVM(Exe *exe, const vector<NativeFuncValue> &native_funcs)
-    : impl_(new Impl(exe, native_funcs)) {}
+    : impl_(new Impl(exe, native_funcs, this)) {}
 
 SimpleVM::~SimpleVM() {}
 
@@ -769,12 +770,15 @@ const SimpleVM::FuncFrames &SimpleVM::GetFuncFrames() const {
   return impl_->GetFuncFrames();
 }
 
-SimpleVM::Impl::Impl(Exe *exe, const vector<NativeFuncValue> &native_funcs)
+SimpleVM::Impl::Impl(
+    Exe *exe, const vector<NativeFuncValue> &native_funcs, SimpleVM *vm)
     : exe_(exe),
       native_funcs_(native_funcs),
+      vm_(vm),
       cmds_code_(exe->GetCmdsCode()),
       global_vars_(exe->GetGlobalVarsSize()) {
   assert(exe_);
+  assert(vm_);
   assert(cmds_code_.GetPosition() <= exe_->GetMainCmdsCodeSize());
   cmd_reader_.SetCode(&cmds_code_);
 }
@@ -1543,8 +1547,15 @@ void SimpleVM::Impl::VisitCastIntToDouble(
 void SimpleVM::Impl::VisitCastLongToDouble(
     const CastLongToDoubleCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCallNative(
-    const CallNativeCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCallNative(const CallNativeCmd&) {
+  const size_t local_vars_start_index = local_vars_.GetSize();
+  const uint32_t return_address = cmd_reader_.GetCode()->GetPosition();
+  func_frames_.push_back(FuncFrame(local_vars_start_index, return_address));
+  const auto native_func = operands_.Pop<NativeFuncValue>();
+  (*native_func)(vm_);
+  func_frames_.pop_back();
+  assert(cmd_reader_.GetCode()->GetPosition() == return_address);
+}
 
 void SimpleVM::Impl::VisitCall(const CallCmd&) {
   const size_t local_vars_start_index = local_vars_.GetSize();

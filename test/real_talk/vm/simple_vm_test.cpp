@@ -646,11 +646,11 @@ TEST_F(SimpleVMTest, LoadFuncValueCmd) {
 
 TEST_F(SimpleVMTest, LoadNativeFuncValueCmd) {
   uint32_t func_index = UINT32_C(5);
-  NativeFuncValue value = []() {};
+  NativeFuncValue func_value = [](VM*) {};
   vector<NativeFuncValue> native_funcs(7);
-  native_funcs[func_index] = value;
+  native_funcs[func_index] = func_value;
   TestLoadValueCmd(
-      CmdId::kLoadNativeFuncValue, value, func_index, native_funcs);
+      CmdId::kLoadNativeFuncValue, func_value, func_index, native_funcs);
 }
 
 TEST_F(SimpleVMTest, CreateIntArrayCmd) {
@@ -1340,6 +1340,39 @@ TEST_F(SimpleVMTest, CallAndReturnCmds) {
               local_vars_asserter,
               expected_operands,
               operands_asserter);
+}
+
+TEST_F(SimpleVMTest, CallNativeAndReturnCmds) {
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kCreateLocalIntVar);
+  cmds->Write<CmdId>(CmdId::kLoadNativeFuncValue);
+  uint32_t func_index = UINT32_C(5);
+  cmds->Write<uint32_t>(func_index);
+  cmds->Write<CmdId>(CmdId::kCallNative);
+  cmds->Write<CmdId>(CmdId::kDestroyLocalIntVar);
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  vector<NativeFuncValue> native_funcs(7);
+  NativeFuncValue func_value = [](VM *vm) {
+    ASSERT_TRUE(vm);
+    ASSERT_EQ(2, vm->GetFuncFrames().size());
+    ASSERT_EQ(1, vm->GetFuncFrames().back().GetLocalVarsStartIndex());
+  };
+  native_funcs[func_index] = func_value;
+  DataStorage expected_global_vars;
+  DataStorageAsserter global_vars_asserter = nullptr;
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  DataStorage expected_operands;
+  DataStorageAsserter operands_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter,
+              native_funcs);
 }
 
 TEST_F(SimpleVMTest, UnloadIntCmd) {

@@ -5,7 +5,9 @@
 namespace real_talk {
 namespace vm {
 
-typedef void (*NativeFuncValue)();
+class VM;
+
+typedef void (*NativeFuncValue)(VM *vm);
 }
 }
 #endif

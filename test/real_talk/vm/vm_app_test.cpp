@@ -17,6 +17,7 @@
 #include "real_talk/vm/vm_config_parser.h"
 #include "real_talk/vm/vm_config.h"
 #include "real_talk/vm/msg_printer.h"
+#include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/vm_app.h"
 
 using std::istream;
@@ -100,6 +101,10 @@ class NativeFuncLinkerMock: public NativeFuncLinker {
 class VMMock: public VM {
  public:
   MOCK_METHOD0(Execute, void());
+  MOCK_CONST_METHOD0(GetGlobalVars, const DataStorage&());
+  MOCK_CONST_METHOD0(GetLocalVars, const DataStorage&());
+  MOCK_CONST_METHOD0(GetOperands, const DataStorage&());
+  MOCK_CONST_METHOD0(GetFuncFrames, const FuncFrames&());
 };
 
 class VMFactoryMock: public VMFactory {
