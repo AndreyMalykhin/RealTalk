@@ -32,8 +32,7 @@ class CreateGlobalVarCmd: public Cmd {
 
 class CreateGlobalIntVarCmd: public CreateGlobalVarCmd {
  public:
-  inline explicit CreateGlobalIntVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
+  using CreateGlobalVarCmd::CreateGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateGlobalIntVar(*this);
@@ -42,8 +41,7 @@ class CreateGlobalIntVarCmd: public CreateGlobalVarCmd {
 
 class CreateGlobalArrayVarCmd: public CreateGlobalVarCmd {
  public:
-  inline explicit CreateGlobalArrayVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
+  using CreateGlobalVarCmd::CreateGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateGlobalArrayVar(*this);
@@ -52,8 +50,7 @@ class CreateGlobalArrayVarCmd: public CreateGlobalVarCmd {
 
 class CreateGlobalLongVarCmd: public CreateGlobalVarCmd {
  public:
-  inline explicit CreateGlobalLongVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
+  using CreateGlobalVarCmd::CreateGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateGlobalLongVar(*this);
@@ -62,8 +59,7 @@ class CreateGlobalLongVarCmd: public CreateGlobalVarCmd {
 
 class CreateGlobalDoubleVarCmd: public CreateGlobalVarCmd {
  public:
-  inline explicit CreateGlobalDoubleVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
+  using CreateGlobalVarCmd::CreateGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateGlobalDoubleVar(*this);
@@ -72,8 +68,7 @@ class CreateGlobalDoubleVarCmd: public CreateGlobalVarCmd {
 
 class CreateGlobalCharVarCmd: public CreateGlobalVarCmd {
  public:
-  inline explicit CreateGlobalCharVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
+  using CreateGlobalVarCmd::CreateGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateGlobalCharVar(*this);
@@ -82,8 +77,7 @@ class CreateGlobalCharVarCmd: public CreateGlobalVarCmd {
 
 class CreateGlobalStringVarCmd: public CreateGlobalVarCmd {
  public:
-  inline explicit CreateGlobalStringVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
+  using CreateGlobalVarCmd::CreateGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateGlobalStringVar(*this);
@@ -92,8 +86,7 @@ class CreateGlobalStringVarCmd: public CreateGlobalVarCmd {
 
 class CreateGlobalBoolVarCmd: public CreateGlobalVarCmd {
  public:
-  inline explicit CreateGlobalBoolVarCmd(uint32_t var_index) noexcept
-      : CreateGlobalVarCmd(var_index) {}
+  using CreateGlobalVarCmd::CreateGlobalVarCmd;
 
   virtual void Accept(CmdVisitor *visitor) const override {
     visitor->VisitCreateGlobalBoolVar(*this);

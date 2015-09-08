@@ -14,6 +14,7 @@
 #include "real_talk/code/destroy_local_var_cmd.h"
 #include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
+#include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
@@ -126,6 +127,7 @@ using real_talk::code::ImplicitJumpIfCmd;
 using real_talk::code::JumpIfNotCmd;
 using real_talk::code::ImplicitJumpIfNotCmd;
 using real_talk::code::ReturnCmd;
+using real_talk::code::LoadGlobalVarValueCmd;
 using real_talk::code::LoadGlobalIntVarValueCmd;
 using real_talk::code::LoadGlobalLongVarValueCmd;
 using real_talk::code::LoadGlobalDoubleVarValueCmd;
@@ -734,6 +736,8 @@ class SimpleVM::Impl: private CmdVisitor {
   template<typename T> void VisitUnload(const UnloadCmd &cmd) noexcept;
   template<typename T> void VisitUnloadArray(const UnloadArrayCmd &cmd)
       noexcept;
+  template<typename T> void VisitLoadGlobalVarValue(
+      const LoadGlobalVarValueCmd &cmd);
   size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
@@ -1204,33 +1208,27 @@ template<typename T> void SimpleVM::Impl::VisitCreateAndInitLocalArrayVar(
   local_vars_.Push(operands_.Pop< ArrayValue<T> >());
 }
 
-void SimpleVM::Impl::VisitCreateIntArray(
-    const CreateIntArrayCmd &cmd) {
+void SimpleVM::Impl::VisitCreateIntArray(const CreateIntArrayCmd &cmd) {
   VisitCreateArray<IntValue>(cmd);
 }
 
-void SimpleVM::Impl::VisitCreateLongArray(
-    const CreateLongArrayCmd &cmd) {
+void SimpleVM::Impl::VisitCreateLongArray(const CreateLongArrayCmd &cmd) {
   VisitCreateArray<LongValue>(cmd);
 }
 
-void SimpleVM::Impl::VisitCreateBoolArray(
-    const CreateBoolArrayCmd &cmd) {
+void SimpleVM::Impl::VisitCreateBoolArray(const CreateBoolArrayCmd &cmd) {
   VisitCreateArray<BoolValue>(cmd);
 }
 
-void SimpleVM::Impl::VisitCreateCharArray(
-    const CreateCharArrayCmd &cmd) {
+void SimpleVM::Impl::VisitCreateCharArray(const CreateCharArrayCmd &cmd) {
   VisitCreateArray<CharValue>(cmd);
 }
 
-void SimpleVM::Impl::VisitCreateDoubleArray(
-    const CreateDoubleArrayCmd &cmd) {
+void SimpleVM::Impl::VisitCreateDoubleArray(const CreateDoubleArrayCmd &cmd) {
   VisitCreateArray<DoubleValue>(cmd);
 }
 
-void SimpleVM::Impl::VisitCreateStringArray(
-    const CreateStringArrayCmd &cmd) {
+void SimpleVM::Impl::VisitCreateStringArray(const CreateStringArrayCmd &cmd) {
   VisitCreateArray<StringValue>(cmd);
 }
 
@@ -1333,22 +1331,39 @@ void SimpleVM::Impl::VisitReturn(const ReturnCmd&) {
 }
 
 void SimpleVM::Impl::VisitLoadGlobalIntVarValue(
-    const LoadGlobalIntVarValueCmd&) {assert(false);}
+    const LoadGlobalIntVarValueCmd &cmd) {
+  VisitLoadGlobalVarValue<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalLongVarValue(
-    const LoadGlobalLongVarValueCmd&) {assert(false);}
+    const LoadGlobalLongVarValueCmd &cmd) {
+  VisitLoadGlobalVarValue<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalDoubleVarValue(
-    const LoadGlobalDoubleVarValueCmd&) {assert(false);}
+    const LoadGlobalDoubleVarValueCmd &cmd) {
+  VisitLoadGlobalVarValue<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalCharVarValue(
-    const LoadGlobalCharVarValueCmd&) {assert(false);}
+    const LoadGlobalCharVarValueCmd &cmd) {
+  VisitLoadGlobalVarValue<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalStringVarValue(
-    const LoadGlobalStringVarValueCmd&) {assert(false);}
+    const LoadGlobalStringVarValueCmd &cmd) {
+  VisitLoadGlobalVarValue<StringValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalBoolVarValue(
-    const LoadGlobalBoolVarValueCmd&) {assert(false);}
+    const LoadGlobalBoolVarValueCmd &cmd) {
+  VisitLoadGlobalVarValue<BoolValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitLoadGlobalVarValue(
+    const LoadGlobalVarValueCmd &cmd) {
+  operands_.Push(global_vars_.Get<T>(cmd.GetVarIndex()));
+}
 
 void SimpleVM::Impl::VisitLoadGlobalIntArrayVarValue(
     const LoadGlobalIntArrayVarValueCmd&) {assert(false);}

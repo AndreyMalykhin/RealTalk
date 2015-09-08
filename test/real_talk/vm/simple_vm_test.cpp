@@ -513,6 +513,42 @@ class SimpleVMTest: public Test {
     cmds->Write<uint8_t>(dimensions_count);
     TestUnloadCmd(move(cmds));
   }
+
+  template<typename T> void TestLoadGlobalVarValueCmd(
+      CmdId create_var_cmd_id, CmdId load_var_value_cmd_id) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      ASSERT_EQ(expected_operands.GetTop<T>(), actual_operands.GetTop<T>());
+    };
+    auto global_vars_asserter = [](const DataStorage &expected_global_vars,
+                                   const DataStorage &actual_global_vars) {
+      size_t var_index = 5;
+      ASSERT_EQ(expected_global_vars.Get<T>(var_index),
+                actual_global_vars.Get<T>(var_index));
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(create_var_cmd_id);
+    uint32_t var_index = UINT32_C(5);
+    cmds->Write<uint32_t>(var_index);
+    cmds->Write<CmdId>(load_var_value_cmd_id);
+    cmds->Write<uint32_t>(var_index);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    size_t global_vars_size = 7;
+    DataStorage expected_global_vars(global_vars_size);
+    expected_global_vars.Create(var_index, T());
+    DataStorage expected_operands;
+    expected_operands.Push(expected_global_vars.Get<T>(var_index));
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
 };
 
 TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
@@ -1445,6 +1481,36 @@ TEST_F(SimpleVMTest, UnloadBoolArrayCmd) {
 
 TEST_F(SimpleVMTest, UnloadStringArrayCmd) {
   TestUnloadArrayCmd(CmdId::kCreateStringArray, CmdId::kUnloadStringArray);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalIntVarValueCmd) {
+  TestLoadGlobalVarValueCmd<IntValue>(
+      CmdId::kCreateGlobalIntVar, CmdId::kLoadGlobalIntVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalLongVarValueCmd) {
+  TestLoadGlobalVarValueCmd<LongValue>(
+      CmdId::kCreateGlobalLongVar, CmdId::kLoadGlobalLongVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalDoubleVarValueCmd) {
+  TestLoadGlobalVarValueCmd<DoubleValue>(
+      CmdId::kCreateGlobalDoubleVar, CmdId::kLoadGlobalDoubleVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalCharVarValueCmd) {
+  TestLoadGlobalVarValueCmd<CharValue>(
+      CmdId::kCreateGlobalCharVar, CmdId::kLoadGlobalCharVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalBoolVarValueCmd) {
+  TestLoadGlobalVarValueCmd<BoolValue>(
+      CmdId::kCreateGlobalBoolVar, CmdId::kLoadGlobalBoolVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalStringVarValueCmd) {
+  TestLoadGlobalVarValueCmd<StringValue>(
+      CmdId::kCreateGlobalStringVar, CmdId::kLoadGlobalStringVarValue);
 }
 }
 }
