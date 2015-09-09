@@ -15,7 +15,12 @@ class VM {
   typedef std::vector<FuncFrame> FuncFrames;
 
   virtual ~VM() {}
+
+  /**
+   * @throws real_talk::vm::DataStorage::OverflowError
+   */
   virtual void Execute() = 0;
+
   virtual const DataStorage &GetGlobalVars() const = 0;
   virtual const DataStorage &GetLocalVars() const = 0;
   virtual const DataStorage &GetOperands() const = 0;

@@ -67,14 +67,17 @@ static_assert(sizeof(ArrayValue<StringValue>)
               * sizeof(DataStorage::Slot),
               "Unsupported 'string array' size");
 
-DataStorage::MemorySizeOverflowError::MemorySizeOverflowError(const string &msg)
+DataStorage::OverflowError::OverflowError(const string &msg)
     : runtime_error(msg) {}
 
-DataStorage::DataStorage(size_t size): capacity_(size * 2),
-                                       data_(new Slot[capacity_]()),
-                                       current_slot_(data_.get() + size) {}
+DataStorage::DataStorage(size_t size, size_t capacity)
+    : capacity_(capacity),
+      data_(new Slot[capacity]()),
+      current_slot_(data_.get() + size) {
+  assert(capacity >= size);
+}
 
-DataStorage::DataStorage(): DataStorage(0) {}
+DataStorage::DataStorage(): DataStorage(0, 1024) {}
 
 template<typename T> void DataStorage::Create(size_t index, T value) {
   new(GetSlot(index)) T(move(value));
@@ -370,24 +373,12 @@ ostream &operator<<(
   return stream;
 }
 
-void DataStorage::EnsureCapacity(size_t slots_count) {
+void DataStorage::EnsureCapacity(size_t slots_count) const {
   if (HasEnoughCapacity(slots_count)) {
     return;
   }
 
-  const size_t size = GetSize();
-  const size_t new_capacity = (size + slots_count) * 2;
-
-  if (new_capacity >= capacity_) {
-    unique_ptr<Slot[]> new_data_(new Slot[new_capacity]());
-    memcpy(new_data_.get(), data_.get(), capacity_);
-    capacity_ = new_capacity;
-    data_ = move(new_data_);
-    current_slot_ = data_.get() + size;
-    assert(capacity_ >= size + slots_count);
-  } else {
-    throw MemorySizeOverflowError("Memory size exceeds max value");
-  }
+  throw OverflowError("Size exceeds capacity");
 }
 
 inline bool DataStorage::HasEnoughCapacity(size_t slots_count) const noexcept {

@@ -102,8 +102,8 @@ class SimpleVMTest: public Test {
     cmds->Write<CmdId>(cmd_id);
     uint32_t var_index = UINT32_C(7);
     cmds->Write<uint32_t>(var_index);
-    size_t global_vars_size = 77;
-    DataStorage expected_global_vars(global_vars_size);
+    size_t global_vars_size = 10;
+    DataStorage expected_global_vars(global_vars_size, global_vars_size);
     expected_global_vars.Create<T>(var_index);
     uint32_t main_cmds_code_size = cmds->GetPosition();
     TestExecute(move(cmds),
@@ -286,8 +286,8 @@ class SimpleVMTest: public Test {
     uint32_t var_index = UINT32_C(7);
     cmds->Write<uint32_t>(var_index);
     uint32_t main_cmds_code_size = cmds->GetPosition();
-    size_t global_vars_size = 77;
-    DataStorage expected_global_vars(global_vars_size);
+    size_t global_vars_size = 10;
+    DataStorage expected_global_vars(global_vars_size, global_vars_size);
     expected_global_vars.Create(var_index, TType(value));
     TestExecute(move(cmds),
                 main_cmds_code_size,
@@ -347,8 +347,8 @@ class SimpleVMTest: public Test {
     cmds->Write<uint32_t>(var_index);
     cmds->Write<uint8_t>(dimensions_count);
     uint32_t main_cmds_code_size = cmds->GetPosition();
-    size_t global_vars_size = 77;
-    DataStorage expected_global_vars(global_vars_size);
+    size_t global_vars_size = 10;
+    DataStorage expected_global_vars(global_vars_size, global_vars_size);
     vector<TType> array_items = {TType(array_item)};
     auto var_value = ArrayValue<TType>::Unidimensional(array_items);
     expected_global_vars.Create(var_index, move(var_value));
@@ -534,10 +534,52 @@ class SimpleVMTest: public Test {
     cmds->Write<uint32_t>(var_index);
     uint32_t main_cmds_code_size = cmds->GetPosition();
     size_t global_vars_size = 7;
-    DataStorage expected_global_vars(global_vars_size);
+    DataStorage expected_global_vars(global_vars_size, global_vars_size);
     expected_global_vars.Create(var_index, T());
     DataStorage expected_operands;
     expected_operands.Push(expected_global_vars.Get<T>(var_index));
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
+
+  template<typename T> void TestLoadGlobalArrayVarValueCmd(
+      CmdId load_var_value_cmd_id) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      uint8_t dimensions_count = UINT8_C(1);
+      AssertArraysEqual(expected_operands.GetTop< ArrayValue<T> >(),
+                        actual_operands.GetTop< ArrayValue<T> >(),
+                        dimensions_count);
+    };
+    auto global_vars_asserter = [](const DataStorage &expected_global_vars,
+                                   const DataStorage &actual_global_vars) {
+      size_t var_index = 5;
+      uint8_t dimensions_count = UINT8_C(1);
+      AssertArraysEqual(expected_global_vars.Get< ArrayValue<T> >(var_index),
+                        actual_global_vars.Get< ArrayValue<T> >(var_index),
+                        dimensions_count);
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(CmdId::kCreateGlobalArrayVar);
+    uint32_t var_index = UINT32_C(5);
+    cmds->Write<uint32_t>(var_index);
+    cmds->Write<CmdId>(load_var_value_cmd_id);
+    cmds->Write<uint32_t>(var_index);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    size_t global_vars_size = 7;
+    DataStorage expected_global_vars(global_vars_size, global_vars_size);
+    expected_global_vars.Create(var_index, ArrayValue<T>());
+    DataStorage expected_operands;
+    expected_operands.Push(
+        expected_global_vars.Get< ArrayValue<T> >(var_index).Clone());
     DataStorage expected_local_vars;
     DataStorageAsserter local_vars_asserter = nullptr;
     TestExecute(move(cmds),
@@ -1511,6 +1553,35 @@ TEST_F(SimpleVMTest, LoadGlobalBoolVarValueCmd) {
 TEST_F(SimpleVMTest, LoadGlobalStringVarValueCmd) {
   TestLoadGlobalVarValueCmd<StringValue>(
       CmdId::kCreateGlobalStringVar, CmdId::kLoadGlobalStringVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalIntArrayVarValueCmd) {
+  TestLoadGlobalArrayVarValueCmd<IntValue>(CmdId::kLoadGlobalIntArrayVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalLongArrayVarValueCmd) {
+  TestLoadGlobalArrayVarValueCmd<LongValue>(
+      CmdId::kLoadGlobalLongArrayVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalDoubleArrayVarValueCmd) {
+  TestLoadGlobalArrayVarValueCmd<DoubleValue>(
+      CmdId::kLoadGlobalDoubleArrayVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalCharArrayVarValueCmd) {
+  TestLoadGlobalArrayVarValueCmd<CharValue>(
+      CmdId::kLoadGlobalCharArrayVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalBoolArrayVarValueCmd) {
+  TestLoadGlobalArrayVarValueCmd<BoolValue>(
+      CmdId::kLoadGlobalBoolArrayVarValue);
+}
+
+TEST_F(SimpleVMTest, LoadGlobalStringArrayVarValueCmd) {
+  TestLoadGlobalArrayVarValueCmd<StringValue>(
+      CmdId::kLoadGlobalStringArrayVarValue);
 }
 }
 }

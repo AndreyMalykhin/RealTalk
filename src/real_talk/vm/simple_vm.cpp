@@ -738,6 +738,8 @@ class SimpleVM::Impl: private CmdVisitor {
       noexcept;
   template<typename T> void VisitLoadGlobalVarValue(
       const LoadGlobalVarValueCmd &cmd);
+  template<typename T> void VisitLoadGlobalArrayVarValue(
+      const LoadGlobalVarValueCmd &cmd);
   size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
@@ -780,7 +782,7 @@ SimpleVM::Impl::Impl(
       native_funcs_(native_funcs),
       vm_(vm),
       cmds_code_(exe->GetCmdsCode()),
-      global_vars_(exe->GetGlobalVarsSize()) {
+      global_vars_(exe->GetGlobalVarsSize(), exe->GetGlobalVarsSize()) {
   assert(exe_);
   assert(vm_);
   assert(cmds_code_.GetPosition() <= exe_->GetMainCmdsCodeSize());
@@ -1366,22 +1368,40 @@ template<typename T> void SimpleVM::Impl::VisitLoadGlobalVarValue(
 }
 
 void SimpleVM::Impl::VisitLoadGlobalIntArrayVarValue(
-    const LoadGlobalIntArrayVarValueCmd&) {assert(false);}
+    const LoadGlobalIntArrayVarValueCmd &cmd) {
+  VisitLoadGlobalArrayVarValue<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalLongArrayVarValue(
-    const LoadGlobalLongArrayVarValueCmd&) {assert(false);}
+    const LoadGlobalLongArrayVarValueCmd &cmd) {
+  VisitLoadGlobalArrayVarValue<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalDoubleArrayVarValue(
-    const LoadGlobalDoubleArrayVarValueCmd&) {assert(false);}
+    const LoadGlobalDoubleArrayVarValueCmd &cmd) {
+  VisitLoadGlobalArrayVarValue<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalCharArrayVarValue(
-    const LoadGlobalCharArrayVarValueCmd&) {assert(false);}
+    const LoadGlobalCharArrayVarValueCmd &cmd) {
+  VisitLoadGlobalArrayVarValue<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalBoolArrayVarValue(
-    const LoadGlobalBoolArrayVarValueCmd&) {assert(false);}
+    const LoadGlobalBoolArrayVarValueCmd &cmd) {
+  VisitLoadGlobalArrayVarValue<BoolValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadGlobalStringArrayVarValue(
-    const LoadGlobalStringArrayVarValueCmd&) {assert(false);}
+    const LoadGlobalStringArrayVarValueCmd &cmd) {
+  VisitLoadGlobalArrayVarValue<StringValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitLoadGlobalArrayVarValue(
+    const LoadGlobalVarValueCmd &cmd) {
+  operands_.Push(
+      global_vars_.Get< ArrayValue<T> >(cmd.GetVarIndex()).Clone());
+}
 
 void SimpleVM::Impl::VisitLoadLocalIntVarValue(
     const LoadLocalIntVarValueCmd &cmd) {

@@ -22,27 +22,32 @@ namespace vm {
 
 class DataStorage {
  public:
-  class MemorySizeOverflowError: public std::runtime_error {
+  class OverflowError: public std::runtime_error {
    public:
-    explicit MemorySizeOverflowError(const std::string &msg);
+    explicit OverflowError(const std::string &msg);
   };
 
   typedef void* Slot;
 
   DataStorage();
-  explicit DataStorage(size_t size);
+  explicit DataStorage(size_t size, size_t capacity);
   size_t GetSize() const noexcept;
   template<typename T> void Create(size_t index, T value = T());
   template<typename T> const T &Get(size_t index) const noexcept;
   template<typename T> const T &GetTop() const noexcept;
+
+  /**
+   * @throws real_talk::vm::DataStorage::OverflowError
+   */
   template<typename T> void Push(T value);
+
   template<typename T> T Pop() noexcept;
   friend bool operator==(const DataStorage &lhs, const DataStorage &rhs);
   friend std::ostream &operator<<(
       std::ostream &stream, const DataStorage &storage);
 
  private:
-  void EnsureCapacity(size_t slots_count);
+  void EnsureCapacity(size_t slots_count) const;
   bool HasEnoughCapacity(size_t slots_count) const noexcept;
   void AfterPush(size_t pushed_slots_count) noexcept;
   Slot *GetSlot(size_t index) const noexcept;
