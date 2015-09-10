@@ -15,6 +15,7 @@
 #include "real_talk/code/jump_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
+#include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
@@ -1481,7 +1482,9 @@ template<typename T> void SimpleVM::Impl::VisitLoadLocalArrayVarValue(
 }
 
 void SimpleVM::Impl::VisitLoadGlobalVarAddress(
-    const LoadGlobalVarAddressCmd&) {assert(false);}
+    const LoadGlobalVarAddressCmd &cmd) {
+  operands_.Push(global_vars_.GetAddress(cmd.GetVarIndex()));
+}
 
 void SimpleVM::Impl::VisitLoadLocalVarAddress(
     const LoadLocalVarAddressCmd&) {assert(false);}

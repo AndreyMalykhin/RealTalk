@@ -16,6 +16,7 @@
 #include "real_talk/vm/array_value.h"
 #include "real_talk/vm/func_value.h"
 #include "real_talk/vm/native_func_value.h"
+#include "real_talk/vm/var_address_value.h"
 
 namespace real_talk {
 namespace vm {
@@ -33,8 +34,10 @@ class DataStorage {
   explicit DataStorage(size_t size, size_t capacity);
   size_t GetSize() const noexcept;
   template<typename T> void Create(size_t index, T value = T());
+  template<typename T> T &Get(size_t index) noexcept;
   template<typename T> const T &Get(size_t index) const noexcept;
   template<typename T> const T &GetTop() const noexcept;
+  VarAddressValue GetAddress(size_t index) const noexcept;
 
   /**
    * @throws real_talk::vm::DataStorage::OverflowError

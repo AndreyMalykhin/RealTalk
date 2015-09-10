@@ -1,15 +1,7 @@
 
 #include <cassert>
 #include <string>
-#include "real_talk/code/data_type_size.h"
 #include "real_talk/vm/data_storage.h"
-#include "real_talk/vm/int_value.h"
-#include "real_talk/vm/long_value.h"
-#include "real_talk/vm/double_value.h"
-#include "real_talk/vm/bool_value.h"
-#include "real_talk/vm/char_value.h"
-#include "real_talk/vm/string_value.h"
-#include "real_talk/vm/array_value.h"
 
 using std::string;
 using std::runtime_error;
@@ -42,6 +34,10 @@ static_assert(sizeof(BoolValue) <= static_cast<size_t>(DataTypeSize::kBool)
 static_assert(sizeof(StringValue) <= static_cast<size_t>(DataTypeSize::kString)
               * sizeof(DataStorage::Slot),
               "Unsupported 'string' size");
+static_assert(sizeof(VarAddressValue)
+              <= static_cast<size_t>(DataTypeSize::kVarAddress)
+              * sizeof(DataStorage::Slot),
+              "Unsupported 'var address' size");
 static_assert(sizeof(ArrayValue<IntValue>)
               <= static_cast<size_t>(DataTypeSize::kArray)
               * sizeof(DataStorage::Slot),
@@ -102,7 +98,15 @@ template void DataStorage::Create< ArrayValue<BoolValue> >(
 template void DataStorage::Create< ArrayValue<StringValue> >(
     size_t index, ArrayValue<StringValue> value);
 
+VarAddressValue DataStorage::GetAddress(size_t index) const noexcept {
+  return GetSlot(index);
+}
+
 template<typename T> const T &DataStorage::Get(size_t index) const noexcept {
+  return *(reinterpret_cast<T*>(GetSlot(index)));
+}
+
+template<typename T> T &DataStorage::Get(size_t index) noexcept {
   return *(reinterpret_cast<T*>(GetSlot(index)));
 }
 
@@ -122,18 +126,49 @@ template const FuncValue &DataStorage::Get<FuncValue>(size_t index)
     const noexcept;
 template const NativeFuncValue &DataStorage::Get<NativeFuncValue>(
     size_t index) const noexcept;
-template const ArrayValue<IntValue> &DataStorage::Get< ArrayValue<IntValue> >(
+template const VarAddressValue &DataStorage::Get<VarAddressValue>(
     size_t index) const noexcept;
-template const ArrayValue<LongValue> &DataStorage::Get< ArrayValue<LongValue> >(
-    size_t index) const noexcept;
+
+template const ArrayValue<IntValue>
+&DataStorage::Get< ArrayValue<IntValue> >(size_t index) const noexcept;
+template const ArrayValue<LongValue>
+&DataStorage::Get< ArrayValue<LongValue> >(size_t index) const noexcept;
 template const ArrayValue<DoubleValue>
 &DataStorage::Get< ArrayValue<DoubleValue> >(size_t index) const noexcept;
-template const ArrayValue<CharValue> &DataStorage::Get< ArrayValue<CharValue> >(
-    size_t index) const noexcept;
-template const ArrayValue<BoolValue> &DataStorage::Get< ArrayValue<BoolValue> >(
-    size_t index) const noexcept;
+template const ArrayValue<CharValue>
+&DataStorage::Get< ArrayValue<CharValue> >(size_t index) const noexcept;
+template const ArrayValue<BoolValue>
+&DataStorage::Get< ArrayValue<BoolValue> >(size_t index) const noexcept;
 template const ArrayValue<StringValue>
 &DataStorage::Get< ArrayValue<StringValue> >(size_t index) const noexcept;
+
+template IntValue &DataStorage::Get<IntValue>(size_t index)
+    noexcept;
+template LongValue &DataStorage::Get<LongValue>(size_t index)
+    noexcept;
+template DoubleValue &DataStorage::Get<DoubleValue>(size_t index)
+    noexcept;
+template CharValue &DataStorage::Get<CharValue>(size_t index)
+    noexcept;
+template BoolValue &DataStorage::Get<BoolValue>(size_t index)
+    noexcept;
+template StringValue &DataStorage::Get<StringValue>(size_t index)
+    noexcept;
+template VarAddressValue &DataStorage::Get<VarAddressValue>(size_t index)
+    noexcept;
+
+template ArrayValue<IntValue>
+&DataStorage::Get< ArrayValue<IntValue> >(size_t index) noexcept;
+template ArrayValue<LongValue>
+&DataStorage::Get< ArrayValue<LongValue> >(size_t index) noexcept;
+template ArrayValue<DoubleValue>
+&DataStorage::Get< ArrayValue<DoubleValue> >(size_t index) noexcept;
+template ArrayValue<CharValue>
+&DataStorage::Get< ArrayValue<CharValue> >(size_t index) noexcept;
+template ArrayValue<BoolValue>
+&DataStorage::Get< ArrayValue<BoolValue> >(size_t index) noexcept;
+template ArrayValue<StringValue>
+&DataStorage::Get< ArrayValue<StringValue> >(size_t index) noexcept;
 
 template<> const IntValue &DataStorage::GetTop<IntValue>() const noexcept {
   return DoGetTop<IntValue, DataTypeSize::kInt>();
@@ -159,6 +194,11 @@ template<> const BoolValue &DataStorage::GetTop<BoolValue>() const noexcept {
 template<> const StringValue &DataStorage::GetTop<StringValue>()
     const noexcept {
   return DoGetTop<StringValue, DataTypeSize::kString>();
+}
+
+template<> const VarAddressValue &DataStorage::GetTop<VarAddressValue>()
+    const noexcept {
+  return DoGetTop<VarAddressValue, DataTypeSize::kVarAddress>();
 }
 
 template<> const FuncValue &DataStorage::GetTop<FuncValue>()
@@ -228,6 +268,10 @@ template<> void DataStorage::Push<BoolValue>(BoolValue value) {
   DoPush<BoolValue, DataTypeSize::kBool>(value);
 }
 
+template<> void DataStorage::Push<StringValue>(StringValue value) {
+  DoPush<StringValue, DataTypeSize::kString>(move(value));
+}
+
 template<> void DataStorage::Push<FuncValue>(FuncValue value) {
   DoPush<FuncValue, DataTypeSize::kFunc>(value);
 }
@@ -236,8 +280,8 @@ template<> void DataStorage::Push<NativeFuncValue>(NativeFuncValue value) {
   DoPush<NativeFuncValue, DataTypeSize::kNativeFunc>(value);
 }
 
-template<> void DataStorage::Push<StringValue>(StringValue value) {
-  DoPush<StringValue, DataTypeSize::kString>(move(value));
+template<> void DataStorage::Push<VarAddressValue>(VarAddressValue value) {
+  DoPush<VarAddressValue, DataTypeSize::kVarAddress>(value);
 }
 
 template<> void DataStorage::Push< ArrayValue<IntValue> >(
@@ -378,7 +422,7 @@ void DataStorage::EnsureCapacity(size_t slots_count) const {
     return;
   }
 
-  throw OverflowError("Size exceeds capacity");
+  throw OverflowError("Storage size exceeds it's capacity");
 }
 
 inline bool DataStorage::HasEnoughCapacity(size_t slots_count) const noexcept {

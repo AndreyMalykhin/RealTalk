@@ -1583,5 +1583,45 @@ TEST_F(SimpleVMTest, LoadGlobalStringArrayVarValueCmd) {
   TestLoadGlobalArrayVarValueCmd<StringValue>(
       CmdId::kLoadGlobalStringArrayVarValue);
 }
+
+TEST_F(SimpleVMTest, LoadGlobalVarAddressCmd) {
+  auto operands_asserter = [](const DataStorage &expected_operands,
+                              const DataStorage &actual_operands) {
+    const auto &expected_operand = expected_operands.GetTop<VarAddressValue>();
+    const auto &actual_operand = actual_operands.GetTop<VarAddressValue>();
+    ASSERT_TRUE(expected_operand);
+    ASSERT_TRUE(actual_operand);
+    ASSERT_EQ(*(static_cast<StringValue*>(expected_operand)),
+              *(static_cast<StringValue*>(actual_operand)));
+  };
+  auto global_vars_asserter = [](const DataStorage &expected_global_vars,
+                                 const DataStorage &actual_global_vars) {
+    size_t var_index = 5;
+    ASSERT_EQ(expected_global_vars.Get<StringValue>(var_index),
+              actual_global_vars.Get<StringValue>(var_index));
+  };
+  unique_ptr<Code> cmds(new Code());
+  cmds->Write<CmdId>(CmdId::kCreateGlobalStringVar);
+  uint32_t var_index = UINT32_C(5);
+  cmds->Write<uint32_t>(var_index);
+  cmds->Write<CmdId>(CmdId::kLoadGlobalVarAddress);
+  cmds->Write<uint32_t>(var_index);
+  uint32_t main_cmds_code_size = cmds->GetPosition();
+  size_t global_vars_size = 7;
+  DataStorage expected_global_vars(global_vars_size, global_vars_size);
+  expected_global_vars.Create(var_index, StringValue());
+  DataStorage expected_operands;
+  expected_operands.Push(expected_global_vars.GetAddress(var_index));
+  DataStorage expected_local_vars;
+  DataStorageAsserter local_vars_asserter = nullptr;
+  TestExecute(move(cmds),
+              main_cmds_code_size,
+              expected_global_vars,
+              global_vars_asserter,
+              expected_local_vars,
+              local_vars_asserter,
+              expected_operands,
+              operands_asserter);
+}
 }
 }

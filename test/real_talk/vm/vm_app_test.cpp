@@ -29,6 +29,7 @@ using std::unique_ptr;
 using std::unordered_map;
 using boost::filesystem::path;
 using boost::format;
+using testing::NiceMock;
 using testing::Test;
 using testing::Throw;
 using testing::Eq;
@@ -173,6 +174,14 @@ TEST_F(VMAppTest, Execute) {
       .WillOnce(Return(vm));
   EXPECT_CALL(*vm, Execute())
       .Times(1);
+  EXPECT_CALL(*vm, GetGlobalVars())
+      .Times(0);
+  EXPECT_CALL(*vm, GetLocalVars())
+      .Times(0);
+  EXPECT_CALL(*vm, GetOperands())
+      .Times(0);
+  EXPECT_CALL(*vm, GetFuncFrames())
+      .Times(0);
   VMApp app(config_parser,
             file,
             exe_reader,
