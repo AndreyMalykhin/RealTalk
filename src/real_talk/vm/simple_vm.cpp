@@ -1,6 +1,7 @@
 
 #include <cassert>
 #include <vector>
+#include <memory>
 #include "real_talk/code/exe.h"
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd_reader.h"
@@ -16,12 +17,15 @@
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
+#include "real_talk/code/load_local_var_address_cmd.h"
+#include "real_talk/code/load_array_element_value_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
 using std::vector;
 using std::move;
+using std::unique_ptr;
 using real_talk::code::Exe;
 using real_talk::code::Code;
 using real_talk::code::CmdReader;
@@ -156,6 +160,7 @@ using real_talk::code::LoadLocalBoolArrayVarValueCmd;
 using real_talk::code::LoadLocalDoubleArrayVarValueCmd;
 using real_talk::code::LoadGlobalVarAddressCmd;
 using real_talk::code::LoadLocalVarAddressCmd;
+using real_talk::code::LoadArrayElementValueCmd;
 using real_talk::code::LoadIntArrayElementValueCmd;
 using real_talk::code::LoadLongArrayElementValueCmd;
 using real_talk::code::LoadDoubleArrayElementValueCmd;
@@ -741,6 +746,8 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadGlobalVarValueCmd &cmd);
   template<typename T> void VisitLoadGlobalArrayVarValue(
       const LoadGlobalVarValueCmd &cmd);
+  template<typename T> void VisitLoadArrayElementValue(
+      const LoadArrayElementValueCmd &cmd);
   size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
@@ -1247,7 +1254,7 @@ vector<size_t> SimpleVM::Impl::GetArrayDimensions(const CreateArrayCmd &cmd) {
   vector<size_t> dimensions(dimensions_count);
 
   for (uint8_t i = 0; i != dimensions_count; ++i) {
-    const int32_t size = operands_.Pop<IntValue>();
+    const auto size = operands_.Pop<IntValue>();
     assert(size >= 0);
     assert(i < dimensions.size());
     dimensions[i] = static_cast<size_t>(size);
@@ -1487,25 +1494,59 @@ void SimpleVM::Impl::VisitLoadGlobalVarAddress(
 }
 
 void SimpleVM::Impl::VisitLoadLocalVarAddress(
-    const LoadLocalVarAddressCmd&) {assert(false);}
+    const LoadLocalVarAddressCmd &cmd) {
+  operands_.Push(local_vars_.GetAddress(cmd.GetVarIndex()));
+}
 
 void SimpleVM::Impl::VisitLoadIntArrayElementValue(
-    const LoadIntArrayElementValueCmd&) {assert(false);}
+    const LoadIntArrayElementValueCmd &cmd) {
+  VisitLoadArrayElementValue<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadLongArrayElementValue(
-    const LoadLongArrayElementValueCmd&) {assert(false);}
+    const LoadLongArrayElementValueCmd &cmd) {
+  VisitLoadArrayElementValue<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadDoubleArrayElementValue(
-    const LoadDoubleArrayElementValueCmd&) {assert(false);}
+    const LoadDoubleArrayElementValueCmd &cmd) {
+  VisitLoadArrayElementValue<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadCharArrayElementValue(
-    const LoadCharArrayElementValueCmd&) {assert(false);}
+    const LoadCharArrayElementValueCmd &cmd) {
+  VisitLoadArrayElementValue<CharValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadStringArrayElementValue(
-    const LoadStringArrayElementValueCmd&) {assert(false);}
+    const LoadStringArrayElementValueCmd &cmd) {
+  VisitLoadArrayElementValue<StringValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadBoolArrayElementValue(
-    const LoadBoolArrayElementValueCmd&) {assert(false);}
+    const LoadBoolArrayElementValueCmd &cmd) {
+  VisitLoadArrayElementValue<BoolValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitLoadArrayElementValue(
+    const LoadArrayElementValueCmd &cmd) {
+  auto array = operands_.Pop< ArrayValue<T> >();
+  const auto index = operands_.Pop<IntValue>();
+  assert(index >= 0);
+  const uint8_t dimensions_count = cmd.GetDimensionsCount();
+  auto array_destroyer = [dimensions_count](ArrayValue<T> *arr) {
+    arr->Destroy(dimensions_count);
+  };
+  unique_ptr< ArrayValue<T>, decltype(array_destroyer) > array_ptr(
+      &array, array_destroyer);
+
+  if (dimensions_count == 1) {
+    operands_.Push(array.GetItem(static_cast<size_t>(index)));
+    return;
+  }
+
+  operands_.Push(array.GetItemArray(static_cast<size_t>(index)).Clone());
+}
 
 void SimpleVM::Impl::VisitLoadIntArrayElementAddress(
     const LoadIntArrayElementAddressCmd&) {assert(false);}
