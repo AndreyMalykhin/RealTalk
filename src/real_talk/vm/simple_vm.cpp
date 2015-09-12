@@ -19,6 +19,7 @@
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/load_local_var_address_cmd.h"
 #include "real_talk/code/load_array_element_value_cmd.h"
+#include "real_talk/code/load_array_element_address_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
@@ -167,11 +168,11 @@ using real_talk::code::LoadDoubleArrayElementValueCmd;
 using real_talk::code::LoadCharArrayElementValueCmd;
 using real_talk::code::LoadStringArrayElementValueCmd;
 using real_talk::code::LoadBoolArrayElementValueCmd;
+using real_talk::code::LoadArrayElementAddressCmd;
 using real_talk::code::LoadIntArrayElementAddressCmd;
 using real_talk::code::LoadDoubleArrayElementAddressCmd;
 using real_talk::code::LoadBoolArrayElementAddressCmd;
 using real_talk::code::LoadStringArrayElementAddressCmd;
-using real_talk::code::LoadArrayOfArraysElementAddressCmd;
 using real_talk::code::LoadLongArrayElementAddressCmd;
 using real_talk::code::LoadCharArrayElementAddressCmd;
 using real_talk::code::StoreIntCmd;
@@ -524,8 +525,6 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadBoolArrayElementAddressCmd &cmd) override;
   virtual void VisitLoadStringArrayElementAddress(
       const LoadStringArrayElementAddressCmd &cmd) override;
-  virtual void VisitLoadArrayOfArraysElementAddress(
-      const LoadArrayOfArraysElementAddressCmd &cmd) override;
   virtual void VisitLoadLongArrayElementAddress(
       const LoadLongArrayElementAddressCmd &cmd) override;
   virtual void VisitLoadCharArrayElementAddress(
@@ -748,6 +747,8 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadGlobalVarValueCmd &cmd);
   template<typename T> void VisitLoadArrayElementValue(
       const LoadArrayElementValueCmd &cmd);
+  template<typename T> void VisitLoadArrayElementAddress(
+      const LoadArrayElementAddressCmd &cmd) noexcept;
   size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
@@ -1534,11 +1535,7 @@ template<typename T> void SimpleVM::Impl::VisitLoadArrayElementValue(
   const auto index = operands_.Pop<IntValue>();
   assert(index >= 0);
   const uint8_t dimensions_count = cmd.GetDimensionsCount();
-  auto array_destroyer = [dimensions_count](ArrayValue<T> *arr) {
-    arr->Destroy(dimensions_count);
-  };
-  unique_ptr< ArrayValue<T>, decltype(array_destroyer) > array_ptr(
-      &array, array_destroyer);
+  auto array_destroyer = array.MakeDestroyer(dimensions_count);
 
   if (dimensions_count == 1) {
     operands_.Push(array.GetItem(static_cast<size_t>(index)));
@@ -1549,25 +1546,52 @@ template<typename T> void SimpleVM::Impl::VisitLoadArrayElementValue(
 }
 
 void SimpleVM::Impl::VisitLoadIntArrayElementAddress(
-    const LoadIntArrayElementAddressCmd&) {assert(false);}
+    const LoadIntArrayElementAddressCmd &cmd) {
+  VisitLoadArrayElementAddress<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadDoubleArrayElementAddress(
-    const LoadDoubleArrayElementAddressCmd&) {assert(false);}
+    const LoadDoubleArrayElementAddressCmd &cmd) {
+  VisitLoadArrayElementAddress<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadBoolArrayElementAddress(
-    const LoadBoolArrayElementAddressCmd&) {assert(false);}
+    const LoadBoolArrayElementAddressCmd &cmd) {
+  VisitLoadArrayElementAddress<BoolValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadStringArrayElementAddress(
-    const LoadStringArrayElementAddressCmd&) {assert(false);}
-
-void SimpleVM::Impl::VisitLoadArrayOfArraysElementAddress(
-    const LoadArrayOfArraysElementAddressCmd&) {assert(false);}
+    const LoadStringArrayElementAddressCmd &cmd) {
+  VisitLoadArrayElementAddress<StringValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadLongArrayElementAddress(
-    const LoadLongArrayElementAddressCmd&) {assert(false);}
+    const LoadLongArrayElementAddressCmd &cmd) {
+  VisitLoadArrayElementAddress<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitLoadCharArrayElementAddress(
-    const LoadCharArrayElementAddressCmd&) {assert(false);}
+    const LoadCharArrayElementAddressCmd &cmd) {
+  VisitLoadArrayElementAddress<CharValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitLoadArrayElementAddress(
+    const LoadArrayElementAddressCmd &cmd) noexcept {
+  auto array = operands_.Pop< ArrayValue<T> >();
+  const auto index = operands_.Pop<IntValue>();
+  assert(index >= 0);
+  const uint8_t dimensions_count = cmd.GetDimensionsCount();
+  auto array_destroyer = array.MakeDestroyer(dimensions_count);
+
+  if (dimensions_count == 1) {
+    operands_.Push<VarAddressValue>(
+        &(array.GetItem(static_cast<size_t>(index))));
+    return;
+  }
+
+  operands_.Push<VarAddressValue>(
+      &(array.GetItemArray(static_cast<size_t>(index))));
+}
 
 void SimpleVM::Impl::VisitStoreInt(
     const StoreIntCmd&) {assert(false);}

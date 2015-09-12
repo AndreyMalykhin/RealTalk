@@ -130,7 +130,6 @@ class LoadIntArrayElementAddressCmd;
 class LoadDoubleArrayElementAddressCmd;
 class LoadBoolArrayElementAddressCmd;
 class LoadStringArrayElementAddressCmd;
-class LoadArrayOfArraysElementAddressCmd;
 class LoadLongArrayElementAddressCmd;
 class LoadCharArrayElementAddressCmd;
 class StoreIntCmd;
@@ -473,8 +472,6 @@ class CmdVisitor {
       const LoadBoolArrayElementAddressCmd &cmd) = 0;
   virtual void VisitLoadStringArrayElementAddress(
       const LoadStringArrayElementAddressCmd &cmd) = 0;
-  virtual void VisitLoadArrayOfArraysElementAddress(
-      const LoadArrayOfArraysElementAddressCmd &cmd) = 0;
   virtual void VisitLoadLongArrayElementAddress(
       const LoadLongArrayElementAddressCmd &cmd) = 0;
   virtual void VisitLoadCharArrayElementAddress(

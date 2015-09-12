@@ -230,6 +230,12 @@ template<typename T> void ArrayValue<T>::Set(
   }
 }
 
+template<typename T>
+typename ArrayValue<T>::Destroyer ArrayValue<T>::MakeDestroyer(
+    uint8_t dimensions_count) noexcept {
+  return Destroyer(this, Deleter(dimensions_count));
+}
+
 template<typename T> bool ArrayValue<T>::IsDeeplyEqual(
     const ArrayValue<T> &rhs, uint8_t dimensions_count) const noexcept {
   assert(storage_);
@@ -335,6 +341,17 @@ ArrayValue<T> *ArrayValue<T>::Storage::GetItemsArray() noexcept {
 
 template<typename T> size_t ArrayValue<T>::Storage::GetSize() const noexcept {
   return size_;
+}
+
+template<typename T> ArrayValue<T>::Deleter::Deleter(
+    uint8_t dimensions_count) noexcept: dimensions_count_(dimensions_count) {
+  assert(dimensions_count_);
+}
+
+template<typename T> void ArrayValue<T>::Deleter::operator()(
+    ArrayValue<T> *array) noexcept {
+  assert(array);
+  array->Destroy(dimensions_count_);
 }
 
 template class ArrayValue<IntValue>;
