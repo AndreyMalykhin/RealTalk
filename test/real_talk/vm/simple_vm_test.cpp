@@ -701,6 +701,37 @@ class SimpleVMTest: public Test {
                 expected_operands,
                 operands_asserter);
   }
+
+  template<typename TType, typename TSerializableType> void TestStoreCmd(
+      CmdId create_var_cmd_id,
+      CmdId load_value_cmd_id,
+      CmdId store_cmd_id,
+      TSerializableType value) {
+    auto local_vars_asserter = [](const DataStorage &expected_local_vars,
+                                  const DataStorage &actual_local_vars) {
+      ASSERT_EQ(expected_local_vars.GetTop<TType>(),
+                actual_local_vars.GetTop<TType>());
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(create_var_cmd_id);
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(value);
+    cmds->Write<CmdId>(CmdId::kLoadLocalVarAddress);
+    uint32_t var_index = UINT32_C(0);
+    cmds->Write<uint32_t>(var_index);
+    cmds->Write<CmdId>(store_cmd_id);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_local_vars;
+    expected_local_vars.Push(TType(value));
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter);
+  }
 };
 
 TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
@@ -1847,6 +1878,54 @@ TEST_F(SimpleVMTest, LoadStringArrayElementAddressCmd) {
       CmdId::kCreateAndInitLocalStringArrayVar,
       CmdId::kLoadLocalStringArrayVarValue,
       CmdId::kLoadStringArrayElementAddress);
+}
+
+TEST_F(SimpleVMTest, StoreIntCmd) {
+  int32_t value = INT32_C(7);
+  TestStoreCmd<IntValue>(CmdId::kCreateLocalIntVar,
+                         CmdId::kLoadIntValue,
+                         CmdId::kStoreInt,
+                         value);
+}
+
+TEST_F(SimpleVMTest, StoreLongCmd) {
+  int64_t value = INT64_C(7);
+  TestStoreCmd<LongValue>(CmdId::kCreateLocalLongVar,
+                          CmdId::kLoadLongValue,
+                          CmdId::kStoreLong,
+                          value);
+}
+
+TEST_F(SimpleVMTest, StoreDoubleCmd) {
+  double value = 7.7;
+  TestStoreCmd<DoubleValue>(CmdId::kCreateLocalDoubleVar,
+                            CmdId::kLoadDoubleValue,
+                            CmdId::kStoreDouble,
+                            value);
+}
+
+TEST_F(SimpleVMTest, StoreCharCmd) {
+  char value = 'a';
+  TestStoreCmd<CharValue>(CmdId::kCreateLocalCharVar,
+                          CmdId::kLoadCharValue,
+                          CmdId::kStoreChar,
+                          value);
+}
+
+TEST_F(SimpleVMTest, StoreBoolCmd) {
+  bool value = true;
+  TestStoreCmd<BoolValue>(CmdId::kCreateLocalBoolVar,
+                          CmdId::kLoadBoolValue,
+                          CmdId::kStoreBool,
+                          value);
+}
+
+TEST_F(SimpleVMTest, StoreStringCmd) {
+  string value = "swag";
+  TestStoreCmd<StringValue>(CmdId::kCreateLocalStringVar,
+                            CmdId::kLoadStringValue,
+                            CmdId::kStoreString,
+                            value);
 }
 }
 }

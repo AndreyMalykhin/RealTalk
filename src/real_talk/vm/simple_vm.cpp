@@ -9,17 +9,18 @@
 #include "real_talk/code/create_and_init_global_var_cmd.h"
 #include "real_talk/code/create_local_var_cmd.h"
 #include "real_talk/code/create_and_init_local_var_cmd.h"
-#include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/create_array_cmd.h"
 #include "real_talk/code/create_and_init_array_cmd.h"
 #include "real_talk/code/destroy_local_var_cmd.h"
 #include "real_talk/code/jump_cmd.h"
+#include "real_talk/code/load_value_cmd.h"
 #include "real_talk/code/load_local_var_value_cmd.h"
 #include "real_talk/code/load_global_var_value_cmd.h"
 #include "real_talk/code/load_global_var_address_cmd.h"
 #include "real_talk/code/load_local_var_address_cmd.h"
 #include "real_talk/code/load_array_element_value_cmd.h"
 #include "real_talk/code/load_array_element_address_cmd.h"
+#include "real_talk/code/store_cmd.h"
 #include "real_talk/code/unload_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
@@ -175,6 +176,7 @@ using real_talk::code::LoadBoolArrayElementAddressCmd;
 using real_talk::code::LoadStringArrayElementAddressCmd;
 using real_talk::code::LoadLongArrayElementAddressCmd;
 using real_talk::code::LoadCharArrayElementAddressCmd;
+using real_talk::code::StoreCmd;
 using real_talk::code::StoreIntCmd;
 using real_talk::code::StoreLongCmd;
 using real_talk::code::StoreDoubleCmd;
@@ -749,6 +751,7 @@ class SimpleVM::Impl: private CmdVisitor {
       const LoadArrayElementValueCmd &cmd);
   template<typename T> void VisitLoadArrayElementAddress(
       const LoadArrayElementAddressCmd &cmd) noexcept;
+  template<typename T> void VisitStore(const StoreCmd &cmd) noexcept;
   size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
@@ -1593,62 +1596,60 @@ template<typename T> void SimpleVM::Impl::VisitLoadArrayElementAddress(
       &(array.GetItemArray(static_cast<size_t>(index))));
 }
 
-void SimpleVM::Impl::VisitStoreInt(
-    const StoreIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreInt(const StoreIntCmd &cmd) {
+  VisitStore<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitStoreLong(
-    const StoreLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreLong(const StoreLongCmd &cmd) {
+  VisitStore<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitStoreDouble(
-    const StoreDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreDouble(const StoreDoubleCmd &cmd) {
+  VisitStore<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitStoreBool(
-    const StoreBoolCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreBool(const StoreBoolCmd &cmd) {
+  VisitStore<BoolValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitStoreChar(
-    const StoreCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreChar(const StoreCharCmd &cmd) {
+  VisitStore<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitStoreString(
-    const StoreStringCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreString(const StoreStringCmd &cmd) {
+  VisitStore<StringValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitStoreIntArray(
-    const StoreIntArrayCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitStore(const StoreCmd&) noexcept {
+  auto var_address = static_cast<T*>(operands_.Pop<VarAddressValue>());
+  *var_address = operands_.Pop<T>();
+}
 
-void SimpleVM::Impl::VisitStoreLongArray(
-    const StoreLongArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreIntArray(const StoreIntArrayCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitStoreDoubleArray(
-    const StoreDoubleArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreLongArray(const StoreLongArrayCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitStoreBoolArray(
-    const StoreBoolArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreDoubleArray(const StoreDoubleArrayCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitStoreCharArray(
-    const StoreCharArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreBoolArray(const StoreBoolArrayCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitStoreStringArray(
-    const StoreStringArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreCharArray(const StoreCharArrayCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCastCharToInt(
-    const CastCharToIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitStoreStringArray(const StoreStringArrayCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCastCharToDouble(
-    const CastCharToDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastCharToInt(const CastCharToIntCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCastCharToLong(
-    const CastCharToLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastCharToDouble(const CastCharToDoubleCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCastCharToString(
-    const CastCharToStringCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastCharToLong(const CastCharToLongCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCastIntToLong(
-    const CastIntToLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastCharToString(const CastCharToStringCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCastIntToDouble(
-    const CastIntToDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastIntToLong(const CastIntToLongCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitCastLongToDouble(
-    const CastLongToDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastIntToDouble(const CastIntToDoubleCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitCastLongToDouble(const CastLongToDoubleCmd&) {assert(false);}
 
 void SimpleVM::Impl::VisitCallNative(const CallNativeCmd&) {
   const size_t local_vars_start_index = local_vars_.GetSize();
