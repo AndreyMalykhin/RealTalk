@@ -273,6 +273,49 @@ template<typename T> bool operator==(
   return lhs.storage_ == rhs.storage_;
 }
 
+template bool operator==<IntValue>(
+    const ArrayValue<IntValue> &lhs,
+    const ArrayValue<IntValue> &rhs) noexcept;
+template bool operator==<LongValue>(
+    const ArrayValue<LongValue> &lhs,
+    const ArrayValue<LongValue> &rhs) noexcept;
+template bool operator==<DoubleValue>(
+    const ArrayValue<DoubleValue> &lhs,
+    const ArrayValue<DoubleValue> &rhs) noexcept;
+template bool operator==<CharValue>(
+    const ArrayValue<CharValue> &lhs,
+    const ArrayValue<CharValue> &rhs) noexcept;
+template bool operator==<BoolValue>(
+    const ArrayValue<BoolValue> &lhs,
+    const ArrayValue<BoolValue> &rhs) noexcept;
+template bool operator==<StringValue>(
+    const ArrayValue<StringValue> &lhs,
+    const ArrayValue<StringValue> &rhs) noexcept;
+
+template<typename T> bool operator!=(
+    const ArrayValue<T> &lhs, const ArrayValue<T> &rhs) noexcept {
+  return !(lhs == rhs);
+}
+
+template bool operator!=<IntValue>(
+    const ArrayValue<IntValue> &lhs,
+    const ArrayValue<IntValue> &rhs) noexcept;
+template bool operator!=<LongValue>(
+    const ArrayValue<LongValue> &lhs,
+    const ArrayValue<LongValue> &rhs) noexcept;
+template bool operator!=<DoubleValue>(
+    const ArrayValue<DoubleValue> &lhs,
+    const ArrayValue<DoubleValue> &rhs) noexcept;
+template bool operator!=<CharValue>(
+    const ArrayValue<CharValue> &lhs,
+    const ArrayValue<CharValue> &rhs) noexcept;
+template bool operator!=<BoolValue>(
+    const ArrayValue<BoolValue> &lhs,
+    const ArrayValue<BoolValue> &rhs) noexcept;
+template bool operator!=<StringValue>(
+    const ArrayValue<StringValue> &lhs,
+    const ArrayValue<StringValue> &rhs) noexcept;
+
 template<typename T> ostream &ArrayValue<T>::Print(
     ostream &stream, uint8_t dimensions_count) const {
   assert(storage_);

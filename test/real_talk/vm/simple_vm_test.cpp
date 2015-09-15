@@ -768,6 +768,180 @@ class SimpleVMTest: public Test {
                 expected_local_vars,
                 local_vars_asserter);
   }
+
+  template<typename TType, typename TSerializableType> void TestCastCmd(
+      CmdId load_value_cmd_id, CmdId cast_cmd_id, TSerializableType value) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      ASSERT_EQ(expected_operands.GetTop<TType>(),
+                actual_operands.GetTop<TType>());
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(value);
+    cmds->Write<CmdId>(cast_cmd_id);
+    DataStorage expected_operands;
+    expected_operands.Push(TType(value));
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
+
+  template<typename TType, typename TSerializableType>
+  void TestBinaryExprCmd(
+      CmdId load_value_cmd_id,
+      CmdId expr_cmd_id,
+      TSerializableType lhs_value,
+      TSerializableType rhs_value,
+      TType expected_value) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      ASSERT_EQ(expected_operands.GetTop<TType>(),
+                actual_operands.GetTop<TType>());
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(lhs_value);
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(rhs_value);
+    cmds->Write<CmdId>(expr_cmd_id);
+    DataStorage expected_operands;
+    expected_operands.Push(move(expected_value));
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
+
+  void TestEqualArrayCmd(CmdId create_var_cmd_id,
+                         CmdId load_var_value_cmd_id,
+                         CmdId equal_cmd_id,
+                         CmdId destroy_var_cmd_id) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      ASSERT_EQ(expected_operands.GetTop<BoolValue>(),
+                actual_operands.GetTop<BoolValue>());
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(create_var_cmd_id);
+    cmds->Write<CmdId>(load_var_value_cmd_id);
+    uint32_t var_index = UINT32_C(0);
+    cmds->Write<uint32_t>(var_index);
+    cmds->Write<CmdId>(load_var_value_cmd_id);
+    cmds->Write<uint32_t>(var_index);
+    cmds->Write<CmdId>(equal_cmd_id);
+    uint8_t dimensions_count = UINT8_C(1);
+    cmds->Write<uint8_t>(dimensions_count);
+    cmds->Write<CmdId>(destroy_var_cmd_id);
+    cmds->Write<uint8_t>(dimensions_count);
+    DataStorage expected_operands;
+    expected_operands.Push(BoolValue(true));
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
+
+  void TestNotEqualArrayCmd(CmdId create_var_cmd_id,
+                            CmdId load_var_value_cmd_id,
+                            CmdId not_equal_cmd_id,
+                            CmdId destroy_var_cmd_id) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      ASSERT_EQ(expected_operands.GetTop<BoolValue>(),
+                actual_operands.GetTop<BoolValue>());
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(create_var_cmd_id);
+    cmds->Write<CmdId>(create_var_cmd_id);
+    cmds->Write<CmdId>(load_var_value_cmd_id);
+    uint32_t var_index = UINT32_C(0);
+    cmds->Write<uint32_t>(var_index);
+    cmds->Write<CmdId>(load_var_value_cmd_id);
+    uint32_t var_index2 = UINT32_C(1);
+    cmds->Write<uint32_t>(var_index2);
+    cmds->Write<CmdId>(not_equal_cmd_id);
+    uint8_t dimensions_count = UINT8_C(1);
+    cmds->Write<uint8_t>(dimensions_count);
+    cmds->Write<CmdId>(destroy_var_cmd_id);
+    cmds->Write<uint8_t>(dimensions_count);
+    cmds->Write<CmdId>(destroy_var_cmd_id);
+    cmds->Write<uint8_t>(dimensions_count);
+    DataStorage expected_operands;
+    expected_operands.Push(BoolValue(true));
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
+
+  template<typename TType, typename TSerializableType> void TestUnaryExprCmd(
+      CmdId load_value_cmd_id,
+      CmdId expr_cmd_id,
+      TSerializableType value,
+      TType expected_value) {
+    auto operands_asserter = [](const DataStorage &expected_operands,
+                                const DataStorage &actual_operands) {
+      ASSERT_EQ(expected_operands.GetTop<TType>(),
+                actual_operands.GetTop<TType>());
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write<CmdId>(load_value_cmd_id);
+    cmds->Write(value);
+    cmds->Write<CmdId>(expr_cmd_id);
+    DataStorage expected_operands;
+    expected_operands.Push(move(expected_value));
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    DataStorage expected_local_vars;
+    DataStorageAsserter local_vars_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
 };
 
 TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
@@ -1992,6 +2166,663 @@ TEST_F(SimpleVMTest, StoreBoolArrayCmd) {
 TEST_F(SimpleVMTest, StoreStringArrayCmd) {
   TestStoreArrayCmd<StringValue>(
       CmdId::kCreateStringArray, CmdId::kStoreStringArray);
+}
+
+TEST_F(SimpleVMTest, CastCharToStringCmd) {
+  char value = 'a';
+  TestCastCmd<StringValue>(
+      CmdId::kLoadCharValue, CmdId::kCastCharToString, value);
+}
+
+TEST_F(SimpleVMTest, CastCharToIntCmd) {
+  char value = 'a';
+  TestCastCmd<IntValue>(
+      CmdId::kLoadCharValue, CmdId::kCastCharToInt, value);
+}
+
+TEST_F(SimpleVMTest, CastCharToDoubleCmd) {
+  char value = 'a';
+  TestCastCmd<DoubleValue>(
+      CmdId::kLoadCharValue, CmdId::kCastCharToDouble, value);
+}
+
+TEST_F(SimpleVMTest, CastCharToLongCmd) {
+  char value = 'a';
+  TestCastCmd<LongValue>(
+      CmdId::kLoadCharValue, CmdId::kCastCharToLong, value);
+}
+
+TEST_F(SimpleVMTest, CastIntToLongCmd) {
+  int32_t value = INT32_C(7);
+  TestCastCmd<LongValue>(
+      CmdId::kLoadIntValue, CmdId::kCastIntToLong, value);
+}
+
+TEST_F(SimpleVMTest, CastIntToDoubleCmd) {
+  int32_t value = INT32_C(7);
+  TestCastCmd<DoubleValue>(
+      CmdId::kLoadIntValue, CmdId::kCastIntToDouble, value);
+}
+
+TEST_F(SimpleVMTest, CastLongToDoubleCmd) {
+  int64_t value = INT64_C(7);
+  TestCastCmd<DoubleValue>(
+      CmdId::kLoadLongValue, CmdId::kCastLongToDouble, value);
+}
+
+TEST_F(SimpleVMTest, MulIntCmd) {
+  int32_t lhs_value = INT32_C(7);
+  int32_t rhs_value = INT32_C(77);
+  IntValue expected_value = 539;
+  TestBinaryExprCmd<IntValue>(CmdId::kLoadIntValue,
+                              CmdId::kMulInt,
+                              lhs_value,
+                              rhs_value,
+                              expected_value);
+}
+
+TEST_F(SimpleVMTest, MulLongCmd) {
+  int64_t lhs_value = INT64_C(7);
+  int64_t rhs_value = INT64_C(77);
+  LongValue expected_value = 539;
+  TestBinaryExprCmd<LongValue>(CmdId::kLoadLongValue,
+                               CmdId::kMulLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, MulDoubleCmd) {
+  double lhs_value = 7.0;
+  double rhs_value = 77.0;
+  DoubleValue expected_value = 539.0;
+  TestBinaryExprCmd<DoubleValue>(CmdId::kLoadDoubleValue,
+                                 CmdId::kMulDouble,
+                                 lhs_value,
+                                 rhs_value,
+                                 expected_value);
+}
+
+TEST_F(SimpleVMTest, MulCharCmd) {
+  char lhs_value = 7;
+  char rhs_value = 77;
+  CharValue expected_value = 27;
+  TestBinaryExprCmd<CharValue>(CmdId::kLoadCharValue,
+                               CmdId::kMulChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, DivIntCmd) {
+  int32_t lhs_value = INT32_C(10);
+  int32_t rhs_value = INT32_C(7);
+  IntValue expected_value = 1;
+  TestBinaryExprCmd<IntValue>(CmdId::kLoadIntValue,
+                              CmdId::kDivInt,
+                              lhs_value,
+                              rhs_value,
+                              expected_value);
+}
+
+TEST_F(SimpleVMTest, DivLongCmd) {
+  int64_t lhs_value = INT64_C(10);
+  int64_t rhs_value = INT64_C(7);
+  LongValue expected_value = 1;
+  TestBinaryExprCmd<LongValue>(CmdId::kLoadLongValue,
+                               CmdId::kDivLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, DivDoubleCmd) {
+  double lhs_value = 77.0;
+  double rhs_value = 7.0;
+  DoubleValue expected_value = 11.0;
+  TestBinaryExprCmd<DoubleValue>(CmdId::kLoadDoubleValue,
+                                 CmdId::kDivDouble,
+                                 lhs_value,
+                                 rhs_value,
+                                 expected_value);
+}
+
+TEST_F(SimpleVMTest, DivCharCmd) {
+  char lhs_value = 77;
+  char rhs_value = 7;
+  CharValue expected_value = 11;
+  TestBinaryExprCmd<CharValue>(CmdId::kLoadCharValue,
+                               CmdId::kDivChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, SumIntCmd) {
+  int32_t lhs_value = INT32_C(7);
+  int32_t rhs_value = INT32_C(77);
+  IntValue expected_value = 84;
+  TestBinaryExprCmd<IntValue>(CmdId::kLoadIntValue,
+                              CmdId::kSumInt,
+                              lhs_value,
+                              rhs_value,
+                              expected_value);
+}
+
+TEST_F(SimpleVMTest, SumLongCmd) {
+  int64_t lhs_value = INT64_C(7);
+  int64_t rhs_value = INT64_C(77);
+  LongValue expected_value = 84;
+  TestBinaryExprCmd<LongValue>(CmdId::kLoadLongValue,
+                               CmdId::kSumLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, SumDoubleCmd) {
+  double lhs_value = 7.0;
+  double rhs_value = 77.0;
+  DoubleValue expected_value = 84.0;
+  TestBinaryExprCmd<DoubleValue>(CmdId::kLoadDoubleValue,
+                                 CmdId::kSumDouble,
+                                 lhs_value,
+                                 rhs_value,
+                                 expected_value);
+}
+
+TEST_F(SimpleVMTest, SumCharCmd) {
+  char lhs_value = 7;
+  char rhs_value = 77;
+  CharValue expected_value = 84;
+  TestBinaryExprCmd<CharValue>(CmdId::kLoadCharValue,
+                               CmdId::kSumChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, SumStringCmd) {
+  string lhs_value = "a";
+  string rhs_value = "b";
+  StringValue expected_value("ab");
+  TestBinaryExprCmd<StringValue>(CmdId::kLoadStringValue,
+                                 CmdId::kSumString,
+                                 lhs_value,
+                                 rhs_value,
+                                 expected_value);
+}
+
+TEST_F(SimpleVMTest, SubIntCmd) {
+  int32_t lhs_value = INT32_C(77);
+  int32_t rhs_value = INT32_C(7);
+  IntValue expected_value = 70;
+  TestBinaryExprCmd<IntValue>(CmdId::kLoadIntValue,
+                              CmdId::kSubInt,
+                              lhs_value,
+                              rhs_value,
+                              expected_value);
+}
+
+TEST_F(SimpleVMTest, SubLongCmd) {
+  int64_t lhs_value = INT64_C(77);
+  int64_t rhs_value = INT64_C(7);
+  LongValue expected_value = 70;
+  TestBinaryExprCmd<LongValue>(CmdId::kLoadLongValue,
+                               CmdId::kSubLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, SubDoubleCmd) {
+  double lhs_value = 77.0;
+  double rhs_value = 7.0;
+  DoubleValue expected_value = 70.0;
+  TestBinaryExprCmd<DoubleValue>(CmdId::kLoadDoubleValue,
+                                 CmdId::kSubDouble,
+                                 lhs_value,
+                                 rhs_value,
+                                 expected_value);
+}
+
+TEST_F(SimpleVMTest, SubCharCmd) {
+  char lhs_value = 77;
+  char rhs_value = 7;
+  CharValue expected_value = 70;
+  TestBinaryExprCmd<CharValue>(CmdId::kLoadCharValue,
+                               CmdId::kSubChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, EqualIntCmd) {
+  int32_t lhs_value = INT32_C(7);
+  int32_t rhs_value = INT32_C(7);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadIntValue,
+                               CmdId::kEqualInt,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, EqualLongCmd) {
+  int64_t lhs_value = INT64_C(7);
+  int64_t rhs_value = INT64_C(7);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadLongValue,
+                               CmdId::kEqualLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, EqualDoubleCmd) {
+  double lhs_value = 7.0;
+  double rhs_value = 7.0;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadDoubleValue,
+                               CmdId::kEqualDouble,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, EqualCharCmd) {
+  char lhs_value = 'a';
+  char rhs_value = 'a';
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadCharValue,
+                               CmdId::kEqualChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, EqualBoolCmd) {
+  bool lhs_value = true;
+  bool rhs_value = true;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadBoolValue,
+                               CmdId::kEqualBool,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, EqualStringCmd) {
+  string lhs_value = "swag";
+  string rhs_value = "swag";
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadStringValue,
+                               CmdId::kEqualString,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, EqualIntArrayCmd) {
+  TestEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                    CmdId::kLoadLocalIntArrayVarValue,
+                    CmdId::kEqualIntArray,
+                    CmdId::kDestroyLocalIntArrayVar);
+}
+
+TEST_F(SimpleVMTest, EqualLongArrayCmd) {
+  TestEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                    CmdId::kLoadLocalLongArrayVarValue,
+                    CmdId::kEqualLongArray,
+                    CmdId::kDestroyLocalLongArrayVar);
+}
+
+TEST_F(SimpleVMTest, EqualDoubleArrayCmd) {
+  TestEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                    CmdId::kLoadLocalDoubleArrayVarValue,
+                    CmdId::kEqualDoubleArray,
+                    CmdId::kDestroyLocalDoubleArrayVar);
+}
+
+TEST_F(SimpleVMTest, EqualCharArrayCmd) {
+  TestEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                    CmdId::kLoadLocalCharArrayVarValue,
+                    CmdId::kEqualCharArray,
+                    CmdId::kDestroyLocalCharArrayVar);
+}
+
+TEST_F(SimpleVMTest, EqualBoolArrayCmd) {
+  TestEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                    CmdId::kLoadLocalBoolArrayVarValue,
+                    CmdId::kEqualBoolArray,
+                    CmdId::kDestroyLocalBoolArrayVar);
+}
+
+TEST_F(SimpleVMTest, EqualStringArrayCmd) {
+  TestEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                    CmdId::kLoadLocalStringArrayVarValue,
+                    CmdId::kEqualStringArray,
+                    CmdId::kDestroyLocalStringArrayVar);
+}
+
+TEST_F(SimpleVMTest, NotEqualIntCmd) {
+  int32_t lhs_value = INT32_C(7);
+  int32_t rhs_value = INT32_C(77);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadIntValue,
+                               CmdId::kNotEqualInt,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, NotEqualLongCmd) {
+  int64_t lhs_value = INT64_C(7);
+  int64_t rhs_value = INT64_C(77);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadLongValue,
+                               CmdId::kNotEqualLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, NotEqualDoubleCmd) {
+  double lhs_value = 7.0;
+  double rhs_value = 77.0;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadDoubleValue,
+                               CmdId::kNotEqualDouble,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, NotEqualCharCmd) {
+  char lhs_value = 'a';
+  char rhs_value = 'b';
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadCharValue,
+                               CmdId::kNotEqualChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, NotEqualBoolCmd) {
+  bool lhs_value = true;
+  bool rhs_value = false;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadBoolValue,
+                               CmdId::kNotEqualBool,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, NotEqualStringCmd) {
+  string lhs_value = "swag";
+  string rhs_value = "swagger";
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadStringValue,
+                               CmdId::kNotEqualString,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, NotEqualIntArrayCmd) {
+  TestNotEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                       CmdId::kLoadLocalIntArrayVarValue,
+                       CmdId::kNotEqualIntArray,
+                       CmdId::kDestroyLocalIntArrayVar);
+}
+
+TEST_F(SimpleVMTest, NotEqualLongArrayCmd) {
+  TestNotEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                       CmdId::kLoadLocalLongArrayVarValue,
+                       CmdId::kNotEqualLongArray,
+                       CmdId::kDestroyLocalLongArrayVar);
+}
+
+TEST_F(SimpleVMTest, NotEqualDoubleArrayCmd) {
+  TestNotEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                       CmdId::kLoadLocalDoubleArrayVarValue,
+                       CmdId::kNotEqualDoubleArray,
+                       CmdId::kDestroyLocalDoubleArrayVar);
+}
+
+TEST_F(SimpleVMTest, NotEqualCharArrayCmd) {
+  TestNotEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                       CmdId::kLoadLocalCharArrayVarValue,
+                       CmdId::kNotEqualCharArray,
+                       CmdId::kDestroyLocalCharArrayVar);
+}
+
+TEST_F(SimpleVMTest, NotEqualBoolArrayCmd) {
+  TestNotEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                       CmdId::kLoadLocalBoolArrayVarValue,
+                       CmdId::kNotEqualBoolArray,
+                       CmdId::kDestroyLocalBoolArrayVar);
+}
+
+TEST_F(SimpleVMTest, NotEqualStringArrayCmd) {
+  TestNotEqualArrayCmd(CmdId::kCreateLocalArrayVar,
+                       CmdId::kLoadLocalStringArrayVarValue,
+                       CmdId::kNotEqualStringArray,
+                       CmdId::kDestroyLocalStringArrayVar);
+}
+
+TEST_F(SimpleVMTest, GreaterIntCmd) {
+  int32_t lhs_value = INT32_C(77);
+  int32_t rhs_value = INT32_C(7);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadIntValue,
+                               CmdId::kGreaterInt,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, GreaterLongCmd) {
+  int64_t lhs_value = INT64_C(77);
+  int64_t rhs_value = INT64_C(7);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadLongValue,
+                               CmdId::kGreaterLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, GreaterDoubleCmd) {
+  double lhs_value = 77.0;
+  double rhs_value = 7.0;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadDoubleValue,
+                               CmdId::kGreaterDouble,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, GreaterCharCmd) {
+  char lhs_value = 77;
+  char rhs_value = 7;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadCharValue,
+                               CmdId::kGreaterChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, GreaterOrEqualIntCmd) {
+  int32_t lhs_value = INT32_C(77);
+  int32_t rhs_value = INT32_C(7);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadIntValue,
+                               CmdId::kGreaterOrEqualInt,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, GreaterOrEqualLongCmd) {
+  int64_t lhs_value = INT64_C(77);
+  int64_t rhs_value = INT64_C(7);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadLongValue,
+                               CmdId::kGreaterOrEqualLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, GreaterOrEqualDoubleCmd) {
+  double lhs_value = 77.0;
+  double rhs_value = 7.0;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadDoubleValue,
+                               CmdId::kGreaterOrEqualDouble,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, GreaterOrEqualCharCmd) {
+  char lhs_value = 77;
+  char rhs_value = 7;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadCharValue,
+                               CmdId::kGreaterOrEqualChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LessIntCmd) {
+  int32_t lhs_value = INT32_C(7);
+  int32_t rhs_value = INT32_C(77);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadIntValue,
+                               CmdId::kLessInt,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LessLongCmd) {
+  int64_t lhs_value = INT64_C(7);
+  int64_t rhs_value = INT64_C(77);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadLongValue,
+                               CmdId::kLessLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LessDoubleCmd) {
+  double lhs_value = 7.0;
+  double rhs_value = 77.0;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadDoubleValue,
+                               CmdId::kLessDouble,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LessCharCmd) {
+  char lhs_value = 7;
+  char rhs_value = 77;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadCharValue,
+                               CmdId::kLessChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LessOrEqualIntCmd) {
+  int32_t lhs_value = INT32_C(7);
+  int32_t rhs_value = INT32_C(77);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadIntValue,
+                               CmdId::kLessOrEqualInt,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LessOrEqualLongCmd) {
+  int64_t lhs_value = INT64_C(7);
+  int64_t rhs_value = INT64_C(77);
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadLongValue,
+                               CmdId::kLessOrEqualLong,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LessOrEqualDoubleCmd) {
+  double lhs_value = 7.0;
+  double rhs_value = 77.0;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadDoubleValue,
+                               CmdId::kLessOrEqualDouble,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LessOrEqualCharCmd) {
+  char lhs_value = 7;
+  char rhs_value = 77;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd<BoolValue>(CmdId::kLoadCharValue,
+                               CmdId::kLessOrEqualChar,
+                               lhs_value,
+                               rhs_value,
+                               expected_value);
+}
+
+TEST_F(SimpleVMTest, LogicalNegateBoolCmd) {
+  bool value = true;
+  BoolValue expected_value = false;
+  TestUnaryExprCmd(CmdId::kLoadBoolValue,
+                   CmdId::kLogicalNegateBool,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, ArithmeticNegateIntCmd) {
+  int32_t value = INT32_C(7);
+  IntValue expected_value = -7;
+  TestUnaryExprCmd(CmdId::kLoadIntValue,
+                   CmdId::kArithmeticNegateInt,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, ArithmeticNegateLongCmd) {
+  int64_t value = INT64_C(7);
+  LongValue expected_value = -7;
+  TestUnaryExprCmd(CmdId::kLoadLongValue,
+                   CmdId::kArithmeticNegateLong,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, ArithmeticNegateDoubleCmd) {
+  double value = 7.0;
+  DoubleValue expected_value = -7.0;
+  TestUnaryExprCmd(CmdId::kLoadDoubleValue,
+                   CmdId::kArithmeticNegateDouble,
+                   value,
+                   expected_value);
 }
 }
 }

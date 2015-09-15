@@ -22,6 +22,8 @@ class StringValue::Storage {
 
 StringValue::StringValue(const string &str): storage_(new Storage(str)) {}
 
+StringValue::StringValue(char c): StringValue(string(1, c)) {}
+
 StringValue::StringValue(const StringValue &rhs) noexcept
     : storage_(rhs.storage_) {
   assert(storage_);
@@ -32,6 +34,15 @@ StringValue::StringValue(StringValue &&rhs) noexcept
     : storage_(rhs.storage_) {
   assert(storage_);
   rhs.storage_ = nullptr;
+}
+
+StringValue::~StringValue() {DecRefsCount();}
+
+void StringValue::DecRefsCount() noexcept {
+  if (storage_ != nullptr && --(storage_->GetRefsCount()) == 0) {
+    delete storage_;
+    storage_ = nullptr;
+  }
 }
 
 void StringValue::operator=(const StringValue &rhs) noexcept {
@@ -51,7 +62,11 @@ void StringValue::operator=(StringValue &&rhs) noexcept {
   }
 }
 
-StringValue::~StringValue() {DecRefsCount();}
+StringValue operator+(const StringValue &lhs, const StringValue &rhs) {
+  assert(lhs.storage_);
+  assert(rhs.storage_);
+  return StringValue(lhs.storage_->GetData() + rhs.storage_->GetData());
+}
 
 bool operator==(const StringValue &lhs, const StringValue &rhs) noexcept {
   assert(lhs.storage_);
@@ -60,17 +75,14 @@ bool operator==(const StringValue &lhs, const StringValue &rhs) noexcept {
       || lhs.storage_->GetData() == rhs.storage_->GetData();
 }
 
+bool operator!=(const StringValue &lhs, const StringValue &rhs) noexcept {
+  return !(lhs == rhs);
+}
+
 ostream &operator<<(ostream &stream, const StringValue &value) {
   assert(value.storage_);
   return stream << "refs_count=" << value.storage_->GetRefsCount()
                 << "; data=" << value.storage_->GetData();
-}
-
-void StringValue::DecRefsCount() noexcept {
-  if (storage_ != nullptr && --(storage_->GetRefsCount()) == 0) {
-    delete storage_;
-    storage_ = nullptr;
-  }
 }
 
 StringValue::Storage::Storage(const string &data)

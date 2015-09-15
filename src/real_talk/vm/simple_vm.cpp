@@ -2,6 +2,7 @@
 #include <cassert>
 #include <vector>
 #include <memory>
+#include <string>
 #include "real_talk/code/exe.h"
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd_reader.h"
@@ -22,10 +23,24 @@
 #include "real_talk/code/load_array_element_address_cmd.h"
 #include "real_talk/code/store_cmd.h"
 #include "real_talk/code/unload_cmd.h"
+#include "real_talk/code/cast_cmd.h"
+#include "real_talk/code/mul_cmd.h"
+#include "real_talk/code/div_cmd.h"
+#include "real_talk/code/sum_cmd.h"
+#include "real_talk/code/sub_cmd.h"
+#include "real_talk/code/equal_cmd.h"
+#include "real_talk/code/not_equal_cmd.h"
+#include "real_talk/code/greater_cmd.h"
+#include "real_talk/code/greater_or_equal_cmd.h"
+#include "real_talk/code/less_cmd.h"
+#include "real_talk/code/less_or_equal_cmd.h"
+#include "real_talk/code/logical_negate_cmd.h"
+#include "real_talk/code/arithmetic_negate_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
 using std::vector;
+using std::string;
 using std::move;
 using std::unique_ptr;
 using real_talk::code::Exe;
@@ -190,6 +205,7 @@ using real_talk::code::StoreDoubleArrayCmd;
 using real_talk::code::StoreBoolArrayCmd;
 using real_talk::code::StoreCharArrayCmd;
 using real_talk::code::StoreStringArrayCmd;
+using real_talk::code::CastCmd;
 using real_talk::code::CastCharToIntCmd;
 using real_talk::code::CastCharToDoubleCmd;
 using real_talk::code::CastCharToLongCmd;
@@ -199,64 +215,77 @@ using real_talk::code::CastIntToDoubleCmd;
 using real_talk::code::CastLongToDoubleCmd;
 using real_talk::code::CallNativeCmd;
 using real_talk::code::CallCmd;
+using real_talk::code::MulCmd;
 using real_talk::code::MulCharCmd;
 using real_talk::code::MulIntCmd;
 using real_talk::code::MulLongCmd;
 using real_talk::code::MulDoubleCmd;
+using real_talk::code::DivCmd;
 using real_talk::code::DivCharCmd;
 using real_talk::code::DivIntCmd;
 using real_talk::code::DivDoubleCmd;
 using real_talk::code::DivLongCmd;
+using real_talk::code::SumCmd;
 using real_talk::code::SumCharCmd;
 using real_talk::code::SumLongCmd;
 using real_talk::code::SumDoubleCmd;
 using real_talk::code::SumStringCmd;
 using real_talk::code::SumIntCmd;
+using real_talk::code::SubCmd;
 using real_talk::code::SubCharCmd;
 using real_talk::code::SubIntCmd;
 using real_talk::code::SubLongCmd;
 using real_talk::code::SubDoubleCmd;
+using real_talk::code::EqualCmd;
 using real_talk::code::EqualIntCmd;
 using real_talk::code::EqualLongCmd;
 using real_talk::code::EqualDoubleCmd;
 using real_talk::code::EqualStringCmd;
 using real_talk::code::EqualBoolCmd;
 using real_talk::code::EqualCharCmd;
+using real_talk::code::EqualArrayCmd;
 using real_talk::code::EqualIntArrayCmd;
 using real_talk::code::EqualLongArrayCmd;
 using real_talk::code::EqualDoubleArrayCmd;
 using real_talk::code::EqualStringArrayCmd;
 using real_talk::code::EqualBoolArrayCmd;
 using real_talk::code::EqualCharArrayCmd;
+using real_talk::code::NotEqualCmd;
 using real_talk::code::NotEqualIntCmd;
 using real_talk::code::NotEqualLongCmd;
 using real_talk::code::NotEqualDoubleCmd;
 using real_talk::code::NotEqualBoolCmd;
 using real_talk::code::NotEqualStringCmd;
 using real_talk::code::NotEqualCharCmd;
+using real_talk::code::NotEqualArrayCmd;
 using real_talk::code::NotEqualIntArrayCmd;
 using real_talk::code::NotEqualLongArrayCmd;
 using real_talk::code::NotEqualDoubleArrayCmd;
 using real_talk::code::NotEqualStringArrayCmd;
 using real_talk::code::NotEqualBoolArrayCmd;
 using real_talk::code::NotEqualCharArrayCmd;
+using real_talk::code::GreaterCmd;
 using real_talk::code::GreaterCharCmd;
 using real_talk::code::GreaterIntCmd;
 using real_talk::code::GreaterLongCmd;
 using real_talk::code::GreaterDoubleCmd;
+using real_talk::code::GreaterOrEqualCmd;
 using real_talk::code::GreaterOrEqualCharCmd;
 using real_talk::code::GreaterOrEqualIntCmd;
 using real_talk::code::GreaterOrEqualLongCmd;
 using real_talk::code::GreaterOrEqualDoubleCmd;
+using real_talk::code::LessCmd;
 using real_talk::code::LessCharCmd;
 using real_talk::code::LessIntCmd;
 using real_talk::code::LessLongCmd;
 using real_talk::code::LessDoubleCmd;
+using real_talk::code::LessOrEqualCmd;
 using real_talk::code::LessOrEqualIntCmd;
 using real_talk::code::LessOrEqualDoubleCmd;
 using real_talk::code::LessOrEqualCharCmd;
 using real_talk::code::LessOrEqualLongCmd;
 using real_talk::code::LogicalNegateBoolCmd;
+using real_talk::code::ArithmeticNegateCmd;
 using real_talk::code::ArithmeticNegateIntCmd;
 using real_talk::code::ArithmeticNegateLongCmd;
 using real_talk::code::ArithmeticNegateDoubleCmd;
@@ -751,9 +780,24 @@ class SimpleVM::Impl: private CmdVisitor {
   template<typename T> void VisitLoadArrayElementValue(
       const LoadArrayElementValueCmd &cmd);
   template<typename T> void VisitLoadArrayElementAddress(
-      const LoadArrayElementAddressCmd &cmd) noexcept;
+      const LoadArrayElementAddressCmd &cmd);
   template<typename T> void VisitStore(const StoreCmd &cmd) noexcept;
   template<typename T> void VisitStoreArray(const StoreArrayCmd &cmd) noexcept;
+  template<typename TDest, typename TSource> void VisitCast(const CastCmd &cmd);
+  template<typename T> void VisitMul(const MulCmd &cmd);
+  template<typename T> void VisitDiv(const DivCmd &cmd);
+  template<typename T> void VisitSum(const SumCmd &cmd);
+  template<typename T> void VisitSub(const SubCmd &cmd);
+  template<typename T> void VisitEqual(const EqualCmd &cmd);
+  template<typename T> void VisitEqualArray(const EqualArrayCmd &cmd);
+  template<typename T> void VisitNotEqual(const NotEqualCmd &cmd);
+  template<typename T> void VisitNotEqualArray(const NotEqualArrayCmd &cmd);
+  template<typename T> void VisitGreater(const GreaterCmd &cmd);
+  template<typename T> void VisitGreaterOrEqual(const GreaterOrEqualCmd &cmd);
+  template<typename T> void VisitLess(const LessCmd &cmd);
+  template<typename T> void VisitLessOrEqual(const LessOrEqualCmd &cmd);
+  template<typename T> void VisitArithmeticNegate(
+      const ArithmeticNegateCmd &cmd);
   size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
@@ -1042,38 +1086,31 @@ template<typename T> void SimpleVM::Impl::VisitUnloadArray(
   operands_.Pop< ArrayValue<T> >().Destroy(cmd.GetDimensionsCount());
 }
 
-void SimpleVM::Impl::VisitLoadIntValue(
-    const LoadIntValueCmd &cmd) {
+void SimpleVM::Impl::VisitLoadIntValue(const LoadIntValueCmd &cmd) {
   operands_.Push(IntValue(cmd.GetValue()));
 }
 
-void SimpleVM::Impl::VisitLoadLongValue(
-    const LoadLongValueCmd &cmd) {
+void SimpleVM::Impl::VisitLoadLongValue(const LoadLongValueCmd &cmd) {
   operands_.Push(LongValue(cmd.GetValue()));
 }
 
-void SimpleVM::Impl::VisitLoadBoolValue(
-    const LoadBoolValueCmd &cmd) {
+void SimpleVM::Impl::VisitLoadBoolValue(const LoadBoolValueCmd &cmd) {
   operands_.Push(BoolValue(cmd.GetValue()));
 }
 
-void SimpleVM::Impl::VisitLoadCharValue(
-    const LoadCharValueCmd &cmd) {
+void SimpleVM::Impl::VisitLoadCharValue(const LoadCharValueCmd &cmd) {
   operands_.Push(CharValue(cmd.GetValue()));
 }
 
-void SimpleVM::Impl::VisitLoadStringValue(
-    const LoadStringValueCmd &cmd) {
+void SimpleVM::Impl::VisitLoadStringValue(const LoadStringValueCmd &cmd) {
   operands_.Push(StringValue(cmd.GetValue()));
 }
 
-void SimpleVM::Impl::VisitLoadDoubleValue(
-    const LoadDoubleValueCmd &cmd) {
+void SimpleVM::Impl::VisitLoadDoubleValue(const LoadDoubleValueCmd &cmd) {
   operands_.Push(DoubleValue(cmd.GetValue()));
 }
 
-void SimpleVM::Impl::VisitLoadFuncValue(
-    const LoadFuncValueCmd &cmd) {
+void SimpleVM::Impl::VisitLoadFuncValue(const LoadFuncValueCmd &cmd) {
   operands_.Push(FuncValue(cmd.GetAddress()));
 }
 
@@ -1581,7 +1618,7 @@ void SimpleVM::Impl::VisitLoadCharArrayElementAddress(
 }
 
 template<typename T> void SimpleVM::Impl::VisitLoadArrayElementAddress(
-    const LoadArrayElementAddressCmd &cmd) noexcept {
+    const LoadArrayElementAddressCmd &cmd) {
   auto array = operands_.Pop< ArrayValue<T> >();
   const auto index = operands_.Pop<IntValue>();
   assert(index >= 0);
@@ -1661,19 +1698,38 @@ template<typename T> void SimpleVM::Impl::VisitStoreArray(
       operands_.Pop< ArrayValue<T> >(), cmd.GetDimensionsCount());
 }
 
-void SimpleVM::Impl::VisitCastCharToInt(const CastCharToIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastCharToInt(const CastCharToIntCmd &cmd) {
+  VisitCast<IntValue, CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitCastCharToDouble(const CastCharToDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastCharToDouble(const CastCharToDoubleCmd &cmd) {
+  VisitCast<DoubleValue, CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitCastCharToLong(const CastCharToLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastCharToLong(const CastCharToLongCmd &cmd) {
+  VisitCast<LongValue, CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitCastCharToString(const CastCharToStringCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastCharToString(const CastCharToStringCmd &cmd) {
+  VisitCast<StringValue, CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitCastIntToLong(const CastIntToLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastIntToLong(const CastIntToLongCmd &cmd) {
+  VisitCast<LongValue, IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitCastIntToDouble(const CastIntToDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastIntToDouble(const CastIntToDoubleCmd &cmd) {
+  VisitCast<DoubleValue, IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitCastLongToDouble(const CastLongToDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitCastLongToDouble(const CastLongToDoubleCmd &cmd) {
+  VisitCast<DoubleValue, LongValue>(cmd);
+}
+
+template<typename TDest, typename TSource> void SimpleVM::Impl::VisitCast(
+    const CastCmd&) {
+  operands_.Push(TDest(operands_.Pop<TSource>()));
+}
 
 void SimpleVM::Impl::VisitCallNative(const CallNativeCmd&) {
   const size_t local_vars_start_index = local_vars_.GetSize();
@@ -1692,217 +1748,363 @@ void SimpleVM::Impl::VisitCall(const CallCmd&) {
   cmd_reader_.GetCode()->SetPosition(operands_.Pop<FuncValue>());
 }
 
-void SimpleVM::Impl::VisitMulChar(
-    const MulCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitMulChar(const MulCharCmd &cmd) {
+  VisitMul<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitMulInt(
-    const MulIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitMulInt(const MulIntCmd &cmd) {
+  VisitMul<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitMulLong(
-    const MulLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitMulLong(const MulLongCmd &cmd) {
+  VisitMul<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitMulDouble(
-    const MulDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitMulDouble(const MulDoubleCmd &cmd) {
+  VisitMul<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitDivChar(
-    const DivCharCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitMul(const MulCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(T(lhs * rhs));
+}
 
-void SimpleVM::Impl::VisitDivInt(
-    const DivIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitDivChar(const DivCharCmd &cmd) {
+  VisitDiv<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitDivDouble(
-    const DivDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitDivInt(const DivIntCmd &cmd) {
+  VisitDiv<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitDivLong(
-    const DivLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitDivDouble(const DivDoubleCmd &cmd) {
+  VisitDiv<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitSumChar(
-    const SumCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitDivLong(const DivLongCmd &cmd) {
+  VisitDiv<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitSumLong(
-    const SumLongCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitDiv(const DivCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(T(lhs / rhs));
+}
 
-void SimpleVM::Impl::VisitSumDouble(
-    const SumDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSumChar(const SumCharCmd &cmd) {
+  VisitSum<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitSumString(
-    const SumStringCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSumLong(const SumLongCmd &cmd) {
+  VisitSum<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitSumInt(
-    const SumIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSumDouble(const SumDoubleCmd &cmd) {
+  VisitSum<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitSubChar(
-    const SubCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSumString(const SumStringCmd &cmd) {
+  VisitSum<StringValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitSubInt(
-    const SubIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSumInt(const SumIntCmd &cmd) {
+  VisitSum<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitSubLong(
-    const SubLongCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitSum(const SumCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(T(lhs + rhs));
+}
 
-void SimpleVM::Impl::VisitSubDouble(
-    const SubDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSubChar(const SubCharCmd &cmd) {
+  VisitSub<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualInt(
-    const EqualIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSubInt(const SubIntCmd &cmd) {
+  VisitSub<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualLong(
-    const EqualLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSubLong(const SubLongCmd &cmd) {
+  VisitSub<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualDouble(
-    const EqualDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitSubDouble(const SubDoubleCmd &cmd) {
+  VisitSub<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualString(
-    const EqualStringCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitSub(const SubCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(T(lhs - rhs));
+}
 
-void SimpleVM::Impl::VisitEqualBool(
-    const EqualBoolCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualInt(const EqualIntCmd &cmd) {
+  VisitEqual<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualChar(
-    const EqualCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualLong(const EqualLongCmd &cmd) {
+  VisitEqual<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualIntArray(
-    const EqualIntArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualDouble(const EqualDoubleCmd &cmd) {
+  VisitEqual<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualLongArray(
-    const EqualLongArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualString(const EqualStringCmd &cmd) {
+  VisitEqual<StringValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualDoubleArray(
-    const EqualDoubleArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualBool(const EqualBoolCmd &cmd) {
+  VisitEqual<BoolValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualStringArray(
-    const EqualStringArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualChar(const EqualCharCmd &cmd) {
+  VisitEqual<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitEqualBoolArray(
-    const EqualBoolArrayCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitEqual(const EqualCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(BoolValue(lhs == rhs));
+}
 
-void SimpleVM::Impl::VisitEqualCharArray(
-    const EqualCharArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualIntArray(const EqualIntArrayCmd &cmd) {
+  VisitEqualArray<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualInt(
-    const NotEqualIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualLongArray(const EqualLongArrayCmd &cmd) {
+  VisitEqualArray<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualLong(
-    const NotEqualLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualDoubleArray(const EqualDoubleArrayCmd &cmd) {
+  VisitEqualArray<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualDouble(
-    const NotEqualDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualStringArray(const EqualStringArrayCmd &cmd) {
+  VisitEqualArray<StringValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualBool(
-    const NotEqualBoolCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualBoolArray(const EqualBoolArrayCmd &cmd) {
+  VisitEqualArray<BoolValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualString(
-    const NotEqualStringCmd&) {assert(false);}
+void SimpleVM::Impl::VisitEqualCharArray(const EqualCharArrayCmd &cmd) {
+  VisitEqualArray<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualChar(
-    const NotEqualCharCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitEqualArray(
+    const EqualArrayCmd &cmd) {
+  auto rhs = operands_.Pop< ArrayValue<T> >();
+  auto lhs = operands_.Pop< ArrayValue<T> >();
+  const BoolValue is_equal = lhs == rhs;
+  const uint8_t dimensions_count = cmd.GetDimensionsCount();
+  lhs.Destroy(dimensions_count);
+  rhs.Destroy(dimensions_count);
+  operands_.Push(is_equal);
+}
 
-void SimpleVM::Impl::VisitNotEqualIntArray(
-    const NotEqualIntArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitNotEqualInt(const NotEqualIntCmd &cmd) {
+  VisitNotEqual<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualLongArray(
-    const NotEqualLongArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitNotEqualLong(const NotEqualLongCmd &cmd) {
+  VisitNotEqual<LongValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitNotEqualDouble(const NotEqualDoubleCmd &cmd) {
+  VisitNotEqual<DoubleValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitNotEqualBool(const NotEqualBoolCmd &cmd) {
+  VisitNotEqual<BoolValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitNotEqualString(const NotEqualStringCmd &cmd) {
+  VisitNotEqual<StringValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitNotEqualChar(const NotEqualCharCmd &cmd) {
+  VisitNotEqual<CharValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitNotEqual(const NotEqualCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(BoolValue(lhs != rhs));
+}
+
+void SimpleVM::Impl::VisitNotEqualIntArray(const NotEqualIntArrayCmd &cmd) {
+  VisitNotEqualArray<IntValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitNotEqualLongArray(const NotEqualLongArrayCmd &cmd) {
+  VisitNotEqualArray<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitNotEqualDoubleArray(
-    const NotEqualDoubleArrayCmd&) {assert(false);}
+    const NotEqualDoubleArrayCmd &cmd) {
+  VisitNotEqualArray<DoubleValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitNotEqualStringArray(
-    const NotEqualStringArrayCmd&) {assert(false);}
+    const NotEqualStringArrayCmd &cmd) {
+  VisitNotEqualArray<StringValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualBoolArray(
-    const NotEqualBoolArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitNotEqualBoolArray(const NotEqualBoolArrayCmd &cmd) {
+  VisitNotEqualArray<BoolValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitNotEqualCharArray(
-    const NotEqualCharArrayCmd&) {assert(false);}
+void SimpleVM::Impl::VisitNotEqualCharArray(const NotEqualCharArrayCmd &cmd) {
+  VisitNotEqualArray<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitGreaterChar(
-    const GreaterCharCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitNotEqualArray(
+    const NotEqualArrayCmd &cmd) {
+  auto rhs = operands_.Pop< ArrayValue<T> >();
+  auto lhs = operands_.Pop< ArrayValue<T> >();
+  const BoolValue is_equal = lhs != rhs;
+  const uint8_t dimensions_count = cmd.GetDimensionsCount();
+  lhs.Destroy(dimensions_count);
+  rhs.Destroy(dimensions_count);
+  operands_.Push(is_equal);
+}
 
-void SimpleVM::Impl::VisitGreaterInt(
-    const GreaterIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitGreaterChar(const GreaterCharCmd &cmd) {
+  VisitGreater<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitGreaterLong(
-    const GreaterLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitGreaterInt(const GreaterIntCmd &cmd) {
+  VisitGreater<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitGreaterDouble(
-    const GreaterDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitGreaterLong(const GreaterLongCmd &cmd) {
+  VisitGreater<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitGreaterOrEqualChar(
-    const GreaterOrEqualCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitGreaterDouble(const GreaterDoubleCmd &cmd) {
+  VisitGreater<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitGreaterOrEqualInt(
-    const GreaterOrEqualIntCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitGreater(const GreaterCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(BoolValue(lhs > rhs));
+}
 
-void SimpleVM::Impl::VisitGreaterOrEqualLong(
-    const GreaterOrEqualLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitGreaterOrEqualChar(const GreaterOrEqualCharCmd &cmd) {
+  VisitGreaterOrEqual<CharValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitGreaterOrEqualInt(const GreaterOrEqualIntCmd &cmd) {
+  VisitGreaterOrEqual<IntValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitGreaterOrEqualLong(const GreaterOrEqualLongCmd &cmd) {
+  VisitGreaterOrEqual<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitGreaterOrEqualDouble(
-    const GreaterOrEqualDoubleCmd&) {assert(false);}
+    const GreaterOrEqualDoubleCmd &cmd) {
+  VisitGreaterOrEqual<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitLessChar(
-    const LessCharCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitGreaterOrEqual(
+    const GreaterOrEqualCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(BoolValue(lhs >= rhs));
+}
 
-void SimpleVM::Impl::VisitLessInt(
-    const LessIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLessChar(const LessCharCmd &cmd) {
+  VisitLess<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitLessLong(
-    const LessLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLessInt(const LessIntCmd &cmd) {
+  VisitLess<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitLessDouble(
-    const LessDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLessLong(const LessLongCmd &cmd) {
+  VisitLess<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitLessOrEqualInt(
-    const LessOrEqualIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLessDouble(const LessDoubleCmd &cmd) {
+  VisitLess<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitLessOrEqualDouble(
-    const LessOrEqualDoubleCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitLess(const LessCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(BoolValue(lhs < rhs));
+}
 
-void SimpleVM::Impl::VisitLessOrEqualChar(
-    const LessOrEqualCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLessOrEqualInt(const LessOrEqualIntCmd &cmd) {
+  VisitLessOrEqual<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitLessOrEqualLong(
-    const LessOrEqualLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLessOrEqualDouble(const LessOrEqualDoubleCmd &cmd) {
+  VisitLessOrEqual<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitLogicalNegateBool(
-    const LogicalNegateBoolCmd&) {assert(false);}
+void SimpleVM::Impl::VisitLessOrEqualChar(const LessOrEqualCharCmd &cmd) {
+  VisitLessOrEqual<CharValue>(cmd);
+}
+
+void SimpleVM::Impl::VisitLessOrEqualLong(const LessOrEqualLongCmd &cmd) {
+  VisitLessOrEqual<LongValue>(cmd);
+}
+
+template<typename T> void SimpleVM::Impl::VisitLessOrEqual(
+    const LessOrEqualCmd&) {
+  const auto rhs = operands_.Pop<T>();
+  const auto lhs = operands_.Pop<T>();
+  operands_.Push(BoolValue(lhs <= rhs));
+}
+
+void SimpleVM::Impl::VisitLogicalNegateBool(const LogicalNegateBoolCmd&) {
+  operands_.Push(!operands_.Pop<BoolValue>());
+}
 
 void SimpleVM::Impl::VisitArithmeticNegateInt(
-    const ArithmeticNegateIntCmd&) {assert(false);}
+    const ArithmeticNegateIntCmd &cmd) {
+  VisitArithmeticNegate<IntValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitArithmeticNegateLong(
-    const ArithmeticNegateLongCmd&) {assert(false);}
+    const ArithmeticNegateLongCmd &cmd) {
+  VisitArithmeticNegate<LongValue>(cmd);
+}
 
 void SimpleVM::Impl::VisitArithmeticNegateDouble(
-    const ArithmeticNegateDoubleCmd&) {assert(false);}
+    const ArithmeticNegateDoubleCmd &cmd) {
+  VisitArithmeticNegate<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitPreDecChar(
-    const PreDecCharCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitArithmeticNegate(
+    const ArithmeticNegateCmd&) {
+  operands_.Push(-operands_.Pop<T>());
+}
 
-void SimpleVM::Impl::VisitPreDecInt(
-    const PreDecIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreDecChar(const PreDecCharCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitPreDecLong(
-    const PreDecLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreDecInt(const PreDecIntCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitPreDecDouble(
-    const PreDecDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreDecLong(const PreDecLongCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitPreIncChar(
-    const PreIncCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreDecDouble(const PreDecDoubleCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitPreIncInt(
-    const PreIncIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreIncChar(const PreIncCharCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitPreIncLong(
-    const PreIncLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreIncInt(const PreIncIntCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitPreIncDouble(
-    const PreIncDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreIncLong(const PreIncLongCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitAnd(
-    const AndCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreIncDouble(const PreIncDoubleCmd&) {assert(false);}
 
-void SimpleVM::Impl::VisitOr(
-    const OrCmd&) {assert(false);}
+void SimpleVM::Impl::VisitAnd(const AndCmd&) {assert(false);}
+
+void SimpleVM::Impl::VisitOr(const OrCmd&) {assert(false);}
 }
 }

@@ -14,6 +14,8 @@ class DataStorage;
 template<typename T> class ArrayValue;
 template<typename T> bool operator==(
     const ArrayValue<T> &lhs, const ArrayValue<T> &rhs) noexcept;
+template<typename T> bool operator!=(
+    const ArrayValue<T> &lhs, const ArrayValue<T> &rhs) noexcept;
 
 template<typename T> class ArrayValue {
  public:
@@ -51,6 +53,8 @@ template<typename T> class ArrayValue {
   bool IsDeeplyEqual(
       const ArrayValue<T> &rhs, uint8_t dimensions_count) const noexcept;
   friend bool operator== <>(const ArrayValue<T> &lhs, const ArrayValue<T> &rhs)
+      noexcept;
+  friend bool operator!= <>(const ArrayValue<T> &lhs, const ArrayValue<T> &rhs)
       noexcept;
   std::ostream &Print(std::ostream &stream, uint8_t dimensions_count) const;
 
