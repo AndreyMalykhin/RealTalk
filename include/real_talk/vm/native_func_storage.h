@@ -11,9 +11,10 @@ namespace vm {
 
 class NativeFuncStorage {
  public:
+  typedef std::unordered_map<std::string, NativeFuncValue> NativeFuncsMap;
+
   virtual ~NativeFuncStorage() {}
-  virtual const std::unordered_map<std::string, NativeFuncValue> &GetAll()
-      const = 0;
+  virtual const NativeFuncsMap &GetAll() const = 0;
 };
 }
 }

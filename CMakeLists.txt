@@ -82,6 +82,8 @@ add_library(real_talk_lib SHARED
   src/real_talk/vm/array_value.cpp
   src/real_talk/vm/string_value.cpp
   src/real_talk/vm/simple_vm.cpp
+  src/real_talk/vm/simple_vm_factory.cpp
+  src/real_talk/vm/simple_native_func_storage.cpp
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp
   src/real_talk/util/simple_file.cpp

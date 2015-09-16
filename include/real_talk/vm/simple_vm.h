@@ -21,10 +21,10 @@ class SimpleVM: public VM {
            const std::vector<NativeFuncValue> &native_funcs);
   ~SimpleVM();
   virtual void Execute() override;
-  virtual const DataStorage &GetGlobalVars() const override;
-  virtual const DataStorage &GetLocalVars() const override;
-  virtual const DataStorage &GetOperands() const override;
-  virtual const FuncFrames &GetFuncFrames() const override;
+  virtual const DataStorage &GetGlobalVars() const noexcept override;
+  virtual const DataStorage &GetLocalVars() const noexcept override;
+  virtual const DataStorage &GetOperands() const noexcept override;
+  virtual const FuncFrames &GetFuncFrames() const noexcept override;
 
  private:
   class Impl;

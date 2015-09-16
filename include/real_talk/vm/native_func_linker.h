@@ -28,8 +28,12 @@ class NativeFuncLinker {
   };
 
   virtual ~NativeFuncLinker() {}
+
+  /**
+   * @throws real_talk::vm::NativeFuncLinker::MissingFuncError
+   */
   virtual void Link(
-      const std::unordered_map<std::string, NativeFuncValue> &available_funcs,
+      const NativeFuncStorage::NativeFuncsMap &available_funcs,
       std::vector<NativeFuncValue> *output_used_funcs,
       real_talk::code::Exe *exe) const = 0;
 };

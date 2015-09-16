@@ -36,6 +36,10 @@
 #include "real_talk/code/less_or_equal_cmd.h"
 #include "real_talk/code/logical_negate_cmd.h"
 #include "real_talk/code/arithmetic_negate_cmd.h"
+#include "real_talk/code/pre_dec_cmd.h"
+#include "real_talk/code/pre_inc_cmd.h"
+#include "real_talk/code/and_cmd.h"
+#include "real_talk/code/or_cmd.h"
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
@@ -43,6 +47,7 @@ using std::vector;
 using std::string;
 using std::move;
 using std::unique_ptr;
+using std::exception;
 using real_talk::code::Exe;
 using real_talk::code::Code;
 using real_talk::code::CmdReader;
@@ -289,10 +294,12 @@ using real_talk::code::ArithmeticNegateCmd;
 using real_talk::code::ArithmeticNegateIntCmd;
 using real_talk::code::ArithmeticNegateLongCmd;
 using real_talk::code::ArithmeticNegateDoubleCmd;
+using real_talk::code::PreDecCmd;
 using real_talk::code::PreDecCharCmd;
 using real_talk::code::PreDecIntCmd;
 using real_talk::code::PreDecLongCmd;
 using real_talk::code::PreDecDoubleCmd;
+using real_talk::code::PreIncCmd;
 using real_talk::code::PreIncCharCmd;
 using real_talk::code::PreIncIntCmd;
 using real_talk::code::PreIncLongCmd;
@@ -305,10 +312,10 @@ class SimpleVM::Impl: private CmdVisitor {
  public:
   Impl(Exe *exe, const vector<NativeFuncValue> &native_funcs, SimpleVM *vm);
   void Execute();
-  const DataStorage &GetGlobalVars() const;
-  const DataStorage &GetLocalVars() const;
-  const DataStorage &GetOperands() const;
-  const FuncFrames &GetFuncFrames() const;
+  const DataStorage &GetGlobalVars() const noexcept;
+  const DataStorage &GetLocalVars() const noexcept;
+  const DataStorage &GetOperands() const noexcept;
+  const FuncFrames &GetFuncFrames() const noexcept;
 
  private:
   virtual void VisitCreateGlobalIntVar(
@@ -798,6 +805,8 @@ class SimpleVM::Impl: private CmdVisitor {
   template<typename T> void VisitLessOrEqual(const LessOrEqualCmd &cmd);
   template<typename T> void VisitArithmeticNegate(
       const ArithmeticNegateCmd &cmd);
+  template<typename T> void VisitPreDec(const PreDecCmd &cmd);
+  template<typename T> void VisitPreInc(const PreIncCmd &cmd);
   size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
 
   Exe *exe_;
@@ -818,19 +827,19 @@ SimpleVM::~SimpleVM() {}
 
 void SimpleVM::Execute() {impl_->Execute();}
 
-const DataStorage &SimpleVM::GetGlobalVars() const {
+const DataStorage &SimpleVM::GetGlobalVars() const noexcept {
   return impl_->GetGlobalVars();
 }
 
-const DataStorage &SimpleVM::GetLocalVars() const {
+const DataStorage &SimpleVM::GetLocalVars() const noexcept {
   return impl_->GetLocalVars();
 }
 
-const DataStorage &SimpleVM::GetOperands() const {
+const DataStorage &SimpleVM::GetOperands() const noexcept {
   return impl_->GetOperands();
 }
 
-const SimpleVM::FuncFrames &SimpleVM::GetFuncFrames() const {
+const SimpleVM::FuncFrames &SimpleVM::GetFuncFrames() const noexcept {
   return impl_->GetFuncFrames();
 }
 
@@ -856,25 +865,31 @@ void SimpleVM::Impl::Execute() {
   func_frames_.push_back(main_func_frame);
 
   while (cmds_code_.GetPosition() != main_cmds_end_position) {
-    cmd_reader_.GetNextCmd().Accept(this);
+    try {
+      cmd_reader_.GetNextCmd().Accept(this);
+    } catch (const ExecutionError&) {
+      throw;
+    } catch (const exception &error) {
+      throw ExecutionError(error.what());
+    }
   }
 
   assert(func_frames_.size() == 1);
 }
 
-const DataStorage &SimpleVM::Impl::GetGlobalVars() const {
+const DataStorage &SimpleVM::Impl::GetGlobalVars() const noexcept {
   return global_vars_;
 }
 
-const DataStorage &SimpleVM::Impl::GetLocalVars() const {
+const DataStorage &SimpleVM::Impl::GetLocalVars() const noexcept {
   return local_vars_;
 }
 
-const DataStorage &SimpleVM::Impl::GetOperands() const {
+const DataStorage &SimpleVM::Impl::GetOperands() const noexcept {
   return operands_;
 }
 
-const SimpleVM::FuncFrames &SimpleVM::Impl::GetFuncFrames() const {
+const SimpleVM::FuncFrames &SimpleVM::Impl::GetFuncFrames() const noexcept {
   return func_frames_;
 }
 
@@ -2064,7 +2079,7 @@ template<typename T> void SimpleVM::Impl::VisitLessOrEqual(
 }
 
 void SimpleVM::Impl::VisitLogicalNegateBool(const LogicalNegateBoolCmd&) {
-  operands_.Push(!operands_.Pop<BoolValue>());
+  operands_.Push<BoolValue>(!operands_.Pop<BoolValue>());
 }
 
 void SimpleVM::Impl::VisitArithmeticNegateInt(
@@ -2084,27 +2099,59 @@ void SimpleVM::Impl::VisitArithmeticNegateDouble(
 
 template<typename T> void SimpleVM::Impl::VisitArithmeticNegate(
     const ArithmeticNegateCmd&) {
-  operands_.Push(-operands_.Pop<T>());
+  operands_.Push<T>(-operands_.Pop<T>());
 }
 
-void SimpleVM::Impl::VisitPreDecChar(const PreDecCharCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreDecChar(const PreDecCharCmd &cmd) {
+  VisitPreDec<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitPreDecInt(const PreDecIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreDecInt(const PreDecIntCmd &cmd) {
+  VisitPreDec<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitPreDecLong(const PreDecLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreDecLong(const PreDecLongCmd &cmd) {
+  VisitPreDec<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitPreDecDouble(const PreDecDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreDecDouble(const PreDecDoubleCmd &cmd) {
+  VisitPreDec<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitPreIncChar(const PreIncCharCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitPreDec(const PreDecCmd&) {
+  operands_.Push<T>(operands_.Pop<T>() - 1);
+}
 
-void SimpleVM::Impl::VisitPreIncInt(const PreIncIntCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreIncChar(const PreIncCharCmd &cmd) {
+  VisitPreInc<CharValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitPreIncLong(const PreIncLongCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreIncInt(const PreIncIntCmd &cmd) {
+  VisitPreInc<IntValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitPreIncDouble(const PreIncDoubleCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreIncLong(const PreIncLongCmd &cmd) {
+  VisitPreInc<LongValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitAnd(const AndCmd&) {assert(false);}
+void SimpleVM::Impl::VisitPreIncDouble(const PreIncDoubleCmd &cmd) {
+  VisitPreInc<DoubleValue>(cmd);
+}
 
-void SimpleVM::Impl::VisitOr(const OrCmd&) {assert(false);}
+template<typename T> void SimpleVM::Impl::VisitPreInc(const PreIncCmd&) {
+  operands_.Push<T>(operands_.Pop<T>() + 1);
+}
+
+void SimpleVM::Impl::VisitAnd(const AndCmd&) {
+  const auto rhs = operands_.Pop<BoolValue>();
+  const auto lhs = operands_.Pop<BoolValue>();
+  operands_.Push(BoolValue(lhs && rhs));
+}
+
+void SimpleVM::Impl::VisitOr(const OrCmd&) {
+  const auto rhs = operands_.Pop<BoolValue>();
+  const auto lhs = operands_.Pop<BoolValue>();
+  operands_.Push(BoolValue(lhs || rhs));
+}
 }
 }

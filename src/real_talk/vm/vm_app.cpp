@@ -82,7 +82,7 @@ void VMApp::Run(int argc, const char *argv[]) {
     return;
   }
 
-  const unordered_map<string, NativeFuncValue> &available_native_funcs =
+  const NativeFuncStorage::NativeFuncsMap &available_native_funcs =
       native_func_storage_.GetAll();
   vector<NativeFuncValue> used_native_funcs;
 
@@ -96,7 +96,12 @@ void VMApp::Run(int argc, const char *argv[]) {
   }
 
   unique_ptr<VM> vm = vm_factory_.Create(exe.get(), used_native_funcs);
-  vm->Execute();
+
+  try {
+    vm->Execute();
+  } catch (const VM::ExecutionError &error) {
+    msg_printer_.PrintError(error.what());
+  }
 }
 }
 }

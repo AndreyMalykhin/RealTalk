@@ -2824,5 +2824,99 @@ TEST_F(SimpleVMTest, ArithmeticNegateDoubleCmd) {
                    value,
                    expected_value);
 }
+
+TEST_F(SimpleVMTest, PreDecIntCmd) {
+  int32_t value = INT32_C(7);
+  IntValue expected_value = 6;
+  TestUnaryExprCmd(CmdId::kLoadIntValue,
+                   CmdId::kPreDecInt,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, PreDecLongCmd) {
+  int64_t value = INT64_C(7);
+  LongValue expected_value = 6;
+  TestUnaryExprCmd(CmdId::kLoadLongValue,
+                   CmdId::kPreDecLong,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, PreDecDoubleCmd) {
+  double value = 7.0;
+  DoubleValue expected_value = 6.0;
+  TestUnaryExprCmd(CmdId::kLoadDoubleValue,
+                   CmdId::kPreDecDouble,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, PreDecCharCmd) {
+  char value = 7;
+  CharValue expected_value = 6;
+  TestUnaryExprCmd(CmdId::kLoadCharValue,
+                   CmdId::kPreDecChar,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, PreIncIntCmd) {
+  int32_t value = INT32_C(7);
+  IntValue expected_value = 8;
+  TestUnaryExprCmd(CmdId::kLoadIntValue,
+                   CmdId::kPreIncInt,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, PreIncLongCmd) {
+  int64_t value = INT64_C(7);
+  LongValue expected_value = 8;
+  TestUnaryExprCmd(CmdId::kLoadLongValue,
+                   CmdId::kPreIncLong,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, PreIncDoubleCmd) {
+  double value = 7.0;
+  DoubleValue expected_value = 8.0;
+  TestUnaryExprCmd(CmdId::kLoadDoubleValue,
+                   CmdId::kPreIncDouble,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, PreIncCharCmd) {
+  char value = 7;
+  CharValue expected_value = 8;
+  TestUnaryExprCmd(CmdId::kLoadCharValue,
+                   CmdId::kPreIncChar,
+                   value,
+                   expected_value);
+}
+
+TEST_F(SimpleVMTest, AndCmd) {
+  bool lhs_value = true;
+  bool rhs_value = false;
+  BoolValue expected_value = false;
+  TestBinaryExprCmd(CmdId::kLoadBoolValue,
+                    CmdId::kAnd,
+                    lhs_value,
+                    rhs_value,
+                    expected_value);
+}
+
+TEST_F(SimpleVMTest, OrCmd) {
+  bool lhs_value = true;
+  bool rhs_value = false;
+  BoolValue expected_value = true;
+  TestBinaryExprCmd(CmdId::kLoadBoolValue,
+                    CmdId::kOr,
+                    lhs_value,
+                    rhs_value,
+                    expected_value);
+}
 }
 }
