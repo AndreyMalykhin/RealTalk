@@ -84,6 +84,10 @@ add_library(real_talk_lib SHARED
   src/real_talk/vm/simple_vm.cpp
   src/real_talk/vm/simple_vm_factory.cpp
   src/real_talk/vm/simple_native_func_storage.cpp
+  src/real_talk/vm/simple_msg_printer.cpp
+  src/real_talk/vm/simple_vm_config_parser.cpp
+  src/real_talk/vm/simple_native_func_linker.cpp
+  src/real_talk/stdlib/io.cpp
   src/real_talk/util/errors.cpp
   src/real_talk/util/simple_dir_creator.cpp
   src/real_talk/util/simple_file.cpp
@@ -115,6 +119,9 @@ add_executable(real_talk_tests_exe
   test/real_talk/linker/simple_linker_config_parser_test.cpp
   test/real_talk/vm/vm_app_test.cpp
   test/real_talk/vm/simple_vm_test.cpp
+  test/real_talk/vm/simple_msg_printer_test.cpp
+  test/real_talk/vm/simple_vm_config_parser_test.cpp
+  test/real_talk/vm/simple_native_func_linker_test.cpp
   test/real_talk/util/simple_dir_creator_test.cpp
   test/real_talk/util/simple_file_test.cpp
   test/real_talk/util/simple_file_searcher_test.cpp

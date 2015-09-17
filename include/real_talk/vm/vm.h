@@ -30,6 +30,7 @@ class VM {
   virtual const DataStorage &GetGlobalVars() const noexcept = 0;
   virtual const DataStorage &GetLocalVars() const noexcept = 0;
   virtual const DataStorage &GetOperands() const noexcept = 0;
+  virtual DataStorage &GetOperands() noexcept = 0;
   virtual const FuncFrames &GetFuncFrames() const noexcept = 0;
 };
 }

@@ -113,6 +113,10 @@ class VMMock: public VM {
     assert(false);
   }
 
+  virtual DataStorage &GetOperands() noexcept override {
+    assert(false);
+  }
+
   virtual const FuncFrames &GetFuncFrames() const noexcept override {
     assert(false);
   }

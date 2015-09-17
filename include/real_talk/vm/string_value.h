@@ -15,6 +15,7 @@ class StringValue {
   StringValue(const StringValue&) noexcept;
   StringValue(StringValue&&) noexcept;
   ~StringValue();
+  const std::string &GetData() const noexcept;
   void operator=(const StringValue&) noexcept;
   void operator=(StringValue&&) noexcept;
   friend StringValue operator+(const StringValue &lhs, const StringValue &rhs);

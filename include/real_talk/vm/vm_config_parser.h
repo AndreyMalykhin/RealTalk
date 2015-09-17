@@ -15,7 +15,7 @@ class VMConfigParser {
  public:
   class BadArgsError: public std::runtime_error {
    public:
-    explicit BadArgsError(const std::string &msg): std::runtime_error(msg) {}
+    using std::runtime_error::runtime_error;
   };
 
   virtual ~VMConfigParser() {}

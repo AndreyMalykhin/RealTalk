@@ -24,6 +24,7 @@ class SimpleVM: public VM {
   virtual const DataStorage &GetGlobalVars() const noexcept override;
   virtual const DataStorage &GetLocalVars() const noexcept override;
   virtual const DataStorage &GetOperands() const noexcept override;
+  virtual DataStorage &GetOperands() noexcept override;
   virtual const FuncFrames &GetFuncFrames() const noexcept override;
 
  private:

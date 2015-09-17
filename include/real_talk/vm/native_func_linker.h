@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "real_talk/vm/native_func_value.h"
+#include "real_talk/vm/native_func_storage.h"
 
 namespace real_talk {
 namespace code {

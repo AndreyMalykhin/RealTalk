@@ -45,6 +45,11 @@ void StringValue::DecRefsCount() noexcept {
   }
 }
 
+const string &StringValue::GetData() const noexcept {
+  assert(storage_);
+  return storage_->GetData();
+}
+
 void StringValue::operator=(const StringValue &rhs) noexcept {
   if (this != &rhs) {
     assert(rhs.storage_);

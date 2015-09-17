@@ -315,6 +315,7 @@ class SimpleVM::Impl: private CmdVisitor {
   const DataStorage &GetGlobalVars() const noexcept;
   const DataStorage &GetLocalVars() const noexcept;
   const DataStorage &GetOperands() const noexcept;
+  DataStorage &GetOperands() noexcept;
   const FuncFrames &GetFuncFrames() const noexcept;
 
  private:
@@ -839,6 +840,10 @@ const DataStorage &SimpleVM::GetOperands() const noexcept {
   return impl_->GetOperands();
 }
 
+DataStorage &SimpleVM::GetOperands() noexcept {
+  return impl_->GetOperands();
+}
+
 const SimpleVM::FuncFrames &SimpleVM::GetFuncFrames() const noexcept {
   return impl_->GetFuncFrames();
 }
@@ -886,6 +891,10 @@ const DataStorage &SimpleVM::Impl::GetLocalVars() const noexcept {
 }
 
 const DataStorage &SimpleVM::Impl::GetOperands() const noexcept {
+  return operands_;
+}
+
+DataStorage &SimpleVM::Impl::GetOperands() noexcept {
   return operands_;
 }
 
