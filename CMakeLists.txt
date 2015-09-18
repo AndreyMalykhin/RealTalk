@@ -140,4 +140,4 @@ add_executable(real_talk_linker_exe
 )
 target_link_libraries(real_talk_linker_exe real_talk_lib)
 SET_TARGET_PROPERTIES(real_talk_linker_exe PROPERTIES OUTPUT_NAME realtalkl)
-file(COPY test/test_resources DESTINATION .)
+file(COPY test/test_resources stdlib DESTINATION .)

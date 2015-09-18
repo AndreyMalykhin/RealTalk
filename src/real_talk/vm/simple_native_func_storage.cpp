@@ -7,7 +7,8 @@ namespace vm {
 namespace {
 
 const auto &funcs = *new NativeFuncStorage::NativeFuncsMap({
-    {"print", &real_talk::stdlib::Print}
+    {"print", &real_talk::stdlib::Print},
+    {"doubleToString", &real_talk::stdlib::DoubleToString}
   });
 }
 

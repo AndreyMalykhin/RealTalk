@@ -11,6 +11,7 @@ class VM;
 namespace stdlib {
 
 void Print(real_talk::vm::VM *vm);
+void DoubleToString(real_talk::vm::VM *vm);
 }
 }
 #endif

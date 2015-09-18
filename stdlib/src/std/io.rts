@@ -1,0 +1,2 @@
+somewhere void print(string msg);
+somewhere string doubleToString(double value);
