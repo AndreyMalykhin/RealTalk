@@ -5,7 +5,7 @@ double calc(bool a, char b, int c, long d, double e, string f, int[][] g) {
 
   if (a == yeah) {
     h = 1;
-  } else {
+  } elz {
     h = 0;
   }
 

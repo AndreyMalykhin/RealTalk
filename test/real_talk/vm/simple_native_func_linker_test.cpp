@@ -33,6 +33,7 @@ TEST_F(SimpleNativeFuncLinkerTest, Link) {
   actual_cmds_code->Write(unlinked_func_index);
   actual_cmds_code->Write(unlinked_func_index);
   uint32_t main_cmds_code_size = actual_cmds_code->GetPosition();
+  actual_cmds_code->SetPosition(UINT32_C(0));
   vector<string> native_func_defs = {"func3", "func2", "func"};
   vector<IdAddresses> native_func_refs = {
     {"func", {UINT32_C(0), UINT32_C(4)}},
@@ -41,7 +42,7 @@ TEST_F(SimpleNativeFuncLinkerTest, Link) {
   NativeFuncValue func2 = [](VM*) {};
   NativeFuncValue func3 = [](VM*) {};
   NativeFuncStorage::NativeFuncsMap available_funcs = {
-    {"func", func}, {"func3", func3}, {"func2", func2}};
+    {"func2", func2}, {"func3", func3}, {"func", func}};
   vector<NativeFuncValue> actual_used_funcs;
   auto exe_version = UINT32_C(1);
   auto global_vars_size = UINT32_C(0);
@@ -60,10 +61,40 @@ TEST_F(SimpleNativeFuncLinkerTest, Link) {
   auto linked_func_index2 = UINT32_C(1);
   expected_cmds_code.Write(linked_func_index2);
   expected_cmds_code.Write(linked_func_index2);
+  expected_cmds_code.SetPosition(UINT32_C(0));
 
   SimpleNativeFuncLinker().Link(available_funcs, &actual_used_funcs, &exe);
   ASSERT_EQ(expected_used_funcs, actual_used_funcs);
   ASSERT_EQ(expected_cmds_code, exe.GetCmdsCode());
+}
+
+TEST_F(SimpleNativeFuncLinkerTest, MissingFuncError) {
+  NativeFuncStorage::NativeFuncsMap available_funcs;
+  vector<NativeFuncValue> used_funcs;
+  unique_ptr<Code> cmds_code(new Code());
+  auto func_index = numeric_limits<uint32_t>::max();
+  cmds_code->Write(func_index);
+  uint32_t main_cmds_code_size = cmds_code->GetPosition();
+  string expected_func_id = "func";
+  vector<string> native_func_defs = {expected_func_id};
+  vector<IdAddresses> native_func_refs = {
+    {expected_func_id, {UINT32_C(0)}}};
+  auto exe_version = UINT32_C(1);
+  auto global_vars_size = UINT32_C(0);
+  Exe exe(exe_version,
+          move(cmds_code),
+          main_cmds_code_size,
+          global_vars_size,
+          native_func_defs,
+          native_func_refs);
+
+  try {
+    SimpleNativeFuncLinker().Link(available_funcs, &used_funcs, &exe);
+    FAIL();
+  } catch (const NativeFuncLinker::MissingFuncError &error) {
+    ASSERT_EQ(expected_func_id, error.GetFuncId());
+    ASSERT_STREQ("Missing native function \"func\"", error.what());
+  }
 }
 }
 }

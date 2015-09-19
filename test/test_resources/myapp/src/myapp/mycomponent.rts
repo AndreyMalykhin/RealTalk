@@ -1,7 +1,7 @@
 
 
-checkthisout "mylib/mylib.rts";
-checkthisout "mylib2/mylib2.rts";
+homie "mylib/mylib.rts";
+homie "mylib2/mylib2.rts";
 
 bool a = nah;
 char b = '1';
@@ -14,9 +14,9 @@ int[][] g = fresh int[][] {fresh int[] {1, 2}, fresh int[] {3, 4}};
 roll (yeah) {
   if (c == 1) {
     calc(a, b, c, d, e, f, g);
-  } else if (c > 1) {
+  } elz if (c > 1) {
     holdon;
-  } else {
+  } elz {
     keeprollin;
   }
 }

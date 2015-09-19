@@ -34,8 +34,13 @@ void Exe::Accept(const CodeContainerVisitor &visitor) const {
   visitor.VisitExe(*this);
 }
 
-bool Exe::IsEqual(const CodeContainer&) const {return true;}
+bool Exe::IsEqual(const CodeContainer &container) const {
+  const auto &rhs = static_cast<const Exe&>(container);
+  return global_vars_size_ == rhs.global_vars_size_;
+}
 
-void Exe::Print(ostream&) {}
+void Exe::Print(ostream &stream) {
+  stream << "global_vars_size=" << global_vars_size_;
+}
 }
 }

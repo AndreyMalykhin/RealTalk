@@ -1333,19 +1333,19 @@ TEST_F(SimpleLexerTest, ImportToken) {
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kImport, "checkthisout", UINT32_C(0), UINT32_C(0))
+      TokenInfo(Token::kImport, "homie", UINT32_C(0), UINT32_C(0))
     };
-    string code = "checkthisout";
+    string code = "homie";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kImport, "checkthisout", UINT32_C(0), UINT32_C(0)),
-      TokenInfo(Token::kImport, "checkthisout", UINT32_C(0), UINT32_C(13))
+      TokenInfo(Token::kImport, "homie", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kImport, "homie", UINT32_C(0), UINT32_C(6))
     };
-    string code = "checkthisout checkthisout";
+    string code = "homie homie";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }
@@ -1387,19 +1387,19 @@ TEST_F(SimpleLexerTest, ElseToken) {
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kElse, "else", UINT32_C(0), UINT32_C(0))
+      TokenInfo(Token::kElse, "elz", UINT32_C(0), UINT32_C(0))
     };
-    string code = "else";
+    string code = "elz";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kElse, "else", UINT32_C(0), UINT32_C(0)),
-      TokenInfo(Token::kElse, "else", UINT32_C(0), UINT32_C(5))
+      TokenInfo(Token::kElse, "elz", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kElse, "elz", UINT32_C(0), UINT32_C(4))
     };
-    string code = "else else";
+    string code = "elz elz";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }
