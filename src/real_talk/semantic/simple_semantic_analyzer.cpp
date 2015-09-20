@@ -214,6 +214,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
   class IsDataTypeSupportedByAssign;
   class IsDataTypeSupportedByLogicalExpr;
   class IsDataTypeSupportedByArithmeticExpr;
+  class IsDataTypeSupportedBySum;
   class IsDataTypeSupportedByGreater;
   class IsDataTypeSupportedByEqual;
   class IsDataTypeSupportedByNegative;
@@ -576,6 +577,16 @@ class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByArithmeticExpr
   virtual void VisitLong(const LongDataType&) override {result_ = true;}
   virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
   virtual void VisitChar(const CharDataType&) override {result_ = true;}
+};
+
+class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedBySum
+    : public DataTypeQuery {
+ private:
+  virtual void VisitInt(const IntDataType&) override {result_ = true;}
+  virtual void VisitLong(const LongDataType&) override {result_ = true;}
+  virtual void VisitDouble(const DoubleDataType&) override {result_ = true;}
+  virtual void VisitChar(const CharDataType&) override {result_ = true;}
+  virtual void VisitString(const StringDataType&) override {result_ = true;}
 };
 
 class SimpleSemanticAnalyzer::Impl::IsDataTypeSupportedByNegative
@@ -1628,7 +1639,7 @@ void SimpleSemanticAnalyzer::Impl::VisitSub(const SubNode &sub_node) {
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitSum(const SumNode &sum_node) {
-  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
+  IsDataTypeSupportedBySum data_type_support_query;
   VisitBinaryExpr(sum_node,
                   ValueType::kRight,
                   unique_ptr<DataType>(),

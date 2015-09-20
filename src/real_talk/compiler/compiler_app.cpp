@@ -25,6 +25,7 @@
 #include "real_talk/util/file.h"
 #include "real_talk/util/errors.h"
 #include "real_talk/util/file_searcher.h"
+#include "real_talk/util/logger.h"
 #include "real_talk/compiler/msg_printer.h"
 #include "real_talk/compiler/compiler_config_parser.h"
 #include "real_talk/compiler/compiler_config.h"
@@ -114,6 +115,7 @@ using real_talk::util::DirCreator;
 using real_talk::util::File;
 using real_talk::util::IOError;
 using real_talk::util::FileSearcher;
+using real_talk::util::g_logger;
 
 namespace real_talk {
 namespace compiler {
@@ -255,6 +257,8 @@ void CompilerApp::Run(int argc, const char *argv[]) const {
     return;
   }
 
+  g_logger.SetEnabled(config_->IsDebug());
+
   if (cmd == CompilerCmd::kHelp) {
     msg_printer_.PrintHelp(config_parser_.GetHelp());
     return;
@@ -285,7 +289,7 @@ void CompilerApp::Run(int argc, const char *argv[]) const {
   try {
     module = code_generator_->Generate(
         *main_program, *semantic_analysis, code_version);
-    Log([&module](ostream *stream) {
+    g_logger.Log([&module](ostream *stream) {
       module->GetCmdsCode().SetPosition(0);
       *stream << "\n[module]\n\n" << *module;
     });
@@ -444,7 +448,7 @@ void CompilerApp::ParseFile(const path &file_path,
     return;
   }
 
-  Log([&program, &file_path](ostream *stream) {
+  g_logger.Log([&program, &file_path](ostream *stream) {
       *stream << "\n[program]\nfile=" << file_path << "\n\n" << **program;
     });
 
@@ -472,12 +476,6 @@ bool CompilerApp::HasSemanticErrors(
   }
 
   return false;
-}
-
-void CompilerApp::Log(LogDataWriter data_writer) const {
-  if (config_->IsDebug()) {
-    data_writer(&cout);
-  }
 }
 }
 }

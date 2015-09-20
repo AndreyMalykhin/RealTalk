@@ -89,10 +89,11 @@ add_library(real_talk_lib SHARED
   src/real_talk/vm/simple_native_func_linker.cpp
   src/real_talk/stdlib/io.cpp
   src/real_talk/util/errors.cpp
+  src/real_talk/util/logger.cpp
   src/real_talk/util/simple_dir_creator.cpp
   src/real_talk/util/simple_file.cpp
   src/real_talk/util/simple_file_searcher.cpp
-  )
+)
 target_link_libraries(real_talk_lib ${Boost_LIBRARIES})
 SET_TARGET_PROPERTIES(real_talk_lib PROPERTIES OUTPUT_NAME realtalk)
 add_executable(real_talk_tests_exe
@@ -130,14 +131,19 @@ add_executable(real_talk_tests_exe
 target_include_directories(real_talk_tests_exe PRIVATE test)
 target_link_libraries(real_talk_tests_exe ${gmock_lib} real_talk_lib)
 SET_TARGET_PROPERTIES(real_talk_tests_exe PROPERTIES OUTPUT_NAME realtalktests)
-add_executable(real_talk_compiler_exe
-  src/real_talk/compiler/main.cpp
-)
+add_executable(real_talk_compiler_exe src/real_talk/compiler/main.cpp)
 target_link_libraries(real_talk_compiler_exe real_talk_lib)
 SET_TARGET_PROPERTIES(real_talk_compiler_exe PROPERTIES OUTPUT_NAME realtalkc)
-add_executable(real_talk_linker_exe
-  src/real_talk/linker/main.cpp
-)
+add_executable(real_talk_linker_exe src/real_talk/linker/main.cpp)
 target_link_libraries(real_talk_linker_exe real_talk_lib)
 SET_TARGET_PROPERTIES(real_talk_linker_exe PROPERTIES OUTPUT_NAME realtalkl)
-file(COPY test/test_resources stdlib DESTINATION .)
+add_executable(real_talk_vm_exe src/real_talk/vm/main.cpp)
+target_link_libraries(real_talk_vm_exe real_talk_lib)
+SET_TARGET_PROPERTIES(real_talk_vm_exe PROPERTIES OUTPUT_NAME realtalkvm)
+file(COPY test/fixtures DESTINATION .)
+INSTALL(TARGETS real_talk_compiler_exe real_talk_linker_exe real_talk_vm_exe real_talk_lib
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+INSTALL(DIRECTORY stdlib DESTINATION share/realtalk)

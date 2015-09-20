@@ -20,7 +20,7 @@ class SimpleDirCreatorTest: public Test {
 };
 
 TEST_F(SimpleDirCreatorTest, Create) {
-  path parent_dir_path(TestConfig::GetResourceDir() / path("parent"));
+  path parent_dir_path(TestConfig::GetFixturesDir() / path("parent"));
   path child_dir_path(parent_dir_path / path("child"));
   ASSERT_FALSE(exists(parent_dir_path));
   ASSERT_FALSE(exists(child_dir_path));

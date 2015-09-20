@@ -1495,19 +1495,19 @@ TEST_F(SimpleLexerTest, NativeToken) {
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kNative, "somewhere", UINT32_C(0), UINT32_C(0))
+      TokenInfo(Token::kNative, "real", UINT32_C(0), UINT32_C(0))
     };
-    string code = "somewhere";
+    string code = "real";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }
 
   {
     const vector<TokenInfo> tokens = {
-      TokenInfo(Token::kNative, "somewhere", UINT32_C(0), UINT32_C(0)),
-      TokenInfo(Token::kNative, "somewhere", UINT32_C(0), UINT32_C(10))
+      TokenInfo(Token::kNative, "real", UINT32_C(0), UINT32_C(0)),
+      TokenInfo(Token::kNative, "real", UINT32_C(0), UINT32_C(5))
     };
-    string code = "somewhere somewhere";
+    string code = "real real";
     TestTokens test_tokens = {code, tokens};
     test_token_suites.push_back(test_tokens);
   }

@@ -1,0 +1,39 @@
+
+homie "std/io.rts";
+homie "mylib/mylib.rts";
+homie "mylib2/mylib2.rts";
+
+bool bool_var = nah;
+char char_var = '1';
+int int_var = 2;
+long long_var = 3L;
+double double_var = 4.4;
+string string_var = "55";
+int[][] array_var = fresh int[][] {
+  fresh int[] {6},
+  fresh int[] {7, 8}
+};
+
+print("global_int_var=" + doubleToString(global_int_var + 1));
+
+roll (!bool_var) {
+  if (int_var >= 4) {
+    holdon;
+  } elz if (int_var == 3) {
+    ++int_var;
+    keeprollin;
+  } elz {
+    string_var = "calc=" + doubleToString(calc(
+      bool_var,
+      char_var,
+      int_var,
+      long_var,
+      double_var,
+      string_var,
+      array_var));
+    print(string_var);
+    print("array_var[0][0]=" + doubleToString(array_var[0][0]));
+    ++int_var;
+  }
+}
+

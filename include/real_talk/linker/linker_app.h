@@ -2,9 +2,6 @@
 #ifndef _REAL_TALK_LINKER_LINKER_APP_H_
 #define _REAL_TALK_LINKER_LINKER_APP_H_
 
-#include <functional>
-#include <iostream>
-
 namespace real_talk {
 namespace util {
 
@@ -42,9 +39,6 @@ class LinkerApp {
   void Run(int argc, const char *argv[]) const;
 
  private:
-  typedef std::function<void (std::ostream *stream)> LogDataWriter;
-  void Log(LogDataWriter data_provider) const;
-
   const LinkerConfigParser &config_parser_;
   const MsgPrinter &msg_printer_;
   const real_talk::util::FileSearcher &file_searcher_;

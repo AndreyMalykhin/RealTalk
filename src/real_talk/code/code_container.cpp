@@ -91,6 +91,7 @@ ostream &operator<<(ostream &stream, CodeContainer &container) {
          << "\ntotal_cmds_code_size=" << cmds_code.GetSize()
          << "\ncmds_code_position=" << cmds_code.GetPosition()
          << '\n';
+  const uint32_t old_position = cmds_code.GetPosition();
 
   if (cmds_code.GetSize()) {
     CmdReader cmd_reader;
@@ -105,6 +106,7 @@ ostream &operator<<(ostream &stream, CodeContainer &container) {
   }
 
   container.Print(stream);
+  cmds_code.SetPosition(old_position);
   return stream;
 }
 }

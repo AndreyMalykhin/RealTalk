@@ -52,7 +52,7 @@ class SimpleFileTest: public Test {
 };
 
 TEST_F(SimpleFileTest, Read) {
-  path file_path(TestConfig::GetResourceDir() / path("file.txt"));
+  path file_path(TestConfig::GetFixturesDir() / path("file.txt"));
   char expected_content[] = "abc\n";
   size_t expected_content_size = 4;
   streampos expected_stream_position = 0;
@@ -65,7 +65,7 @@ TEST_F(SimpleFileTest, Read) {
 }
 
 TEST_F(SimpleFileTest, Write) {
-  path file_path(TestConfig::GetResourceDir() / path("file2.txt"));
+  path file_path(TestConfig::GetFixturesDir() / path("file2.txt"));
   files_to_remove_.push_back(file_path);
   Code code;
   code.Write<char>('a');

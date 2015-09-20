@@ -49,7 +49,7 @@ const unordered_map<string, Token> &SimpleLexer::kKeywordTokens =
         {"roll", Token::kWhile},
         {"if", Token::kIf},
         {"elz", Token::kElse},
-        {"somewhere", Token::kNative}
+        {"real", Token::kNative}
       });
 
 SimpleLexer::SimpleLexer(istream &stream)

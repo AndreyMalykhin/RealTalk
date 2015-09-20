@@ -1,0 +1,23 @@
+
+double calc(
+  bool bool_var,
+  char char_var,
+  int int_var,
+  long long_var,
+  double double_var,
+  string string_var,
+  int[][] array_var) {
+  int tmp = 1;
+
+  if (bool_var) {
+    tmp = tmp + 1;
+  }
+
+  if (string_var != "swag") {
+    tmp = tmp + 2;
+  }
+
+  array_var[0][0] = array_var[0][0] + 1;
+  bringitback char_var + int_var * long_var - double_var * array_var[0][0] / tmp;
+}
+

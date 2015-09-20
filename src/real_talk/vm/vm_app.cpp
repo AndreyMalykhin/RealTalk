@@ -6,6 +6,7 @@
 #include <vector>
 #include "real_talk/util/file.h"
 #include "real_talk/util/errors.h"
+#include "real_talk/util/logger.h"
 #include "real_talk/code/exe.h"
 #include "real_talk/code/exe_reader.h"
 #include "real_talk/vm/native_func_storage.h"
@@ -26,6 +27,7 @@ using std::string;
 using boost::format;
 using real_talk::util::File;
 using real_talk::util::IOError;
+using real_talk::util::g_logger;
 using real_talk::code::ExeReader;
 using real_talk::code::Exe;
 using real_talk::code::Code;
@@ -61,6 +63,8 @@ void VMApp::Run(int argc, const char *argv[]) {
     msg_printer_.PrintError("Invalid arguments");
     return;
   }
+
+  g_logger.SetEnabled(config_->IsDebug());
 
   if (cmd == VMCmd::kHelp) {
     msg_printer_.PrintHelp(config_parser_.GetHelp());

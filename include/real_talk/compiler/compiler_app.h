@@ -3,7 +3,6 @@
 #define _REAL_TALK_COMPILER_COMPILER_APP_H_
 
 #include <vector>
-#include <functional>
 #include "real_talk/semantic/semantic_analyzer.h"
 #include "real_talk/compiler/msg_printer.h"
 
@@ -64,8 +63,6 @@ class CompilerApp {
   void Run(int argc, const char *argv[]) const;
 
  private:
-  typedef std::function<void (std::ostream *stream)> LogDataWriter;
-
   struct ProgramImportStmt {
     const real_talk::parser::ProgramNode *program;
     const real_talk::parser::ImportNode *stmt;
@@ -84,7 +81,6 @@ class CompilerApp {
       std::unique_ptr<real_talk::parser::ProgramNode> *program,
       std::vector<ProgramImportStmt> *program_import_stmts,
       bool *is_success) const;
-  void Log(LogDataWriter data_provider) const;
 
   const real_talk::util::FileSearcher &file_searcher_;
   const real_talk::lexer::LexerFactory &lexer_factory_;

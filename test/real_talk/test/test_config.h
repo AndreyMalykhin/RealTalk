@@ -9,10 +9,10 @@ namespace test {
 
 class TestConfig {
  public:
-  static const boost::filesystem::path &GetResourceDir() {
-    static const boost::filesystem::path &kResourceDir =
-        *(new boost::filesystem::path("test_resources"));
-    return kResourceDir;
+  static const boost::filesystem::path &GetFixturesDir() {
+    static const boost::filesystem::path &kFixturesDir =
+        *(new boost::filesystem::path("fixtures"));
+    return kFixturesDir;
   }
 };
 }

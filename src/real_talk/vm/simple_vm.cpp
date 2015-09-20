@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include "real_talk/util/logger.h"
 #include "real_talk/code/exe.h"
 #include "real_talk/code/cmd_visitor.h"
 #include "real_talk/code/cmd_reader.h"
@@ -43,11 +44,13 @@
 #include "real_talk/vm/data_storage.h"
 #include "real_talk/vm/simple_vm.h"
 
+using std::ostream;
 using std::vector;
 using std::string;
 using std::move;
 using std::unique_ptr;
 using std::exception;
+using real_talk::util::g_logger;
 using real_talk::code::Exe;
 using real_talk::code::Code;
 using real_talk::code::CmdReader;
@@ -304,6 +307,7 @@ using real_talk::code::PreIncCharCmd;
 using real_talk::code::PreIncIntCmd;
 using real_talk::code::PreIncLongCmd;
 using real_talk::code::PreIncDoubleCmd;
+using real_talk::code::Cmd;
 
 namespace real_talk {
 namespace vm {
@@ -857,21 +861,31 @@ SimpleVM::Impl::Impl(
       global_vars_(exe->GetGlobalVarsSize(), exe->GetGlobalVarsSize()) {
   assert(exe_);
   assert(vm_);
-  assert(cmds_code_.GetPosition() <= exe_->GetMainCmdsCodeSize());
+  assert(cmds_code_.GetPosition() == UINT32_C(0));
   cmd_reader_.SetCode(&cmds_code_);
 }
 
 void SimpleVM::Impl::Execute() {
   assert(func_frames_.empty());
+  g_logger.Log([this](ostream *stream) {
+      *stream << "[input]\n\n" << *(this->exe_) << "\n\n";
+    });
   const uint32_t main_cmds_end_position = exe_->GetMainCmdsCodeSize();
   const size_t local_vars_start_index = 0;
   const uint32_t return_address = UINT32_C(0);
   const FuncFrame main_func_frame(local_vars_start_index, return_address);
   func_frames_.push_back(main_func_frame);
 
-  while (cmds_code_.GetPosition() != main_cmds_end_position) {
+  while (cmds_code_.GetPosition() != main_cmds_end_position
+         || func_frames_.size() != 1) {
+    const uint32_t code_position = cmds_code_.GetPosition();
+
     try {
-      cmd_reader_.GetNextCmd().Accept(this);
+      const Cmd &cmd = cmd_reader_.GetNextCmd();
+      g_logger.Log([code_position, &cmd](ostream *stream) {
+          *stream << code_position << ' ' << cmd << '\n';
+        });
+      cmd.Accept(this);
     } catch (const ExecutionError&) {
       throw;
     } catch (const exception &error) {

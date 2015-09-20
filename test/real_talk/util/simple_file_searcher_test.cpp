@@ -21,7 +21,7 @@ class SimpleFileSearcherTest: public Test {
  protected:
   virtual void SetUp() override {
     old_current_path_ = current_path();
-    current_path(TestConfig::GetResourceDir() / path("myapp"));
+    current_path(TestConfig::GetFixturesDir() / path("myapp"));
   }
 
   virtual void TearDown() override {

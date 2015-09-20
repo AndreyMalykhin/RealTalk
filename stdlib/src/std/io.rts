@@ -1,2 +1,2 @@
-somewhere void print(string msg);
-somewhere string doubleToString(double value);
+real void print(string msg);
+real string doubleToString(double value);

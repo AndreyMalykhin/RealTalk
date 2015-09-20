@@ -1,0 +1,3 @@
+
+int global_int_var = 777;
+

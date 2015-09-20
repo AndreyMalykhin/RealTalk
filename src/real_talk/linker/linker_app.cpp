@@ -7,6 +7,7 @@
 #include "real_talk/util/file.h"
 #include "real_talk/util/file_searcher.h"
 #include "real_talk/util/dir_creator.h"
+#include "real_talk/util/logger.h"
 #include "real_talk/code/module.h"
 #include "real_talk/code/module_reader.h"
 #include "real_talk/code/code_container_writer.h"
@@ -30,6 +31,7 @@ using real_talk::util::IOError;
 using real_talk::util::FileSearcher;
 using real_talk::util::DirCreator;
 using real_talk::util::File;
+using real_talk::util::g_logger;
 using real_talk::code::Module;
 using real_talk::code::ModuleReader;
 using real_talk::code::CodeContainer;
@@ -73,6 +75,8 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
     msg_printer_.PrintError("Invalid arguments");
     return;
   }
+
+  g_logger.SetEnabled(config_->IsDebug());
 
   if (cmd == LinkerCmd::kHelp) {
     msg_printer_.PrintHelp(config_parser_.GetHelp());
@@ -128,7 +132,7 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
   try {
     const unique_ptr<CodeContainer> output_code_container =
         linker->Link(modules, output_code_version);
-    Log([&output_code_container](ostream *stream) {
+    g_logger.Log([&output_code_container](ostream *stream) {
         output_code_container->GetCmdsCode().SetPosition(0);
         *stream << "[output]\n\n" << *output_code_container;
       });
@@ -166,12 +170,6 @@ void LinkerApp::Run(int argc, const char *argv[]) const {
     const string msg = (format("Failed to write output file \"%1%\"")
                         % output_file_path.string()).str();
     msg_printer_.PrintError(msg);
-  }
-}
-
-void LinkerApp::Log(LogDataWriter data_writer) const {
-  if (config_->IsDebug()) {
-    data_writer(&cout);
   }
 }
 }

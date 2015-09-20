@@ -47,7 +47,7 @@ Educational-purpose programming language with:
             code // bytecode generator
             compiler
             linker // executable and library maker
-            vm // virtual machine (TODO)
+            vm // virtual machine
 
 ###Dependencies
 - C++11

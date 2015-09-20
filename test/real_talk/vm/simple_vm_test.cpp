@@ -1745,8 +1745,7 @@ TEST_F(SimpleVMTest, CallAndReturnCmds) {
   cmds->Write<CmdId>(CmdId::kCall);
   cmds->Write<CmdId>(CmdId::kDestroyLocalIntVar);
   uint32_t main_cmds_code_size = cmds->GetPosition();
-  cmds->Write<CmdId>(CmdId::kReturn);
-  uint32_t func_address = cmds->GetPosition();
+  uint32_t func_address = main_cmds_code_size;
   cmds->Write<CmdId>(CmdId::kCreateLocalStringVar);
   cmds->Write<CmdId>(CmdId::kLoadLocalStringVarValue);
   uint32_t var_index = UINT32_C(0);
@@ -1771,7 +1770,7 @@ TEST_F(SimpleVMTest, CallAndReturnCmds) {
               operands_asserter);
 }
 
-TEST_F(SimpleVMTest, CallNativeAndReturnCmds) {
+TEST_F(SimpleVMTest, CallNativeCmd) {
   unique_ptr<Code> cmds(new Code());
   cmds->Write<CmdId>(CmdId::kCreateLocalIntVar);
   cmds->Write<CmdId>(CmdId::kLoadNativeFuncValue);
