@@ -1216,7 +1216,10 @@ class SimpleCodeGeneratorTest: public Test {
 
   void TestIdAsNotAssigneeLocalVar(unique_ptr<DataTypeNode> data_type_node,
                                    unique_ptr<DataTypeNode> data_type_node2,
+                                   unique_ptr<DataTypeNode> data_type_node3,
                                    const DataType &data_type,
+                                   const DataType &data_type2,
+                                   const DataType &data_type3,
                                    unique_ptr<Code> expected_code) {
     vector< unique_ptr<StmtNode> > program_stmt_nodes;
     VarDefWithoutInitNode *var_def_node_ptr = new VarDefWithoutInitNode(
@@ -1231,12 +1234,18 @@ class SimpleCodeGeneratorTest: public Test {
         TokenInfo(Token::kStmtEnd, ";", UINT32_C(6), UINT32_C(6)));
     unique_ptr<StmtNode> var_def_node2(var_def_node_ptr2);
     program_stmt_nodes.push_back(move(var_def_node2));
+    VarDefWithoutInitNode *var_def_node_ptr3 = new VarDefWithoutInitNode(
+        move(data_type_node3),
+        TokenInfo(Token::kName, "var3", UINT32_C(7), UINT32_C(7)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8)));
+    unique_ptr<StmtNode> var_def_node3(var_def_node_ptr3);
+    program_stmt_nodes.push_back(move(var_def_node3));
     IdNode *id_node_ptr = new IdNode(
-        TokenInfo(Token::kName, "var2", UINT32_C(7), UINT32_C(7)));
+        TokenInfo(Token::kName, "var3", UINT32_C(9), UINT32_C(9)));
     unique_ptr<ExprNode> id_node(id_node_ptr);
     unique_ptr<StmtNode> id_stmt_node(new ExprStmtNode(
         move(id_node),
-        TokenInfo(Token::kStmtEnd, ";", UINT32_C(8), UINT32_C(8))));
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(10), UINT32_C(10))));
     program_stmt_nodes.push_back(move(id_stmt_node));
     ProgramNode program_node(move(program_stmt_nodes));
 
@@ -1247,15 +1256,20 @@ class SimpleCodeGeneratorTest: public Test {
     node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
     vector<const VarDefNode*> flow_local_var_defs2 = {var_def_node_ptr};
     unique_ptr<NodeSemanticAnalysis> var_def_analysis2(new LocalVarDefAnalysis(
-        data_type.Clone(), flow_local_var_defs2));
+        data_type2.Clone(), flow_local_var_defs2));
     node_analyzes.insert(make_pair(var_def_node_ptr2, move(var_def_analysis2)));
+    vector<const VarDefNode*> flow_local_var_defs3 =
+        {var_def_node_ptr, var_def_node_ptr2};
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis3(new LocalVarDefAnalysis(
+        data_type3.Clone(), flow_local_var_defs3));
+    node_analyzes.insert(make_pair(var_def_node_ptr3, move(var_def_analysis3)));
     bool is_id_assignee = false;
     unique_ptr<DataType> casted_data_type;
     unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
-        data_type.Clone(),
+        data_type3.Clone(),
         move(casted_data_type),
         ValueType::kLeft,
-        var_def_node_ptr2,
+        var_def_node_ptr3,
         is_id_assignee));
     node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
     SemanticAnalysis semantic_analysis(
@@ -1286,42 +1300,55 @@ class SimpleCodeGeneratorTest: public Test {
   }
 
   void TestIdAsNotAssigneeLocalArrayVar(
-      unique_ptr<DataTypeNode> data_type_node,
-      unique_ptr<DataTypeNode> data_type_node2,
-      const DataType &data_type,
+      unique_ptr<DataTypeNode> element_data_type_node,
+      unique_ptr<DataTypeNode> element_data_type_node2,
+      const DataType &element_data_type,
       CmdId unload_value_cmd_id,
       CmdId expected_load_var_cmd_id) {
-    unique_ptr<DataTypeNode> array_data_type_node(new ArrayDataTypeNode(
-        move(data_type_node),
+    unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
+        TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+    unique_ptr<DataTypeNode> inner_array_data_type_node(new ArrayDataTypeNode(
+        move(element_data_type_node),
         TokenInfo(Token::kSubscriptStart, "[", UINT32_C(1), UINT32_C(1)),
         TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(2), UINT32_C(2))));
-    unique_ptr<DataTypeNode> array_data_type_node2(new ArrayDataTypeNode(
-        move(array_data_type_node),
+    unique_ptr<DataTypeNode> outer_array_data_type_node(new ArrayDataTypeNode(
+        move(inner_array_data_type_node),
         TokenInfo(Token::kSubscriptStart, "[", UINT32_C(3), UINT32_C(3)),
         TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(4), UINT32_C(4))));
-    unique_ptr<DataTypeNode> array_data_type_node3(new ArrayDataTypeNode(
-        move(data_type_node2),
+    unique_ptr<DataTypeNode> inner_array_data_type_node2(new ArrayDataTypeNode(
+        move(element_data_type_node2),
         TokenInfo(Token::kSubscriptStart, "[", UINT32_C(6), UINT32_C(6)),
         TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(7), UINT32_C(7))));
-    unique_ptr<DataTypeNode> array_data_type_node4(new ArrayDataTypeNode(
-        move(array_data_type_node3),
+    unique_ptr<DataTypeNode> outer_array_data_type_node2(new ArrayDataTypeNode(
+        move(inner_array_data_type_node2),
         TokenInfo(Token::kSubscriptStart, "[", UINT32_C(8), UINT32_C(8)),
         TokenInfo(Token::kSubscriptEnd, "]", UINT32_C(9), UINT32_C(9))));
+
+    LongDataType data_type;
+    unique_ptr<DataType> inner_array_data_type(
+        new ArrayDataType(element_data_type.Clone()));
+    ArrayDataType outer_array_data_type(move(inner_array_data_type));
+    unique_ptr<DataType> inner_array_data_type2(
+        new ArrayDataType(element_data_type.Clone()));
+    ArrayDataType outer_array_data_type2(move(inner_array_data_type2));
+
     unique_ptr<Code> expected_code(new Code());
+    expected_code->Write<CmdId>(CmdId::kCreateLocalLongVar);
     expected_code->Write<CmdId>(CmdId::kCreateLocalArrayVar);
     expected_code->Write<CmdId>(CmdId::kCreateLocalArrayVar);
     expected_code->Write<CmdId>(expected_load_var_cmd_id);
-    uint32_t var_index = UINT32_C(1);
+    uint32_t var_index = UINT32_C(3);
     expected_code->Write<uint32_t>(var_index);
     expected_code->Write<CmdId>(unload_value_cmd_id);
     uint8_t dimensions_count = UINT8_C(2);
     expected_code->Write<uint8_t>(dimensions_count);
-    unique_ptr<DataType> array_data_type(new ArrayDataType(data_type.Clone()));
-    ArrayDataType array_data_type2(move(array_data_type));
     TestIdAsNotAssigneeLocalVar(
-        move(array_data_type_node2),
-        move(array_data_type_node4),
-        array_data_type2,
+        move(data_type_node),
+        move(outer_array_data_type_node),
+        move(outer_array_data_type_node2),
+        data_type,
+        outer_array_data_type,
+        outer_array_data_type2,
         move(expected_code));
   }
 
@@ -6121,103 +6148,139 @@ TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeGlobalStringArrayVar) {
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalIntVar) {
-  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
-      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> data_type_node2(new IntDataTypeNode(
       TokenInfo(Token::kIntType, "int", UINT32_C(4), UINT32_C(4))));
+  unique_ptr<DataTypeNode> data_type_node3(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(5), UINT32_C(5))));
   unique_ptr<Code> expected_code(new Code());
+  expected_code->Write<CmdId>(CmdId::kCreateLocalLongVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalIntVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalIntVar);
   expected_code->Write<CmdId>(CmdId::kLoadLocalIntVarValue);
-  expected_code->Write<uint32_t>(UINT32_C(1));
+  expected_code->Write<uint32_t>(UINT32_C(3));
   expected_code->Write<CmdId>(CmdId::kUnloadInt);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               move(data_type_node2),
+                              move(data_type_node3),
+                              LongDataType(),
+                              IntDataType(),
                               IntDataType(),
                               move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalLongVar) {
-  unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> data_type_node2(new LongDataTypeNode(
-      TokenInfo(Token::kLongType, "long", UINT32_C(4), UINT32_C(4))));
+      TokenInfo(Token::kLongType, "long", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<DataTypeNode> data_type_node3(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(2), UINT32_C(2))));
   unique_ptr<Code> expected_code(new Code());
+  expected_code->Write<CmdId>(CmdId::kCreateLocalIntVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalLongVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalLongVar);
   expected_code->Write<CmdId>(CmdId::kLoadLocalLongVarValue);
-  expected_code->Write<uint32_t>(UINT32_C(2));
+  expected_code->Write<uint32_t>(UINT32_C(3));
   expected_code->Write<CmdId>(CmdId::kUnloadLong);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               move(data_type_node2),
+                              move(data_type_node3),
+                              IntDataType(),
+                              LongDataType(),
                               LongDataType(),
                               move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalDoubleVar) {
-  unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
-      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> data_type_node2(new DoubleDataTypeNode(
-      TokenInfo(Token::kDoubleType, "double", UINT32_C(4), UINT32_C(4))));
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<DataTypeNode> data_type_node3(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(2), UINT32_C(2))));
   unique_ptr<Code> expected_code(new Code());
+  expected_code->Write<CmdId>(CmdId::kCreateLocalIntVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalDoubleVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalDoubleVar);
   expected_code->Write<CmdId>(CmdId::kLoadLocalDoubleVarValue);
-  expected_code->Write<uint32_t>(UINT32_C(2));
+  expected_code->Write<uint32_t>(UINT32_C(3));
   expected_code->Write<CmdId>(CmdId::kUnloadDouble);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               move(data_type_node2),
+                              move(data_type_node3),
+                              IntDataType(),
+                              DoubleDataType(),
                               DoubleDataType(),
                               move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalBoolVar) {
-  unique_ptr<DataTypeNode> data_type_node(new BoolDataTypeNode(
-      TokenInfo(Token::kBoolType, "bool", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> data_type_node2(new BoolDataTypeNode(
-      TokenInfo(Token::kBoolType, "bool", UINT32_C(4), UINT32_C(4))));
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<DataTypeNode> data_type_node3(new BoolDataTypeNode(
+      TokenInfo(Token::kBoolType, "bool", UINT32_C(2), UINT32_C(2))));
   unique_ptr<Code> expected_code(new Code());
+  expected_code->Write<CmdId>(CmdId::kCreateLocalLongVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalBoolVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalBoolVar);
   expected_code->Write<CmdId>(CmdId::kLoadLocalBoolVarValue);
-  expected_code->Write<uint32_t>(UINT32_C(1));
+  expected_code->Write<uint32_t>(UINT32_C(3));
   expected_code->Write<CmdId>(CmdId::kUnloadBool);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               move(data_type_node2),
+                              move(data_type_node3),
+                              LongDataType(),
+                              BoolDataType(),
                               BoolDataType(),
                               move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalCharVar) {
   unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
-      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> data_type_node2(new CharDataTypeNode(
-      TokenInfo(Token::kCharType, "char", UINT32_C(4), UINT32_C(4))));
+      TokenInfo(Token::kCharType, "char", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<DataTypeNode> data_type_node3(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(2), UINT32_C(2))));
   unique_ptr<Code> expected_code(new Code());
+  expected_code->Write<CmdId>(CmdId::kCreateLocalLongVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalCharVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalCharVar);
   expected_code->Write<CmdId>(CmdId::kLoadLocalCharVarValue);
-  expected_code->Write<uint32_t>(UINT32_C(1));
+  expected_code->Write<uint32_t>(UINT32_C(3));
   expected_code->Write<CmdId>(CmdId::kUnloadChar);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               move(data_type_node2),
+                              move(data_type_node3),
+                              LongDataType(),
+                              CharDataType(),
                               CharDataType(),
                               move(expected_code));
 }
 
 TEST_F(SimpleCodeGeneratorTest, IdAsNotAssigneeLocalStringVar) {
-  unique_ptr<DataTypeNode> data_type_node(new StringDataTypeNode(
-      TokenInfo(Token::kStringType, "string", UINT32_C(0), UINT32_C(0))));
+  unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
   unique_ptr<DataTypeNode> data_type_node2(new StringDataTypeNode(
-      TokenInfo(Token::kStringType, "string", UINT32_C(4), UINT32_C(4))));
+      TokenInfo(Token::kStringType, "string", UINT32_C(1), UINT32_C(1))));
+  unique_ptr<DataTypeNode> data_type_node3(new StringDataTypeNode(
+      TokenInfo(Token::kStringType, "string", UINT32_C(2), UINT32_C(2))));
   unique_ptr<Code> expected_code(new Code());
+  expected_code->Write<CmdId>(CmdId::kCreateLocalLongVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalStringVar);
   expected_code->Write<CmdId>(CmdId::kCreateLocalStringVar);
   expected_code->Write<CmdId>(CmdId::kLoadLocalStringVarValue);
-  expected_code->Write<uint32_t>(UINT32_C(1));
+  expected_code->Write<uint32_t>(UINT32_C(3));
   expected_code->Write<CmdId>(CmdId::kUnloadString);
   TestIdAsNotAssigneeLocalVar(move(data_type_node),
                               move(data_type_node2),
+                              move(data_type_node3),
+                              LongDataType(),
+                              StringDataType(),
                               StringDataType(),
                               move(expected_code));
 }

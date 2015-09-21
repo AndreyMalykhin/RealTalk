@@ -1253,32 +1253,43 @@ class SimpleCodeGenerator::Impl::UnloadCmdGenerator: private DataTypeVisitor {
 class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
  public:
   void Process(const IdNode *id_node,
-               const IdAnalysis *id_analysis,
-               const DefAnalysis *def_analysis,
+               const SemanticAnalysis::NodeAnalyzes *node_analyzes,
                Impl::IdAddresses *global_var_refs,
                Impl::IdAddresses *func_refs,
                Impl::IdAddresses *native_func_refs,
                Code *code) {
+    assert(id_node);
+    assert(node_analyzes);
+    assert(global_var_refs);
+    assert(func_refs);
+    assert(native_func_refs);
+    assert(code);
     id_node_ = id_node;
-    id_analysis_ = id_analysis;
+    node_analyzes_ = node_analyzes;
     global_var_refs_ = global_var_refs;
     func_refs_ = func_refs;
     native_func_refs_ = native_func_refs;
     code_ = code;
-    def_analysis->Accept(*this);
+    id_analysis_ =
+        &(static_cast<const IdAnalysis&>(GetNodeAnalysis(*id_node_)));
+    const DefNode *def_node = id_analysis_->GetDef();
+    const auto &def_analysis =
+        static_cast<const DefAnalysis&>(GetNodeAnalysis(*def_node));
+    def_analysis.Accept(*this);
   }
 
  private:
   virtual void VisitLocalVarDef(const LocalVarDefAnalysis &var_def_analysis)
       override {
-    uint32_t var_index = UINT32_C(0);
+    auto var_index = UINT32_C(0);
     DataTypeSizeResolver data_type_size_resolver;
 
-    for (const VarDefNode *local_var_def
-             : var_def_analysis.GetFlowLocalVarDefs()) {
-      assert(local_var_def);
-      const uint8_t var_size = static_cast<uint8_t>(
-          data_type_size_resolver.Resolve(var_def_analysis.GetDataType()));
+    for (const VarDefNode *flow_local_var_def:
+             var_def_analysis.GetFlowLocalVarDefs()) {
+      const auto &flow_var_def_analysis =
+          static_cast<const DefAnalysis&>(GetNodeAnalysis(*flow_local_var_def));
+      const auto var_size = static_cast<uint8_t>(
+          data_type_size_resolver.Resolve(flow_var_def_analysis.GetDataType()));
       assert(var_index + var_size > var_index);
       var_index += var_size;
     }
@@ -1324,14 +1335,22 @@ class SimpleCodeGenerator::Impl::IdNodeProcessor: private DefAnalysisVisitor {
 
     code_->Write<CmdId>(cmd);
     const uint32_t func_value_placeholder = code_->GetPosition();
-    const uint32_t func_value = numeric_limits<uint32_t>::max();
+    const auto func_value = numeric_limits<uint32_t>::max();
     code_->Write<uint32_t>(func_value);
     const string &id = id_node_->GetStartToken().GetValue();
     (*func_refs)[id].push_back(func_value_placeholder);
   }
 
+  const NodeSemanticAnalysis &GetNodeAnalysis(const Node &node) const {
+    const SemanticAnalysis::NodeAnalyzes::const_iterator node_analysis_it =
+        node_analyzes_->find(&node);
+    assert(node_analysis_it != node_analyzes_->cend());
+    return *(node_analysis_it->second);
+  }
+
   const IdNode *id_node_;
   const IdAnalysis *id_analysis_;
+  const SemanticAnalysis::NodeAnalyzes *node_analyzes_;
   Impl::IdAddresses *global_var_refs_;
   Impl::IdAddresses *func_refs_;
   Impl::IdAddresses *native_func_refs_;
@@ -2345,19 +2364,15 @@ void SimpleCodeGenerator::Impl::VisitArrayAllocWithInit(
   GenerateCastCmdIfNeeded(array_alloc_analysis);
 }
 
-void SimpleCodeGenerator::Impl::VisitId(const IdNode &id) {
-  const IdAnalysis &id_analysis =
-      static_cast<const IdAnalysis&>(GetNodeAnalysis(id));
-  const DefNode *def = id_analysis.GetDef();
-  const DefAnalysis &def_analysis =
-      static_cast<const DefAnalysis&>(GetNodeAnalysis(*def));
-  IdNodeProcessor().Process(&id,
-                            &id_analysis,
-                            &def_analysis,
+void SimpleCodeGenerator::Impl::VisitId(const IdNode &node) {
+  IdNodeProcessor().Process(&node,
+                            &(semantic_analysis_->GetNodeAnalyzes()),
                             &global_var_refs_,
                             &func_refs_,
                             &native_func_refs_,
                             code_.get());
+  const auto &id_analysis =
+      static_cast<const IdAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(id_analysis);
 }
 
