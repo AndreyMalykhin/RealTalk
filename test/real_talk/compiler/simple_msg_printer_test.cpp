@@ -34,6 +34,7 @@
 #include "real_talk/parser/bool_node.h"
 #include "real_talk/parser/subscript_node.h"
 #include "real_talk/parser/if_else_if_node.h"
+#include "real_talk/parser/pre_inc_node.h"
 #include "real_talk/semantic/semantic_problems.h"
 #include "real_talk/semantic/bool_data_type.h"
 #include "real_talk/semantic/int_data_type.h"
@@ -88,6 +89,7 @@ using real_talk::parser::VarDefWithoutInitNode;
 using real_talk::parser::IdNode;
 using real_talk::parser::BoolNode;
 using real_talk::parser::SubscriptNode;
+using real_talk::parser::PreIncNode;
 using real_talk::semantic::SemanticAnalysis;
 using real_talk::semantic::SemanticProblem;
 using real_talk::semantic::DataType;
@@ -105,6 +107,7 @@ using real_talk::semantic::CharWithOutOfRangeHexValueError;
 using real_talk::semantic::StringWithOutOfRangeHexValueError;
 using real_talk::semantic::StringWithEmptyHexValueError;
 using real_talk::semantic::AssignWithRightValueAssigneeError;
+using real_talk::semantic::UnaryExprWithRightValueOperandError;
 using real_talk::semantic::IdWithoutDefError;
 using real_talk::semantic::SubscriptWithUnsupportedIndexTypeError;
 using real_talk::semantic::SubscriptWithUnsupportedOperandTypeError;
@@ -341,6 +344,19 @@ TEST_F(SimpleMsgPrinterTest,
       move(right_operand_node));
   AssignWithRightValueAssigneeError problem(assign_node);
   string expected_msg = "[Error] %1%:2:3: can't assign to rvalue\n";
+  TestPrintSemanticProblem(problem, expected_msg);
+}
+
+TEST_F(SimpleMsgPrinterTest,
+       PrintSemanticProblemWithUnaryExprWithRightValueOperandError) {
+  unique_ptr<ExprNode> operand_node(new LongNode(
+      TokenInfo(Token::kLongLit, "2L", UINT32_C(2), UINT32_C(3))));
+  PreIncNode pre_inc_node(
+      TokenInfo(Token::kPreIncOp, "++", UINT32_C(0), UINT32_C(1)),
+      move(operand_node));
+  UnaryExprWithRightValueOperandError problem(pre_inc_node);
+  string expected_msg =
+      "[Error] %1%:2:3: rvalue is not supported by operator \"++\"\n";
   TestPrintSemanticProblem(problem, expected_msg);
 }
 

@@ -77,6 +77,9 @@ class SimpleMsgPrinter: public MsgPrinter,
   virtual void VisitAssignWithRightValueAssigneeError(
       const real_talk::semantic::AssignWithRightValueAssigneeError &error)
       const override;
+  virtual void VisitUnaryExprWithRightValueOperandError(
+      const real_talk::semantic::UnaryExprWithRightValueOperandError &error)
+      const override;
   virtual void VisitIdWithoutDefError(
       const real_talk::semantic::IdWithoutDefError &error) const override;
   virtual void VisitSubscriptWithUnsupportedIndexTypeError(

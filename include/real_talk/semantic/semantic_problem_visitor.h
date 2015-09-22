@@ -17,6 +17,7 @@ class StringWithOutOfRangeHexValueError;
 class StringWithEmptyHexValueError;
 class UnaryExprWithUnsupportedTypeError;
 class AssignWithRightValueAssigneeError;
+class UnaryExprWithRightValueOperandError;
 class IdWithoutDefError;
 class SubscriptWithUnsupportedIndexTypeError;
 class SubscriptWithUnsupportedOperandTypeError;
@@ -70,6 +71,8 @@ class SemanticProblemVisitor {
       const UnaryExprWithUnsupportedTypeError &error) const = 0;
   virtual void VisitAssignWithRightValueAssigneeError(
       const AssignWithRightValueAssigneeError &error) const = 0;
+  virtual void VisitUnaryExprWithRightValueOperandError(
+      const UnaryExprWithRightValueOperandError &error) const = 0;
   virtual void VisitIdWithoutDefError(
       const IdWithoutDefError &error) const = 0;
   virtual void VisitSubscriptWithUnsupportedIndexTypeError(

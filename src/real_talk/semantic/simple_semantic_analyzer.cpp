@@ -342,6 +342,7 @@ class SimpleSemanticAnalyzer::Impl: private NodeVisitor {
       vector<const VarDefNode*> *output_flow_local_var_defs);
   template<typename TError, typename TNode> void VisitControlFlowTransfer(
       const TNode &node);
+  void VisitPreExpr(const UnaryExprNode &pre_expr_node);
 
   /**
    * @param output_scope Null if scope not found
@@ -1655,20 +1656,44 @@ void SimpleSemanticAnalyzer::Impl::VisitNot(const NotNode &not_node) {
                  &data_type_support_query);
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode &pre_dec_node) {
-  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
-  VisitUnaryExpr(pre_dec_node,
-                 ValueType::kRight,
-                 unique_ptr<DataType>(),
-                 &data_type_support_query);
+void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode &pre_inc_node) {
+  VisitPreExpr(pre_inc_node);
 }
 
-void SimpleSemanticAnalyzer::Impl::VisitPreInc(const PreIncNode &pre_inc_node) {
-  IsDataTypeSupportedByArithmeticExpr data_type_support_query;
-  VisitUnaryExpr(pre_inc_node,
-                 ValueType::kRight,
-                 unique_ptr<DataType>(),
-                 &data_type_support_query);
+void SimpleSemanticAnalyzer::Impl::VisitPreDec(const PreDecNode &pre_dec_node) {
+  VisitPreExpr(pre_dec_node);
+}
+
+void SimpleSemanticAnalyzer::Impl::VisitPreExpr(
+    const UnaryExprNode &expr_node) {
+  {
+    AssigneeContext assignee_context(true, assignee_contexts_stack_);
+    expr_node.GetOperand()->Accept(*this);
+  }
+
+  const ExprAnalysis &operand_analysis =
+      GetExprAnalysis(expr_node.GetOperand().get());
+
+  if (operand_analysis.GetValueType() == ValueType::kRight) {
+    unique_ptr<SemanticError> error(
+        new UnaryExprWithRightValueOperandError(expr_node));
+    ThrowError(move(error));
+  }
+
+  const DataType &operand_data_type = operand_analysis.GetDataType();
+
+  if (!IsDataTypeSupportedByArithmeticExpr().Check(operand_data_type)) {
+    unique_ptr<SemanticError> error(new UnaryExprWithUnsupportedTypeError(
+        expr_node, operand_data_type.Clone()));
+    ThrowError(move(error));
+  }
+
+  unique_ptr<DataType> expr_data_type(new VoidDataType());
+  unique_ptr<DataType> expr_casted_data_type;
+  AddExprAnalysis(expr_node,
+                  move(expr_data_type),
+                  move(expr_casted_data_type),
+                  ValueType::kRight);
 }
 
 void SimpleSemanticAnalyzer::Impl::VisitNegative(

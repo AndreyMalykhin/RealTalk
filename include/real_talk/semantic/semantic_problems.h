@@ -198,6 +198,20 @@ class AssignWithRightValueAssigneeError: public SemanticError {
   const real_talk::parser::AssignNode &assign_;
 };
 
+class UnaryExprWithRightValueOperandError: public SemanticError {
+ public:
+  explicit UnaryExprWithRightValueOperandError(
+      const real_talk::parser::UnaryExprNode &expr);
+  const real_talk::parser::UnaryExprNode &GetExpr() const;
+  virtual void Accept(const SemanticProblemVisitor *visitor) const override;
+
+ private:
+  virtual void Print(std::ostream &stream) const override;
+  virtual bool IsEqual(const SemanticProblem &rhs) const override;
+
+  const real_talk::parser::UnaryExprNode &expr_;
+};
+
 class IdWithoutDefError: public SemanticError {
  public:
   explicit IdWithoutDefError(const real_talk::parser::IdNode &id);

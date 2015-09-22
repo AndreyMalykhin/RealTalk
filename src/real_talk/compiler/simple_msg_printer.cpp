@@ -47,6 +47,7 @@ using real_talk::semantic::StringWithOutOfRangeHexValueError;
 using real_talk::semantic::StringWithEmptyHexValueError;
 using real_talk::semantic::UnaryExprWithUnsupportedTypeError;
 using real_talk::semantic::AssignWithRightValueAssigneeError;
+using real_talk::semantic::UnaryExprWithRightValueOperandError;
 using real_talk::semantic::IdWithoutDefError;
 using real_talk::semantic::SubscriptWithUnsupportedIndexTypeError;
 using real_talk::semantic::SubscriptWithUnsupportedOperandTypeError;
@@ -192,6 +193,14 @@ void SimpleMsgPrinter::VisitAssignWithRightValueAssigneeError(
     const AssignWithRightValueAssigneeError &error) const {
   const TokenInfo &token = error.GetAssign().GetOpToken();
   PrintCurrentFileError(token) << "can't assign to rvalue\n";
+}
+
+void SimpleMsgPrinter::VisitUnaryExprWithRightValueOperandError(
+    const UnaryExprWithRightValueOperandError &error) const {
+  const TokenInfo &token = error.GetExpr().GetOperand()->GetStartToken();
+  PrintCurrentFileError(token)
+      << "rvalue is not supported by operator \""
+      << error.GetExpr().GetOpToken().GetValue() << "\"\n";
 }
 
 void SimpleMsgPrinter::VisitIdWithoutDefError(

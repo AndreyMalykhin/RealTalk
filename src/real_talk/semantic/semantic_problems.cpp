@@ -345,6 +345,29 @@ bool UnaryExprWithUnsupportedTypeError::IsEqual(
   return expr_ == rhs.expr_ && *data_type_ == *(rhs.data_type_);
 }
 
+UnaryExprWithRightValueOperandError::UnaryExprWithRightValueOperandError(
+    const UnaryExprNode &expr): expr_(expr) {}
+
+const UnaryExprNode &UnaryExprWithRightValueOperandError::GetExpr() const {
+  return expr_;
+}
+
+void UnaryExprWithRightValueOperandError::Accept(
+    const SemanticProblemVisitor *visitor) const {
+  visitor->VisitUnaryExprWithRightValueOperandError(*this);
+}
+
+void UnaryExprWithRightValueOperandError::Print(ostream &stream) const {
+  stream << "expr=" << expr_;
+}
+
+bool UnaryExprWithRightValueOperandError::IsEqual(
+    const SemanticProblem &problem) const {
+  const auto &rhs =
+      static_cast<const UnaryExprWithRightValueOperandError&>(problem);
+  return expr_ == rhs.expr_;
+}
+
 AssignWithRightValueAssigneeError::AssignWithRightValueAssigneeError(
     const AssignNode &assign): assign_(assign) {}
 
