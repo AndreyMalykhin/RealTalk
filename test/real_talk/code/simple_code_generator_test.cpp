@@ -1990,7 +1990,6 @@ class SimpleCodeGeneratorTest: public Test {
         SemanticAnalysis::ProgramProblems(), move(node_analyzes));
 
     uint32_t main_cmds_code_size = expected_code->GetPosition();
-
     vector<IdSize> global_var_defs;
     vector<IdAddress> func_defs;
     vector<string> native_func_defs;
@@ -2307,6 +2306,166 @@ class SimpleCodeGeneratorTest: public Test {
                    move(expr_data_type),
                    vector<TestCast>(),
                    move(expected_code));
+  }
+
+  void TestPreDec(unique_ptr<DataTypeNode> data_type_node,
+                  const DataType &data_type,
+                  CmdId expected_create_var_cmd_id,
+                  CmdId expected_pre_dec_cmd_id) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    auto *var_def_node_ptr = new VarDefWithoutInitNode(
+        move(data_type_node),
+        TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+    unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+    program_stmt_nodes.push_back(move(var_def_node));
+    auto *id_node_ptr = new IdNode(
+        TokenInfo(Token::kName, "var", UINT32_C(4), UINT32_C(4)));
+    unique_ptr<ExprNode> id_node(id_node_ptr);
+    ExprNode *pre_dec_node_ptr = new PreDecNode(
+        TokenInfo(Token::kPreDecOp, "--", UINT32_C(3), UINT32_C(3)),
+        move(id_node));
+    unique_ptr<ExprNode> pre_dec_node(pre_dec_node_ptr);
+    unique_ptr<StmtNode> expr_stmt_node(new ExprStmtNode(
+        move(pre_dec_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
+    program_stmt_nodes.push_back(move(expr_stmt_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    vector<const VarDefNode*> flow_local_var_defs;
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+        data_type.Clone(), flow_local_var_defs));
+    node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+    unique_ptr<DataType> id_data_type(data_type.Clone());
+    unique_ptr<DataType> id_casted_data_type;
+    bool is_id_assignee = true;
+    unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+        move(id_data_type),
+        move(id_casted_data_type),
+        ValueType::kLeft,
+        var_def_node_ptr,
+        is_id_assignee));
+    node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+    unique_ptr<DataType> pre_dec_data_type(new VoidDataType());
+    unique_ptr<DataType> pre_dec_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> pre_dec_analysis(new CommonExprAnalysis(
+        move(pre_dec_data_type),
+        move(pre_dec_casted_data_type),
+        ValueType::kRight));
+    node_analyzes.insert(make_pair(pre_dec_node_ptr, move(pre_dec_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::ProgramProblems(), move(node_analyzes));
+
+    unique_ptr<Code> expected_code(new Code());
+    expected_code->Write(expected_create_var_cmd_id);
+    expected_code->Write(CmdId::kLoadLocalVarAddress);
+    auto var_index = UINT32_C(0);
+    expected_code->Write(var_index);
+    expected_code->Write(expected_pre_dec_cmd_id);
+
+    uint32_t main_cmds_code_size = expected_code->GetPosition();
+    vector<IdSize> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module expected_module(version,
+                           move(expected_code),
+                           main_cmds_code_size,
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
+    TestGenerate(vector<TestCast>(),
+                 program_node,
+                 semantic_analysis,
+                 version,
+                 expected_module);
+  }
+
+  void TestPreInc(unique_ptr<DataTypeNode> data_type_node,
+                  const DataType &data_type,
+                  CmdId expected_create_var_cmd_id,
+                  CmdId expected_pre_inc_cmd_id) {
+    vector< unique_ptr<StmtNode> > program_stmt_nodes;
+    auto *var_def_node_ptr = new VarDefWithoutInitNode(
+        move(data_type_node),
+        TokenInfo(Token::kName, "var", UINT32_C(1), UINT32_C(1)),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(2), UINT32_C(2)));
+    unique_ptr<StmtNode> var_def_node(var_def_node_ptr);
+    program_stmt_nodes.push_back(move(var_def_node));
+    auto *id_node_ptr = new IdNode(
+        TokenInfo(Token::kName, "var", UINT32_C(4), UINT32_C(4)));
+    unique_ptr<ExprNode> id_node(id_node_ptr);
+    ExprNode *pre_inc_node_ptr = new PreIncNode(
+        TokenInfo(Token::kPreIncOp, "++", UINT32_C(3), UINT32_C(3)),
+        move(id_node));
+    unique_ptr<ExprNode> pre_inc_node(pre_inc_node_ptr);
+    unique_ptr<StmtNode> expr_stmt_node(new ExprStmtNode(
+        move(pre_inc_node),
+        TokenInfo(Token::kStmtEnd, ";", UINT32_C(5), UINT32_C(5))));
+    program_stmt_nodes.push_back(move(expr_stmt_node));
+    ProgramNode program_node(move(program_stmt_nodes));
+
+    SemanticAnalysis::NodeAnalyzes node_analyzes;
+    vector<const VarDefNode*> flow_local_var_defs;
+    unique_ptr<NodeSemanticAnalysis> var_def_analysis(new LocalVarDefAnalysis(
+        data_type.Clone(), flow_local_var_defs));
+    node_analyzes.insert(make_pair(var_def_node_ptr, move(var_def_analysis)));
+    unique_ptr<DataType> id_data_type(data_type.Clone());
+    unique_ptr<DataType> id_casted_data_type;
+    bool is_id_assignee = true;
+    unique_ptr<NodeSemanticAnalysis> id_analysis(new IdAnalysis(
+        move(id_data_type),
+        move(id_casted_data_type),
+        ValueType::kLeft,
+        var_def_node_ptr,
+        is_id_assignee));
+    node_analyzes.insert(make_pair(id_node_ptr, move(id_analysis)));
+    unique_ptr<DataType> pre_inc_data_type(new VoidDataType());
+    unique_ptr<DataType> pre_inc_casted_data_type;
+    unique_ptr<NodeSemanticAnalysis> pre_inc_analysis(new CommonExprAnalysis(
+        move(pre_inc_data_type),
+        move(pre_inc_casted_data_type),
+        ValueType::kRight));
+    node_analyzes.insert(make_pair(pre_inc_node_ptr, move(pre_inc_analysis)));
+    SemanticAnalysis semantic_analysis(
+        SemanticAnalysis::ProgramProblems(), move(node_analyzes));
+
+    unique_ptr<Code> expected_code(new Code());
+    expected_code->Write(expected_create_var_cmd_id);
+    expected_code->Write(CmdId::kLoadLocalVarAddress);
+    auto var_index = UINT32_C(0);
+    expected_code->Write(var_index);
+    expected_code->Write(expected_pre_inc_cmd_id);
+
+    uint32_t main_cmds_code_size = expected_code->GetPosition();
+    vector<IdSize> global_var_defs;
+    vector<IdAddress> func_defs;
+    vector<string> native_func_defs;
+    vector<IdAddresses> global_var_refs;
+    vector<IdAddresses> func_refs;
+    vector<IdAddresses> native_func_refs;
+    uint32_t version = UINT32_C(1);
+    Module expected_module(version,
+                           move(expected_code),
+                           main_cmds_code_size,
+                           func_defs,
+                           global_var_defs,
+                           native_func_defs,
+                           func_refs,
+                           native_func_refs,
+                           global_var_refs);
+    TestGenerate(vector<TestCast>(),
+                 program_node,
+                 semantic_analysis,
+                 version,
+                 expected_module);
   }
 };
 
@@ -10459,251 +10618,75 @@ TEST_F(SimpleCodeGeneratorTest, LogicalNegateBool) {
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreDecChar) {
-  CharNode *operand_node_ptr = new CharNode(
-      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> operand_node(operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new PreDecNode(
-      TokenInfo(Token::kPreDecOp, "--", UINT32_C(1), UINT32_C(1)),
-      move(operand_node)));
-
-  unique_ptr<DataType> operand_data_type(new CharDataType());
-  unique_ptr<DataType> operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
-      move(operand_data_type),
-      move(operand_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new CharLit('a'))));
-  unique_ptr<DataType> expr_data_type(new CharDataType());
-
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->Write<CmdId>(CmdId::kLoadCharValue);
-  expected_code->Write<char>('a');
-  expected_code->Write<CmdId>(CmdId::kPreDecChar);
-  expected_code->Write<CmdId>(CmdId::kUnloadChar);
-
-  TestUnaryExpr(operand_node_ptr,
-                move(expr_node),
-                move(operand_analysis),
-                move(expr_data_type),
-                vector<TestCast>(),
-                move(expected_code));
+  unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  TestPreDec(move(data_type_node),
+             CharDataType(),
+             CmdId::kCreateLocalCharVar,
+             CmdId::kPreDecChar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreDecInt) {
-  IntNode *operand_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> operand_node(operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new PreDecNode(
-      TokenInfo(Token::kPreDecOp, "--", UINT32_C(1), UINT32_C(1)),
-      move(operand_node)));
-
-  unique_ptr<DataType> operand_data_type(new IntDataType());
-  unique_ptr<DataType> operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
-      move(operand_data_type),
-      move(operand_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
-  unique_ptr<DataType> expr_data_type(new IntDataType());
-
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->Write<CmdId>(CmdId::kLoadIntValue);
-  expected_code->Write<int32_t>(INT32_C(7));
-  expected_code->Write<CmdId>(CmdId::kPreDecInt);
-  expected_code->Write<CmdId>(CmdId::kUnloadInt);
-
-  TestUnaryExpr(operand_node_ptr,
-                move(expr_node),
-                move(operand_analysis),
-                move(expr_data_type),
-                vector<TestCast>(),
-                move(expected_code));
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  TestPreDec(move(data_type_node),
+             IntDataType(),
+             CmdId::kCreateLocalIntVar,
+             CmdId::kPreDecInt);
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreDecLong) {
-  LongNode *operand_node_ptr = new LongNode(
-      TokenInfo(Token::kLongLit, "7L", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> operand_node(operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new PreDecNode(
-      TokenInfo(Token::kPreDecOp, "--", UINT32_C(1), UINT32_C(1)),
-      move(operand_node)));
-
-  unique_ptr<DataType> operand_data_type(new LongDataType());
-  unique_ptr<DataType> operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
-      move(operand_data_type),
-      move(operand_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
-  unique_ptr<DataType> expr_data_type(new LongDataType());
-
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->Write<CmdId>(CmdId::kLoadLongValue);
-  expected_code->Write<int64_t>(INT64_C(7));
-  expected_code->Write<CmdId>(CmdId::kPreDecLong);
-  expected_code->Write<CmdId>(CmdId::kUnloadLong);
-
-  TestUnaryExpr(operand_node_ptr,
-                move(expr_node),
-                move(operand_analysis),
-                move(expr_data_type),
-                vector<TestCast>(),
-                move(expected_code));
+  unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  TestPreDec(move(data_type_node),
+             LongDataType(),
+             CmdId::kCreateLocalLongVar,
+             CmdId::kPreDecLong);
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreDecDouble) {
-  DoubleNode *operand_node_ptr = new DoubleNode(
-      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> operand_node(operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new PreDecNode(
-      TokenInfo(Token::kPreDecOp, "--", UINT32_C(1), UINT32_C(1)),
-      move(operand_node)));
-
-  unique_ptr<DataType> operand_data_type(new DoubleDataType());
-  unique_ptr<DataType> operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
-      move(operand_data_type),
-      move(operand_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new DoubleLit(7.7))));
-  unique_ptr<DataType> expr_data_type(new DoubleDataType());
-
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->Write<CmdId>(CmdId::kLoadDoubleValue);
-  expected_code->Write<double>(7.7);
-  expected_code->Write<CmdId>(CmdId::kPreDecDouble);
-  expected_code->Write<CmdId>(CmdId::kUnloadDouble);
-
-  TestUnaryExpr(operand_node_ptr,
-                move(expr_node),
-                move(operand_analysis),
-                move(expr_data_type),
-                vector<TestCast>(),
-                move(expected_code));
+  unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  TestPreDec(move(data_type_node),
+             DoubleDataType(),
+             CmdId::kCreateLocalDoubleVar,
+             CmdId::kPreDecDouble);
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreIncChar) {
-  CharNode *operand_node_ptr = new CharNode(
-      TokenInfo(Token::kCharLit, "'a'", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> operand_node(operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new PreIncNode(
-      TokenInfo(Token::kPreIncOp, "--", UINT32_C(1), UINT32_C(1)),
-      move(operand_node)));
-
-  unique_ptr<DataType> operand_data_type(new CharDataType());
-  unique_ptr<DataType> operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
-      move(operand_data_type),
-      move(operand_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new CharLit('a'))));
-  unique_ptr<DataType> expr_data_type(new CharDataType());
-
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->Write<CmdId>(CmdId::kLoadCharValue);
-  expected_code->Write<char>('a');
-  expected_code->Write<CmdId>(CmdId::kPreIncChar);
-  expected_code->Write<CmdId>(CmdId::kUnloadChar);
-
-  TestUnaryExpr(operand_node_ptr,
-                move(expr_node),
-                move(operand_analysis),
-                move(expr_data_type),
-                vector<TestCast>(),
-                move(expected_code));
+  unique_ptr<DataTypeNode> data_type_node(new CharDataTypeNode(
+      TokenInfo(Token::kCharType, "char", UINT32_C(0), UINT32_C(0))));
+  TestPreInc(move(data_type_node),
+             CharDataType(),
+             CmdId::kCreateLocalCharVar,
+             CmdId::kPreIncChar);
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreIncInt) {
-  IntNode *operand_node_ptr = new IntNode(
-      TokenInfo(Token::kIntLit, "7", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> operand_node(operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new PreIncNode(
-      TokenInfo(Token::kPreIncOp, "--", UINT32_C(1), UINT32_C(1)),
-      move(operand_node)));
-
-  unique_ptr<DataType> operand_data_type(new IntDataType());
-  unique_ptr<DataType> operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
-      move(operand_data_type),
-      move(operand_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new IntLit(INT32_C(7)))));
-  unique_ptr<DataType> expr_data_type(new IntDataType());
-
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->Write<CmdId>(CmdId::kLoadIntValue);
-  expected_code->Write<int32_t>(INT32_C(7));
-  expected_code->Write<CmdId>(CmdId::kPreIncInt);
-  expected_code->Write<CmdId>(CmdId::kUnloadInt);
-
-  TestUnaryExpr(operand_node_ptr,
-                move(expr_node),
-                move(operand_analysis),
-                move(expr_data_type),
-                vector<TestCast>(),
-                move(expected_code));
+  unique_ptr<DataTypeNode> data_type_node(new IntDataTypeNode(
+      TokenInfo(Token::kIntType, "int", UINT32_C(0), UINT32_C(0))));
+  TestPreInc(move(data_type_node),
+             IntDataType(),
+             CmdId::kCreateLocalIntVar,
+             CmdId::kPreIncInt);
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreIncLong) {
-  LongNode *operand_node_ptr = new LongNode(
-      TokenInfo(Token::kLongLit, "7L", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> operand_node(operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new PreIncNode(
-      TokenInfo(Token::kPreIncOp, "--", UINT32_C(1), UINT32_C(1)),
-      move(operand_node)));
-
-  unique_ptr<DataType> operand_data_type(new LongDataType());
-  unique_ptr<DataType> operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
-      move(operand_data_type),
-      move(operand_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new LongLit(INT64_C(7)))));
-  unique_ptr<DataType> expr_data_type(new LongDataType());
-
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->Write<CmdId>(CmdId::kLoadLongValue);
-  expected_code->Write<int64_t>(INT64_C(7));
-  expected_code->Write<CmdId>(CmdId::kPreIncLong);
-  expected_code->Write<CmdId>(CmdId::kUnloadLong);
-
-  TestUnaryExpr(operand_node_ptr,
-                move(expr_node),
-                move(operand_analysis),
-                move(expr_data_type),
-                vector<TestCast>(),
-                move(expected_code));
+  unique_ptr<DataTypeNode> data_type_node(new LongDataTypeNode(
+      TokenInfo(Token::kLongType, "long", UINT32_C(0), UINT32_C(0))));
+  TestPreInc(move(data_type_node),
+             LongDataType(),
+             CmdId::kCreateLocalLongVar,
+             CmdId::kPreIncLong);
 }
 
 TEST_F(SimpleCodeGeneratorTest, PreIncDouble) {
-  DoubleNode *operand_node_ptr = new DoubleNode(
-      TokenInfo(Token::kDoubleLit, "7.7", UINT32_C(0), UINT32_C(0)));
-  unique_ptr<ExprNode> operand_node(operand_node_ptr);
-  unique_ptr<ExprNode> expr_node(new PreIncNode(
-      TokenInfo(Token::kPreIncOp, "--", UINT32_C(1), UINT32_C(1)),
-      move(operand_node)));
-
-  unique_ptr<DataType> operand_data_type(new DoubleDataType());
-  unique_ptr<DataType> operand_casted_data_type;
-  unique_ptr<NodeSemanticAnalysis> operand_analysis(new LitAnalysis(
-      move(operand_data_type),
-      move(operand_casted_data_type),
-      ValueType::kRight,
-      unique_ptr<Lit>(new DoubleLit(7.7))));
-  unique_ptr<DataType> expr_data_type(new DoubleDataType());
-
-  unique_ptr<Code> expected_code(new Code());
-  expected_code->Write<CmdId>(CmdId::kLoadDoubleValue);
-  expected_code->Write<double>(7.7);
-  expected_code->Write<CmdId>(CmdId::kPreIncDouble);
-  expected_code->Write<CmdId>(CmdId::kUnloadDouble);
-
-  TestUnaryExpr(operand_node_ptr,
-                move(expr_node),
-                move(operand_analysis),
-                move(expr_data_type),
-                vector<TestCast>(),
-                move(expected_code));
+  unique_ptr<DataTypeNode> data_type_node(new DoubleDataTypeNode(
+      TokenInfo(Token::kDoubleType, "double", UINT32_C(0), UINT32_C(0))));
+  TestPreInc(move(data_type_node),
+             DoubleDataType(),
+             CmdId::kCreateLocalDoubleVar,
+             CmdId::kPreIncDouble);
 }
 
 TEST_F(SimpleCodeGeneratorTest, ArithmeticNegateInt) {

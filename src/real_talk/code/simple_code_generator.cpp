@@ -2539,10 +2539,10 @@ void SimpleCodeGenerator::Impl::VisitPreInc(const PreIncNode &node) {
 void SimpleCodeGenerator::Impl::VisitUnaryExpr(
     const UnaryExprNode &node, ExprCmdGenerator *cmd_generator) {
   node.GetOperand()->Accept(*this);
-  const ExprAnalysis &operand_analysis = static_cast<const ExprAnalysis&>(
+  const auto &operand_analysis = static_cast<const ExprAnalysis&>(
       GetNodeAnalysis(*(node.GetOperand())));
   cmd_generator->Generate(GetExprDataType(operand_analysis), code_.get());
-  const ExprAnalysis &expr_analysis =
+  const auto &expr_analysis =
       static_cast<const ExprAnalysis&>(GetNodeAnalysis(node));
   GenerateCastCmdIfNeeded(expr_analysis);
 }
@@ -2681,7 +2681,7 @@ void SimpleCodeGenerator::Impl::GenerateCastCmdIfNeeded(
     return;
   }
 
-  CmdId cmd_id = cast_cmd_generator_.Generate(
+  const CmdId cmd_id = cast_cmd_generator_.Generate(
       *(expr_analysis.GetCastedDataType()), expr_analysis.GetDataType());
   code_->Write<CmdId>(cmd_id);
 }

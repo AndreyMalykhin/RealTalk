@@ -942,6 +942,42 @@ class SimpleVMTest: public Test {
                 expected_operands,
                 operands_asserter);
   }
+
+  template<typename TType, typename TSerializableType> void TestPreIncCmd(
+      CmdId load_value_cmd_id,
+      CmdId create_var_cmd_id,
+      CmdId pre_inc_cmd_id,
+      TSerializableType value,
+      TType expected_value) {
+    auto local_vars_asserter = [](const DataStorage &expected_local_vars,
+                                  const DataStorage &actual_local_vars) {
+      ASSERT_EQ(expected_local_vars.GetTop<TType>(),
+                actual_local_vars.GetTop<TType>());
+    };
+    unique_ptr<Code> cmds(new Code());
+    cmds->Write(load_value_cmd_id);
+    cmds->Write(value);
+    cmds->Write(create_var_cmd_id);
+    cmds->Write(CmdId::kLoadLocalVarAddress);
+    auto var_index = UINT32_C(0);
+    cmds->Write(var_index);
+    cmds->Write(pre_inc_cmd_id);
+    DataStorage expected_local_vars;
+    expected_local_vars.Push(expected_value);
+    uint32_t main_cmds_code_size = cmds->GetPosition();
+    DataStorage expected_global_vars;
+    DataStorageAsserter global_vars_asserter = nullptr;
+    DataStorage expected_operands;
+    DataStorageAsserter operands_asserter = nullptr;
+    TestExecute(move(cmds),
+                main_cmds_code_size,
+                expected_global_vars,
+                global_vars_asserter,
+                expected_local_vars,
+                local_vars_asserter,
+                expected_operands,
+                operands_asserter);
+  }
 };
 
 TEST_F(SimpleVMTest, CreateGlobalIntVarCmd) {
@@ -2825,75 +2861,83 @@ TEST_F(SimpleVMTest, ArithmeticNegateDoubleCmd) {
 }
 
 TEST_F(SimpleVMTest, PreDecIntCmd) {
-  int32_t value = INT32_C(7);
+  auto value = INT32_C(7);
   IntValue expected_value = 6;
-  TestUnaryExprCmd(CmdId::kLoadIntValue,
-                   CmdId::kPreDecInt,
-                   value,
-                   expected_value);
+  TestPreIncCmd(CmdId::kLoadIntValue,
+                CmdId::kCreateAndInitLocalIntVar,
+                CmdId::kPreDecInt,
+                value,
+                expected_value);
 }
 
 TEST_F(SimpleVMTest, PreDecLongCmd) {
-  int64_t value = INT64_C(7);
+  auto value = INT64_C(7);
   LongValue expected_value = 6;
-  TestUnaryExprCmd(CmdId::kLoadLongValue,
-                   CmdId::kPreDecLong,
-                   value,
-                   expected_value);
+  TestPreIncCmd(CmdId::kLoadLongValue,
+                CmdId::kCreateAndInitLocalLongVar,
+                CmdId::kPreDecLong,
+                value,
+                expected_value);
 }
 
 TEST_F(SimpleVMTest, PreDecDoubleCmd) {
-  double value = 7.0;
+  auto value = 7.0;
   DoubleValue expected_value = 6.0;
-  TestUnaryExprCmd(CmdId::kLoadDoubleValue,
-                   CmdId::kPreDecDouble,
-                   value,
-                   expected_value);
+  TestPreIncCmd(CmdId::kLoadDoubleValue,
+                CmdId::kCreateAndInitLocalDoubleVar,
+                CmdId::kPreDecDouble,
+                value,
+                expected_value);
 }
 
 TEST_F(SimpleVMTest, PreDecCharCmd) {
   char value = 7;
   CharValue expected_value = 6;
-  TestUnaryExprCmd(CmdId::kLoadCharValue,
-                   CmdId::kPreDecChar,
-                   value,
-                   expected_value);
+  TestPreIncCmd(CmdId::kLoadCharValue,
+                CmdId::kCreateAndInitLocalCharVar,
+                CmdId::kPreDecChar,
+                value,
+                expected_value);
 }
 
 TEST_F(SimpleVMTest, PreIncIntCmd) {
-  int32_t value = INT32_C(7);
+  auto value = INT32_C(7);
   IntValue expected_value = 8;
-  TestUnaryExprCmd(CmdId::kLoadIntValue,
-                   CmdId::kPreIncInt,
-                   value,
-                   expected_value);
+  TestPreIncCmd(CmdId::kLoadIntValue,
+                CmdId::kCreateAndInitLocalIntVar,
+                CmdId::kPreIncInt,
+                value,
+                expected_value);
 }
 
 TEST_F(SimpleVMTest, PreIncLongCmd) {
-  int64_t value = INT64_C(7);
+  auto value = INT64_C(7);
   LongValue expected_value = 8;
-  TestUnaryExprCmd(CmdId::kLoadLongValue,
-                   CmdId::kPreIncLong,
-                   value,
-                   expected_value);
+  TestPreIncCmd(CmdId::kLoadLongValue,
+                CmdId::kCreateAndInitLocalLongVar,
+                CmdId::kPreIncLong,
+                value,
+                expected_value);
 }
 
 TEST_F(SimpleVMTest, PreIncDoubleCmd) {
-  double value = 7.0;
+  auto value = 7.0;
   DoubleValue expected_value = 8.0;
-  TestUnaryExprCmd(CmdId::kLoadDoubleValue,
-                   CmdId::kPreIncDouble,
-                   value,
-                   expected_value);
+  TestPreIncCmd(CmdId::kLoadDoubleValue,
+                CmdId::kCreateAndInitLocalDoubleVar,
+                CmdId::kPreIncDouble,
+                value,
+                expected_value);
 }
 
 TEST_F(SimpleVMTest, PreIncCharCmd) {
   char value = 7;
   CharValue expected_value = 8;
-  TestUnaryExprCmd(CmdId::kLoadCharValue,
-                   CmdId::kPreIncChar,
-                   value,
-                   expected_value);
+  TestPreIncCmd(CmdId::kLoadCharValue,
+                CmdId::kCreateAndInitLocalCharVar,
+                CmdId::kPreIncChar,
+                value,
+                expected_value);
 }
 
 TEST_F(SimpleVMTest, AndCmd) {

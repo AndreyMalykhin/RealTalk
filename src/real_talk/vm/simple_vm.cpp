@@ -2142,7 +2142,8 @@ void SimpleVM::Impl::VisitPreDecDouble(const PreDecDoubleCmd &cmd) {
 }
 
 template<typename T> void SimpleVM::Impl::VisitPreDec(const PreDecCmd&) {
-  operands_.Push<T>(operands_.Pop<T>() - 1);
+  auto var_address = operands_.Pop<VarAddressValue>();
+  --(*static_cast<T*>(var_address));
 }
 
 void SimpleVM::Impl::VisitPreIncChar(const PreIncCharCmd &cmd) {
@@ -2162,7 +2163,8 @@ void SimpleVM::Impl::VisitPreIncDouble(const PreIncDoubleCmd &cmd) {
 }
 
 template<typename T> void SimpleVM::Impl::VisitPreInc(const PreIncCmd&) {
-  operands_.Push<T>(operands_.Pop<T>() + 1);
+  auto var_address = operands_.Pop<VarAddressValue>();
+  ++(*static_cast<T*>(var_address));
 }
 
 void SimpleVM::Impl::VisitAnd(const AndCmd&) {

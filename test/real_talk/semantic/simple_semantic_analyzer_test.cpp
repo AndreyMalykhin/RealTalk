@@ -7354,7 +7354,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDec) {
       TokenInfo(Token::kName, "var", UINT32_C(4), UINT32_C(4)));
   unique_ptr<ExprNode> id_node(id_node_ptr);
   PreDecNode *pre_dec_node_ptr = new PreDecNode(
-      TokenInfo(Token::kPreDecOp, "++", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kPreDecOp, "--", UINT32_C(3), UINT32_C(3)),
       move(id_node));
   unique_ptr<ExprNode> pre_dec_node(pre_dec_node_ptr);
   unique_ptr<StmtNode> pre_dec_stmt_node(new ExprStmtNode(
@@ -7422,7 +7422,7 @@ TEST_F(SimpleSemanticAnalyzerTest,
       TokenInfo(Token::kName, "func", UINT32_C(7), UINT32_C(7)));
   unique_ptr<ExprNode> id_node(id_node_ptr);
   PreDecNode *pre_dec_node_ptr = new PreDecNode(
-      TokenInfo(Token::kPreDecOp, "++", UINT32_C(6), UINT32_C(6)),
+      TokenInfo(Token::kPreDecOp, "--", UINT32_C(6), UINT32_C(6)),
       move(id_node));
   unique_ptr<ExprNode> pre_dec_node(pre_dec_node_ptr);
   unique_ptr<StmtNode> pre_dec_stmt_node(new ExprStmtNode(
@@ -7490,7 +7490,7 @@ TEST_F(SimpleSemanticAnalyzerTest, PreDecWithUnsupportedDataTypeIsInvalid) {
       TokenInfo(Token::kName, "var", UINT32_C(4), UINT32_C(4)));
   unique_ptr<ExprNode> id_node(id_node_ptr);
   PreDecNode *pre_dec_node_ptr = new PreDecNode(
-      TokenInfo(Token::kPreDecOp, "++", UINT32_C(3), UINT32_C(3)),
+      TokenInfo(Token::kPreDecOp, "--", UINT32_C(3), UINT32_C(3)),
       move(id_node));
   unique_ptr<ExprNode> pre_dec_node(pre_dec_node_ptr);
   unique_ptr<StmtNode> pre_dec_stmt_node(new ExprStmtNode(
