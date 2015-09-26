@@ -812,7 +812,7 @@ class SimpleVM::Impl: private CmdVisitor {
       const ArithmeticNegateCmd &cmd);
   template<typename T> void VisitPreDec(const PreDecCmd &cmd);
   template<typename T> void VisitPreInc(const PreIncCmd &cmd);
-  size_t GetLocalVarIndex(const LoadLocalVarValueCmd &cmd) const noexcept;
+  template<typename T> size_t GetLocalVarIndex(const T &cmd) const noexcept;
 
   Exe *exe_;
   const vector<NativeFuncValue> &native_funcs_;
@@ -1527,7 +1527,7 @@ template<typename T> void SimpleVM::Impl::VisitLoadLocalVarValue(
   operands_.Push(local_vars_.Get<T>(GetLocalVarIndex(cmd)));
 }
 
-size_t SimpleVM::Impl::GetLocalVarIndex(const LoadLocalVarValueCmd &cmd)
+template<typename T> size_t SimpleVM::Impl::GetLocalVarIndex(const T &cmd)
     const noexcept {
   assert(!func_frames_.empty());
   return func_frames_.back().GetLocalVarsStartIndex() + cmd.GetVarIndex();
@@ -1576,7 +1576,7 @@ void SimpleVM::Impl::VisitLoadGlobalVarAddress(
 
 void SimpleVM::Impl::VisitLoadLocalVarAddress(
     const LoadLocalVarAddressCmd &cmd) {
-  operands_.Push(local_vars_.GetAddress(cmd.GetVarIndex()));
+  operands_.Push(local_vars_.GetAddress(GetLocalVarIndex(cmd)));
 }
 
 void SimpleVM::Impl::VisitLoadIntArrayElementValue(

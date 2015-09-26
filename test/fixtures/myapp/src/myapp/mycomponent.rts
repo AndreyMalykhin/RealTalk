@@ -3,6 +3,43 @@ homie "std/io.rts";
 homie "mylib/mylib.rts";
 homie "mylib2/mylib2.rts";
 
+void quickSort(int[] array, int low, int high) {
+  if (low >= high) {
+    bringitback;
+  }
+
+  int middle = low + (high - low) / 2;
+  int pivot = array[middle];
+  int i = low;
+  int j = high;
+
+  roll (i <= j) {
+    roll (array[i] < pivot) {
+      ++i;
+    }
+
+    roll (array[j] > pivot) {
+      --j;
+    }
+
+    if (i <= j) {
+      int tmp = array[i];
+      array[i] = array[j];
+      array[j] = tmp;
+      ++i;
+      --j;
+    }
+  }
+
+  if (low < j) {
+    quickSort(array, low, j);
+  }
+
+  if (high > i) {
+    quickSort(array, i, high);
+  }
+}
+
 bool bool_var = nah;
 char char_var = '1';
 int int_var = 2;
@@ -37,3 +74,12 @@ roll (!bool_var) {
   }
 }
 
+int[] array = fresh int[]{7, 1, 6, 2, 5, 4, 3};
+int length = 7;
+int i;
+quickSort(array, 0, length - 1);
+
+roll (i != length) {
+  print(doubleToString(array[i]) + ", ");
+  ++i;
+}
