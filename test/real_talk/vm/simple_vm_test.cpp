@@ -2022,19 +2022,34 @@ TEST_F(SimpleVMTest, LoadLocalVarAddressCmd) {
   };
   auto local_vars_asserter = [](const DataStorage &expected_local_vars,
                                 const DataStorage &actual_local_vars) {
-    ASSERT_EQ(expected_local_vars.GetTop<StringValue>(),
-              actual_local_vars.GetTop<StringValue>());
+    for (size_t var_index = 0; var_index != 2; ++var_index) {
+      ASSERT_EQ(expected_local_vars.Get<StringValue>(var_index),
+                actual_local_vars.Get<StringValue>(var_index));
+    }
   };
   unique_ptr<Code> cmds(new Code());
-  cmds->Write<CmdId>(CmdId::kCreateLocalStringVar);
-  uint32_t var_index = UINT32_C(0);
-  cmds->Write<CmdId>(CmdId::kLoadLocalVarAddress);
-  cmds->Write<uint32_t>(var_index);
+  cmds->Write(CmdId::kCreateLocalStringVar);
+  cmds->Write(CmdId::kLoadFuncValue);
+  uint32_t func_address_placeholder = cmds->GetPosition();
+  cmds->Skip(sizeof(uint32_t));
+  cmds->Write(CmdId::kCall);
   uint32_t main_cmds_code_size = cmds->GetPosition();
+  auto func_address = main_cmds_code_size;
+  cmds->Write(CmdId::kLoadStringValue);
+  string var_value = "swag";
+  cmds->Write(var_value);
+  cmds->Write(CmdId::kCreateAndInitLocalStringVar);
+  cmds->Write(CmdId::kLoadLocalVarAddress);
+  auto var_index = UINT32_C(0);
+  cmds->Write(var_index);
+  cmds->Write(CmdId::kReturn);
+  cmds->SetPosition(func_address_placeholder);
+  cmds->Write(func_address);
   DataStorage expected_local_vars;
   expected_local_vars.Push(StringValue());
+  expected_local_vars.Push(StringValue(var_value));
   DataStorage expected_operands;
-  expected_operands.Push(expected_local_vars.GetAddress(var_index));
+  expected_operands.Push(expected_local_vars.GetAddress(var_index + 1));
   DataStorage expected_global_vars;
   DataStorageAsserter global_vars_asserter = nullptr;
   TestExecute(move(cmds),

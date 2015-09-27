@@ -1,12 +1,24 @@
-cmake_minimum_required (VERSION 3.0.2)
+cmake_minimum_required (VERSION 3.3.0)
 project(REAL_TALK)
+
+set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-weak-vtables -Wno-padded -Wno-missing-noreturn -Wno-switch-enum -Wno-used-but-marked-unused -Wno-tautological-constant-out-of-range-compare -Wno-float-equal")
+
 include_directories(include)
-include_directories(SYSTEM thirdparty/gmock-1.7.0/include thirdparty/gmock-1.7.0/gtest/include)
-find_library(gmock_lib NAMES gmock PATHS thirdparty/gmock-1.7.0/build)
+include_directories(SYSTEM
+  thirdparty/boost
+  thirdparty/googletest/googlemock/include
+  thirdparty/googletest/googletest/include
+)
+
+find_library(gmock_lib NAMES gmock PATHS thirdparty/googletest/googlemock/build NO_DEFAULT_PATH)
+find_package(Threads REQUIRED)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED OFF)
-find_package(Boost 1.56.0 REQUIRED COMPONENTS system filesystem program_options)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Weverything -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-weak-vtables -Wno-padded -Wno-missing-noreturn -Wno-switch-enum -Wno-used-but-marked-unused -Wno-tautological-constant-out-of-range-compare -Wno-float-equal")
+set(Boost_NO_SYSTEM_PATHS ON)
+set(BOOST_ROOT thirdparty/boost/build)
+find_package(Boost 1.59.0 REQUIRED COMPONENTS system filesystem program_options)
+
 add_library(real_talk_lib SHARED
   src/real_talk/lexer/token_info.cpp
   src/real_talk/lexer/simple_lexer.cpp
@@ -96,6 +108,7 @@ add_library(real_talk_lib SHARED
 )
 target_link_libraries(real_talk_lib ${Boost_LIBRARIES})
 set_target_properties(real_talk_lib PROPERTIES OUTPUT_NAME realtalk)
+
 add_executable(real_talk_tests_exe
   test/main.cpp
   test/real_talk/parser/simple_parser_test.cpp
@@ -129,25 +142,31 @@ add_executable(real_talk_tests_exe
   test/real_talk/util/endianness_test.cpp
 )
 target_include_directories(real_talk_tests_exe PRIVATE test)
-target_link_libraries(real_talk_tests_exe ${gmock_lib} real_talk_lib)
+target_link_libraries(real_talk_tests_exe ${CMAKE_THREAD_LIBS_INIT} ${gmock_lib} real_talk_lib)
 set_target_properties(real_talk_tests_exe PROPERTIES OUTPUT_NAME realtalktests)
+
 add_executable(real_talk_compiler_exe src/real_talk/compiler/main.cpp)
 target_link_libraries(real_talk_compiler_exe real_talk_lib)
 set_target_properties(real_talk_compiler_exe PROPERTIES OUTPUT_NAME realtalkc)
+
 add_executable(real_talk_linker_exe src/real_talk/linker/main.cpp)
 target_link_libraries(real_talk_linker_exe real_talk_lib)
 set_target_properties(real_talk_linker_exe PROPERTIES OUTPUT_NAME realtalkl)
+
 add_executable(real_talk_vm_exe src/real_talk/vm/main.cpp)
 target_link_libraries(real_talk_vm_exe real_talk_lib)
 set_target_properties(real_talk_vm_exe PROPERTIES OUTPUT_NAME realtalkvm)
-file(COPY test/fixtures stdlib DESTINATION .)
-add_custom_target(std_lib_dir ALL COMMAND make WORKING_DIRECTORY stdlib)
-add_dependencies(std_lib_dir real_talk_compiler_exe real_talk_linker_exe real_talk_vm_exe)
-add_custom_target(fixtures_dir ALL COMMAND make WORKING_DIRECTORY fixtures/myapp)
-add_dependencies(fixtures_dir std_lib_dir)
+
+file(COPY test/fixtures DESTINATION .)
+
 install(TARGETS real_talk_compiler_exe real_talk_linker_exe real_talk_vm_exe real_talk_lib
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/stdlib DESTINATION share/realtalk)
+install(DIRECTORY stdlib DESTINATION share/realtalk)
+add_custom_target(std_lib_dir COMMAND make WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/share/realtalk/stdlib)
+add_custom_target(fixtures_dir COMMAND make WORKING_DIRECTORY fixtures/myapp)
+add_dependencies(fixtures_dir std_lib_dir)
+add_custom_target(post_install)
+add_dependencies(post_install fixtures_dir std_lib_dir)

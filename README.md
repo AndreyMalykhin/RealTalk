@@ -51,7 +51,7 @@ Educational-purpose programming language with:
 
 ###Dependencies
 - C++11
-- Clang 6.0+
-- CMake 3.0.1+
-- Boost 1.56.0
+- Clang 3.5+
+- CMake 3.3.0+
+- Boost 1.59.0
 - Google Mock 1.7.0

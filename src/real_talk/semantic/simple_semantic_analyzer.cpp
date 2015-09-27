@@ -1746,7 +1746,7 @@ void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
       GetExprAnalysis(expr_node.GetRightOperand().get());
   const DataType &right_operand_data_type =
       right_operand_analysis.GetDataType();
-  const DataType *final_operand_data_type = &left_operand_data_type;
+  unique_ptr<DataType> final_operand_data_type;
 
   if (left_operand_data_type != right_operand_data_type) {
     const CastResolver::ResolvedCast resolved_cast = cast_resolver_.Resolve(
@@ -1760,7 +1760,7 @@ void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
       ThrowError(move(error));
     }
 
-    final_operand_data_type = resolved_cast.GetFinalDataType();
+    final_operand_data_type = resolved_cast.GetFinalDataType()->Clone();
 
     if (resolved_cast.GetLeftDataType()) {
       left_operand_analysis.SetCastedDataType(
@@ -1769,7 +1769,11 @@ void SimpleSemanticAnalyzer::Impl::VisitBinaryExpr(
       right_operand_analysis.SetCastedDataType(
           resolved_cast.GetRightDataType()->Clone());
     }
+  } else {
+    final_operand_data_type = left_operand_data_type.Clone();
   }
+
+  assert(final_operand_data_type);
 
   if (!data_type_support_query->Check(*final_operand_data_type)) {
     unique_ptr<SemanticError> error(new BinaryExprWithUnsupportedTypesError(

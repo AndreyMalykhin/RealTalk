@@ -1,0 +1,8 @@
+[submodule "boost"]
+	path = thirdparty/boost
+	url = git@github.com:boostorg/boost.git
+    ignore = dirty
+[submodule "googletest"]
+	path = thirdparty/googletest
+	url = git@github.com:google/googletest.git
+    ignore = dirty
