@@ -1067,6 +1067,7 @@ void SimpleSemanticAnalyzer::Impl::VisitFuncDef(
     const bool is_duplicate_modifier =
         !modifier_tokens.insert(modifier_token.GetId()).second;
     assert(!is_duplicate_modifier);
+    (void) is_duplicate_modifier;
   }
 
   is_func_native = modifier_tokens.count(Token::kNative) != 0;

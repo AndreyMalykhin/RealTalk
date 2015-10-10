@@ -1,6 +1,7 @@
 /.vagrant
 build/
-/thirdparty/gmock-1.7.0
 /GPATH
 /GRTAGS
 /GTAGS
+/gtags.conf
+/.project.el

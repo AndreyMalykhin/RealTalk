@@ -83,6 +83,7 @@ class ExeReaderMock: public ExeReader {
 
   virtual unique_ptr<Exe> ReadFromCode(Code*) const override {
     assert(false);
+    return unique_ptr<Exe>();
   }
 
   MOCK_CONST_METHOD1(ReadFromStream_, Exe*(istream*));
@@ -103,22 +104,27 @@ class VMMock: public VM {
  public:
   virtual const DataStorage &GetGlobalVars() const noexcept override {
     assert(false);
+    return *new DataStorage();
   }
 
   virtual const DataStorage &GetLocalVars() const noexcept override {
     assert(false);
+    return *new DataStorage();
   }
 
   virtual const DataStorage &GetOperands() const noexcept override {
     assert(false);
+    return *new DataStorage();
   }
 
   virtual DataStorage &GetOperands() noexcept override {
     assert(false);
+    return *new DataStorage();
   }
 
   virtual const FuncFrames &GetFuncFrames() const noexcept override {
     assert(false);
+    return *new FuncFrames();
   }
 
   MOCK_METHOD0(Execute, void());

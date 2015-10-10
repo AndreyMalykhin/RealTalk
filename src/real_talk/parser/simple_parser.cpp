@@ -1116,6 +1116,7 @@ unique_ptr<PrimitiveDataTypeNode> SimpleParser::Impl::ParsePrimitiveDataType() {
   }
 
   assert(false);
+  return unique_ptr<PrimitiveDataTypeNode>();
 }
 
 unique_ptr<DataTypeNode> SimpleParser::Impl::ParseDataType(

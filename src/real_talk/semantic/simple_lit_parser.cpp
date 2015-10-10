@@ -60,6 +60,7 @@ bool SimpleLitParser::ParseBool(const string &str) const {
   }
 
   assert(false);
+  return false;
 }
 
 string SimpleLitParser::ParseString(const string &str) const {

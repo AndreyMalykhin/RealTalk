@@ -284,6 +284,7 @@ TokenInfo SimpleLexer::ParseStringToken(Token token, char enclosing_char) {
 
   UnexpectedEndOfFile();
   assert(false);
+  return TokenInfo(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0));
 }
 
 TokenInfo SimpleLexer::ParseNumberToken() {

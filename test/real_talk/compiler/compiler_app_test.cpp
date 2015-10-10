@@ -169,11 +169,31 @@ class FileMock: public File {
 class LitParserMock: public LitParser {
  public:
   MOCK_CONST_METHOD1(ParseString, string(const string&));
-  virtual bool ParseBool(const string&) const override {assert(false);}
-  virtual int32_t ParseInt(const string&) const override {assert(false);}
-  virtual int64_t ParseLong(const string&) const override {assert(false);}
-  virtual double ParseDouble(const string&) const override {assert(false);}
-  virtual char ParseChar(const string&) const override {assert(false);}
+
+  virtual bool ParseBool(const string&) const override {
+    assert(false);
+    return false;
+  }
+
+  virtual int32_t ParseInt(const string&) const override {
+    assert(false);
+    return 0;
+  }
+
+  virtual int64_t ParseLong(const string&) const override {
+    assert(false);
+    return 0;
+  }
+
+  virtual double ParseDouble(const string&) const override {
+    assert(false);
+    return 0.0;
+  }
+
+  virtual char ParseChar(const string&) const override {
+    assert(false);
+    return 0;
+  }
 };
 
 class FileSearcherMock: public FileSearcher {
@@ -220,7 +240,10 @@ class SrcParserMock: public Parser {
 
 class LexerMock: public Lexer {
  public:
-  virtual TokenInfo GetNextToken() override {assert(false);}
+  virtual TokenInfo GetNextToken() override {
+    assert(false);
+    return TokenInfo(Token::kFileEnd, "", UINT32_C(0), UINT32_C(0));
+  }
 };
 
 class SemanticErrorMock: public SemanticError {

@@ -92,6 +92,7 @@ class ModuleReaderMock: public ModuleReader {
  public:
   virtual unique_ptr<Module> ReadFromCode(Code*) const override {
     assert(false);
+    return unique_ptr<Module>();
   }
 
   virtual unique_ptr<Module> ReadFromStream(
