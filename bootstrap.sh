@@ -9,7 +9,7 @@ if [ "$environment" = "prod" ]; then
     buildType="Release"
 fi
 
-apt-get update \
+sudo apt-get update \
 && sudo apt-get -y install build-essential clang-3.5 libc++1 libc++-dev gdb
 
 sudo ln -sf /usr/bin/clang-3.5 /usr/bin/clang \

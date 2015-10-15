@@ -48,6 +48,7 @@ Educational-purpose programming language with:
             compiler
             linker // executable and library maker
             vm // virtual machine
+            stdlib // standard library
 
 ###Dependencies
 - C++11
