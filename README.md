@@ -1,4 +1,4 @@
-#Real talk? What you talking about?
+#Real Talk!? What you talking about?
 Educational-purpose programming language with:
 - Old school procedural paradigm
 - Static typing
