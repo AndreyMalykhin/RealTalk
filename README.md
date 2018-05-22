@@ -1,20 +1,17 @@
-#Real Talk!? What you talking about?
-Educational-purpose programming language with:
+### Features
 - Old school procedural paradigm
 - Static typing
-- C/Java-like gangsterish syntax
+- C / Java-like gangsterish syntax
 - Compilation into bytecode, execution by virtual machine
 
-#Alright, what you got?
-
-###What's up with control flow statements?
+### Control flow statements
 - conditional (aka if/else if/else)
 - condition-controlled loop (aka while)
 - early exit from loop (aka break)
 - continuation with next iteration of loop (aka continue)
 - functions with arguments and return value
 
-###What's up with expressions?
+### Expressions
 - arithmetical: addition, subtration, division, multiplication, pre increment, pre decrement, negation
 - logical: and, or, not
 - comparisons: equal, not equal, greater, greater or equal, less, less or equal
@@ -23,11 +20,11 @@ Educational-purpose programming language with:
 - array indexing
 - array allocation
 
-###Some other statements?
+### Statements
 - variable definition
 - import definitions from another file
 
-###What's up with data types?
+### Data types
 - 32-bit signed integer
 - 64-bit signed integer
 - double-precision floating point number
@@ -36,23 +33,9 @@ Educational-purpose programming language with:
 - 1-byte boolean value
 - fixed size array of aforementioned data types
 
-#Under the hood
-
-###Components
-    src
-        real_talk
-            lexer // source code tokenizer
-            parser // source code parser
-            semantic // program semantic analyzer
-            code // bytecode generator
-            compiler
-            linker // executable and library maker
-            vm // virtual machine
-            stdlib // standard library
-
-###Dependencies
-- C++11
-- Clang 3.5+
-- CMake 3.3.0+
-- Boost 1.59.0
-- Google Mock 1.7.0
+### Credits
+- [C++](https://isocpp.org/)
+- [Clang](https://clang.llvm.org/)
+- [CMake](https://cmake.org/)
+- [Boost](https://www.boost.org/)
+- [Google Test](https://github.com/google/googletest)
